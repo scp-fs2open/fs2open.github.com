@@ -104,6 +104,19 @@ extern void timer_start_frame();
 extern fix timer_get_fixed_seconds();		// Rolls about every 9 hours...
 extern fix timer_get_approx_seconds();		// Returns time since program started... accurate to 1/120th of a second
 extern int timer_get_milliseconds();		//
+
+// A point in real time (timer_get_milliseconds), such as when something was created.  Real time starts anew with each
+// session, so checkpoints save its age instead.
+struct realtime_stamp {
+	uint value = 0;
+
+	constexpr realtime_stamp() = default;
+	constexpr realtime_stamp(uint v) : value(v) {}
+	constexpr operator uint() const { return value; }
+
+	int64_t checkpoint_key() const;
+	static realtime_stamp from_checkpoint_key(int64_t age);
+};
 extern std::uint64_t timer_get_microseconds();
 extern std::uint64_t timer_get_nanoseconds();
 extern int timer_get_seconds();				// seconds since program started... not accurate, but good for long
@@ -255,5 +268,23 @@ int timestamp_get_mission_time_in_milliseconds();
 
 // Advance mission time by specific offset (for in-game joining)
 void timestamp_offset_mission_time(float offset);
+
+//=================================================================
+//               C H E C K P O I N T S
+//=================================================================
+
+// Everything needed to make the timestamps of a saved checkpoint valid again
+struct timestamp_checkpoint_state
+{
+	uint64_t microseconds = 0;					// the timestamp clock when the checkpoint was saved
+	uint64_t mission_start_microseconds = 0;	// the timestamp clock when the mission started
+	fix time_compression = F1_0;
+};
+
+timestamp_checkpoint_state timestamp_get_checkpoint_state();
+
+// Sets the timestamp clock so that it continues from the given state, which makes timestamps saved with it valid
+// again.  The clock may move forward or backward.
+void timestamp_restore_checkpoint_state(const timestamp_checkpoint_state& state);
 
 #endif

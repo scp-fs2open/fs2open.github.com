@@ -7,6 +7,7 @@
  *
  */
 
+#include "checkpoint/registry.h"
 #include "globalincs/systemvars.h"
 
 #include "debugconsole/console.h"
@@ -24,6 +25,7 @@ int Game_mode;
 int Game_restoring = 0;		// If set, this means we are restoring data from disk
 
 int	Viewer_mode;		//	Viewer's mode, see VM_xxxx flags.
+CHECKPOINT_GLOBAL(Viewer_mode);
 
 //CUTSCENE STUFF
 //Cutscene flags

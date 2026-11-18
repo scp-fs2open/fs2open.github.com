@@ -1468,6 +1468,9 @@ extern int find_free_sexp();
 extern int free_one_sexp(int num);
 extern int free_sexp(int num, int calling_node = -1);
 extern int free_sexp2(int num, int calling_node = -1);
+// Parses an argument list, "( a b ... )" as written by convert_sexp_to_string, into new nodes; returns the first one, or
+// -1 for an empty list.  The nodes are freed with free_sexp2.
+extern int parse_sexp_argument_list(const char* text);
 extern int dup_sexp_chain(int node);
 extern int cmp_sexp_chains(int node1, int node2);
 extern int find_sexp_list(int num);

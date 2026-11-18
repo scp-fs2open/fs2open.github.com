@@ -27,6 +27,8 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "camera/photomode.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
@@ -1037,6 +1039,7 @@ int Num_sexp_nodes = 0;
 sexp_node *Sexp_nodes = nullptr;
 
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
+CHECKPOINT_GLOBAL(Sexp_variables);
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
 int Num_special_expl_blocks;
@@ -1050,6 +1053,7 @@ static int Fade_out_b = 0;
 
 // for is-true-for-duration
 SCP_vector<fix> Sexp_is_true_for_duration_times;
+CHECKPOINT_GLOBAL(Sexp_is_true_for_duration_times);
 
 // for play-music - Goober5000
 SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
@@ -1345,6 +1349,40 @@ static void sexp_nodes_close()
 		Num_sexp_nodes = 0;
 	}
 }
+
+// Checkpoints save the whole node array: the mission's sexps keep their evaluation state there, and nodes may have
+// been allocated or freed during the mission.
+static void sexp_nodes_checkpoint_save(checkpoint::Writer& w)
+{
+	w.u32(static_cast<uint32_t>(Num_sexp_nodes));
+	for (int i = 0; i < Num_sexp_nodes; i++)
+		checkpoint::save(w, Sexp_nodes[i]);
+}
+
+static void sexp_nodes_checkpoint_load(checkpoint::Reader& r)
+{
+	auto count = static_cast<int>(r.u32());
+	if (count > Num_sexp_nodes) {
+		int old_size = Num_sexp_nodes;
+		Num_sexp_nodes = count;
+		Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
+		Verify(Sexp_nodes != nullptr);
+		for (int i = old_size; i < Num_sexp_nodes; i++)
+			new (&Sexp_nodes[i]) sexp_node();
+	}
+
+	for (int i = 0; i < Num_sexp_nodes; i++) {
+		// cached lookups belong to what the node held before
+		clear_cache(i);
+		Sexp_nodes[i].op_index = NO_OPERATOR_INDEX_DEFINED;
+		if (i < count)
+			checkpoint::load(r, Sexp_nodes[i]);
+		else
+			Sexp_nodes[i].type = SEXP_NOT_USED;
+	}
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS("Sexp_nodes", sexp_nodes_checkpoint_save, sexp_nodes_checkpoint_load);
 
 // done at the beginning of each mission
 void init_sexp()
@@ -13771,6 +13809,7 @@ void multi_sexp_hud_set_max_targeting_range()
 /* Make sure that the Sexp_hud_display_* get added to the game_state
 transitions in freespace.cpp (game_enter_state()). */
 int Sexp_hud_display_warpout = 0;
+CHECKPOINT_GLOBAL(Sexp_hud_display_warpout);
 
 void sexp_hud_display_gauge(int n)
 {
@@ -31240,6 +31279,23 @@ int get_sexp_main()
 	}
 
 	return start_node;
+}
+
+int parse_sexp_argument_list(const char* text)
+{
+	char* oldMp = Mp;
+	SCP_string buf = text;
+	Mp = buf.data();
+
+	int node = -1;
+	ignore_white_space();
+	if (*Mp == '(') {
+		Mp++;
+		node = get_sexp();
+	}
+
+	Mp = oldMp;
+	return node;
 }
 
 int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)

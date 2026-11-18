@@ -12,6 +12,7 @@
 #include <cstdarg>
 
 
+#include "checkpoint/registry.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "globalincs/linklist.h"
@@ -37,10 +38,13 @@
 
 // intensity of the playing effect
 float Emp_intensity = -1.0f;					// current intensity of the EMP effect (normalized to EMP_INTENSITY_MAX)
+CHECKPOINT_GLOBAL(Emp_intensity);
 float Emp_decr = 0.0f;							// how much to decrement the effect per second
+CHECKPOINT_GLOBAL(Emp_decr);
 
 // timestamp until we should randomly choose another target
 int Emp_wacky_target_timestamp = -1;
+CHECKPOINT_GLOBAL(Emp_wacky_target_timestamp);
 
 // max time we'll disrupt turrets on big ships
 #define MAX_TURRET_DISRUPT_TIME				7500

@@ -24,6 +24,7 @@
 #include <glob.h>
 #endif
 
+#include "checkpoint/registry.h"
 #include "freespace.h"
 #include "missioncampaign.h"
 #include "cfile/cfile.h"
@@ -85,6 +86,8 @@ const char *campaign_types[MAX_CAMPAIGN_TYPES] =
 // module-local sets of new ships/weapons granted to the player during the current mission
 static SCP_set<int> Granted_ships;
 static SCP_set<int> Granted_weapons;
+CHECKPOINT_GLOBAL(Granted_ships);
+CHECKPOINT_GLOBAL(Granted_weapons);
 
 // variables to control the UI stuff for loading campaigns
 LOCAL UI_WINDOW Campaign_window;
@@ -93,6 +96,19 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 
 // the campaign!!!!!
 campaign Campaign;
+
+// sexps choose the next mission during a mission; the rest of the campaign is committed when a mission ends
+static void campaign_checkpoint_save(checkpoint::Writer& w)
+{
+	checkpoint::save(w, Campaign.next_mission);
+}
+
+static void campaign_checkpoint_load(checkpoint::Reader& r)
+{
+	checkpoint::load(r, Campaign.next_mission);
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS("Campaign", campaign_checkpoint_save, campaign_checkpoint_load);
 
 
 /**

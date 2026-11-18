@@ -11,6 +11,7 @@
 
 
 #include "asteroid/asteroid.h"
+#include "checkpoint/registry.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -81,6 +82,7 @@ int Num_objects=-1;
 int Highest_object_index=-1;
 int Highest_ever_object_index=0;
 int Object_next_signature = 1;	//0 is bogus, start at 1
+CHECKPOINT_GLOBAL(Object_next_signature);
 int Object_inited = 0;
 int Show_waypoints = 0;
 
@@ -533,6 +535,37 @@ int obj_allocate(bool essential)
 	}
 
 	return objnum;
+}
+
+/**
+ * Claims a specific free object slot, like obj_allocate() does for the next free one.  Used when restoring a
+ * checkpoint, where objects must return to the slots they had.
+ *
+ * @return false if the slot is in use
+ */
+bool obj_allocate_at(int objnum)
+{
+	Assert(objnum >= 0 && objnum < MAX_OBJECTS);
+
+	object *objp = &Objects[objnum];
+	if (objp->type != OBJ_NONE)
+		return false;
+
+	list_remove( &obj_free_list, objp );
+	list_append( &obj_create_list, objp );
+
+	Num_objects++;
+	if (Num_objects > num_objects_hwm) {
+		num_objects_hwm = Num_objects;
+	}
+
+	if (objnum > Highest_object_index) {
+		Highest_object_index = objnum;
+		if (Highest_object_index > Highest_ever_object_index)
+			Highest_ever_object_index = Highest_object_index;
+	}
+
+	return true;
 }
 
 object_memory_stats obj_get_memory_stats()

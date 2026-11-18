@@ -11,6 +11,8 @@
 
 
 #include "ai/ai.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -44,6 +46,21 @@ SCP_vector<ssm_info> Ssm_info;
 
 // list of active strikes
 SCP_list<ssm_strike> Ssm_strikes;
+CHECKPOINT_GLOBAL(Ssm_strikes);
+
+// warp holes are effects that aren't restored, so warp-ins that were under way start again
+static void ssm_checkpoint_restart_warpins()
+{
+	for (auto& strike : Ssm_strikes) {
+		for (size_t idx = 0; idx < strike.fireballs.size(); ++idx) {
+			if (strike.fireballs[idx] >= 0) {
+				strike.fireballs[idx] = -1;
+				strike.sinfo.delay_stamp[idx] = TIMESTAMP::immediate();
+			}
+		}
+	}
+}
+CHECKPOINT_AFTER_GLOBALS("Ssm_strikes", ssm_checkpoint_restart_warpins);
 
 // Goober5000
 int ssm_info_lookup(const char *name)

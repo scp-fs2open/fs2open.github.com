@@ -20,11 +20,14 @@
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "gamesnd/eventmusic.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "graphics/light.h"
 #include "graphics/post_processing.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
@@ -104,18 +107,29 @@ int Total_initially_docked;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 mission	The_mission;
+CHECKPOINT_GLOBAL(The_mission);
+
+// sexps can change the ambient light, which is kept in the mission and applied to the renderer
+static void mission_checkpoint_apply_ambient_light()
+{
+	auto level = The_mission.ambient_light_level;
+	gr_set_ambient_light(level & 0xff, (level >> 8) & 0xff, (level >> 16) & 0xff);
+}
+CHECKPOINT_AFTER_GLOBALS("Ambient light", mission_checkpoint_apply_ambient_light);
 char Mission_filename[80];
 
 int Mission_palette;  // index into Nebula_palette_filenames[] of palette file to use for mission
 int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
+CHECKPOINT_GLOBAL(Num_cargo);
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
 int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
+CHECKPOINT_GLOBAL(Entry_delay_time);
 
 int Num_unknown_ship_classes;
 int Num_unknown_prop_classes;
@@ -131,11 +145,15 @@ SCP_vector<mission_default_custom_data> Default_custom_data;
 
 // alternate ship type names
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Mission_alt_types);
 int Mission_alt_type_count = 0;
+CHECKPOINT_GLOBAL(Mission_alt_type_count);
 
 // callsigns
 char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Mission_callsigns);
 int Mission_callsign_count = 0;
+CHECKPOINT_GLOBAL(Mission_callsign_count);
 
 #define SHIP_WARP_TIME 5.0f		// how many seconds it takes for ship to warp in
 
@@ -144,9 +162,31 @@ int Mission_callsign_count = 0;
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 p_object Ship_arrival_list;	// for linked list of ships to arrive later
 
+// Which parse objects are waiting to arrive depends on many things, so checkpoints save the list itself, as indexes.
+// The parse objects are restored with the other globals, so the list is linked again afterwards.
+static SCP_vector<int> ship_arrival_list_checkpoint_capture()
+{
+	SCP_vector<int> indexes;
+	for (auto p_objp : list_range(&Ship_arrival_list))
+		indexes.push_back(POBJ_INDEX(p_objp));
+	return indexes;
+}
+
+static void ship_arrival_list_checkpoint_apply(const SCP_vector<int>& indexes)
+{
+	list_init(&Ship_arrival_list);
+	for (int index : indexes) {
+		if (SCP_vector_inbounds(Parse_objects, index))
+			list_append(&Ship_arrival_list, &Parse_objects[index]);
+	}
+}
+
+CHECKPOINT_STATE("Ship_arrival_list", ship_arrival_list_checkpoint_capture, ship_arrival_list_checkpoint_apply, AfterGlobals);
+
 // all the ships that we parse
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 SCP_vector<p_object> Parse_objects;
+CHECKPOINT_GLOBAL(Parse_objects);
 
 // all the props that we parse
 SCP_vector<parsed_prop> Parse_props;
@@ -155,9 +195,37 @@ SCP_vector<parsed_prop> Parse_props;
 // list for arriving support ship
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 p_object	Support_ship_pobj;
+CHECKPOINT_GLOBAL(Support_ship_pobj);
 p_object *Arriving_support_ship;
 char Arriving_repair_targets[MAX_AI_GOALS][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Arriving_repair_targets);
 int Num_arriving_repair_targets;
+CHECKPOINT_GLOBAL(Num_arriving_repair_targets);
+
+// The arriving support ship is either a parse object or the separate support ship parse object.
+static void arriving_support_ship_checkpoint_save(checkpoint::Writer& w)
+{
+	int index = -1;
+	if (Arriving_support_ship == &Support_ship_pobj)
+		index = -2;
+	else if (Arriving_support_ship != nullptr)
+		index = POBJ_INDEX(Arriving_support_ship);
+	w.value(index);
+}
+
+static void arriving_support_ship_checkpoint_load(checkpoint::Reader& r)
+{
+	int index = -1;
+	r.value(index);
+	if (index == -2)
+		Arriving_support_ship = &Support_ship_pobj;
+	else if (SCP_vector_inbounds(Parse_objects, index))
+		Arriving_support_ship = &Parse_objects[index];
+	else
+		Arriving_support_ship = nullptr;
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS("Arriving_support_ship", arriving_support_ship_checkpoint_save, arriving_support_ship_checkpoint_load);
 
 #define MIN_SUBSYS_STATUS_SIZE		25
 subsys_status *Subsys_status = NULL;
@@ -276,6 +344,8 @@ const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 
 char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
+// set-cargo adds names during a mission; Cargo_names points into the buffer
+CHECKPOINT_GLOBAL(Cargo_names_buf);
 
 const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
@@ -764,6 +834,7 @@ matrix Parse_viewer_orient;
 int Loading_screen_bm_index=-1;
 
 fix Mission_end_time;
+CHECKPOINT_GLOBAL(Mission_end_time);
 
 // calculates a "unique" file signature as a ushort (checksum) and an int (file length)
 // the amount of The_mission we're going to checksum
@@ -777,16 +848,24 @@ fix Mission_end_time;
 #define ARRIVAL_MESSAGE_DELAY_MAX		3000
 
 static int Allow_arrival_music_timestamp;
+CHECKPOINT_GLOBAL(Allow_arrival_music_timestamp);
 static int Allow_arrival_message_timestamp;
+CHECKPOINT_GLOBAL(Allow_arrival_message_timestamp);
 static int Arrival_message_delay_timestamp;
+CHECKPOINT_GLOBAL(Arrival_message_delay_timestamp);
 static int Arrival_message_subject;
+CHECKPOINT_GLOBAL(Arrival_message_subject);
 
 static int Allow_backup_message_timestamp;
+CHECKPOINT_GLOBAL(Allow_backup_message_timestamp);
 
 // multi TvT
 static int Allow_arrival_music_timestamp_m[2];
+CHECKPOINT_GLOBAL(Allow_arrival_music_timestamp_m);
 static int Allow_arrival_message_timestamp_m[2];
+CHECKPOINT_GLOBAL(Allow_arrival_message_timestamp_m);
 static int Arrival_message_delay_timestamp_m[2];
+CHECKPOINT_GLOBAL(Arrival_message_delay_timestamp_m);
 
 // local prototypes
 void parse_player_info2(mission *pm);

@@ -7,6 +7,8 @@
  *
 */ 
 
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "iff_defs/iff_defs.h"
@@ -35,6 +37,7 @@ static int X, Line_offset, P_width;
 
 SCP_vector<log_line_complete> Log_scrollback_vec;
 SCP_vector<log_entry> Log_entries;
+CHECKPOINT_GLOBAL(Log_entries);
 
 void mission_log_init()
 {

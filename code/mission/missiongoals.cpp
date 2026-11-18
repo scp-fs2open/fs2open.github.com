@@ -10,6 +10,8 @@
 
 
 
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
@@ -175,16 +177,21 @@ int Event_index = -1;  // used by sexp code to tell what event it came from
 bool Log_event = false;
 bool Snapshot_all_events = false;
 TIMESTAMP Mission_goal_timestamp;
+CHECKPOINT_GLOBAL(Mission_goal_timestamp);
 
 SCP_vector<mission_event> Mission_events;
+CHECKPOINT_GLOBAL(Mission_events);
 SCP_vector<mission_goal> Mission_goals;		// structure for the goals of this mission
+CHECKPOINT_GLOBAL(Mission_goals);
 static goal_text Goal_text;
 
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
 
 static TIMESTAMP Mission_directive_sound_timestamp;		// timestamp to control when directive succcess sound gets played
+CHECKPOINT_GLOBAL(Mission_directive_sound_timestamp);
 static TIMESTAMP Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
+CHECKPOINT_GLOBAL(Mission_directive_special_timestamp);
 
 const char *Goal_type_text(int n)
 {

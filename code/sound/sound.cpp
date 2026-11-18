@@ -8,6 +8,8 @@
 */
 
 #include "cfile/cfile.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "gamesnd/eventmusic.h"
@@ -1529,6 +1531,20 @@ static int Sound_env_id;
 static float Sound_env_volume;
 static float Sound_env_damping;
 static float Sound_env_decay;
+
+// sexps set the sound environment directly, so the one in effect is saved and set again
+static sound_env sound_env_checkpoint_capture()
+{
+	return {Sound_env_id, Sound_env_volume, Sound_env_damping, Sound_env_decay};
+}
+
+static void sound_env_checkpoint_apply(const sound_env& env)
+{
+	auto copy = env;
+	sound_env_set(&copy);
+}
+
+CHECKPOINT_STATE("Sound environment", sound_env_checkpoint_capture, sound_env_checkpoint_apply, AfterRestore);
 
 // Set the sound environment
 //

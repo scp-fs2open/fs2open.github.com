@@ -11,17 +11,20 @@
 #define _SHIP_H
 
 #include "ai/ai.h"
+#include "checkpoint/access.h"
 #include "fireball/fireballs.h"
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"			// for color def
 #include "hud/hud.h"
 #include "hud/hudparse.h"
+#include "iff_defs/iff_defs.h"
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "ship/warp_params_ref.h"
 #include "species_defs/species_defs.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
@@ -622,6 +625,9 @@ private:
 	int _points_per_bank = 0;
 	T _value;
 	SCP_vector<T> _buffer;
+
+	template <typename, typename>
+	friend struct checkpoint::Codec;
 };
 
 struct ship_electrical_arc : electrical_arc
@@ -676,8 +682,8 @@ public:
 	std::unique_ptr<WarpEffect> warpin_effect;
 	std::unique_ptr<WarpEffect> warpout_effect;
 
-	int warpin_params_index;
-	int warpout_params_index;
+	warp_params_ref warpin_params_index;
+	warp_params_ref warpout_params_index;
 
 	int	next_fireball;
 
@@ -811,7 +817,7 @@ public:
 	int	subsys_disrupted_flags;					// bitflags used to check if SUBYSTEM_* is disrupted or not
 	int	subsys_disrupted_check_timestamp;	// timer to control how oftern flags are set/cleared in subsys_disrupted_flags
 
-	uint	create_time;						// time ship was created, set by gettime()
+	realtime_stamp	create_time;				// time ship was created, set by gettime()
 
 	// keep multiplayer specific stuff below this point	
 	int	ts_index;							// index into the team select and Wss_slots array (or -1 if not in one of those arrays)
@@ -894,7 +900,7 @@ public:
 
 	SCP_vector<alt_class> s_alt_classes;	
 
-	SCP_map<std::pair<int, int>, int> ship_iff_color;
+	SCP_map<std::pair<int, int>, iff_color_ref> ship_iff_color;
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
@@ -1588,7 +1594,7 @@ public:
 	int radar_image_size;
 	float radar_projection_size_mult;
 
-	SCP_map<std::pair<int, int>, int> ship_iff_info;
+	SCP_map<std::pair<int, int>, iff_color_ref> ship_iff_info;
 
 	flagset<Object::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;

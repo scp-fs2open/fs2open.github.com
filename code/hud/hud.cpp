@@ -11,6 +11,8 @@
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
@@ -81,11 +83,49 @@ int HUD_color_blue = 0;
 int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
+CHECKPOINT_GLOBAL(HUD_draw);
 bool HUD_high_contrast = false;										// high or low contrast (for nebula, etc)
 bool HUD_shadows = false;
 
 // Goober5000
 int HUD_disable_except_messages = 0;
+CHECKPOINT_GLOBAL(HUD_disable_except_messages);
+
+// The gauges belong to the player's ship class or are the default ones; sexps switch them on and off and change texts.
+// They are saved as (default gauges, player ship class's gauges), and applied once the player's ship is known again.
+using hud_gauge_states_t = std::pair<SCP_vector<hud_gauge_mission_state>, SCP_vector<hud_gauge_mission_state>>;
+
+static SCP_vector<hud_gauge_mission_state> hud_gauge_states(const SCP_vector<SCP_polymorphic<HudGauge>>& gauges)
+{
+	SCP_vector<hud_gauge_mission_state> states;
+	for (const auto& gauge : gauges)
+		states.push_back(gauge->getMissionState());
+	return states;
+}
+
+static void hud_gauge_set_states(SCP_vector<SCP_polymorphic<HudGauge>>& gauges, const SCP_vector<hud_gauge_mission_state>& states)
+{
+	for (size_t i = 0; i < gauges.size() && i < states.size(); ++i)
+		gauges[i]->setMissionState(states[i]);
+}
+
+static hud_gauge_states_t hud_gauges_checkpoint_capture()
+{
+	hud_gauge_states_t states;
+	states.first = hud_gauge_states(default_hud_gauges);
+	if (Player_ship != nullptr)
+		states.second = hud_gauge_states(Ship_info[Player_ship->ship_info_index].hud_gauges);
+	return states;
+}
+
+static void hud_gauges_checkpoint_apply(const hud_gauge_states_t& states)
+{
+	hud_gauge_set_states(default_hud_gauges, states.first);
+	if (Player_ship != nullptr)
+		hud_gauge_set_states(Ship_info[Player_ship->ship_info_index].hud_gauges, states.second);
+}
+
+CHECKPOINT_STATE("HUD gauges", hud_gauges_checkpoint_capture, hud_gauges_checkpoint_apply, AfterRestore);
 
 color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with different alpha blending
 color HUD_color_debug;										// grey debug text shown on HUD
@@ -99,6 +139,7 @@ int HUD_nose_y;
 float Pl_target_integrity;
 
 int Hud_max_targeting_range;
+CHECKPOINT_GLOBAL(Hud_max_targeting_range);
 
 static int Hud_last_can_target;	// whether Player is able to target in the last frame
 static int Hud_can_target_timer;	// timestamp to allow target gauge to draw static once targeting functions are not allowed
@@ -539,6 +580,34 @@ void HudGauge::initHiRes(const char* fname)
 const char* HudGauge::getCustomGaugeName() const
 {
 	return custom_name;
+}
+
+hud_gauge_mission_state HudGauge::getMissionState() const
+{
+	hud_gauge_mission_state state;
+	state.active = active;
+	state.sexp_override = sexp_override;
+	state.pop_up = pop_up;
+	state.custom_text = custom_text;
+	state.position[0] = position[0];
+	state.position[1] = position[1];
+	state.frame_offset = custom_frame_offset;
+	state.gauge_color = gauge_color;
+	state.lock_color = sexp_lock_color;
+	return state;
+}
+
+void HudGauge::setMissionState(const hud_gauge_mission_state& state)
+{
+	active = state.active;
+	sexp_override = state.sexp_override;
+	pop_up = state.pop_up;
+	custom_text = state.custom_text;
+	position[0] = state.position[0];
+	position[1] = state.position[1];
+	custom_frame_offset = state.frame_offset;
+	gauge_color = state.gauge_color;
+	sexp_lock_color = state.lock_color;
 }
 
 const char* HudGauge::getCustomGaugeText() const

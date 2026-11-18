@@ -14,6 +14,8 @@
 #include <string>
 
 #include "freespace.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
@@ -139,7 +141,9 @@ static SCP_vector<starfield_bitmap_instance> Suns;
 
 // Goober5000
 int Cur_background = -1;
+CHECKPOINT_GLOBAL(Cur_background);
 SCP_vector<background_t> Backgrounds;
+CHECKPOINT_GLOBAL(Backgrounds);
 
 SCP_vector<int> Preload_background_indexes;
 void stars_preload_background(int background_idx);
@@ -3109,17 +3113,12 @@ int stars_get_first_valid_background()
 }
 
 // Goober5000
-void stars_load_background(int background_idx)
+// creates the suns and bitmaps of a background
+static void stars_add_background_entries(background_t *background)
 {
 	size_t j;
 
-	stars_clear_instances();
-	Cur_background = background_idx;
-
-	if (Cur_background >= 0)
 	{
-		background_t *background = &Backgrounds[Cur_background];
-
 		int failed_suns = 0;
 		for (j = 0; j < background->suns.size(); j++)
 		{
@@ -3144,6 +3143,15 @@ void stars_load_background(int background_idx)
 		if (failed_stars > 0)
 			Warning(LOCATION, "Failed to add %d starfield bitmaps to the mission!", failed_stars);
 	}
+}
+
+void stars_load_background(int background_idx)
+{
+	stars_clear_instances();
+	Cur_background = background_idx;
+
+	if (Cur_background >= 0)
+		stars_add_background_entries(&Backgrounds[Cur_background]);
 }
 
 // Goober5000
@@ -3310,6 +3318,59 @@ void stars_set_dynamic_environment(bool dynamic) {
 	Dynamic_environment = dynamic;
 	stars_invalidate_environment_map();
 }
+
+// --- checkpoints -----------------------------------------------------------------------------------------------------
+//
+// Sexps can add and remove suns and bitmaps and change the skybox during a mission, so checkpoints save what is shown,
+// by name, and set it up again the way a mission does.
+
+// the suns and bitmaps shown, then the skybox's model, texture, flags, alpha and orientation, and the dynamic environment
+using starfield_checkpoint_state = std::tuple<background_t, SCP_string, SCP_string, uint64_t, float, matrix, bool>;
+
+static void starfield_entries_from_instances(const SCP_vector<starfield_bitmap_instance>& instances, SCP_vector<starfield_list_entry>& entries)
+{
+	for (const auto& sbi : instances) {
+		if (sbi.star_bitmap_index < 0)
+			continue;
+		starfield_list_entry sle;
+		strcpy_s(sle.filename, Starfield_bitmaps[sbi.star_bitmap_index].filename);
+		sle.scale_x = sbi.scale_x;
+		sle.scale_y = sbi.scale_y;
+		sle.div_x = sbi.div_x;
+		sle.div_y = sbi.div_y;
+		sle.ang = sbi.ang;
+		sle.angular_size = sbi.angular_size;
+		entries.push_back(sle);
+	}
+}
+
+static starfield_checkpoint_state starfield_checkpoint_capture()
+{
+	background_t shown;
+	starfield_entries_from_instances(Suns, shown.suns);
+	starfield_entries_from_instances(Starfield_bitmap_instances, shown.bitmaps);
+	return {shown,
+		Nmodel_num >= 0 ? model_get(Nmodel_num)->filename : "",
+		Nmodel_bitmap >= 0 ? bm_get_filename(Nmodel_bitmap) : "",
+		Nmodel_flags,
+		Nmodel_alpha,
+		Nmodel_orient,
+		Dynamic_environment};
+}
+
+static void starfield_checkpoint_apply(const starfield_checkpoint_state& state)
+{
+	auto [shown, skybox_model, skybox_texture, skybox_flags, skybox_alpha, skybox_orient, dynamic_environment] = state;
+
+	stars_clear_instances();
+	stars_add_background_entries(&shown);
+
+	stars_set_background_model(skybox_model.c_str(), skybox_texture.c_str(), skybox_flags, skybox_alpha);
+	stars_set_background_orientation(&skybox_orient);
+	stars_set_dynamic_environment(dynamic_environment);
+}
+
+CHECKPOINT_STATE("Starfield", starfield_checkpoint_capture, starfield_checkpoint_apply, AfterGlobals);
 void stars_invalidate_environment_map() {
 	// This will cause a redraw in the next frame
 	Env_cubemap_drawn = false;

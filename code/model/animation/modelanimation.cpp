@@ -774,6 +774,53 @@ namespace animation {
 		}
 	}
 
+	SCP_vector<ModelAnimationSet::RunningAnimationState> ModelAnimationSet::getRunningAnimationStates(const polymodel_instance* pmi) {
+		SCP_vector<RunningAnimationState> states;
+
+		auto running = s_runningAnimations.find(pmi->id);
+		if (running == s_runningAnimations.end())
+			return states;
+
+		for (const auto& anim : running->second.animationList) {
+			if (anim->id == 0)
+				continue;
+			auto instance = anim->m_instances.find(pmi->id);
+			if (instance != anim->m_instances.end())
+				states.push_back({anim->id, instance->second});
+		}
+		return states;
+	}
+
+	void ModelAnimationSet::restoreRunningAnimationStates(polymodel_instance* pmi, const SCP_vector<RunningAnimationState>& states) {
+		for (const auto& saved : states) {
+			auto found = s_animationById.find(saved.id);
+			if (found == s_animationById.end())
+				continue;
+			const auto& anim = found->second;
+			auto& running = s_runningAnimations[pmi->id];
+
+			// calculate the animation for this model instance like starting it does, on top of the ones already running
+			ModelAnimationSubmodelBuffer applyBuffer;
+			anim->m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+			for (const auto& other : running.animationList)
+				other->play(0, pmi, applyBuffer, true);
+			ModelAnimationSubmodelBuffer currentAnimationDelta;
+			anim->m_set->initializeSubmodelBuffer(pmi, currentAnimationDelta);
+			anim->m_animation->recalculate(applyBuffer, currentAnimationDelta, pmi);
+
+			// then continue where it was
+			anim->m_instances[pmi->id] = saved.state;
+			running.parentSet = anim->m_set;
+			running.animationList.push_back(anim);
+		}
+	}
+
+	void ModelAnimationSet::captureBaseState(polymodel_instance* pmi) const {
+		// the base is taken from the current pose the first time it is needed
+		ModelAnimationSubmodelBuffer buffer;
+		initializeSubmodelBuffer(pmi, buffer);
+	}
+
 	void ModelAnimationSet::clearShipData(polymodel_instance* pmi) {
 		for (const auto& submodel : m_submodels) {
 			submodel->m_initialData.erase(pmi->id);
@@ -1142,7 +1189,7 @@ namespace animation {
 	}
 
 
-	void anim_set_initial_states(ship* shipp) {
+	void anim_set_initial_states(ship* shipp, bool start_spawn_animations) {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 		polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
@@ -1150,7 +1197,10 @@ namespace animation {
 		sip->animations.clearShipData(pmi);
 		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(ModelAnimationDirection::FWD, true, true);
 		sip->animations.initializeMoveables(pmi);
-		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
+		if (start_spawn_animations)
+			sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
+		else
+			sip->animations.captureBaseState(pmi);
 	}
 
 	const SCP_unordered_map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {

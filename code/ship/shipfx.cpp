@@ -7,7 +7,10 @@
  *
 */
 
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "ship/shipfx.h"
+#include "ship/split_ship.h"
 
 #include "globalincs/linklist.h"
 
@@ -585,7 +588,7 @@ void shipfx_warpin_frame( object *objp, float frametime )
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
-static void shipfx_actually_warpout(ship *shipp, object *objp)
+void shipfx_actually_warpout(ship *shipp, object *objp)
 {
 	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
 
@@ -1363,38 +1366,8 @@ DCF(bs_exp_fire_time_mult, "Sets multiplier time between fireball in big ship ex
 #define DEBRIS_DRAW			1
 #define DEBRIS_FREE			2
 
-typedef struct clip_ship {
-	object*			parent_obj;
-	float 			length_left;	// uncomsumed length
-	matrix			orient;
-	physics_info	phys_info;
-	vec3d			local_pivot;								// world center of mass position of half ship
-	vec3d			model_center_disp_to_orig_center;	// displacement from half ship center to original model center
-	vec3d			clip_plane_norm;							// clip plane normal (local [0,0,1] or [0,0,-1])
-	float				cur_clip_plane_pt;						// displacement from half ship clip plane to original model center
-	float				explosion_vel;
-	ubyte				draw_debris[MAX_DEBRIS_OBJECTS];
-	int				next_fireball;
-} clip_ship;
-
-typedef struct split_ship {
-	int used = 0; // 0 if not used, 1 if used
-	clip_ship		front_ship;
-	clip_ship		back_ship;
-	int explosion_flash_timestamp = 0;
-	int explosion_flash_started   = 0;
-	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sound_handles;
-
-	split_ship()
-	{
-		memset(&front_ship, 0, sizeof(front_ship));
-		memset(&back_ship, 0, sizeof(back_ship));
-		sound_handles.fill(sound_handle::invalid());
-	}
-} split_ship;
-
-
 static SCP_vector<split_ship> Split_ships;
+CHECKPOINT_GLOBAL(Split_ships);
 
 static int get_split_ship()
 {
@@ -2901,6 +2874,16 @@ bool WarpParams::operator!=(const WarpParams &other)
 }
 
 SCP_vector<WarpParams> Warp_params;
+
+WarpParams warp_params_ref::checkpoint_key() const
+{
+	return SCP_vector_inbounds(Warp_params, index) ? Warp_params[index] : WarpParams();
+}
+
+warp_params_ref warp_params_ref::from_checkpoint_key(const WarpParams& params)
+{
+	return find_or_add_warp_params(params);
+}
 
 int find_or_add_warp_params(const WarpParams &params)
 {

@@ -1,6 +1,8 @@
 
 #include <cctype>
 
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "object/waypoint.h"
@@ -9,6 +11,13 @@
 
 //********************GLOBALS********************
 SCP_vector<waypoint_list> Waypoint_lists;
+CHECKPOINT_GLOBAL(Waypoint_lists);
+
+// Sexps and scripts can add, move, rename and recolor waypoints.  The lists are saved as a global and refer to their
+// objects by slot; the objects themselves carry nothing else.
+static void waypoint_checkpoint_save(checkpoint::Writer&, const object&) {}
+static void waypoint_checkpoint_restore(checkpoint::Reader&, object&) {}
+CHECKPOINT_OBJECT_TYPE(OBJ_WAYPOINT, waypoint_checkpoint_save, waypoint_checkpoint_restore, nullptr, nullptr);
 
 // In order to restore ai_info to a plain-old-data struct, ai_info->wp_index
 // now uses size_t rather than iterator to index into the list.  If ai_info

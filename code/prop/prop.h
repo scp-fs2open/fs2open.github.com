@@ -30,7 +30,7 @@ typedef struct prop {
 	int objnum;
 	int prop_info_index;
 	int model_instance_num;
-	uint create_time;                     // time prop was created, set by gettime()
+	realtime_stamp create_time;           // time prop was created, set by gettime()
 	fix time_created;
 	float alpha_mult;
 	SCP_string fred_layer = "Default";

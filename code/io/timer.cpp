@@ -711,3 +711,42 @@ void timestamp_offset_mission_time(float offset)
 
 	Timestamp_microseconds_at_mission_start -= time;
 }
+
+// ======================================== checkpoints ========================================
+
+timestamp_checkpoint_state timestamp_get_checkpoint_state()
+{
+	timestamp_checkpoint_state state;
+	state.microseconds = timestamp_get_microseconds();
+	state.mission_start_microseconds = Timestamp_microseconds_at_mission_start;
+	state.time_compression = Timestamp_current_time_compression;
+	return state;
+}
+
+void timestamp_restore_checkpoint_state(const timestamp_checkpoint_state& state)
+{
+	// Like a time compression change, move the counter offset so that the raw timestamp is zero, and keep the time in
+	// the compression offset instead.  That works no matter whether the clock has to move forward or backward.
+	auto timestamp_raw = timestamp_get_raw(true);
+	Timestamp_offset_from_counter += timestamp_raw;
+	if (!Timestamp_is_paused)
+		Timestamp_paused_at_counter += timestamp_raw;
+
+	Timestamp_time_compression_microseconds_offset = state.microseconds;
+	Timestamp_current_time_compression = state.time_compression;
+	Timestamp_time_compression_multiplier = static_cast<float>(state.time_compression) / F1_0;
+	Timestamp_microseconds_at_mission_start = state.mission_start_microseconds;
+
+	// take a new snapshot so that the raw timestamp is correct for this frame
+	timestamp_get_raw(true);
+}
+
+int64_t realtime_stamp::checkpoint_key() const
+{
+	return static_cast<int64_t>(static_cast<uint>(timer_get_milliseconds())) - static_cast<int64_t>(value);
+}
+
+realtime_stamp realtime_stamp::from_checkpoint_key(int64_t age)
+{
+	return static_cast<uint>(static_cast<int64_t>(static_cast<uint>(timer_get_milliseconds())) - age);
+}

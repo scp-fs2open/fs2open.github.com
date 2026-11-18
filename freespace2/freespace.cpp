@@ -45,6 +45,9 @@
 #include "camera/photomode.h"
 #include "cfile/cfile.h"
 #include "cheats_table/cheats_table.h"
+#include "checkpoint/checkpoint.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
@@ -353,6 +356,7 @@ int Use_fullscreen_at_startup = 0;
 #endif
 int Show_area_effect = 0;
 object	*Last_view_target = nullptr;
+CHECKPOINT_GLOBAL(Last_view_target);
 
 int dogfight_blown = 0;
 
@@ -384,9 +388,12 @@ static int Show_player_pos = 0;		// debug console command to show player world p
 int Debug_octant = -1;
 
 fix Game_time_compression = F1_0;
+CHECKPOINT_GLOBAL(Game_time_compression);
 fix Desired_time_compression = Game_time_compression;
+CHECKPOINT_GLOBAL(Desired_time_compression);
 fix Time_compression_change_rate = 0;
 bool Time_compression_locked = false; //Can the user change time with shift- controls?
+CHECKPOINT_GLOBAL(Time_compression_locked);
 
 // auto-lang stuff
 int detect_lang();
@@ -402,6 +409,7 @@ extern int	Player_attacking_enabled;
 int Show_net_stats;
 
 bool Pre_player_entry = false;
+CHECKPOINT_GLOBAL(Pre_player_entry);
 
 int	Fred_running = 0;
 int	Qtfred_running = 0;
@@ -429,6 +437,54 @@ extern void ssm_process();
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
 UI_TIMESTAMP Player_died_popup_wait;
+
+// A checkpoint saved while the player is dying continues the death sequence when it is loaded.  The game states are
+// entered again once everything is restored, and the values their entry changes are put back afterwards.
+struct death_checkpoint_state {
+	int game_state = GS_STATE_GAME_PLAY;
+	int target_objnum = -1;
+	int player_flags = 0;
+	int viewing_from_self = 0;
+	int popup_wait = -1;	// milliseconds until the died popup, or -1 if not waiting
+	bool popup_active = false;
+};
+template <> struct checkpoint::is_raw<death_checkpoint_state> : std::true_type {};
+
+static death_checkpoint_state death_checkpoint_capture()
+{
+	extern int Show_viewing_from_self;
+
+	death_checkpoint_state state;
+	state.game_state = gameseq_get_state();
+	state.target_objnum = (Player_ai != nullptr) ? Player_ai->target_objnum : -1;
+	state.player_flags = Players[Player_num].flags;
+	state.viewing_from_self = Show_viewing_from_self;
+	state.popup_wait = Player_died_popup_wait.isValid() ? MAX(ui_timestamp_until(Player_died_popup_wait), 0) : -1;
+	state.popup_active = popupdead_is_active() != 0;
+	return state;
+}
+
+static void death_checkpoint_apply(const death_checkpoint_state& state)
+{
+	extern int Show_viewing_from_self;
+
+	if (state.game_state != GS_STATE_DEATH_DIED && state.game_state != GS_STATE_DEATH_BLEW_UP)
+		return;
+
+	gameseq_set_state(GS_STATE_DEATH_DIED);
+	if (state.game_state == GS_STATE_DEATH_BLEW_UP)
+		gameseq_set_state(GS_STATE_DEATH_BLEW_UP);
+
+	if (Player_ai != nullptr)
+		Player_ai->target_objnum = state.target_objnum;
+	Players[Player_num].flags = state.player_flags;
+	Show_viewing_from_self = state.viewing_from_self;
+	Player_died_popup_wait = (state.popup_wait >= 0) ? ui_timestamp(state.popup_wait) : UI_TIMESTAMP::invalid();
+	if (state.popup_active && !popupdead_is_active())
+		popupdead_start();
+}
+
+CHECKPOINT_STATE("Death_state", death_checkpoint_capture, death_checkpoint_apply, AfterRestore);
 
 UI_TIMESTAMP Multi_ping_timestamp;
 
@@ -604,6 +660,11 @@ bool Game_shudder_everywhere = false;
 TIMESTAMP Game_shudder_time = TIMESTAMP::invalid();
 int Game_shudder_total = 0;
 float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
+CHECKPOINT_GLOBAL(Game_shudder_perpetual);
+CHECKPOINT_GLOBAL(Game_shudder_everywhere);
+CHECKPOINT_GLOBAL(Game_shudder_time);
+CHECKPOINT_GLOBAL(Game_shudder_total);
+CHECKPOINT_GLOBAL(Game_shudder_intensity);
 
 // EAX stuff
 sound_env Game_sound_env;
@@ -1553,6 +1614,8 @@ bool game_start_mission()
 
 	game_busy( NOX("** starting mission_load() **") );
 	bool load_success = mission_load(Game_current_mission_filename);
+	if (load_success)
+		checkpoint::record_mission_structure();
 
 	// free up memory from parsing the mission
 	stop_parse();
@@ -3263,6 +3326,7 @@ void apply_view_shake(matrix *eye_orient)
 
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
+CHECKPOINT_GLOBAL(Dead_player_last_vel);
 
 int Scripting_didnt_draw_hud = 1;
 
@@ -3934,6 +3998,9 @@ void game_simulation_frame()
 	// Kick off externally injected operations after the simulation step has finished
 	executor::OnSimulationExecutor->process();
 	scripting::hooks::OnSimulation->run();
+
+	// checkpoints are saved and loaded between frames, never in the middle of one
+	checkpoint::process_requests();
 }
 
 // Maybe render and process the dead-popup
@@ -4600,6 +4667,9 @@ void game_set_frametime(int state)
 		Frametime = MAX_FRAMETIME;
 	}
 
+	// when verifying checkpoints, frames must be reproducible
+	checkpoint::override_frametime(Frametime);
+
 	flRealframetime = f2fl(Frametime);
 
 	//Handle changes in time compression
@@ -5047,6 +5117,9 @@ void game_process_event( int current_state, int event )
 			scripting::hooks::OnGameplayStart->run(scripting::hook_param_list(
 				scripting::hook_param("Player", 'o', Player_obj, Player_obj != nullptr)
 			));
+
+			// a checkpoint being loaded is restored once the reloaded mission has entered gameplay
+			checkpoint::apply_pending_restore();
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
@@ -6155,10 +6228,14 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// coming from the gameplay state or the main menu, we might need to load the mission
-			if ( (Game_mode & GM_NORMAL) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) || (old_state == GS_STATE_DEATH_BLEW_UP)) ) {
-				if ( !game_start_mission() )		// this should put us into a new state.
-					// Failed!!!
+			// (a checkpoint can also be loaded while the player is dying)
+			if ( (Game_mode & GM_NORMAL) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) || (old_state == GS_STATE_DEATH_BLEW_UP) || (old_state == GS_STATE_DEATH_DIED && checkpoint::is_loading())) ) {
+				if ( !game_start_mission() ) {		// this should put us into a new state.
+					// Failed!!!  A checkpoint load has already left the previous mission, so it cannot go back.
+					if (checkpoint::is_loading())
+						Error(LOCATION, "Reloading mission '%s' for a checkpoint failed; the game cannot continue.", Game_current_mission_filename);
 					break;
+				}
 			}
 
 			// if we are coming from the briefing, ship select, weapons loadout, or main menu (in the
@@ -6180,7 +6257,7 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// special code that restores player ship selection and weapons loadout when doing a quick start
-			if ( !(Game_mode & GM_MULTIPLAYER) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_DEATH_BLEW_UP)  || (old_state == GS_STATE_GAME_PLAY)) ) {
+			if ( !(Game_mode & GM_MULTIPLAYER) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_DEATH_BLEW_UP) || (old_state == GS_STATE_DEATH_DIED && checkpoint::is_loading()) || (old_state == GS_STATE_GAME_PLAY)) ) {
 				if ( !stricmp(Player_loadout.filename, Game_current_mission_filename) ) {
 					wss_direct_restore_loadout();
 				}

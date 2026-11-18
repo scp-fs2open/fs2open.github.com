@@ -365,6 +365,8 @@ extern bool Output_scripting_meta;
 extern bool Output_scripting_json;
 extern bool Output_scripting_luastub;
 extern bool Scripting_game_init_run;
+// While set, no hooks run, e.g. while a checkpoint reloads and restores the mission
+extern bool Scripting_hooks_suppressed;
 
 //*************************Conditional scripting*************************
 

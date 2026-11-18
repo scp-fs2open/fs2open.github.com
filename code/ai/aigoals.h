@@ -116,7 +116,15 @@ enum class ai_achievability { ACHIEVABLE, NOT_ACHIEVABLE, NOT_KNOWN, SATISFIED }
 struct ai_lua_parameters {
 	object_ship_wing_point_team target;
 	luacpp::LuaValueList arguments;
+
+	// For orders given by a Lua AI sexp, the operator and its argument list as sexp text, from which checkpoints
+	// rebuild the arguments.
+	int sexp_op = -1;
+	SCP_string sexp_arguments;
 };
+
+// Rebuilds the Lua arguments of an order from its sexp text, evaluating the arguments again.
+void ai_lua_parameters_rebuild(ai_lua_parameters& parameters);
 
 // structure for AI goals
 typedef struct ai_goal {

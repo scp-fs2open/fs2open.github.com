@@ -9,6 +9,8 @@
 
 #include "ai/aigoals.h"
 #include "ai/ailua.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hudmessage.h"
@@ -195,6 +197,7 @@ const char *comm_order_get_text(int item)
 }
 
 SCP_vector<squadmsg_history> Squadmsg_history; 
+CHECKPOINT_GLOBAL(Squadmsg_history);
 
 // forward declarations
 void hud_add_issued_order(const char *name, int order);

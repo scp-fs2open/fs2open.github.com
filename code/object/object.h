@@ -268,6 +268,9 @@ void obj_shutdown();
 //You can pass null for orient and/or pos if you don't care.
 int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient, const vec3d *pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential = true);
 
+// Claims a specific free object slot, for restoring checkpoints.  Returns false if the slot is in use.
+bool obj_allocate_at(int objnum);
+
 void obj_render(object* obj);
 
 void obj_queue_render(object* obj, model_draw_list* scene);

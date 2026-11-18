@@ -14,6 +14,9 @@
 
 #include "ai/aibig.h"
 #include "asteroid/asteroid.h"
+#include "checkpoint/model_instance.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "debugconsole/console.h"
@@ -102,6 +105,9 @@ static TIMESTAMP Weapon_flyby_sound_timer;
 
 weapon Weapons[MAX_WEAPONS];
 SCP_vector<weapon_info> Weapon_info;
+// sexps change the damage types of weapon classes
+CHECKPOINT_TABLE_FIELD("Weapon damage types", Weapon_info, damage_type_idx);
+CHECKPOINT_TABLE_FIELD("Weapon shockwave damage types", Weapon_info, shockwave.damage_type_idx);
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list
@@ -6780,7 +6786,8 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 
 		//its just entered subspace subspace. don't collide or render
-		if ((wp->lssm_stage==2) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct))
+		// If there is no warp hole (e.g. after loading a checkpoint) the missile enters subspace right away
+		if ((wp->lssm_stage==2) && (wp->lssm_warp_idx < 0 || fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <= wp->lssm_warp_pct))
 		{
             auto flags = obj->flags;
             flags.remove(Object::Object_Flags::Renders);
@@ -7113,6 +7120,113 @@ std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
+/**
+ * Acquires the runtime resources of a weapon whose fields are set: its model instance, missile list entry, trail,
+ * ambient sound and particle spewers.  Used when a weapon is created and when a checkpoint restores one.
+ */
+// Loads the model of a weapon class that is drawn as a model, if it isn't loaded yet
+static bool weapon_load_class_model(weapon_info* wip)
+{
+	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
+		if (!VALID_FNAME(wip->pofbitmap_name)) {
+			Error(LOCATION, "Cannot create weapon %s; pof file is not valid", wip->name);
+			return false;
+		}
+
+		wip->model_num = model_load(wip->pofbitmap_name);
+
+		if (wip->model_num < 0) {
+			Error(LOCATION, "Cannot create weapon %s; model file %s could not be loaded", wip->name, wip->pofbitmap_name);
+			return false;
+		}
+	}
+	return true;
+}
+
+static void weapon_acquire_resources(int weapon_num)
+{
+	weapon *wp = &Weapons[weapon_num];
+	object *objp = &Objects[wp->objnum];
+	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
+	// Always create an instance in case we need them
+	wp->model_instance_num = -1;
+	if (wip->render_type == WRT_POF && (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty() || !wip->animations.isEmpty())) {
+		wp->model_instance_num = model_create_instance(wp->objnum, wip->model_num);
+	}
+
+	wp->missile_list_index = -1;
+	// If this is a missile, then add it to the Missile_obj_list
+	if ( wip->subtype == WP_MISSILE ) {
+		wp->missile_list_index = missile_obj_list_add(wp->objnum);
+	}
+
+	// local SSMs lose their trail while they are in subspace
+	if (wip->wi_flags[Weapon::Info_Flags::Trail] && wp->lssm_stage != 3 /*&& !(wip->wi_flags[Weapon::Info_Flags::Corkscrew]) */) {
+		wp->trail_ptr = trail_create(&wip->tr_info, objp->phys_info.flags & PF_CONST_VEL);
+
+		if ( wp->trail_ptr != NULL )	{
+			// Add two segments.  One to stay at launch pos, one to move.
+			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
+			if (wip->render_type == WRT_LASER) {
+				vec3d center_pos;
+				vm_vec_scale_add(&center_pos, &objp->pos, &objp->orient.vec.fvec, (wip->laser_length / 2));
+				trail_add_segment(wp->trail_ptr, &center_pos, &objp->orient, &objp->phys_info.vel);
+			} else {
+				trail_add_segment(wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
+			}
+		}
+	}
+	else
+	{
+		//If a weapon has no trails, make sure we don't try to do anything with them.
+		wp->trail_ptr = NULL;
+	}
+
+	if (wip->ambient_snd.isValid()) {
+		obj_snd_assign(wp->objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
+	}
+
+	// if this is a particle spewing weapon, setup some stuff
+	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+		for (const auto& effect : wip->particle_spewers) {
+			if(!effect.isValid())
+				continue;
+
+			auto source = particle::ParticleManager::get()->createSource(effect);
+			auto host = std::make_unique<EffectHostObject>(objp, vmd_zero_vector);
+			source->setHost(std::move(host));
+			source->finishCreation();
+		}
+	}
+}
+
+static void weapon_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	checkpoint::save(w, Weapons[objp.instance]);
+	checkpoint::save_model_instance(w, Weapons[objp.instance].model_instance_num);
+}
+
+static void weapon_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	weapon *wp = &Weapons[objp.instance];
+	*wp = weapon();
+	checkpoint::load(r, *wp);
+
+	// warp holes are effects that aren't restored; local SSMs finish their warp stage without them
+	wp->lssm_warp_idx = -1;
+
+	weapon_load_class_model(&Weapon_info[wp->weapon_info_index]);
+	if (!used_weapons[wp->weapon_info_index])
+		weapon_load_bitmaps(wp->weapon_info_index);
+
+	weapon_acquire_resources(objp.instance);
+	checkpoint::load_model_instance(r, wp->model_instance_num);
+	Num_weapons++;
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_WEAPON, weapon_checkpoint_save, weapon_checkpoint_restore, nullptr, nullptr, MAX_WEAPONS);
+
 int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, ship_weapon *src_swp, int src_pbank, int src_sbank, const WeaponLaunchCurveData& launch_curve_data )
 {
 	int			n, objnum;
@@ -7181,19 +7295,8 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	Assertion(n != MAX_WEAPONS, "Somehow tried to create weapons despite being at max weapons");
 
 	// make sure we are loaded and useable
-	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
-		if (!VALID_FNAME(wip->pofbitmap_name)) {
-			Error(LOCATION, "Cannot create weapon %s; pof file is not valid", wip->name);
-			return -1;
-		}
-
-		wip->model_num = model_load(wip->pofbitmap_name);
-
-		if (wip->model_num < 0) {
-			Error(LOCATION, "Cannot create weapon %s; model file %s could not be loaded", wip->name, wip->pofbitmap_name);
-			return -1;
-		}
-	}
+	if (!weapon_load_class_model(wip))
+		return -1;
 
 	// make sure that our textures are loaded as well
 	if ( !used_weapons[weapon_type] )
@@ -7390,11 +7493,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		Assert(wip->model_num >= 0);
 
 		objp->radius = model_get_radius(wip->model_num);
-
-		// Always create an instance in case we need them
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty() || !wip->animations.isEmpty()) {
-			wp->model_instance_num = model_create_instance(objnum, wip->model_num);
-		}
 	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
 	}
@@ -7487,32 +7585,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		obj_set_flags(&Objects[wp->objnum], Objects[wp->objnum].flags - Object::Object_Flags::Renders);
 	}
 
-	wp->missile_list_index = -1;
-	// If this is a missile, then add it to the Missile_obj_list
-	if ( wip->subtype == WP_MISSILE ) {
-		wp->missile_list_index = missile_obj_list_add(objnum);
-	}
-
-	if (wip->wi_flags[Weapon::Info_Flags::Trail] /*&& !(wip->wi_flags[Weapon::Info_Flags::Corkscrew]) */) {
-		wp->trail_ptr = trail_create(&wip->tr_info, objp->phys_info.flags & PF_CONST_VEL);
-
-		if ( wp->trail_ptr != NULL )	{
-			// Add two segments.  One to stay at launch pos, one to move.
-			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
-			if (wip->render_type == WRT_LASER) {
-				vec3d center_pos;
-				vm_vec_scale_add(&center_pos, &objp->pos, &objp->orient.vec.fvec, (wip->laser_length / 2));
-				trail_add_segment(wp->trail_ptr, &center_pos, &objp->orient, &objp->phys_info.vel);
-			} else {
-				trail_add_segment(wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
-			}
-		}
-	}
-	else
-	{
-		//If a weapon has no trails, make sure we don't try to do anything with them.
-		wp->trail_ptr = NULL;
-	}
+	weapon_acquire_resources(n);
 
 	// Ensure weapon flyby sound doesn't get played for player lasers
 	if ( parent_objp != NULL && parent_objp == Player_obj ) {
@@ -7591,23 +7664,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 			&vmd_zero_vector,
 			&vmd_identity_matrix,
 			model_get(wip->model_num)->detail[0]);
-	}
-
-	if (wip->ambient_snd.isValid()) {
-		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
-	}
-
-	// if this is a particle spewing weapon, setup some stuff
-	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
-		for (const auto& effect : wip->particle_spewers) {
-			if(!effect.isValid())
-				continue;
-
-			auto source = particle::ParticleManager::get()->createSource(effect);
-			auto host = std::make_unique<EffectHostObject>(objp, vmd_zero_vector);
-			source->setHost(std::move(host));
-			source->finishCreation();
-		}
 	}
 
 	//Only try and play animations on POF Weapons

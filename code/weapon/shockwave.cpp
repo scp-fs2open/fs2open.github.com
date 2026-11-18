@@ -7,6 +7,8 @@
  *
 */
 
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "weapon/shockwave.h"
 #include "asteroid/asteroid.h"
 #include "gamesnd/gamesnd.h"
@@ -35,8 +37,38 @@ static int Default_shockwave_loaded = 0;
 
 SCP_vector<shockwave_info> Shockwave_info;
 
+std::pair<SCP_string, bool> shockwave_info_ref::checkpoint_key() const
+{
+	if (!SCP_vector_inbounds(Shockwave_info, index))
+		return {SCP_string(), false};
+	return {Shockwave_info[index].filename, Shockwave_info[index].model_id >= 0};
+}
+
+shockwave_info_ref shockwave_info_ref::from_checkpoint_key(const std::pair<SCP_string, bool>& key)
+{
+	return key.first.empty() ? -1 : shockwave_load(key.first.c_str(), key.second);
+}
+
 shockwave Shockwaves[MAX_SHOCKWAVES];
 shockwave Shockwave_list;
+
+static void shockwave_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	checkpoint::save(w, Shockwaves[objp.instance]);
+}
+
+static void shockwave_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	shockwave *sw = &Shockwaves[objp.instance];
+	*sw = shockwave();
+	checkpoint::load(r, *sw);
+
+	// the model comes from the shockwave type
+	sw->model_id = (sw->shockwave_info_index >= 0) ? Shockwave_info[sw->shockwave_info_index].model_id : -1;
+	list_append(&Shockwave_list, sw);
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_SHOCKWAVE, shockwave_checkpoint_save, shockwave_checkpoint_restore, nullptr, nullptr, MAX_SHOCKWAVES);
 int Shockwave_inited = 0;
 
 // -----------------------------------------------------------

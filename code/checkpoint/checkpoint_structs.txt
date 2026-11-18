@@ -1,0 +1,102 @@
+# Structs whose fields the checkpoint codec visits. One "<struct> <header>" pair per line, headers relative to code/.
+# Enums and flag lists that saved data holds are listed as "enum <name> <header>"; they are saved by enumerator name.
+# tools/fieldscan turns this into checkpoint_fields.inc; see checkpoint/codec.h.  A saved struct or enum missing from
+# this list is a compile error that names it.
+
+# objects
+object                  object/object.h
+physics_info            physics/physics.h
+ship                    ship/ship.h
+ship_subsys             ship/ship.h
+ship_weapon             ship/ship.h
+lock_info               ship/ship.h
+external_weapon_state   ship/ship.h
+ai_info                 ai/ai.h
+ai_goal                 ai/aigoals.h
+weapon                  weapon/weapon.h
+swarm_info              weapon/swarm.h
+homing_cache_info       weapon/weapon.h
+beam                    weapon/beam.h
+shockwave               weapon/shockwave.h
+debris                  debris/debris.h
+asteroid                asteroid/asteroid.h
+prop                    prop/prop.h
+submodel_instance       model/model.h
+trail_info              weapon/trails.h
+
+# mission state
+wing                    ship/ship.h
+ship_registry_entry     ship/ship.h
+exited_ship             ship/ship.h
+ship_counts             ship/ship.h
+pnode                   ai/ai.h
+asteroid_field          asteroid/asteroid.h
+mission_event           mission/missiongoals.h
+mission_goal            mission/missiongoals.h
+sexp_node               parse/sexp.h
+sexp_variable           parse/sexp.h
+sexp_container          parse/sexp_container.h
+p_object                mission/missionparse.h
+log_entry               mission/missionlog.h
+reinforcements          ship/ship.h
+squadmsg_history        hud/hudsquadmsg.h
+turret_swarm_info       weapon/swarm.h
+NavPoint                autopilot/autopilot.h
+ssm_strike              hud/hudartillery.h
+ssm_firing_info         hud/hudartillery.h
+split_ship              ship/split_ship.h
+clip_ship               ship/split_ship.h
+mission                 mission/missionparse.h
+mission_cutscene        mission/missionparse.h
+custom_string           mission/missionparse.h
+support_ship_info       mission/missionparse.h
+iff_info                iff_defs/iff_defs.h
+background_t            starfield/starfield.h
+starfield_list_entry    starfield/starfield.h
+waypoint                object/waypoint.h
+waypoint_list           object/waypoint.h
+CJumpNode               jumpnode/jumpnode.h
+WarpParams              ship/shipfx.h
+
+# player
+player                  playerman/player.h
+scoring_struct          stats/scoring.h
+htarget_list            hud/hudtarget.h
+hud_gauge_mission_state hud/hud.h
+
+# Enums and flag lists are saved by enumerator name
+enum ai_goal_mode                   ai/aigoals.h
+enum ai_goal_type                   ai/aigoals.h
+enum AI::AI_Flags                   ai/ai_flags.h
+enum AI::Goal_Flags                 ai/ai_flags.h
+enum AI::Maneuver_Override_Flags    ai/ai_flags.h
+enum AI::Profile_Flags              ai/ai_flags.h
+enum ArrivalLocation                mission/missionparse.h
+enum DepartureLocation              mission/missionparse.h
+enum BeamType                       weapon/beam.h
+enum WeaponState                    weapon/beam.h
+enum ContainerType                  parse/sexp_container.h
+enum Debris_Flags                   debris/debris.h
+enum debris_genre_t                 asteroid/asteroid.h
+enum field_type_t                   asteroid/asteroid.h
+enum EModelAnimationPosition      model/animation/modelanimation.h
+enum IFF_hotkey_team                iff_defs/iff_defs.h
+enum LogType                        mission/missionlog.h
+enum Mission::Mission_Flags         mission/mission_flags.h
+enum Mission::Parse_Object_Flags    mission/mission_flags.h
+enum Object::Object_Flags           object/object_flags.h
+enum Object::Raw_Pof_Flags          object/object_flags.h
+enum Prop::Prop_Flags               prop/prop_flags.h
+enum RadarVisibility                radar/radarsetup.h
+enum Ship::Awacs_Warning_Flags      ship/ship_flags.h
+enum Ship::Exit_Flags               ship/ship_flags.h
+enum Ship::Ship_Flags               ship/ship_flags.h
+enum ShipStatus                     ship/ship.h
+enum Ship::Subsys_Sound_Flags       ship/ship_flags.h
+enum Ship::Subsystem_Flags          ship/ship_flags.h
+enum Ship::Weapon_Flags             ship/ship_flags.h
+enum Ship::Wing_Flags               ship/ship_flags.h
+enum Starfield::Background_Flags    starfield/starfield_flags.h
+enum SUPERNOVA_STAGE                starfield/supernova.h
+enum WarpDirection                  ship/shipfx.h
+enum Weapon::Weapon_Flags           weapon/weapon_flags.h

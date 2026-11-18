@@ -13,6 +13,8 @@
 #include <algorithm>
 
 #include "asteroid/asteroid.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -75,6 +77,25 @@ std::array<beam, MAX_BEAMS> Beams;				// all beams
 beam Beam_free_list;					// free beams
 beam Beam_used_list;					// used beams
 int Beam_count = 0;					// how many beams are in use
+
+static void beam_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	checkpoint::save(w, Beams[objp.instance]);
+}
+
+static void beam_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	beam *b = &Beams[objp.instance];
+
+	// the slot moves from the free list to the used list; its looping sound starts again when the beam is next moved
+	list_remove(&Beam_free_list, b);
+	*b = beam();
+	checkpoint::load(r, *b);
+	list_append(&Beam_used_list, b);
+	Beam_count++;
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_BEAM, beam_checkpoint_save, beam_checkpoint_restore, nullptr, nullptr, MAX_BEAMS);
 
 // debug stuff - keep track of how many collision tests we perform a second and how many we toss a second
 #define BEAM_TEST_STAMP_TIME		4000	// every 4 seconds

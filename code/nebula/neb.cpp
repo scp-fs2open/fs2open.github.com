@@ -10,6 +10,7 @@
 
 
 #include "bmpman/bmpman.h"
+#include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
@@ -36,8 +37,10 @@
 //
 
 bool Nebula_sexp_used = false;
+CHECKPOINT_GLOBAL(Nebula_sexp_used);
 
 ubyte Neb2_fog_color[3] = { 0,0,0 };
+CHECKPOINT_GLOBAL(Neb2_fog_color);
 
 // #define NEB2_THUMBNAIL
 
@@ -75,6 +78,7 @@ SCP_vector<SCP_string> Neb2_bitmap_filenames;
 
 // texture to use for this level
 char Neb2_texture_name[MAX_FILENAME_LEN] = "";
+CHECKPOINT_GLOBAL(Neb2_texture_name);
 
 float max_rotation = 3.75f;
 float neb2_flash_fade = 0.3f;
@@ -91,6 +95,15 @@ int neb_tossed_count = 0;		// nebs tossed because of max render count
 
 // the AWACS suppression level for the nebula
 float Neb2_awacs = -1.0f;
+CHECKPOINT_GLOBAL(Neb2_awacs);
+
+// sexps can change the nebula pattern and fog during a mission
+static void neb2_checkpoint_apply_settings()
+{
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+		neb2_post_level_init(The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]);
+}
+CHECKPOINT_AFTER_GLOBALS("Nebula", neb2_checkpoint_apply_settings);
 
 // Deprecated!  Only used for compatibility
 bool  Neb2_fog_save_legacy_values = false;

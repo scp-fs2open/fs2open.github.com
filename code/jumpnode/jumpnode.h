@@ -14,6 +14,7 @@
 
 #include <cstdlib>
 
+#include "checkpoint/access.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
@@ -50,6 +51,9 @@ private:
 	// jumpnode_delete() detaches the node from its object by resetting m_objnum
 	friend void jumpnode_delete(object *objp);
 
+	template <typename>
+	friend struct checkpoint::Fields;
+
 public:
 	//Constructors
 	CJumpNode();
@@ -78,6 +82,8 @@ public:
 	//Setting
 	void SetAlphaColor(int r, int g, int b, int alpha);
 	void SetModel(const char *model_name, bool show_polys = false);
+	// loads a model for the node and creates its model instance, without changing the node's flags
+	bool AcquireModel(const char *model_name);
 	void SetName(const char *new_name);
 	void SetDisplayName(const char* new_name);
 	void SetVisibility(bool enabled);

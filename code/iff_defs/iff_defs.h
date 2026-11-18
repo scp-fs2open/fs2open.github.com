@@ -11,6 +11,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/session_index.h"
 #include "graphics/2d.h"
 #include "mission/mission_flags.h"
 
@@ -68,6 +69,14 @@ extern int radar_iff_color[5][2][4];
 // color stuff
 extern int iff_get_alpha_value(bool is_bright);
 extern int iff_init_color(int r, int g, int b);
+
+// An index into the IFF colors, which grow as tables and sexps add colors
+struct iff_color_ref : session_index {
+	using session_index::session_index;
+
+	std::tuple<int, int, int> checkpoint_key() const;
+	static iff_color_ref from_checkpoint_key(const std::tuple<int, int, int>& rgb);
+};
 
 // load the iff table
 extern void iff_init();

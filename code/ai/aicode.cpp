@@ -25,6 +25,8 @@
 #include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
+#include "checkpoint/registry.h"
+#include "checkpoint/serialize.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -210,6 +212,7 @@ int	Num_ai_classes;
 int	AI_FrameCount = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
 int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
+CHECKPOINT_GLOBAL(Mission_all_attack);
 
 //	Constant for flag,				Name of flag
 ai_flag_name Ai_flag_names[] = {
@@ -284,7 +287,22 @@ const char *Skill_level_names(int level, int translate)
 #define	DELAY_TARGET_TIME	(12*1000)		//	time in milliseconds until a ship can target a new enemy after an order.
 
 pnode		Path_points[MAX_PATH_POINTS];
+CHECKPOINT_GLOBAL(Path_points);
 pnode		*Ppfp;			//	Free pointer in path points.
+
+static void path_points_free_pointer_checkpoint_save(checkpoint::Writer& w)
+{
+	w.value(static_cast<int>(Ppfp - Path_points));
+}
+
+static void path_points_free_pointer_checkpoint_load(checkpoint::Reader& r)
+{
+	int index = 0;
+	r.value(index);
+	Ppfp = &Path_points[MAX(0, MIN(index, MAX_PATH_POINTS))];
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS("Ppfp", path_points_free_pointer_checkpoint_save, path_points_free_pointer_checkpoint_load);
 
 float	AI_frametime;
 
@@ -308,6 +326,12 @@ typedef struct {
 
 static SCP_vector<huge_fire_info> Ai_huge_fire_info;
 
+// set by good-primary-time and good-secondary-time
+template <> struct checkpoint::is_raw<primary_fire_info> : std::true_type {};
+template <> struct checkpoint::is_raw<huge_fire_info> : std::true_type {};
+CHECKPOINT_GLOBAL(Preferred_primary_info);
+CHECKPOINT_GLOBAL(Ai_huge_fire_info);
+
 int Ai_last_arrive_path;	// index of ship_bay path used by last arrival from a fighter bay
 
 // forward declarations
@@ -321,6 +345,7 @@ void ai_cleanup_dock_mode_objective(object *objp);
 // The object that is declared to be the leader of the group formation for
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;
+CHECKPOINT_GLOBAL(Autopilot_flight_leader);
 
 static inline float ai_guard_threshold(const object* guarded_objp, float threshold, const ship* guarder_ship)
 {

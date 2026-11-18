@@ -1,3 +1,4 @@
+#include "checkpoint/access.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
@@ -29,6 +30,9 @@ class waypoint
 		int m_objnum;
 
 	friend void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index);
+
+	template <typename>
+	friend struct checkpoint::Fields;
 };
 
 class waypoint_list
@@ -64,6 +68,9 @@ class waypoint_list
 		bool m_has_custom_color;
 		int m_color_r, m_color_g, m_color_b;
 		SCP_string m_fred_layer = "Default";	// FRED view layer assignment
+
+	template <typename>
+	friend struct checkpoint::Fields;
 };
 
 //********************GLOBALS********************

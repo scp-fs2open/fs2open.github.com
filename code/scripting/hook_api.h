@@ -152,7 +152,7 @@ class HookImpl : public HookBase {
 	template <typename... Args>
 	int run(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run)
+		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
 			return 0;
 
 		SCP_vector<SCP_string> paramNames;
@@ -186,7 +186,7 @@ class HookImpl<void> : public HookBase {
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run)
+		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
 			return 0;
 
 		SCP_vector<SCP_string> paramNames;
@@ -226,7 +226,7 @@ class Hook : public HookImpl<condition_t> {
 	}
 
 	bool isActive() const override {
-		return Script_system.IsActiveAction(this->_hookId);
+		return !Scripting_hooks_suppressed && Script_system.IsActiveAction(this->_hookId);
 	}
 
 	bool isOverridable() const override {
@@ -245,7 +245,7 @@ class OverridableHookImpl : public Hook<condition_t> {
 	template <typename... Args>
 	bool isOverride(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run)
+		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
 			return false;
 
 		SCP_vector<SCP_string> paramNames;
@@ -279,7 +279,7 @@ protected:
 	template <typename... Args>
 	bool isOverride(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run)
+		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
 			return false;
 
 		SCP_vector<SCP_string> paramNames;

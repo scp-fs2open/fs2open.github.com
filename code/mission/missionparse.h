@@ -18,6 +18,7 @@
 #include "ai/ai_profiles.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
+#include "iff_defs/iff_defs.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
@@ -28,6 +29,7 @@
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
 #include "ship/anchor_t.h"
+#include "ship/warp_params_ref.h"
 #include "stats/scoring.h"
 
 //WMC - This should be here
@@ -462,8 +464,8 @@ public:
 	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;
 
-	int warpin_params_index = -1;
-	int warpout_params_index = -1;
+	warp_params_ref warpin_params_index;
+	warp_params_ref warpout_params_index;
 
 	int	wingnum = -1;							// set to -1 if not in a wing -- Wing array index otherwise
 	int pos_in_wing = -1;						// Goober5000 - needed for FRED with the new way things work
@@ -516,7 +518,7 @@ public:
 	SCP_vector<texture_replace> replacement_textures;
 
 	SCP_vector<alt_class> alt_classes;	
-	SCP_map<std::pair<int, int>, int> alt_iff_color;
+	SCP_map<std::pair<int, int>, iff_color_ref> alt_iff_color;
 
 	~p_object();
 

@@ -10,6 +10,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/linklist.h"
@@ -505,6 +506,7 @@ int Non_critical_key_set[] = {
 };
 
 int Ignored_keys[CCFG_MAX];
+CHECKPOINT_GLOBAL(Ignored_keys);
 
 // set sizes of the key sets automatically
 int Normal_key_set_size = sizeof(Normal_key_set) / sizeof(int);

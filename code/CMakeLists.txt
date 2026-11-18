@@ -126,6 +126,8 @@ include(shaders.cmake)
 
 target_embed_files(code FILES ${default_files_files} RELATIVE_TO "def_files")
 
+target_checkpoint_fields(code LIST checkpoint/checkpoint_structs.txt OUTPUT checkpoint_fields.inc)
+
 handle_embedded_files(code)
 
 set_precompiled_header(code "${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h")
