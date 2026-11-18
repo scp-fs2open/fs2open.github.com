@@ -74,6 +74,7 @@ struct reinforcements;
 #define NUM_MBOX_FRAMES		3
 
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
+#define MAX_MENU_ITEM_TEXT_SIZE 256
 
 enum SmallCraftFlavor : int {
 	ALL_FIGHTERS_AND_BOMBERS,

@@ -2997,7 +2997,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 	for (int i = 0; i < nitems; i++ ) {
 		int item_num;
 		bool isSelectedItem = (i == Selected_menu_item);
-		char text[256];
+		char text[MAX_MENU_ITEM_TEXT_SIZE];
 
 		// in config mode we are previewing the first page of the Comms Menu, and MsgItems is empty
 		int item_instance;
