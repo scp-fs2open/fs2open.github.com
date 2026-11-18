@@ -1089,7 +1089,9 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if (!is_smallcraft_flavor(&Ship_info[Wings[i].special_ship_ship_info_index], flavor)) {
+		// the narrower flavors checked every member above, and this cached leader class can be stale
+		if ((flavor == SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS)
+			&& !is_smallcraft_flavor(&Ship_info[Wings[i].special_ship_ship_info_index], flavor)) {
 			continue;
 		}
 
