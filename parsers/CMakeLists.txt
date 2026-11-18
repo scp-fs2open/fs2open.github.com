@@ -50,3 +50,6 @@ add_parser(action_expression/ActionExpression.g4)
 target_include_directories(parsers PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 suppress_warnings(parsers)
+
+# Prevent warnings on files with no symbols on Mac
+suppress_no_symbol_warnings(parsers)

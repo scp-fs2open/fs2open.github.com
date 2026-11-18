@@ -1,10 +1,22 @@
 #include "VulkanShader.h"
 #include "VulkanShaderCompiler.h"
+#include "VulkanRenderer.h"
+#include "gr_vulkan.h"
 
 namespace graphics::vulkan {
 
 // Global shader manager pointer
 static VulkanShaderManager* g_shaderManager = nullptr;
+
+static uint32_t vertex_input_mask(const ShaderTypeInfo* typeInfo)
+{
+	uint32_t mask = shader_vertex_input_mask(*typeInfo);
+	// Batched effects also read their motion, which the attribute lists shared with OpenGL can't hold
+	if (typeInfo->type_id == SDR_TYPE_BATCHED_BITMAP || typeInfo->type_id == SDR_TYPE_EFFECT_PARTICLE) {
+		mask |= (1u << VATTRIB_EFFECT_MOTION);
+	}
+	return mask;
+}
 
 VulkanShaderManager* getShaderManager()
 {
@@ -29,12 +41,13 @@ void vulkan_recompile_all_shaders(const std::function<void(size_t, size_t)>& pro
 {
 	auto* shaderManager = getShaderManager();
 	shaderManager->recompileAllShaders(progressCallback);
+	getRendererInstance()->requestPipelineRebuild();
 }
 
 VulkanShaderManager::VulkanShaderManager() = default;
 VulkanShaderManager::~VulkanShaderManager() = default;
 
-bool VulkanShaderManager::init(vk::Device device)
+bool VulkanShaderManager::init(vk::Device device, bool hwClipDistance)
 {
 	if (m_initialized) {
 		return true;
@@ -44,7 +57,7 @@ bool VulkanShaderManager::init(vk::Device device)
 
 	// Initialize runtime shader compiler
 	m_compiler = std::make_unique<VulkanShaderCompiler>();
-	if (!m_compiler->init()) {
+	if (!m_compiler->init(hwClipDistance)) {
 		nprintf(("vulkan", "VulkanShaderManager: Failed to initialize shader compiler!\n"));
 		return false;
 	}
@@ -92,6 +105,22 @@ int VulkanShaderManager::maybeCreateShader(shader_type type, unsigned int flags)
 	return loadShader(type, flags);
 }
 
+void VulkanShaderManager::forgetShaderType(shader_type type)
+{
+	for (auto it = m_shaderMap.begin(); it != m_shaderMap.end();) {
+		if (it->first.first != static_cast<int>(type)) {
+			++it;
+			continue;
+		}
+		VulkanShaderModule& shader = m_shaders[it->second];
+		shader.vertexModule.reset();
+		shader.fragmentModule.reset();
+		shader.valid = false;
+		m_freeSlots.push_back(it->second);
+		it = m_shaderMap.erase(it);
+	}
+}
+
 void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, size_t)>& progressCallback)
 {
 	if (!m_initialized || !m_compiler) {
@@ -127,10 +156,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 						nprintf(("vulkan", "VulkanShaderManager: Failed to create vertex module: %s\n", e.what()));
 					}
 				}
-				shader.vertexInputMask = 0;
-				for (auto attr : typeInfo->attributes) {
-					shader.vertexInputMask |= (1u << attr);
-				}
+				shader.vertexInputMask = vertex_input_mask(typeInfo);
 
 				SCP_string fragFile = typeInfo->frag;
 				auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags, requiresRaytracing);
@@ -146,13 +172,19 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 				}
 
 				shader.valid = shader.vertexModule && shader.fragmentModule;
+				// the inactive anti-aliasing family cannot compile under the current mode, so build it again on next use
+				if (!shader.valid) {
+					m_shaderMap.erase(shader_key_t(static_cast<int>(type), flags));
+					m_freeSlots.push_back(static_cast<size_t>(&shader - m_shaders.data()));
+				}
 			}
 		}
 
-		++current;
+		// callers expect 0..total-1, like OpenGL; the retail options popup waits for current + 1 == total
 		if (progressCallback) {
 			progressCallback(current, total);
 		}
+		++current;
 	}
 
 	nprintf(("vulkan", "VulkanShaderManager: Recompiled %zu shaders\n", total));
@@ -216,10 +248,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 				vertFile.c_str(), e.what()));
 		}
 	}
-	shader.vertexInputMask = 0;
-	for (auto attr : typeInfo->attributes) {
-		shader.vertexInputMask |= (1u << attr);
-	}
+	shader.vertexInputMask = vertex_input_mask(typeInfo);
 
 	// Compile fragment shader
 	SCP_string fragFile = typeInfo->frag;

@@ -153,6 +153,16 @@ class SDLWindowViewPort: public os::Viewport {
 				break;
 		}
 	}
+	os::ViewportState getState() const override {
+		const auto flags = SDL_GetWindowFlags(_window);
+		if (flags & SDL_WINDOW_FULLSCREEN) {
+			return os::ViewportState::Fullscreen;
+		}
+		if (flags & SDL_WINDOW_BORDERLESS) {
+			return os::ViewportState::Borderless;
+		}
+		return os::ViewportState::Windowed;
+	}
 	void minimize() override {
 		// lets not minimize if we are in windowed mode
 		if (!(SDL_GetWindowFlags(_window) & SDL_WINDOW_FULLSCREEN)) {
@@ -231,6 +241,12 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	if (props.flags[os::ViewPortFlags::Capture_Mouse]) {
 		windowflags |= SDL_WINDOW_MOUSE_GRABBED;
 	}
+
+	#ifdef __ANDROID__
+	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+	os_android_touch_overlay_init();
+	#endif
 
 	SDL_Rect bounds;
 	if ( !SDL_GetDisplayBounds(props.display, &bounds) ) {
@@ -328,8 +344,9 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 
 	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
 
-	#ifndef USE_OPENGL_ES
 	ImGui_ImplSDL3_InitForOpenGL(viewport->toSDLWindow(), ctx);
+
+	#ifndef USE_OPENGL_ES
 	ImGui_ImplOpenGL3_Init();
 	#else
 	ImGui_ImplOpenGL3_Init("#version 300 es");

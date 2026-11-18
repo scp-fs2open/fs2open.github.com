@@ -24,14 +24,15 @@ endif()
 # Must be set before find_package -- CMake snapshots this into each imported target's
 # MAP_IMPORTED_CONFIG_FASTDEBUG property at target-creation time, not at link time.
 # The list entries are tried in order:
-#   "Debug"   -- matches the per-config IMPORTED_LOCATION_DEBUG on Qt's libraries.
-#   "Release" -- per-config fallback if any target ships only a Release variant.
+#   "Release" -- FastDebug uses the release C runtime (see toolchain-msvc.cmake), so it must
+#                link Qt's release libraries: Debug Qt would drag in the non-redistributable
+#                debug CRT, and mixing CRTs across the Qt boundary corrupts the heap.
 #   ""        -- the empty entry means "fall back to the suffix-less IMPORTED_LOCATION".
 #                Required because Qt's host tools (uic/moc/rcc/qhelpgenerator) set
 #                only IMPORTED_LOCATION (no IMPORTED_CONFIGURATIONS), so without this
 #                CMake errors with "IMPORTED_LOCATION not set for imported target
-#                Qt5::uic configuration FastDebug".
-set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
+#                Qt6::uic configuration FastDebug".
+set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release "")
 
 find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)
 
@@ -241,10 +242,16 @@ elseif(PLATFORM_MAC)
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "qtFRED")
-    set_target_properties(qtfred PROPERTIES MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "us.indiegames.scp.qtFRED")
+
+    set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "us.indiegames.scp.qtFRED")
     set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
     set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+    set_target_properties(qtfred PROPERTIES XCODE_SCHEME_ARGUMENTS "${FSO_RUN_ARGUMENTS}")
+
+    if(FSO_FREESPACE_PATH AND NOT "${FSO_FREESPACE_PATH}" STREQUAL "${CMAKE_INSTALL_PREFIX}")
+        set_target_properties(qtfred PROPERTIES XCODE_SCHEME_WORKING_DIRECTORY "${FSO_FREESPACE_PATH}")
+    endif()
 
     # Copy everything from the Resources directory
     add_custom_command(TARGET qtfred POST_BUILD

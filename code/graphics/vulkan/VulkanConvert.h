@@ -47,6 +47,15 @@ vk::StencilOp convertStencilOp(StencilOperation op);
 vk::PrimitiveTopology convertPrimitiveType(primitive_type type);
 
 /**
+ * @brief Whether a topology may declare primitiveRestartEnable
+ *
+ * True for the strip/fan topologies. For list topologies the Vulkan spec requires
+ * primitiveRestartEnable to be VK_FALSE unless VK_EXT_primitive_topology_list_restart is
+ * enabled, which FSO does not request.
+ */
+bool topologySupportsPrimitiveRestart(vk::PrimitiveTopology topology);
+
+/**
  * @brief Convert FSO cull mode to Vulkan cull mode
  * @param cullEnabled Whether culling is enabled
  * @return Vulkan cull mode flags
@@ -63,10 +72,12 @@ bool isBlendingEnabled(gr_alpha_blend mode);
 /**
  * @brief Create a complete color blend attachment state
  * @param mode FSO blend mode
+ * @param coverageAlpha For targets composited as premultiplied alpha later: alpha accumulates as coverage instead of
+ *        using the color factors, and additive modes leave it alone (matches opengl_state::SetCoverageAlpha)
  * @return Vulkan color blend attachment state
  */
 vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend mode,
-	const bvec4& colorWriteMask = {true, true, true, true});
+	const bvec4& colorWriteMask = {true, true, true, true}, bool coverageAlpha = false);
 
 /**
  * @brief Create depth stencil state create info

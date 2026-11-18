@@ -300,7 +300,7 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 
 	// Get the mouse position
 	auto pMessage = GetCurrentMessage(); // get mouse pos
-	ASSERT(pMessage);
+	Assert(pMessage);
 	auto pt = pMessage->pt;
 
 	int item = LBItemFromPt(GetSafeHwnd(), pt, FALSE);
@@ -357,8 +357,8 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 
 void OperatorComboBoxList::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
-	ASSERT(lpDrawItemStruct->CtlType == ODT_LISTBOX);
-	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS));
+	Assert(lpDrawItemStruct->CtlType == ODT_LISTBOX);
+	Assert((GetStyle() & (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS));
 
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
 

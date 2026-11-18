@@ -315,6 +315,8 @@ enum IoActionId : int {
 	PHOTO_MODE_PARAM_DECREASE,
 	PHOTO_MODE_PARAM_INCREASE,
 
+	VR_RECENTER,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
@@ -494,10 +496,12 @@ public:
 	 *
 	 * @param[in] A     The bind to take
 	 * @param[in] order 0 is primary, 1 is secondary, -1 is overwrite existing bind (if any)
+	 * @param[in] same_device_ok    Axis controls: keep a key or button on the same controller in the other slot,
+	 *                              when both are keys or buttons that don't conflict (two keys, opposite directions)
 	 *
-	 * @note Should there be a binding to the same controller as the given binding, it is cleared
+	 * @note Otherwise a binding to the same controller as the given binding in the other slot is cleared
 	 */
-	void take(CC_bind A, int order);
+	void take(CC_bind A, int order, bool same_device_ok = false);
 
 	/*!
 	 * Clears both bindings
@@ -572,20 +576,28 @@ public:
  * A preset, a collection of bindings for use in Control_config with an associated name
  */
 class CC_preset {
-public:
+  public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
-	Preset_t type = Preset_t::hardcode;
 
-public:
-	CC_preset() = default;
-	CC_preset(const CC_preset& A) = default;
+  private:
+	// No default value: the type is always set explicitly by the constructor
+	Preset_t type;
 
-	CC_preset& operator=(const CC_preset&);
-	/*!
-	 * Checks if the given preset is a duplicate of this one
-	 */
-	bool is_duplicate_of(CC_preset&);
+  public:
+	// No default constructor: every preset must be created with an explicit type
+	CC_preset(SCP_string preset_name, Preset_t preset_type) : name(std::move(preset_name)), type(preset_type) {}
+	CC_preset(const CC_preset&) = default;
+
+	// Preserve target's preset type during copy assignment
+	CC_preset& operator=(const CC_preset& other);
+
+	Preset_t get_type() const
+	{
+		return type;
+	}
+
+	bool is_duplicate_of(const CC_preset& other) const;
 };
 
 /*!
@@ -626,7 +638,7 @@ public:
 	/*!
 	 * Assigns the contents of the given CCI to this CCI
 	 */
-	CCI& operator=(const CCI&);
+	CCI& operator=(const CCI&) = default;
 
 	/*!
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
