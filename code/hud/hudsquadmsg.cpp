@@ -178,6 +178,22 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 	return false;
 }
 
+static bool wing_takes_flavor_order_as_unit(const wing &wingp, SmallCraftFlavor flavor)
+{
+	// retail behavior: a fighters-and-bombers order classifies each wing by its leader alone
+	if (flavor == SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS) {
+		return true;
+	}
+
+	for (int j = 0; j < wingp.current_count; j++) {
+		int shipnum = wingp.ship_index[j];
+		if ((shipnum >= 0) && !is_smallcraft_flavor(&Ship_info[Ships[shipnum].ship_info_index], flavor)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 void hud_init_comm_orders()
 {
 	if (!Parsed_comm_orders.empty()) {
@@ -1044,17 +1060,15 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 	}
 	*/
 
-	// A wing is ordered as a unit, which means its members are classified by the wing leader alone.
-	// That is fine when the order goes to fighters and bombers alike, but for the fighters-only and
-	// bombers-only flavors it would both miss the non-matching leader's matching wingmates and catch
-	// the matching leader's non-matching ones.  So for those flavors, skip the wing pass entirely and
-	// let the per-ship pass below order every matching craft individually.
-	const bool order_wings_as_units = (flavor == SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
-
-	for ( i = 0; order_wings_as_units && (i < Num_wings); i++ ) {
+	for ( i = 0; i < Num_wings; i++ ) {
 		int shipnum;
 
 		if ( (Wings[i].flags[Ship::Wing_Flags::Gone]) || (Wings[i].current_count == 0) )
+			continue;
+
+		// a wing order reaches every member, so a wing with any non-matching craft is left to the
+		// per-ship pass below, which orders only its matching members
+		if ( !wing_takes_flavor_order_as_unit(Wings[i], flavor) )
 			continue;
 
 		if ( Wings[i].flags[Ship::Wing_Flags::Departing] )
@@ -1097,8 +1111,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		}
 	}
 
-	// now find the remaining friendly small craft: those not in wings, plus -- when we skipped the wing
-	// pass above -- every matching ship regardless of wing membership
+	// now find the remaining friendly small craft: those not in wings, plus the members of mixed wings
 	for (auto so: list_range(&Ship_obj_list)) {
 		auto objp = &Objects[so->objnum];
 		if (objp->flags[Object::Object_Flags::Should_be_dead])
@@ -1115,12 +1128,12 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if ( (shipp == ordering_shipp) || is_instructor(objp) )
 			continue;
 
-		// ships in a wing were already ordered as part of that wing
-		if ( order_wings_as_units && (shipp->wingnum != -1) )
+		// members of wings that take the order as a unit are left to the wing pass above
+		if ( (shipp->wingnum != -1) && wing_takes_flavor_order_as_unit(Wings[shipp->wingnum], flavor) )
 			continue;
 
-		// ...and when they weren't, still honor the wing-level checks the wing pass would have made
-		if ( !order_wings_as_units && (shipp->wingnum != -1)
+		// ...and members of mixed wings still get the wing-level checks the wing pass would have made
+		if ( (shipp->wingnum != -1)
 			&& (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Gone] || Wings[shipp->wingnum].flags[Ship::Wing_Flags::Departing]) )
 			continue;
 
