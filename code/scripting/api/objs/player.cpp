@@ -254,7 +254,7 @@ ADE_FUNC(getMainHallName, l_Player, NULL, "Gets player's current main hall name"
 }
 
 // use getMainHallName if at all possible.
-ADE_FUNC(getMainHallIndex, l_Player, NULL, "Gets player's current main hall number", "number", "Main hall index, or index of first mainhall in campaign if something goes wrong")
+ADE_FUNC(getMainHallIndex, l_Player, nullptr, "Gets player's current main hall number", "number", "Main hall index, or index of first mainhall in campaign if something goes wrong.  This is a 0-based index, where -1 means not found, as opposed to a Lua 1-based index, where 0 means not found")
 {
 	int hallnum = 0;
 	//FS2-->Lua
@@ -292,7 +292,7 @@ ADE_FUNC(getMultiSquadronName, l_Player, NULL, "Gets current player multi squad 
 	return ade_set_args(L, "s", plr->get()->m_squad_name);
 }
 
-ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loads the specified campaign save file.",
+ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loads the specified campaign save file.  If the save file is for a campaign other than the one currently loaded, its mission data is discarded, and saving is blocked until a save file for the loaded campaign is loaded or the save data is cleared.",
          "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
