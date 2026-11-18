@@ -178,7 +178,6 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 	return false;
 }
 
-
 void hud_init_comm_orders()
 {
 	if (!Parsed_comm_orders.empty()) {
@@ -2226,7 +2225,7 @@ void hud_squadmsg_ship_command()
 					case MESSAGE_ALL_BOMBERS:
 						is_valid = Ship_info[shipp->ship_info_index].is_bomber();
 						break;
-				} 
+				}
 				if (!is_valid) {
 					continue;
 				}
