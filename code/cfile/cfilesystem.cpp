@@ -36,6 +36,7 @@
 
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
+#include "cfile/mod_bootstrap.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "def_files/def_files.h"
@@ -57,6 +58,7 @@ typedef struct cf_root {
 	SCP_string	path;	// Contains something like c:\projects\freespace or c:\projects\freespace\freespace.vp
 	int		roottype;						// CF_ROOTTYPE_PATH  = Path, CF_ROOTTYPE_PACK =Pack file, CF_ROOTTYPE_MEMORY=In memory
 	uint32_t location_flags;
+	bool read_only = false;
 
 #ifdef SCP_UNIX
 	// map of existing case sensitive paths
@@ -569,6 +571,20 @@ void normalize_directory_separators(SCP_string &str)
 	std::replace(str.begin(), str.end(), bad_sep, DIR_SEPARATOR_CHAR);
 }
 
+static void cf_add_mod_root(SCP_string path, uint32_t location, bool read_only = false)
+{
+	if (path.back() != DIR_SEPARATOR_CHAR) {
+		path += DIR_SEPARATOR_CHAR;
+	}
+	cf_root* root = cf_create_root();
+	root->path = std::move(path);
+	root->location_flags = location;
+	root->roottype = CF_ROOTTYPE_PATH;
+	root->read_only = read_only;
+	cf_init_root_pathtypes(root);
+	cf_build_pack_list(root);
+}
+
 static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 {
 	if (Cmdline_mod)
@@ -594,18 +610,8 @@ static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 			// normalize the path to the native path format
 			normalize_directory_separators(rootPath);
 
-			cf_root* root = cf_create_root();
-
-			root->path = std::move(rootPath);
-			if (primary) {
-				root->location_flags = basic_location | CF_LOCATION_TYPE_PRIMARY_MOD;
-			} else {
-				root->location_flags = basic_location | CF_LOCATION_TYPE_SECONDARY_MODS;
-			}
-
-			root->roottype = CF_ROOTTYPE_PATH;
-			cf_init_root_pathtypes(root);
-			cf_build_pack_list(root);
+			const auto mod_type = primary ? CF_LOCATION_TYPE_PRIMARY_MOD : CF_LOCATION_TYPE_SECONDARY_MODS;
+			cf_add_mod_root(std::move(rootPath), basic_location | mod_type);
 
 			primary = false;
 		}
@@ -618,6 +624,8 @@ void cf_build_root_list(const char *cdrom_dir)
 	Num_path_roots = 0;
 
 	cf_root	*root = nullptr;
+	const auto bootstrap = mod_bootstrap_get();
+	const bool has_mods = bootstrap ? !bootstrap->roots.empty() : Cmdline_mod && *Cmdline_mod;
 
 	if (os_is_legacy_mode())
 	{
@@ -625,13 +633,15 @@ void cf_build_root_list(const char *cdrom_dir)
 #ifdef WIN32
 		// Nothing to do here, Windows uses the current directory as the base
 #else
-		cf_add_mod_roots(os_get_legacy_user_dir(), CF_LOCATION_ROOT_USER);
+		if (!bootstrap) {
+			cf_add_mod_roots(os_get_legacy_user_dir(), CF_LOCATION_ROOT_USER);
+		}
 
 		root = cf_create_root();
 		root->path = os_get_legacy_user_dir();
 
 		root->location_flags |= CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
-		if (Cmdline_mod == nullptr || strlen(Cmdline_mod) <= 0) {
+		if (!has_mods) {
 			// If there are no mods then the root is the primary mod
 			root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
 		}
@@ -653,7 +663,9 @@ void cf_build_root_list(const char *cdrom_dir)
 	{
 		// =========================================================================
 		// now look for mods under the users HOME directory to use before system ones
-		cf_add_mod_roots(Cfile_user_dir, CF_LOCATION_ROOT_USER);
+		if (!bootstrap) {
+			cf_add_mod_roots(Cfile_user_dir, CF_LOCATION_ROOT_USER);
+		}
 		// =========================================================================
 
 		// =========================================================================
@@ -662,7 +674,7 @@ void cf_build_root_list(const char *cdrom_dir)
 		root->path = Cfile_user_dir;
 
 		root->location_flags |= CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
-		if (Cmdline_mod == nullptr || strlen(Cmdline_mod) <= 0) {
+		if (!has_mods) {
 			// If there are no mods then the root is the primary mod
 			root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
 		}
@@ -680,11 +692,11 @@ void cf_build_root_list(const char *cdrom_dir)
 		// =========================================================================
 	}
 
-	char working_directory[CF_MAX_PATHNAME_LENGTH];
-	
-	if ( !_getcwd(working_directory, CF_MAX_PATHNAME_LENGTH ) ) {
+	char cwd[CF_MAX_PATHNAME_LENGTH];
+	if (!bootstrap && !_getcwd(cwd, sizeof(cwd))) {
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
+	const char* working_directory = bootstrap ? Cfile_root_dir : cwd;
 
 	if (Cmdline_override_data) {
 
@@ -709,13 +721,21 @@ void cf_build_root_list(const char *cdrom_dir)
 	}
 
 	//now that the _override root is finished(or not), handle all mods
-	cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);
+	if (bootstrap) {
+		auto mod_type = CF_LOCATION_TYPE_PRIMARY_MOD;
+		for (const auto& path : bootstrap->roots) {
+			cf_add_mod_root(path, CF_LOCATION_ROOT_GAME | mod_type, true);
+			mod_type = CF_LOCATION_TYPE_SECONDARY_MODS;
+		}
+	} else {
+		cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);
+	}
 
 	//finally, handle the default root.
 	root = cf_create_root();
 
 	root->location_flags |= CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
-	if (Cmdline_mod == nullptr || strlen(Cmdline_mod) <= 0) {
+	if (!has_mods) {
 		// If there are no mods then the root is the primary mod
 		root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
 	}
@@ -2399,7 +2419,8 @@ int cf_create_default_path_string(char* path, uint path_max, int pathtype, const
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename, uint32_t _location_flags)
+int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename,
+	uint32_t _location_flags, bool for_write)
 {
 	uint32_t location_flags = _location_flags;
 
@@ -2424,7 +2445,7 @@ int cf_create_default_path_string(SCP_string& path, int pathtype, const char* fi
 		for (auto i = 0; i < Num_roots; ++i) {
 			auto current_root = cf_get_root(i);
 
-			if (current_root->roottype != CF_ROOTTYPE_PATH) {
+			if (current_root->roottype != CF_ROOTTYPE_PATH || (for_write && current_root->read_only)) {
 				// We want a "real" path here so only path roots are valid
 				continue;
 			}
@@ -2437,7 +2458,7 @@ int cf_create_default_path_string(SCP_string& path, int pathtype, const char* fi
 		}
 
 		if (!root) {
-			if (filename == nullptr) {
+			if (filename == nullptr || (for_write && mod_bootstrap_get())) {
 				return 0;
 			}
 			path.assign(filename);

@@ -29,6 +29,7 @@
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
 #include "cfile/cfilesystem.h"
+#include "cfile/mod_bootstrap.h"
 #include "osapi/osapi.h"
 #include "parse/encrypt.h"
 #include "cfilesystem.h"
@@ -183,41 +184,31 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 		return 0;
 	}
 
-	char buf[CFILE_ROOT_DIRECTORY_LEN];
-
-	#ifndef __ANDROID__
+	if (const auto bootstrap = mod_bootstrap_get()) {
+		// Keep relative settings paths anchored to the launch directory.
+		strcpy_s(Cfile_root_dir, bootstrap->workfolder.c_str());
+	} else {
+		char buf[CFILE_ROOT_DIRECTORY_LEN];
+#ifndef __ANDROID__
 		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
-	#else
+#else
 		(void)exe_dir;
 		strncpy(buf, os_android_get_working_folder_path().c_str(), CFILE_ROOT_DIRECTORY_LEN - 1);
-	#endif
+#endif
+		buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
+		if (cfile_in_root_dir(buf)) {
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
+			return 1;
+		}
 
-	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
+		// Remove the executable name to get the game directory.
+		*strrchr(buf, DIR_SEPARATOR_CHAR) = '\0';
+		cfile_chdir(buf);
+		strcpy_s(Cfile_root_dir, buf);
+	}
 
-	// are we in a root directory?		
-	if(cfile_in_root_dir(buf)){
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
-		return 1;
-	}		
-
-	// This needs to be set here because cf_build_secondary_filelist assumes it to be true
+	// The index builder requires CFILE to be marked initialized.
 	cfile_inited = 1;
-	
-	/*
-	 * Determine the executable's directory.  Note that DIR_SEPARATOR_CHAR
-	 * is guaranteed to be found in the string else cfile_in_root_dir()
-	 * would have failed.
-	 */
-
-	char *p;
-
-	p = strrchr(buf, DIR_SEPARATOR_CHAR);
-	*p = '\0';
-
-	cfile_chdir(buf);
-
-	// set root directory
-	strcpy_s(Cfile_root_dir, buf);
 	strcpy_s(Cfile_user_dir, os_get_config_path().c_str());
 
 	// Initialize the block list with proper data
@@ -467,7 +458,9 @@ int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 
 	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string(longname, path_type, filename, location_flags);
+	if (!cf_create_default_path_string(longname, path_type, filename, location_flags, true)) {
+		return 0;
+	}
 
 	return (_unlink(longname.c_str()) != -1);
 }
@@ -531,7 +524,9 @@ void cf_attrib(const char *filename, int set, int clear, int dir_type)
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string(longname, dir_type, filename);
+	if (!cf_create_default_path_string(longname, dir_type, filename, static_cast<uint32_t>(CF_LOCATION_ALL), true)) {
+		return;
+	}
 
 	FILE *fp = fopen(longname.c_str(), "rb");
 	if (fp) {
@@ -552,8 +547,11 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 	SCP_string old_longname;
 	SCP_string new_longname;
 	
-	cf_create_default_path_string(old_longname, dir_type, old_name);
-	cf_create_default_path_string(new_longname, dir_type, name);
+	const auto flags = static_cast<uint32_t>(CF_LOCATION_ALL);
+	if (!cf_create_default_path_string(old_longname, dir_type, old_name, flags, true) ||
+		!cf_create_default_path_string(new_longname, dir_type, name, flags, true)) {
+		return CF_RENAME_FAIL_ACCESS;
+	}
 
 	ret_code = rename(old_longname.c_str(), new_longname.c_str());
 	if(ret_code != 0){
@@ -617,7 +615,9 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string(longname, dir_tree[i], nullptr, location_flags);
+		if (!cf_create_default_path_string(longname, dir_tree[i], nullptr, location_flags, true)) {
+			return;
+		}
 		if (stat(longname.c_str(), &statbuf) != 0) {
 			mprintf(( "CFILE: Creating new directory '%s'\n", longname.c_str() ));
 			mkdir_recursive(longname.c_str());
@@ -674,7 +674,9 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 			// Create the directory if necessary
 			cf_create_directory(dir_type, location_flags);
 
-			cf_create_default_path_string(longname, dir_type, file_path, location_flags);
+			if (!cf_create_default_path_string(longname, dir_type, file_path, location_flags, true)) {
+				return nullptr;
+			}
 		}
 
 		// JOHN: TODO, you should create the path if it doesn't exist.

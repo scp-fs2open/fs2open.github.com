@@ -132,6 +132,8 @@ add_file_folder("CFile"
 	cfile/cfilearchive.h
 	cfile/cfilelist.cpp
 	cfile/cfilesystem.cpp
+	cfile/mod_bootstrap.cpp
+	cfile/mod_bootstrap.h
 	cfile/cfilesystem.h
 	cfile/cfilecompression.cpp
 	cfile/cfilecompression.h
