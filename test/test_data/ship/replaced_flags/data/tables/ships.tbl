@@ -1,0 +1,19 @@
+#Ship Classes
+
+$Name: Test Ship
+$Display Name: Shown Name
+$POF file: test_ship.pof
+$Flags: ( "in tech database" )
+$Afterburner: YES
+	+Aburn Fuel: 100
+$Closeup_pos: 0, 0, -10
+$Subsystem: turret01, 10, 0
+	$Maximum Barrel Elevation: 60
+	$Turret Base FOV: 180
+	$Turret Barrel FOV: 120
+$Subsystem: sensors, 10, 0
+	$AWACS: 1, 3000
+$Subsystem: bay, 10, 0
+	$Flags: ( "allow landing" )
+
+#End

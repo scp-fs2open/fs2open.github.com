@@ -1,0 +1,9 @@
+#Ship Classes
+
+$Name: Test Ship
++nocreate
+$Flags: ( "stealth" )
+$Subsystem: turret01, 10, 0
+	$Flags: ( "carry no damage" )
+
+#End

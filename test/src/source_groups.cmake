@@ -120,6 +120,7 @@ add_file_folder("Scripting\\\\Lua"
 add_file_folder("Ship"
     ship/ship_info.cpp
     ship/test_shared_model.cpp
+    ship/test_ship_flags.cpp
 )
 
 add_file_folder("Starfield"
