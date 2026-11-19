@@ -36,8 +36,10 @@ TEST_F(IffAccessibilityTest, TbmIffsKeepTheirColorsAndBuiltInsUseAccessibilityCo
 {
 	iff_init();
 
+	// Pirate follows a +nocreate override in pirate-iff.tbm, so this checks that +nocreate applies only to its own entry.
 	const int pirate = iff_lookup("Pirate");
 	const int friendly = iff_lookup("Friendly");
+	EXPECT_LT(iff_lookup("Missing IFF"), 0);
 	ASSERT_GE(pirate, 0);
 	ASSERT_GE(friendly, 0);
 

@@ -1,11 +1,16 @@
 #IFFs
 
+; Pirate follows this +nocreate override to check that +nocreate applies only to its own entry.
+$IFF Name: Unknown
++nocreate
+$Color: ( 0, 0, 255 )
+
 $IFF Name: Pirate
 $Color: ( 200, 0, 200 )
 $Attacks: ( "Friendly" )
 +Sees Friendly As: ( 250, 250, 0 )
 
-$IFF Name: Unknown
-$Color: ( 0, 0, 255 )
+$IFF Name: Missing IFF
++nocreate
 
 #End

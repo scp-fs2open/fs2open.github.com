@@ -1,0 +1,14 @@
+#Cutscenes
+
+$Filename: intro.mve
++nocreate
+$Name: Intro Override
+
+$Filename: new.mve
+$Name: New Cutscene
+
+$Filename: missing.mve
++nocreate
+$Name: Missing Cutscene
+
+#End

@@ -91,7 +91,6 @@ void parse_cutscene_table(const char* filename)
 	cutscene_info_init(&csnt);
 
 	cutscene_info *csnp;
-	bool create_if_not_found = true;
 
 	try
 	{
@@ -106,6 +105,7 @@ void parse_cutscene_table(const char* filename)
 
 		while (required_string_either("#End", "$Filename:"))
 		{
+			bool create_if_not_found = true;
 			bool csn_new = false;
 			
 			required_string("$Filename:");
