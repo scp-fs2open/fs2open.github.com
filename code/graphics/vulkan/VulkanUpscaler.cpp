@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/matrix.h"
+#include "graphics/openxr.h"
 #include "graphics/vulkan/VulkanBarrier.h"
 #include "graphics/vulkan/VulkanMemory.h"
 #include "graphics/vulkan/VulkanPostProcessing.h"
@@ -12,6 +13,7 @@
 #include <ffx_portable.h>
 #endif
 
+#include <algorithm>
 #include <optional>
 
 extern float flRealframetime;
@@ -178,7 +180,6 @@ void vulkan_upscaler_device_created(vk::Device device)
 		return;
 	}
 
-	Gr_fsr_max_output_size = static_cast<int>(Upscaler_gpu.getProperties().limits.maxImageDimension2D);
 	Gr_fsr_versions.clear();
 	const auto versions = query_fsr_versions(device);
 	for (const auto& version : versions) {
@@ -214,27 +215,68 @@ bool VulkanUpscaler::wanted()
 	return vulkan_upscaler_usable() && Gr_fsr_mode != FsrMode::Off;
 }
 
+VulkanUpscaler::View& VulkanUpscaler::currentView()
+{
+	return m_views[openxr_get_current_eye()];
+}
+
+const VulkanUpscaler::View& VulkanUpscaler::currentView() const
+{
+	return m_views[openxr_get_current_eye()];
+}
+
+size_t VulkanUpscaler::viewCount() const
+{
+	return openxr_requested() ? m_views.size() : 1;
+}
+
+const RenderTarget& VulkanUpscaler::output() const
+{
+	return currentView().output;
+}
+
+bool VulkanUpscaler::hasResources() const
+{
+	return std::all_of(m_views.begin(), m_views.begin() + viewCount(), [](const View& view) { return view.context != nullptr; });
+}
+
 bool VulkanUpscaler::createResources()
 {
-	if (m_context) {
+	// In VR, both eyes' are made together, so that none of them gets made in the middle of a mission
+	if (hasResources()) {
 		return true;
 	}
 
+	for (size_t i = 0; i < viewCount(); ++i) {
+		if (!m_views[i].context && !createContext(m_views[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool VulkanUpscaler::createContext(View& view)
+{
 	const uint32_t renderW = m_ctx->sceneExtent.width;
 	const uint32_t renderH = m_ctx->sceneExtent.height;
-	const uint32_t w = m_ctx->outputExtent.width;
-	const uint32_t h = m_ctx->outputExtent.height;
+	// AA keeps the render resolution. Should the screen be larger (the HUD at output resolution), the post-processing
+	// that follows stretches the scene onto it, as without FSR.
+	const bool upscale = Gr_fsr_mode == FsrMode::Upscale;
+	const uint32_t w = upscale ? m_ctx->outputExtent.width : renderW;
+	const uint32_t h = upscale ? m_ctx->outputExtent.height : renderH;
 
-	m_output.format = HDR_COLOR_FORMAT;
-	m_output.width = w;
-	m_output.height = h;
-	if (!m_ctx->createImage(w, h, HDR_COLOR_FORMAT,
-	                        vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment,
-	                        vk::ImageAspectFlagBits::eColor,
-	                        m_output.image, m_output.view, m_output.allocation)) {
-		mprintf(("Vulkan: FSR disabled: could not create its output image\n"));
-		mark_failed();
-		return false;
+	if (!view.output.image) {
+		view.output.format = HDR_COLOR_FORMAT;
+		view.output.width = w;
+		view.output.height = h;
+		if (!m_ctx->createImage(w, h, HDR_COLOR_FORMAT,
+		                        vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment,
+		                        vk::ImageAspectFlagBits::eColor,
+		                        view.output.image, view.output.view, view.output.allocation)) {
+			mprintf(("Vulkan: FSR disabled: could not create its output image\n"));
+			mark_failed();
+			return false;
+		}
 	}
 
 	ffxCreateBackendVKDesc backend{};
@@ -265,19 +307,20 @@ bool VulkanUpscaler::createResources()
 		desc.header.pNext = &chosenVersion.header;
 	}
 	m_contextMajorVersion = Gr_fsr_major_version;
+	m_contextMode = Gr_fsr_mode;
 
-	const auto result = ffxCreateContext(&m_context, &desc.header, nullptr);
+	const auto result = ffxCreateContext(&view.context, &desc.header, nullptr);
 	if (result != FFX_API_RETURN_OK) {
 		mprintf(("Vulkan: FSR disabled: creating its context failed with code %u\n", result));
-		m_context = nullptr;
-		m_ctx->destroyTarget(m_output);
+		view.context = nullptr;
+		destroyTargets();
 		mark_failed();
 		return false;
 	}
 
 	ffxQueryGetProviderVersion provider{};
 	provider.header.type = FFX_API_QUERY_DESC_TYPE_GET_PROVIDER_VERSION;
-	const bool versionKnown = ffxQuery(&m_context, &provider.header) == FFX_API_RETURN_OK && provider.versionName;
+	const bool versionKnown = ffxQuery(&view.context, &provider.header) == FFX_API_RETURN_OK && provider.versionName;
 	mprintf(("Vulkan: FSR context created for %ux%u to %ux%u, loaded FSR version: %s\n", renderW, renderH, w, h,
 		versionKnown ? provider.versionName : "unknown"));
 
@@ -286,10 +329,10 @@ bool VulkanUpscaler::createResources()
 	phaseCount.renderWidth = renderW;
 	phaseCount.displayWidth = w;
 	phaseCount.pOutPhaseCount = &m_jitterPhaseCount;
-	if (ffxQuery(&m_context, &phaseCount.header) != FFX_API_RETURN_OK || m_jitterPhaseCount < 1) {
+	if (ffxQuery(&view.context, &phaseCount.header) != FFX_API_RETURN_OK || m_jitterPhaseCount < 1) {
 		m_jitterPhaseCount = 1;
 	}
-	m_jitterIndex = 0;
+	view.jitterIndex = 0;
 
 	return true;
 }
@@ -300,38 +343,43 @@ void VulkanUpscaler::destroyTargets()
 		return;
 	}
 
-	if (m_context) {
-		ffxDestroyContext(&m_context, nullptr);
-		m_context = nullptr;
+	for (auto& view : m_views) {
+		if (view.context) {
+			ffxDestroyContext(&view.context, nullptr);
+			view.context = nullptr;
+		}
+		m_ctx->destroyTarget(view.output);
 	}
-	m_ctx->destroyTarget(m_output);
 }
 
 void VulkanUpscaler::beginFrame(float& imageOffsetX, float& imageOffsetY, float& lodBias)
 {
-	m_jitterIndex = (m_jitterIndex + 1) % m_jitterPhaseCount;
+	auto& view = currentView();
+	view.jitterIndex = (view.jitterIndex + 1) % m_jitterPhaseCount;
 
 	ffxQueryDescUpscaleGetJitterOffset query{};
 	query.header.type = FFX_API_QUERY_DESC_TYPE_UPSCALE_GETJITTEROFFSET;
-	query.index = m_jitterIndex;
+	query.index = view.jitterIndex;
 	query.phaseCount = m_jitterPhaseCount;
-	query.pOutX = &m_jitterX;
-	query.pOutY = &m_jitterY;
-	if (ffxQuery(&m_context, &query.header) != FFX_API_RETURN_OK) {
-		m_jitterX = 0.0f;
-		m_jitterY = 0.0f;
+	query.pOutX = &view.jitterX;
+	query.pOutY = &view.jitterY;
+	if (ffxQuery(&view.context, &query.header) != FFX_API_RETURN_OK) {
+		view.jitterX = 0.0f;
+		view.jitterY = 0.0f;
 	}
 
 	// FSR takes a pixel to show the content at its position minus the jitter, so the image moves by the jitter, in
 	// image space with Y down.
-	imageOffsetX = m_jitterX;
-	imageOffsetY = m_jitterY;
-	lodBias = std::log2(static_cast<float>(m_ctx->sceneExtent.width) / static_cast<float>(m_output.width)) - 1.0f;
+	imageOffsetX = view.jitterX;
+	imageOffsetY = view.jitterY;
+	lodBias = std::log2(static_cast<float>(m_ctx->sceneExtent.width) / static_cast<float>(view.output.width)) - 1.0f;
 }
 
 bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion)
 {
 	GR_DEBUG_SCOPE("FSR");
+
+	auto& view = currentView();
 
 	cmdMemoryBarrier(cmd,
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput,
@@ -340,7 +388,7 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 		vk::AccessFlagBits2::eShaderRead);
 
 	ImageBarrier2 barrier;
-	barrier.image = m_output.image;
+	barrier.image = view.output.image;
 	barrier.levelCount = 1;
 	barrier.layerCount = 1;
 	barrier.oldLayout = vk::ImageLayout::eUndefined;
@@ -358,10 +406,10 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	desc.color = ffx_image(color, FFX_API_RESOURCE_STATE_COMPUTE_READ);
 	desc.depth = ffx_image(depth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
 	desc.motionVectors = ffx_image(motion, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-	desc.output = ffx_image(m_output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, FFX_API_RESOURCE_USAGE_UAV);
-	desc.jitterOffset = {m_jitterX, m_jitterY};
+	desc.output = ffx_image(view.output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, FFX_API_RESOURCE_USAGE_UAV);
+	desc.jitterOffset = {view.jitterX, view.jitterY};
 	desc.renderSize = {color.width, color.height};
-	desc.upscaleSize = {m_output.width, m_output.height};
+	desc.upscaleSize = {view.output.width, view.output.height};
 	// Motion vectors are in UV units
 	desc.motionVectorScale = {static_cast<float>(color.width), static_cast<float>(color.height)};
 	desc.frameTimeDelta = flRealframetime * 1000.0f;
@@ -370,10 +418,14 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	// The motion vector pass puts all depth on the cockpit's projection
 	desc.cameraNear = Min_draw_distance_cockpit;
 	desc.cameraFar = Max_draw_distance;
-	desc.cameraFovAngleVertical = std::holds_alternative<float>(Proj_fov) ? std::get<float>(Proj_fov) : 1.0f;
+	if (const auto* afov = std::get_if<asymmetric_fov>(&Proj_fov)) {
+		desc.cameraFovAngleVertical = afov->up - afov->down;
+	} else {
+		desc.cameraFovAngleVertical = std::get<float>(Proj_fov);
+	}
 	desc.viewSpaceToMetersFactor = 1.0f;
 
-	const auto result = ffxDispatch(&m_context, &desc.header);
+	const auto result = ffxDispatch(&view.context, &desc.header);
 	const bool dispatched = result == FFX_API_RETURN_OK;
 	if (!dispatched) {
 		mprintf(("Vulkan: FSR disabled: dispatch failed with code %u\n", result));
@@ -423,6 +475,16 @@ bool VulkanUpscaler::wanted()
 bool VulkanUpscaler::createResources()
 {
 	return false;
+}
+
+bool VulkanUpscaler::hasResources() const
+{
+	return false;
+}
+
+const RenderTarget& VulkanUpscaler::output() const
+{
+	return m_views[0].output;
 }
 
 void VulkanUpscaler::destroyTargets()

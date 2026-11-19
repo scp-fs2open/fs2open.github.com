@@ -356,6 +356,7 @@ cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
 cmdline_parm fsr_mode_arg("-fsr", "AMD FSR: 0 off, 1 AA only, 2 upscale to the window resolution. Vulkan only", AT_INT);
+cmdline_parm native_res_hud_arg("-native_res_hud", "Draws the HUD at the window (or VR headset) resolution instead of the render resolution", AT_NONE);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -2139,6 +2140,11 @@ bool SetCmdlineParams()
 			Gr_fsr_major_version = 0;
 			options::OptionsManager::instance()->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(mode)), "-fsr");
 		}
+	}
+
+	if (native_res_hud_arg.found()) {
+		Gr_native_res_hud = true;
+		options::OptionsManager::instance()->setOverride("Graphics.NativeResHUD", std::unique_ptr<json_t>(json_boolean(true)), "-native_res_hud");
 	}
 
 	if (msaa_enabled_arg.found()) {

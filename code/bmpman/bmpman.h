@@ -150,6 +150,7 @@ void bm_close();
 #define BMP_FLAG_CUBEMAP					(1<<2)
 #define BMP_FLAG_RENDER_TARGET_MIPMAP		(1<<3)
 #define BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT	(1<<4)
+#define BMP_FLAG_RENDER_TARGET_HDR			(1<<5)	// 16 bit float color, like the screen
 
 /**
  * @brief Allocates memory for the given handle.

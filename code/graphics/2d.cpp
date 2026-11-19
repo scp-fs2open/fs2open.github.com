@@ -1034,25 +1034,98 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
 FsrMode Gr_fsr_mode = FsrMode::Off;
 int Gr_fsr_major_version = 0;
 SCP_vector<SCP_string> Gr_fsr_versions;
-int Gr_fsr_max_output_size = 0;
+int Gr_max_output_size = 0;
 float Gr_composition_scale = 1.0f;
+bool Gr_native_res_hud = false;
 
-static float fsr_window_factor()
+static float output_scale_factor()
 {
-	if (!Cmdline_window_res.has_value()) {
+	// In VR, the window only mirrors the HMD
+	std::optional<std::pair<int, int>> output;
+	if (openxr_requested()) {
+		output = openxr_get_eye_resolution();
+	} else if (Cmdline_window_res.has_value()) {
+		output = std::make_pair(static_cast<int>(Cmdline_window_res->first), static_cast<int>(Cmdline_window_res->second));
+	}
+	if (!output.has_value()) {
 		return 1.0f;
 	}
-	const float factor = std::max(i2fl(Cmdline_window_res->first) / i2fl(gr_screen.max_w),
-		i2fl(Cmdline_window_res->second) / i2fl(gr_screen.max_h));
-	if (factor <= 1.0f || std::max(gr_screen.max_w, gr_screen.max_h) * factor > Gr_fsr_max_output_size) {
+	const float factor = std::max(i2fl(output->first) / i2fl(gr_screen.max_w), i2fl(output->second) / i2fl(gr_screen.max_h));
+	if (factor <= 1.0f || std::max(gr_screen.max_w, gr_screen.max_h) * factor > Gr_max_output_size) {
 		return 1.0f;
 	}
 	return factor;
 }
 
-float gr_fsr_upscale_factor(FsrMode mode)
+float gr_wanted_composition_scale(bool fsr_upscaling)
 {
-	return mode == FsrMode::Upscale ? fsr_window_factor() : 1.0f;
+	return fsr_upscaling || Gr_native_res_hud ? output_scale_factor() : 1.0f;
+}
+
+static int Screen_layer = -1;
+static int Screen_layer_w = 0;
+static int Screen_layer_h = 0;
+static float Screen_layer_relative_scale = 0.0f;
+static bool Screen_layer_active = false;
+static float Screen_layer_saved_scale = 1.0f;
+
+void gr_screen_layer_init(float relative_scale)
+{
+	Screen_layer_relative_scale = relative_scale;
+	gr_screen_layer_resize();
+}
+
+void gr_screen_layer_resize()
+{
+	if (Screen_layer_relative_scale <= 0.0f) {
+		return;
+	}
+
+	// Within the GPU's limit, so it never has to shrink one side and break the aspect ratio
+	const float scale = std::min(Gr_composition_scale * Screen_layer_relative_scale,
+		i2fl(Gr_max_output_size) / i2fl(std::max(gr_screen.max_w, gr_screen.max_h)));
+	const int w = static_cast<int>(std::lround(gr_screen.max_w * scale));
+	const int h = static_cast<int>(std::lround(gr_screen.max_h * scale));
+	if (Screen_layer >= 0) {
+		if (w == Screen_layer_w && h == Screen_layer_h) {
+			return;
+		}
+		bm_release(Screen_layer, 1);
+	}
+
+	// The same formats as the screen, so that whatever can draw to the screen (like ImGui) can draw into the layer too
+	Screen_layer = bm_make_render_target(w, h,
+		BMP_FLAG_RENDER_TARGET_DYNAMIC | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT | BMP_FLAG_RENDER_TARGET_HDR);
+	Screen_layer_w = w;
+	Screen_layer_h = h;
+}
+
+int gr_screen_layer_begin()
+{
+	Assertion(!Screen_layer_active, "Screen layers must not be nested!");
+	if (Screen_layer < 0 || !gr_screen.gf_screen_layer_begin(Screen_layer)) {
+		return -1;
+	}
+
+	int w, h;
+	bm_get_info(Screen_layer, &w, &h);
+	Screen_layer_saved_scale = Gr_composition_scale;
+	Gr_composition_scale = i2fl(w) / i2fl(gr_screen.max_w);
+	Screen_layer_active = true;
+
+	return Screen_layer;
+}
+
+void gr_screen_layer_end()
+{
+	if (!Screen_layer_active) {
+		return;
+	}
+
+	// Before the renderer goes back to the screen, which it sets up at the screen's scale
+	Gr_composition_scale = Screen_layer_saved_scale;
+	Screen_layer_active = false;
+	gr_screen.gf_screen_layer_end();
 }
 
 static int fsr_setting(FsrMode mode, int major_version)
@@ -1069,7 +1142,7 @@ static SCP_vector<int> fsr_setting_enumerator()
 		for (const auto& version : Gr_fsr_versions) {
 			const int major = atoi(version.c_str());
 			out.push_back(fsr_setting(FsrMode::AA, major));
-			if (fsr_window_factor() > 1.0f) {
+			if (output_scale_factor() > 1.0f) {
 				out.push_back(fsr_setting(FsrMode::Upscale, major));
 			}
 		}
@@ -1332,6 +1405,17 @@ static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      .bind_to_once(&Gr_post_processing_enabled)
                      .importance(69)
                      .parser(parse_post_processing_func)        
+                     .finish();
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto NativeResHudOption __UNUSED = options::OptionBuilder<bool>("Graphics.NativeResHUD",
+                     std::pair<const char*, int>{"HUD at output resolution", -1},
+                     std::pair<const char*, int>{"Draws the HUD at the window/monitor (or VR headset) resolution even when the 3D scene renders at a lower resolution. Sharper, but lines become thinner.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_native_res_hud; })
+                     .bind_to_once(&Gr_native_res_hud)
+                     .importance(76)
                      .finish();
 
 bool Gr_enable_vsync = true;
@@ -3767,6 +3851,11 @@ void gr_imgui_begin_frame()
 		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
 	}
 
+	// An HMD can't show the OS cursor, and FSO's own cursor, which VR draws into the image instead, stops following the
+	// mouse while ImGui has it. So ImGui draws its cursor itself then.
+	ImGuiIO& io = ImGui::GetIO();
+	io.MouseDrawCursor = openxr_enabled() && io.WantCaptureMouse;
+
 	ImGui::NewFrame();
 	Imgui_frame_active = true;
 }
@@ -3787,6 +3876,17 @@ bool gr_imgui_frame_active()
 	return Imgui_frame_active;
 }
 
+void gr_imgui_draw_overlay()
+{
+	// Every presented frame drains the frame profiler and contributes the overlay window to
+	// this frame's ImGui pass. Doing it here rather than per game state is what keeps the
+	// profiler's event buffer bounded: collection is global, so the drain has to be too.
+	tracing::profiler_overlay_frame();
+
+	// Closes whatever ImGui frame the overlay (or the lab, or the options screen) opened.
+	gr_imgui_end_frame();
+}
+
 void gr_flip(bool execute_scripting)
 {
 	// Execute external "On Frame" work items
@@ -3805,13 +3905,10 @@ void gr_flip(bool execute_scripting)
 
 	model_process_cached_ui_render_instances();
 
-	// Every presented frame drains the frame profiler and contributes the overlay window to
-	// this frame's ImGui pass. Doing it here rather than per game state is what keeps the
-	// profiler's event buffer bounded: collection is global, so the drain has to be too.
-	tracing::profiler_overlay_frame();
-
-	// Closes whatever ImGui frame the overlay (or the lab, or the options screen) opened.
-	gr_imgui_end_frame();
+	// In VR, the HUD panel takes this for both eyes at once (see hud_vr_end())
+	if (!openxr_in_stereo_frame()) {
+		gr_imgui_draw_overlay();
+	}
 
 	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
 	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate

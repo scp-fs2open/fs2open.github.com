@@ -5151,6 +5151,9 @@ void weapon_init()
 {
 	if ( !Weapons_inited ) {
 		Spawn_names.clear();
+		Pending_proximity_type_names.clear();
+		Pending_proximity_class_names.clear();
+		Default_cmeasure_name[0] = '\0';
 
 		// parse weapons.tbl
 		Removed_weapons.clear();
@@ -5175,7 +5178,7 @@ void weapon_init()
 
 
 /**
- * Call from game_shutdown() only!!
+ * Frees the weapon tables
  */
 void weapon_close()
 {
@@ -5192,6 +5195,8 @@ void weapon_close()
 	}
 
 	Spawn_names.clear();
+
+	Weapons_inited = false;
 }
 
 /**

@@ -73,6 +73,7 @@
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
+#include "hud/hudvr.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
 #include "hud/hudparse.h"
@@ -897,7 +898,13 @@ static void game_flash_diminish(float frametime)
 	} else {
 		Big_expl_flash.cur_flash_intensity = 0.0f;
 	}
-	
+}
+
+/**
+ * Draws the full screen flash (damage, sun glare, big explosions) over what has been rendered so far.
+ */
+static void game_flash_draw()
+{
 	if ( Use_palette_flash )	{
 		int r,g,b;
 
@@ -937,7 +944,6 @@ static void game_flash_diminish(float frametime)
 			}
 		}
 	}
-	
 }
 
 
@@ -2031,6 +2037,8 @@ void game_init()
 		exit(1);
 		return;
 	}
+
+	hud_vr_init();
 
 	if (LoggingEnabled && Cmdline_debug_window) {
 		outwnd_debug_window_init();
@@ -4020,30 +4028,36 @@ bool game_actually_playing()
 	return (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_DEATH_DIED) || (state == GS_STATE_DEATH_BLEW_UP);
 }
 
-void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
+void game_render_hud(camid cid)
 {
 	gr_reset_clip();
 
-	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
-	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
+	const bool vr_panel = hud_vr_drawing_panel();
 
 	if(cid.isValid()) {
 		g3_start_frame(0);		// 0 = turn zbuffering off
-		g3_set_view( cid.getCamera() );
 
-		if (fov_override)
-			g3_set_fov(*fov_override);
+		if (vr_panel) {
+			hud_vr_set_view();
+		} else {
+			g3_set_view( cid.getCamera() );
+		}
 
-		hud_render_preprocess(frametime);
+		hud_render_preprocess(flFrametime);
 
 		g3_end_frame();
 	}
 
 	// main HUD rendering function
-	hud_render_all(frametime);
+	hud_render_all(flFrametime);
 
 	// Diminish the palette effect
 	game_flash_diminish(flFrametime);
+
+	// It covers each eye's whole view, so it goes over the VR HUD panel instead of into it
+	if (!vr_panel) {
+		game_flash_draw();
+	}
 }
 
 //100% blackness
@@ -4206,6 +4220,13 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	camid cid = game_render_frame_setup();
 
+	// The VR HUD panel hangs off the camera as set up here, before game_render_frame() adds the head tracking to it
+	vec3d hud_camera_pos = vmd_zero_vector;
+	matrix hud_camera_orient = vmd_identity_matrix;
+	if (openxr_in_stereo_frame() && cid.getCamera() != nullptr) {
+		cid.getCamera()->get_info(&hud_camera_pos, &hud_camera_orient);
+	}
+
 	game_render_frame(cid, offset, rot_offset, fov_override);
 
 	//Cutscene bars
@@ -4216,38 +4237,51 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 		cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
 	}
 
-	Scripting_didnt_draw_hud = 1;
-	auto scripting_param_list = scripting::hook_param_list(
-		scripting::hook_param("Self", 'o', Viewer_obj),
-		scripting::hook_param("Player", 'o', Player_obj)
-	);
+	const auto vr_hud = hud_vr_begin_maybe(&hud_camera_pos, &hud_camera_orient);
 
-	if (scripting::hooks::OnHudDraw->isActive()) {
-		Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
-	}
+	if (vr_hud != VrHudPass::Reuse) {
+		Scripting_didnt_draw_hud = 1;
+		auto scripting_param_list = scripting::hook_param_list(
+			scripting::hook_param("Self", 'o', Viewer_obj),
+			scripting::hook_param("Player", 'o', Player_obj)
+		);
 
-	if (Scripting_didnt_draw_hud) {
-		GR_DEBUG_SCOPE("Render HUD");
-		TRACE_SCOPE(tracing::RenderHUD);
-
-		game_render_hud(cid, fov_override);
-	}
-	HUD_reset_clip();
-
-	if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
-		anim_render_all(0, flFrametime);
-	}
-
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
-	{
-		TRACE_SCOPE(tracing::RenderHUDHook);
-
-		// see also hu.isOnHudDrawCalled()
 		if (scripting::hooks::OnHudDraw->isActive()) {
-			if (fov_override)
-				g3_set_fov(*fov_override);
+			Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
+		}
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
+		if (Scripting_didnt_draw_hud) {
+			GR_DEBUG_SCOPE("Render HUD");
+			TRACE_SCOPE(tracing::RenderHUD);
+
+			game_render_hud(cid);
+		}
+		HUD_reset_clip();
+
+		if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
+			anim_render_all(0, flFrametime);
+		}
+
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+		{
+			TRACE_SCOPE(tracing::RenderHUDHook);
+
+			// see also hu.isOnHudDrawCalled()
+			if (scripting::hooks::OnHudDraw->isActive()) {
+				scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
+			}
+		}
+	}
+
+	if (vr_hud == VrHudPass::Panel) {
+		hud_vr_end();
+	}
+
+	if (vr_hud != VrHudPass::Direct) {
+		hud_vr_draw_panel(*fov_override);
+
+		if (Scripting_didnt_draw_hud) {
+			game_flash_draw();
 		}
 	}
 
@@ -7198,7 +7232,7 @@ void game_shutdown(void)
 		Cmdline_mod = nullptr;
 	}
 
-	lcl_xstr_close();
+	lcl_close();
 
 	threading::shut_down_task_pool();
 }
