@@ -38222,7 +38222,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the nav point." },
 
 	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
-		"\tDeselects any navpoint selected.\r\n\r\n"
+		"\tDeselects any navpoint selected. Ends autopilot if it is engaged.\r\n\r\n"
 		"Takes no arguments..." },
 
 	{ OP_NAV_SET_COLOR, "nav-set-color (Action operator)\r\n"

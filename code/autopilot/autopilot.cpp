@@ -1555,7 +1555,11 @@ void SelectNav(const char *Nav)
 // Deselects any navpoint selected.
 void DeselectNav()
 {
-  CurrentNav = 0;
+	// Shutdown removes goals using the selected nav and must precede clearing it.
+	if (AutoPilotEngaged) {
+		EndAutoPilot();
+	}
+	CurrentNav = -1;
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
