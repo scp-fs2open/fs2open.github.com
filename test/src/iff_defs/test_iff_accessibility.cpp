@@ -14,6 +14,14 @@ class IffAccessibilityTest : public test::FSTestFixture {
 	{
 		pushModDir("iff/tbm_adds_iff");
 	}
+
+  protected:
+	void TearDown() override
+	{
+		iff_close();
+
+		test::FSTestFixture::TearDown();
+	}
 };
 
 namespace {
@@ -31,7 +39,6 @@ namespace {
 }
 } // namespace
 
-// one test: nothing clears Iff_info, so a second iff_init() in the process fails on duplicate IFF names
 TEST_F(IffAccessibilityTest, TbmIffsKeepTheirColorsAndBuiltInsUseAccessibilityColors)
 {
 	iff_init();
