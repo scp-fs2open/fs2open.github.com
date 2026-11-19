@@ -145,19 +145,12 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 
-	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
-		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
-
-		data_out->gammaSpec = 1;
-		data_out->alphaGloss = 1;
-
-	} 
-
-	if (material.get_texture_map(TM_SPECULAR_TYPE) >= 0) {
-		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
-
-		data_out->gammaSpec = 0;
-		data_out->alphaGloss = 0;
+	bool is_spec_gloss;
+	const auto specular_map = material.get_specular_map(&is_spec_gloss);
+	if (specular_map >= 0) {
+		data_out->sSpecmapIndex = bm_get_array_index(specular_map);
+		data_out->gammaSpec = is_spec_gloss ? 1 : 0;
+		data_out->alphaGloss = is_spec_gloss ? 1 : 0;
 	}
 	
 	if (material.get_texture_map(TM_NORMAL_TYPE) >= 0) {
