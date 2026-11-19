@@ -33,6 +33,15 @@ int IFF_COLOR_TAGGED    = 2;
 // global only to file
 SCP_vector <std::pair<color, color>> Iff_colors;		// AL 1-2-97: Create two IFF colors, regular and bright
 
+typedef struct {
+	int r;
+	int g;
+	int b;
+} temp_color_t;
+
+// parallel to Iff_colors
+static SCP_vector<temp_color_t> temp_colors;
+
 flag_def_list rti_flags[] = {
 	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
 	{ "blink",				RTIF_BLINK,			0 },
@@ -82,15 +91,7 @@ int iff_get_alpha_value(bool is_bright)
  */
 int iff_init_color(int r, int g, int b)
 {
-	typedef struct {
-		int r;
-		int g;
-		int b;
-	} temp_color_t;
-
 	int i, idx;
-
-	static SCP_vector<temp_color_t> temp_colors;
 
 	Assert(r >= 0 && r <= 255);
 	Assert(g >= 0 && g <= 255);
@@ -660,6 +661,22 @@ void iff_init()
 
 	// now resolve the relationships
 	resolve_iff_data();
+}
+
+void iff_close()
+{
+	Iff_info.clear();
+	Iff_info_names.clear();
+	Iff_colors.clear();
+	temp_colors.clear();
+
+	attack_names.clear();
+	observed_color_table.clear();
+	accessibility_observed_color_table.clear();
+
+	strcpy_s(traitor_name, "Traitor");
+	Iff_traitor = 0;
+	AccessiblitySupported = false;
 }
 
 /**
