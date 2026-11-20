@@ -228,6 +228,8 @@ struct queued_buffer_draw
 	model_material render_material;
 
 	matrix4 transform;
+	matrix4 prev_transform;
+	int prev_transform_stride = 0;
 	vec3d scale;
 
 	const indexed_vertex_source *vert_src;

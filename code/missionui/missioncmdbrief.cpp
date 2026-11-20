@@ -651,7 +651,7 @@ void cmd_brief_close()
 		for (i=0; i<Cur_cmd_brief->num_stages; i++) {
 			if (Cur_cmd_brief->stage[i].wave >= 0)
 				audiostream_close_file(Cur_cmd_brief->stage[i].wave, 0);
-
+			Cur_cmd_brief->stage[i].wave = -1;
 		}
 
 		// so that the same ani will reload properly upon return

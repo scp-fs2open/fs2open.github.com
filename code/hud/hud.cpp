@@ -59,7 +59,7 @@
 #include "weapon/weapon.h"
 
 // This contains not only the retail HUD gauges but also any custom HUD gauges that are not specific to a ship.
-SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
+SCP_vector<SCP_polymorphic<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	
@@ -73,6 +73,7 @@ SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 // Externals not related to the HUD code itself
 extern fov_t View_zoom;
+extern vec3d Matrix_scale;
 
 // globals that will control the color of the HUD gauges
 int HUD_color_red = 0;
@@ -2611,10 +2612,10 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		sprintf(buf, XSTR( "%d%%", 219), line.strength);
 		hud_num_make_mono(buf, font_num);
 
-		if (line.color_override != nullptr) {
+		if (!config && line.color_override != nullptr) {
 			gr_set_color_fast(line.color_override);
 		} else {
-			setGaugeColor(line.bright_index);
+			setGaugeColor(line.bright_index, config);
 		}
 
 		renderString(line.name_x, line.name_y, line.name.c_str(), scale, config);
@@ -4224,6 +4225,7 @@ void hud_save_restore_camera_data(int save)
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
+	static vec3d	save_matrix_scale;
 
 	if ( save ) {
 		save_view_position		= View_position;
@@ -4232,6 +4234,7 @@ void hud_save_restore_camera_data(int save)
 		save_view_matrix		= View_matrix;
 		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
+		save_matrix_scale		= Matrix_scale;
 	}
 	else {
 		// restore global view variables
@@ -4241,6 +4244,7 @@ void hud_save_restore_camera_data(int save)
 		View_matrix		= save_view_matrix;
 		Eye_matrix		= save_eye_matrix;
 		Eye_position	= save_eye_position;
+		Matrix_scale	= save_matrix_scale;
 	}
 }
 

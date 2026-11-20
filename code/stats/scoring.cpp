@@ -460,55 +460,6 @@ void scoring_struct::init()
 	memset(m_dogfight_kills, 0, sizeof(m_dogfight_kills));
 }
 
-// clone someone else's scoring element
-void scoring_struct::assign(const scoring_struct &s)
-{
-	flags = s.flags;
-	score = s.score;
-	rank = s.rank;
-
-	medal_counts.assign(s.medal_counts.begin(), s.medal_counts.end());
-
-	kills = s.kills;
-	assists = s.assists;
-	kill_count = s.kill_count;
-	kill_count_ok = s.kill_count_ok;
-	p_shots_fired = s.p_shots_fired;
-	s_shots_fired = s.s_shots_fired;
-
-	p_shots_hit = s.p_shots_hit;
-	s_shots_hit = s.s_shots_hit;
-
-	p_bonehead_hits = s.p_bonehead_hits;
-	s_bonehead_hits = s.s_bonehead_hits;
-	bonehead_kills = s.bonehead_kills;
-
-	missions_flown = s.missions_flown;
-	flight_time = s.flight_time;
-	last_flown = s.last_flown;
-	last_backup = s.last_backup;
-
-	m_medal_earned = s.m_medal_earned;
-	m_promotion_earned = s.m_promotion_earned;
-	m_badge_earned = s.m_badge_earned;
-
-	m_score = s.m_score;
-	m_kills = s.m_kills;
-	m_okKills = s.m_okKills;
-	m_kill_count = s.m_kill_count;
-	m_kill_count_ok = s.m_kill_count_ok;
-	m_assists = s.m_assists;
-	mp_shots_fired = s.mp_shots_fired;
-	ms_shots_fired = s.ms_shots_fired;
-	mp_shots_hit = s.mp_shots_hit;
-	ms_shots_hit = s.ms_shots_hit;
-	mp_bonehead_hits = s.mp_bonehead_hits;
-	ms_bonehead_hits = s.ms_bonehead_hits;
-	m_bonehead_kills = s.m_bonehead_kills;
-	m_player_deaths = s.m_player_deaths;
-
-	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
-}
 template<typename T, size_t N>
 bool array_compare(const T (&left)[N], const T (&right)[N]) {
 	auto left_el = std::begin(left);

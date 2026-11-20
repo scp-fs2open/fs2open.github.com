@@ -302,6 +302,16 @@ namespace os
 		virtual void setState(ViewportState state) = 0;
 
 		/**
+		 * @brief Gets the window state of the viewport
+		 *
+		 * @return The current state; Windowed for viewports that cannot change state
+		 */
+		virtual ViewportState getState() const
+		{
+			return ViewportState::Windowed;
+		}
+
+		/**
 		 * @brief Minimizes the viewport
 		 *
 		 * @note Implementation may ignore invocations of this function
