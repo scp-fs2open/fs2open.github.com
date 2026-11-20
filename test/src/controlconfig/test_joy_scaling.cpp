@@ -12,7 +12,8 @@ void scale_invert(const CC_bind& bind,
 	CC_type type,
 	float frame_time,
 	int (&axis_in)[CID_JOY_MAX + 1][JOY_NUM_AXES],
-	int* axis_out);
+	int* axis_out,
+	bool buttons_live);
 
 class JoyScalingTest : public ::testing::Test {
   protected:
@@ -137,11 +138,11 @@ TEST_F(JoyScalingTest, BoundAxisUsesItsActionSettings)
 	axis_in[CID_JOY1][JOY_X_AXIS] = JOY_AXIS_CENTER + 5000;
 	const CC_bind bind(CID_JOY1, JOY_X_AXIS);
 
-	scale_invert(bind, Action::BANK, CC_TYPE_AXIS_REL, 0.016f, axis_in, axis_out);
+	scale_invert(bind, Action::BANK, CC_TYPE_AXIS_REL, 0.016f, axis_in, axis_out, true);
 	ASSERT_EQ(axis_out[Action::BANK], 0);
 
 	Joy_axis_dead_zone_size[Action::BANK] = 5;
-	scale_invert(bind, Action::BANK, CC_TYPE_AXIS_REL, 0.016f, axis_in, axis_out);
+	scale_invert(bind, Action::BANK, CC_TYPE_AXIS_REL, 0.016f, axis_in, axis_out, true);
 	ASSERT_GT(axis_out[Action::BANK], 0);
 }
 
