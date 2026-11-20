@@ -317,6 +317,8 @@ enum IoActionId : int {
 	PHOTO_MODE_PARAM_DECREASE,
 	PHOTO_MODE_PARAM_INCREASE,
 
+	VR_RECENTER,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
@@ -499,10 +501,12 @@ public:
 	 *
 	 * @param[in] A     The bind to take
 	 * @param[in] order 0 is primary, 1 is secondary, -1 is overwrite existing bind (if any)
+	 * @param[in] same_device_ok    Axis controls: keep a key or button on the same controller in the other slot,
+	 *                              when both are keys or buttons that don't conflict (two keys, opposite directions)
 	 *
-	 * @note Should there be a binding to the same controller as the given binding, it is cleared
+	 * @note Otherwise a binding to the same controller as the given binding in the other slot is cleared
 	 */
-	void take(CC_bind A, int order);
+	void take(CC_bind A, int order, bool same_device_ok = false);
 
 	/*!
 	 * Clears both bindings
@@ -639,7 +643,7 @@ public:
 	/*!
 	 * Assigns the contents of the given CCI to this CCI
 	 */
-	CCI& operator=(const CCI&);
+	CCI& operator=(const CCI&) = default;
 
 	/*!
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone

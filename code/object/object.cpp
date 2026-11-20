@@ -1608,6 +1608,11 @@ void obj_move_all(float frametime)
 
 	obj_merge_created_list();
 
+	// The submodel pose from last frame, which collision sweeps and motion vectors start from. Taken before anything
+	// moves this frame (turrets can move as early as obj_move_all_pre under framerate independent turning), and for
+	// all instances rather than just objects', since cockpits, skyboxes and external weapons move too.
+	model_instance_snapshot_prev_all();
+
 	// Clear the table that tells which groups of weapons have cast light so far.
 	if(!(Game_mode & GM_MULTIPLAYER) || (MULTIPLAYER_MASTER)) {
 		obj_clear_weapon_group_id_list();

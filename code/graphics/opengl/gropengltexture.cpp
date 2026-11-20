@@ -25,8 +25,6 @@
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "math/vecmat.h"
-#include "options/Option.h"
-#include "osapi/osregistry.h"
 #include "ktxutils/ktxutils.h"
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
@@ -54,96 +52,6 @@ GLint GL_max_renderbuffer_size = 0;
 extern int GLOWMAP;
 extern int SPECMAP;
 extern int ENVMAP;
-
-const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
-																		                { 1, {"Trilinear", 1678}}};
-
-static void parse_texture_filtering_func()
-{
-	SCP_string mode;
-	stuff_string(mode, F_NAME);
-
-	// Convert to lowercase once
-	SCP_tolower(mode);
-
-	// Use a map to associate strings with their respective actions
-	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
-		{"bilinear", []() { GL_mipmap_filter = 0; }},
-		{"trilinear", []() { GL_mipmap_filter = 1; }}};
-
-	auto it = effectActions.find(mode);
-	if (it != effectActions.end()) {
-		it->second(); // Execute the corresponding action
-	} else {
-		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
-	}
-}
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
-                     std::pair<const char*, int>{"Texture Filtering", 1763},
-                     std::pair<const char*, int>{"Texture filtering option", 1764})
-                     .importance(1)
-                     .category(std::make_pair("Graphics", 1825))
-                     .values(TextureFilteringValues)
-                     .default_func([]() {return GL_mipmap_filter;})
-                     .bind_to_once(&GL_mipmap_filter)
-                     .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .parser(parse_texture_filtering_func)
-                     .finish();
-
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return SCP_vector<float>();
-	}
-
-	if (max <= 2.0f) {
-		return SCP_vector<float>();
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
-static SCP_string anisotropic_display(float val)
-{
-	if (val < 2.0f) {
-		return "None";
-	}
-
-	SCP_string out;
-	sprintf(out, "%.0fx", val);
-	return out;
-}
-static float anisotropic_default()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return 1.0f;
-	}
-	return max;
-}
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
-                     std::pair<const char*, int>{"Anistropic filtering", 1736},
-                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
-                     .category(std::make_pair("Graphics", 1825))
-                     .display(anisotropic_display)
-                     .default_func(anisotropic_default)
-                     .level(options::ExpertLevel::Advanced)
-                     .importance(78)
-                     .finish();
 
 // forward declarations
 int opengl_free_texture(tcache_slot_opengl *t);
@@ -203,6 +111,7 @@ void opengl_tcache_init()
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &GL_max_texture_width);
 
 	GL_max_texture_height = GL_max_texture_width;
+	Gr_max_output_size = GL_max_texture_width;
 
 	// if we are not using sections then make sure we have the min texture size available to us
 	// 1024 is what we need with the standard resolutions - taylor
@@ -213,11 +122,7 @@ void opengl_tcache_init()
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
 	//   1  ==  Trilinear
-	GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
-
-	if (GL_mipmap_filter > 1) {
-		GL_mipmap_filter = 1;
-	}
+	GL_mipmap_filter = gr_texture_filter_setting();
 
 	// max size (width and/or height) that we can use for framebuffer/renderbuffer
 	glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &GL_max_renderbuffer_size);
@@ -230,17 +135,7 @@ void opengl_tcache_init()
 
 	// anisotropy
 	if ( GLAD_GL_EXT_texture_filter_anisotropic ) {
-		// set max value first thing
-		GL_anisotropy = GL_state.Constants.GetMaxAnisotropy();
-
-		if (Using_in_game_options) {
-			GL_anisotropy = AnisotropyOption->getValue();
-		} else {
-			// now for the user setting
-			if (Cmdline_aniso_level != 0)
-				GL_anisotropy = (GLfloat)Cmdline_aniso_level;
-		}
-
+		GL_anisotropy = gr_anisotropy_setting();
 		CLAMP(GL_anisotropy, 1.0f, GL_state.Constants.GetMaxAnisotropy());
 	}
 
@@ -1892,13 +1787,12 @@ int opengl_set_render_target( int slot, int face, int is_static )
 			}
 		}
 
-		if(Cmdline_window_res) {
-			GL_state.BindFrameBuffer(Back_framebuffer);
-		}
-		else {
-			GL_state.BindFrameBuffer(0);
+		const GLuint screen_framebuffer = opengl_get_screen_framebuffer();
+		GL_state.BindFrameBuffer(screen_framebuffer);
+		if (screen_framebuffer == 0) {
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		}
+		GL_state.SetCoverageAlpha(opengl_screen_layer_active());
 
 		// done with this render target so lets move on
 		render_target = NULL;
@@ -1934,6 +1828,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 //	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
 	GL_state.BindFrameBuffer(fbo->framebuffer_id);
+	GL_state.SetCoverageAlpha(false);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
 		// For cubemaps we can enable one of the six faces for rendering
@@ -2019,7 +1914,8 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	// Initialize the texture storage of the framebuffer. Framebuffers always have only a single layer in the texture array
 	// This automatically handles cubemaps correctly
-	opengl_tex_array_storage(GL_state.Texture.GetTarget(), ts->mipmap_levels, GL_RGBA8, *w, *h, 1);
+	const bool hdr = (flags & BMP_FLAG_RENDER_TARGET_HDR) != 0;
+	opengl_tex_array_storage(GL_state.Texture.GetTarget(), ts->mipmap_levels, hdr ? GL_RGBA16F : GL_RGBA8, *w, *h, 1);
 
 	if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
 		glGenerateMipmap(GL_state.Texture.GetTarget());
@@ -2028,12 +1924,13 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
 	// Record the bytes of the color texture, which opengl_tex_array_storage() gave the format
-	// GL_RGBA8 (4 bytes for each pixel). A cube map holds 6 faces of that size.
+	// GL_RGBA8 (4 bytes for each pixel) or GL_RGBA16F (8). A cube map holds 6 faces of that size.
+	const size_t bytes_per_pixel = hdr ? 8 : 4;
 	size_t rt_texture_bytes = 0;
 	for (int level = 0; level < ts->mipmap_levels; ++level) {
 		auto level_w = static_cast<size_t>(std::max(1, *w >> level));
 		auto level_h = static_cast<size_t>(std::max(1, *h >> level));
-		rt_texture_bytes += level_w * level_h * 4;
+		rt_texture_bytes += level_w * level_h * bytes_per_pixel;
 	}
 	if (flags & BMP_FLAG_CUBEMAP) {
 		rt_texture_bytes *= 6;
@@ -2063,6 +1960,8 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	// frame buffer
 	glGenFramebuffers(1, &new_fbo->framebuffer_id);
+	// Whatever is being drawn into must stay bound, the render target may be made in the middle of a frame
+	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(new_fbo->framebuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
@@ -2081,7 +1980,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		mprintf(("OpenGL: Unable to create FBO!\n"));
 		auto fbo_id = ts->fbo_id;
 
-		GL_state.BindFrameBuffer(0);
+		GL_state.PopFramebufferState();
 
 		GL_state.Texture.Delete(ts->texture_id);
 		glDeleteTextures(1, &ts->texture_id);
@@ -2129,7 +2028,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	GL_state.BindFrameBuffer(0);
+	GL_state.PopFramebufferState();
 
 	opengl_set_texture_target();
 
@@ -2160,6 +2059,17 @@ GLuint opengl_get_rtt_framebuffer()
 		return 0;
 	else
 		return render_target->framebuffer_id;
+}
+
+GLuint opengl_get_render_target_framebuffer(int handle)
+{
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(handle);
+	if (ts == nullptr) {
+		return 0;
+	}
+
+	auto fbo = opengl_get_fbo(ts->fbo_id);
+	return fbo == nullptr ? 0 : fbo->framebuffer_id;
 }
 
 void gr_opengl_bm_generate_mip_maps(int handle)

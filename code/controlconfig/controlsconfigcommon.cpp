@@ -276,6 +276,9 @@ void control_config_common_init_bindings() {
 	(PHOTO_MODE_PARAM_DECREASE,                                 KEY_LEFT, -1, COMPUTER_TAB, 1912, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 	(PHOTO_MODE_PARAM_INCREASE,                                KEY_RIGHT, -1, COMPUTER_TAB, 1913, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 
+	// VR
+	(VR_RECENTER,                       -1, -1, COMPUTER_TAB, 1942, "Recenter VR View",                  CC_TYPE_TRIGGER)
+
 	// Custom Controls
 	(CUSTOM_CONTROL_1,                  KEY_ALTED | KEY_SHIFTED | KEY_1, -1, COMPUTER_TAB, 1784, "Custom Control 1", CC_TYPE_TRIGGER, true)
 	(CUSTOM_CONTROL_2,                  KEY_ALTED | KEY_SHIFTED | KEY_2, -1, COMPUTER_TAB, 1785, "Custom Control 2", CC_TYPE_TRIGGER, true)
@@ -1171,6 +1174,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_RESET)
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_DECREASE)
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_INCREASE)
+	ADD_ENUM_TO_ACTION_MAP(VR_RECENTER)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TOPDOWN)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TRACK_TARGET)
 
@@ -1446,7 +1450,7 @@ void control_enable_hook(IoActionId id, bool enable) {
  * Stuffs the CCF flags into the given char.  Needs item_id for validation.
  * @details Unknown, unrecognized, or excessive flags are silently ignored on Release builds.  Debug builds complain.
  */
-void stuff_CCF(char& flags, size_t item_id) {
+void stuff_CCF(char& flags, size_t item_id, CID cid) {
 	Assert(item_id < Control_config.size());
 
 	SCP_string szTempBuffer;
@@ -1472,10 +1476,14 @@ void stuff_CCF(char& flags, size_t item_id) {
 	};
 #else
 	// Lambda to add flags.
-	// Release version doesn't modify szTempBuffer as it searches for substrings.
+	// Eats the substring as it is found, or AXIS would also match inside AXIS_BTN.
 	auto ADD_FLAG = [&](char id) {
-		if (szTempBuffer.find(ValToCCF(id)) != SCP_string::npos)
+		const SCP_string name = ValToCCF(id);
+		const auto at = szTempBuffer.find(name);
+		if (at != SCP_string::npos) {
 			flags |= id;
+			szTempBuffer.erase(at, name.length());
+		}
 	};
 #endif
 
@@ -1485,6 +1493,7 @@ void stuff_CCF(char& flags, size_t item_id) {
 	ADD_FLAG(CCF_AXIS);
 	ADD_FLAG(CCF_HAT);
 	ADD_FLAG(CCF_BALL);
+	ADD_FLAG(CCF_BUTTON);
 
 
 #ifndef NDEBUG
@@ -1550,6 +1559,10 @@ void stuff_CCF(char& flags, size_t item_id) {
 			flags &= ~CCF_RELATIVE;
 		}
 
+		if ((cid == CID_KEYBOARD) || (flags & CCF_BUTTON)) {
+			break;
+		}
+
 		// Must have
 		mask = flags & (CCF_AXIS | CCF_BALL);
 		if (mask == 0) {
@@ -1564,6 +1577,10 @@ void stuff_CCF(char& flags, size_t item_id) {
 		if (mask != 0) {
 			error_display(0, "Illegal digital flags passed to analog config item %i, ignoring:\n'%s'", static_cast<int>(item_id), ValToCCF(mask).c_str());
 			flags &= ~(CCF_AXIS_BTN | CCF_HAT);
+		}
+
+		if ((cid == CID_KEYBOARD) || (flags & CCF_BUTTON)) {
+			break;
 		}
 
 		// Must have
@@ -1683,7 +1700,7 @@ size_t read_bind_1(CC_preset &preset) {
 		// These items are required if the controller is defined
 		if (cid != CID_NONE) {
 			if (required_string("$Flags:")) {
-				stuff_CCF(flags, item_id);
+				stuff_CCF(flags, item_id, cid);
 			}
 
 			if (required_string("$Input:")) {
@@ -1708,7 +1725,7 @@ size_t read_bind_1(CC_preset &preset) {
 		// These items are required if the controller is defined
 		if (cid != CID_NONE) {
 			if (required_string("$Flags:")) {
-				stuff_CCF(flags, item_id);
+				stuff_CCF(flags, item_id, cid);
 			}
 
 			if (required_string("$Input:")) {
@@ -2104,7 +2121,9 @@ char CCFToVal(const char * str) {
 	if (strstr(str, "INVERTED") != nullptr) {
 		val |= CCF_INVERTED;
 	}
-	if (strstr(str, "AXIS") != nullptr) {
+	SCP_string rest(str);
+	replace_all(rest, "AXIS_BTN", "");
+	if (strstr(rest.c_str(), "AXIS") != nullptr) {
 		val |= CCF_AXIS;
 	}
 	if (strstr(str, "HAT") != nullptr) {
@@ -2112,6 +2131,9 @@ char CCFToVal(const char * str) {
 	}
 	if (strstr(str, "BALL") != nullptr) {
 		val |= CCF_BALL;
+	}
+	if (strstr(str, "BUTTON") != nullptr) {
+		val |= CCF_BUTTON;
 	}
 
 	return val;
@@ -2345,6 +2367,13 @@ SCP_string ValToCCF(char id) {
 			str += ", ";
 
 		str += "BALL";
+	}
+
+	if (id & CCF_BUTTON) {
+		if (!str.empty())
+			str += ", ";
+
+		str += "BUTTON";
 	}
 
 	if (str.empty()) {
@@ -2647,7 +2676,8 @@ bool CC_bind::conflicts_with(const CC_bind& B) const {
 	// Check if A is an Axis or Axis Button, and if B is an Axis or Axis Button
 	char mask = (CCF_AXIS_BTN | CCF_AXIS);
 	if ((A_flags & mask) && (B_flags & mask)) {
-		return true;
+		// Opposite sides of one axis don't conflict; a gamepad trigger's button only looks like an axis side here
+		return !((flags & B.flags & CCF_AXIS_BTN) && ((flags ^ B.flags) & CCF_INVERTED));
 	}
 
 	// Check if Hat
@@ -2663,7 +2693,7 @@ bool CC_bind::conflicts_with(const CC_bind& B) const {
 	// These flags don't cause a conflict for anything other than buttons/keys:
 	// CCF_RELATIVE, CCF_INVERTED
 
-	mask = (CCF_AXIS_BTN | CCF_AXIS | CCF_HAT | CCF_BALL | CCF_RELATIVE | CCF_INVERTED);
+	mask = (CCF_AXIS_BTN | CCF_AXIS | CCF_HAT | CCF_BALL | CCF_RELATIVE);
 	// z64: I really don't like this form, even if its "simpler" and "faster" according to clang-tidy
 	// First off, check if A or B is NOT a button, as according to the mask.  Buttons do not have a flag, so we check
 	// if they are any of the other input types
@@ -2696,8 +2726,8 @@ void CC_bind::validate() {
 	}
 
 	if (cid == CID_KEYBOARD) {
-		// Keyboard has no flags
-		flags = 0;
+		// INVERTED is the direction a key drives an axis control
+		flags &= CCF_INVERTED;
 		return;
 	}
 
@@ -2735,7 +2765,10 @@ SCP_string CC_bind::textify() const {
 		break;
 	}
 
-	if (flags & CCF_AXIS) {
+	if ((flags & CCF_AXIS_BTN) && (cid != CID_NONE) && (btn >= 0) && (btn < NUM_AXIS_TEXT)) {
+		retval = SCP_string(Axis_text[btn]) + (is_inverted() ? " -" : " +");
+
+	} else if (flags & CCF_AXIS) {
 		// Is Axis
 		if (cid == CID_NONE) {
 			retval = XSTR("None", 1873);
@@ -2787,14 +2820,20 @@ bool CCB::empty() const {
 	return (first.empty() && second.empty());
 }
 
-void CCB::take(CC_bind A, int order) {
+// Keys and buttons each drive one direction, so a pair can share an axis control; analogs or repeats would add up
+static bool can_share_axis_control(const CC_bind& kept, const CC_bind& added) {
+	const char analog = CCF_AXIS | CCF_BALL;
+	return !(kept.get_flags() & analog) && !(added.get_flags() & analog) && !kept.conflicts_with(added);
+}
+
+void CCB::take(CC_bind A, int order, bool same_device_ok) {
 	A.validate();
 	
 	switch (order) {
 	case 0:
 		first = A;
 
-		if (second.get_cid() == A.get_cid()) {
+		if ((second.get_cid() == A.get_cid()) && !(same_device_ok && can_share_axis_control(second, A))) {
 			second.clear();
 		}
 		break;
@@ -2802,7 +2841,7 @@ void CCB::take(CC_bind A, int order) {
 	case 1:
 		second = A;
 	
-		if (first.get_cid() == A.get_cid()) {
+		if ((first.get_cid() == A.get_cid()) && !(same_device_ok && can_share_axis_control(first, A))) {
 			first.clear();
 		}
 		break;
@@ -2811,6 +2850,10 @@ void CCB::take(CC_bind A, int order) {
 		// Overwrite existing, or put in empty
 		if (first.get_cid() == A.get_cid()) {
 			first = A;
+
+			if (second.conflicts_with(A)) {
+				second.clear();
+			}
 
 		} else if (second.get_cid() == A.get_cid()) {
 			second = A;
@@ -2862,24 +2905,6 @@ bool CCB::has_second_conflict(const CCB& A) const {
 	// coverity[copy_paste_error:FALSE]
 	return !second.empty() && (second.conflicts_with(A.first) || second.conflicts_with(A.second));
 }
-
-CCI& CCI::operator=(const CCI& A) {
-	first = A.first;
-	second = A.second;
-	tab = A.tab;
-	indexXSTR = A.indexXSTR;
-	text = A.text;
-	type = A.type;
-	analog_value = A.analog_value;
-	digital_used = A.digital_used;
-	disabled = A.disabled;
-	locked = A.locked;
-	scriptEnabledByDefault = A.scriptEnabledByDefault;
-	continuous_ongoing = A.continuous_ongoing;
-	conflict_groups = A.conflict_groups;
-
-	return *this;
-};
 
 CCI& CCI::operator=(const CCB& A) {
 	first = A.first;

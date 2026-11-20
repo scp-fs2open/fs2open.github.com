@@ -190,10 +190,19 @@ void scale_matrix(void)
 
 	Matrix_scale = Window_scale;
 
-	float s = 1.0f / tanf(g3_get_hfov(Proj_fov) * 0.5f);
+	if (std::holds_alternative<asymmetric_fov>(Proj_fov)) {
+		// Must match gr_set_proj_matrix() exactly, or anything placed via g3_project_vertex() drifts against the
+		// rendered world. The frustum extents already encode the aspect ratio, so Window_scale does not apply.
+		// The off-center part is handled by g3_compensate_asymmetric_fov().
+		const auto& afov = std::get<asymmetric_fov>(Proj_fov);
+		Matrix_scale.xyz.x = 2.0f / (tanf(afov.right) - tanf(afov.left));
+		Matrix_scale.xyz.y = 2.0f / (tanf(afov.up) - tanf(afov.down));
+	} else {
+		float s = 1.0f / tanf(g3_get_hfov(Proj_fov) * 0.5f);
 
-	Matrix_scale.xyz.x *= s;
-	Matrix_scale.xyz.y *= s;
+		Matrix_scale.xyz.x *= s;
+		Matrix_scale.xyz.y *= s;
+	}
 
 	//now scale matrix elements
 

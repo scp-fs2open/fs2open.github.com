@@ -30,6 +30,7 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       primitiveType == other.primitiveType &&
 	       depthMode == other.depthMode &&
 	       blendMode == other.blendMode &&
+	       coverageAlpha == other.coverageAlpha &&
 	       cullEnabled == other.cullEnabled &&
 	       frontFaceCW == other.frontFaceCW &&
 	       depthWriteEnabled == other.depthWriteEnabled &&
@@ -52,6 +53,7 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       renderPass == other.renderPass &&
 	       subpass == other.subpass &&
 	       colorAttachmentCount == other.colorAttachmentCount &&
+	       writesVelocity == other.writesVelocity &&
 	       sampleCount == other.sampleCount &&
 	       perAttachmentBlendEnabled == other.perAttachmentBlendEnabled &&
 	       [&]() {
@@ -107,6 +109,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, static_cast<uint64_t>(primitiveType));
 	hashCombine(h, static_cast<uint64_t>(depthMode));
 	hashCombine(h, static_cast<uint64_t>(blendMode));
+	hashCombine(h, static_cast<uint64_t>(coverageAlpha));
 	hashCombine(h, cullEnabled ? 1u : 0u);
 	hashCombine(h, frontFaceCW ? 1u : 0u);
 	hashCombine(h, depthWriteEnabled ? 1u : 0u);
@@ -126,6 +129,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, handleToU64(static_cast<VkRenderPass>(renderPass)));
 	hashCombine(h, subpass);
 	hashCombine(h, colorAttachmentCount);
+	hashCombine(h, writesVelocity ? 1u : 0u);
 	hashCombine(h, static_cast<uint64_t>(sampleCount));
 	hashCombine(h, perAttachmentBlendEnabled ? 1u : 0u);
 	if (perAttachmentBlendEnabled) {
@@ -179,6 +183,17 @@ void VulkanPipelineManager::shutdown()
 
 	m_initialized = false;
 	nprintf(("vulkan", "VulkanPipelineManager: Shutdown complete\n"));
+}
+
+void VulkanPipelineManager::forgetPipelinesOfShaderType(shader_type type)
+{
+	for (auto it = m_pipelines.begin(); it != m_pipelines.end();) {
+		if (it->first.shaderType == type) {
+			it = m_pipelines.erase(it);
+		} else {
+			++it;
+		}
+	}
 }
 
 vk::Pipeline VulkanPipelineManager::getPipeline(const PipelineConfig& config, const vertex_layout& vertexLayout)
@@ -452,7 +467,23 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 			colorBlendAttachments.push_back(createColorBlendAttachment(
 				config.attachmentBlends[i].blendMode, config.attachmentBlends[i].writeMask));
 		} else {
-			colorBlendAttachments.push_back(createColorBlendAttachment(config.blendMode, config.colorWriteMask));
+			colorBlendAttachments.push_back(createColorBlendAttachment(config.blendMode, config.colorWriteMask, config.coverageAlpha));
+		}
+	}
+
+	if (config.colorAttachmentCount > PipelineConfig::VELOCITY_ATTACHMENT) {
+		auto& velocity = colorBlendAttachments[PipelineConfig::VELOCITY_ATTACHMENT];
+		velocity = vk::PipelineColorBlendAttachmentState{};
+		if (config.writesVelocity) {
+			// The shader's alpha chooses per fragment whether to replace the motion already there.
+			velocity.blendEnable = VK_TRUE;
+			velocity.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
+			velocity.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+			velocity.colorBlendOp = vk::BlendOp::eAdd;
+			velocity.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+			velocity.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+			velocity.alphaBlendOp = vk::BlendOp::eAdd;
+			velocity.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB;
 		}
 	}
 
