@@ -16112,6 +16112,8 @@ void multi_sexp_destroy_subsys_instantly()
 		// find subsystem
 		Assert(subsys_index >= 0);
 		ss = ship_get_indexed_subsys(shipp, subsys_index);
+		if (ss == nullptr)
+			continue;
 
 		// do destruction stuff
 		ss->current_hits = 0;
