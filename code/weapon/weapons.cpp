@@ -5404,8 +5404,6 @@ void weapon_close()
 	}
 
 	Spawn_names.clear();
-	Pending_proximity_type_names.clear();
-	Pending_proximity_class_names.clear();
 
 	Weapons_inited = false;
 }
