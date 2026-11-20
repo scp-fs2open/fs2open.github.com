@@ -105,6 +105,9 @@ class OptionsManager {
 	 *
 	 * Lets several options that act on one thing apply together, whatever order their listeners ran in.
 	 *
+	 * @note A hook may persist an option itself. That persist runs every hook again, nested, with only that option, so
+	 * a hook that persists must not persist again when run for that persist, or it recurses.
+	 *
 	 * @param hook Receives the options whose listener this persist notified, and returns the options whose new value
 	 * it could not apply; those are reported like options whose listener returned false
 	 * @return An id to pass to removePostPersistHook()
