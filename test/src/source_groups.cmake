@@ -23,6 +23,7 @@ add_file_folder("CFile"
 
 add_file_folder("Controlconfig"
     controlconfig/test_bindings.cpp
+    controlconfig/test_joy_scaling.cpp
 )
 
 add_file_folder("Globalincs"
