@@ -327,9 +327,9 @@ ADE_INDEXER(l_Loadout_Weapon,
 		bankType = WP_MISSILE;
 	}
 
-	wepIndex--; // Convert from Lua
 	bank--; //Convert from Lua
 	if (ADE_SETTING_VAR) {
+		wepIndex--; // Convert from Lua
 		if (Game_mode & GM_MULTIPLAYER) {
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
@@ -397,9 +397,8 @@ ADE_VIRTVAR(ShipClassIndex,
 		return ADE_RETURN_NIL;
 	}
 
-	shipIndex--; //Convert from Lua
-
 	if (ADE_SETTING_VAR) {
+		shipIndex--; //Convert from Lua
 		if (Game_mode & GM_MULTIPLAYER) {
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
