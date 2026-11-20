@@ -147,7 +147,10 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
-	float pad;
+	float glowIntensity;
+
+	float glowHdrMultiplier;
+	float pad[3];
 
 	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
 	matrix4 prevModelMatrix;
@@ -155,6 +158,9 @@ struct model_uniform_data {
 	int prev_transform_stride;
 	float pad2;
 };
+static_assert(offsetof(model_uniform_data, glowHdrMultiplier) == 1056 &&
+				  offsetof(model_uniform_data, prevModelMatrix) == 1072,
+	"model_uniform_data must match the GLSL modelData layout");
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
@@ -267,8 +273,12 @@ struct decal_info {
 	int diffuse_blend_mode;
 
 	int glow_blend_mode;
-	float pad[3];
+	float glow_intensity;
+	float glow_hdr_multiplier;
+	float pad;
 };
+static_assert(offsetof(decal_info, glow_hdr_multiplier) == 24 && sizeof(decal_info) == 32,
+	"decal_info must match the GLSL decalInfoData layout");
 
 struct matrix_uniforms {
 	matrix4 modelViewMatrix;
