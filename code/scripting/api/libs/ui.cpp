@@ -3381,7 +3381,7 @@ ADE_FUNC(getChat,
 ADE_FUNC(sendChat,
 	l_UserInterface_MultiGeneral,
 	"string",
-	"Sends a string to the current game's IRC chat. Limited to 125 characters. Anything after that is dropped.",
+	"Sends a string to the current game's IRC chat. Limited to 250 characters. Anything after that is dropped.",
 	nullptr,
 	nullptr)
 {

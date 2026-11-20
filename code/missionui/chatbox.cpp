@@ -474,7 +474,7 @@ void chatbox_autosplit_line()
 			// display any remainder of text on the next line
 			Chat_inputbox.set_text(remainder);
 		}
-	} else if((Chat_inputbox.pressed() && (msg[0] != '\0')) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
+	} else if (Chat_inputbox.pressed() && (msg[0] != '\0')) {
 		chatbox_send_msg(msg);
 		// display any remainder of text on the next line
 		Chat_inputbox.set_text(remainder);		
@@ -524,7 +524,7 @@ int chatbox_create(int mode_flags)
 	Chat_window.set_mask_bmap(Chatbox_mask);	
 
    // create the chat text enter input area	
-	Chat_inputbox.create( &Chat_window, Chatbox_inputbox_x, Chatbox_textenter_y, Chatbox_inputbox_w, CHATBOX_MAX_LEN, "", UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_EAT_USED, Chatbox_w, Color_netplayer[MY_NET_PLAYER_NUM]);	
+	Chat_inputbox.create( &Chat_window, Chatbox_inputbox_x, Chatbox_textenter_y, Chatbox_inputbox_w, CHATBOX_MAX_LEN - 1, "", UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_EAT_USED, Chatbox_w, Color_netplayer[MY_NET_PLAYER_NUM]);	
 	Chat_inputbox.set_focus();
 	Chat_inputbox.set_invalid_chars(CHATBOX_INVALID_CHARS);
 
@@ -738,6 +738,12 @@ void chat_box_add_chat_to_list(brief_chat& chat)
 
 // int Test_color = 0;
 
+// enough for a full-length message without line breaks in the narrowest chat box
+static constexpr int CHATBOX_MAX_INDENTED_LINES = 8;
+
+// packet strings carry a one-byte length
+static_assert(CHATBOX_MAX_LEN - 1 <= UINT8_MAX, "a chat message must fit a packet string");
+
 // the scripting API joins the lines of a message back together, so keep the space the wrap removed
 static void chatbox_set_line_text(brief_chat& chat, const char* line, int n_chars, bool space_follows)
 {
@@ -806,8 +812,13 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 			indented_w -= space_w;
 		}
 
-		n_lines = split_str(rest, indented_w, n_chars, p_str, 3, CHATBOX_LINE_LEN);
+		// a full-length message can need more lines than the first split allows; the cap stops a message of line
+		// breaks from pushing the whole scrollback out
+		SCP_vector<int> rest_chars;
+		SCP_vector<const char*> rest_str;
+		n_lines = split_str(rest, indented_w, rest_chars, rest_str, CHATBOX_LINE_LEN);
 		Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");		
+		n_lines = std::min(n_lines, CHATBOX_MAX_INDENTED_LINES);
 
 		// setup these remaining lines
 		for(int idx=0;idx<n_lines;idx++){
@@ -815,8 +826,8 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 			i_chat.player_id = pid;
 			i_chat.indent = true;
 			i_chat.callsign[0] = '\0';
-			bool space_follows = (idx + 1 < n_lines) && (p_str[idx + 1] != p_str[idx] + n_chars[idx]);
-			chatbox_set_line_text(i_chat, p_str[idx], n_chars[idx], space_follows);
+			bool space_follows = (idx + 1 < n_lines) && (rest_str[idx + 1] != rest_str[idx] + rest_chars[idx]);
+			chatbox_set_line_text(i_chat, rest_str[idx], rest_chars[idx], space_follows);
 
 			chat_box_add_chat_to_list(i_chat);
 		}

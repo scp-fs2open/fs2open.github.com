@@ -66,7 +66,7 @@ class ChatboxAddLineTest : public ::testing::Test {
 TEST_F(ChatboxAddLineTest, long_message_wraps_at_spaces_and_joins_back)
 {
 	SCP_string msg;
-	for (int i = 0; i < 30; ++i) {
+	for (int i = 0; i < 60; ++i) {
 		msg += "word";
 		msg += std::to_string(i);
 		msg += ' ';
@@ -80,7 +80,7 @@ TEST_F(ChatboxAddLineTest, long_message_wraps_at_spaces_and_joins_back)
 
 TEST_F(ChatboxAddLineTest, long_word_is_split_without_adding_spaces)
 {
-	SCP_string msg(200, 'x');
+	SCP_string msg(400, 'x');
 
 	chatbox_add_line(msg.c_str(), 0, 0);
 
@@ -94,4 +94,33 @@ TEST_F(ChatboxAddLineTest, short_message_is_one_line)
 	ASSERT_EQ(Brief_chat.size(), static_cast<size_t>(1));
 	EXPECT_STREQ(Brief_chat.front().text, "short line");
 	EXPECT_FALSE(Brief_chat.front().indent);
+}
+
+TEST_F(ChatboxAddLineTest, message_needing_many_lines_keeps_all_of_them)
+{
+	// longer than four lines at the length limit
+	SCP_string msg;
+	for (int i = 0; i < 150; ++i) {
+		msg += "word";
+		msg += std::to_string(i);
+		msg += ' ';
+	}
+	msg.pop_back();
+
+	chatbox_add_line(msg.c_str(), 0, 0);
+
+	EXPECT_GT(Brief_chat.size(), static_cast<size_t>(4));
+	EXPECT_EQ(joined(), msg);
+}
+
+TEST_F(ChatboxAddLineTest, line_breaks_cannot_flood_the_scrollback)
+{
+	SCP_string msg;
+	for (int i = 0; i < 100; ++i) {
+		msg += "a\n";
+	}
+
+	chatbox_add_line(msg.c_str(), 0, 0);
+
+	EXPECT_LE(Brief_chat.size(), static_cast<size_t>(9));
 }
