@@ -1,0 +1,15 @@
+#Ship Classes
+
+$Name: Test Ship A
+$POF file: test_ship.pof
+$Closeup_pos: 0, 0, -10
+$Subsystem: engine, 10, 0
+$Subsystem: sensors, 10, 0
+
+$Name: Test Ship B
+$POF file: test_ship.pof
+$Closeup_pos: 0, 0, -10
+$Subsystem: engine, 10, 0
+$Subsystem: sensors, 10, 0
+
+#End
