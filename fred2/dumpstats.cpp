@@ -24,6 +24,7 @@
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "species_defs/species_defs.h"
+#include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
@@ -285,7 +286,7 @@ void DumpStats::get_background_stats(CString &buffer)
 	} else {
 		// FS! nebula pattern
 		if (Nebula_index >= 0) {
-			temp.Format("\tOld style FS1 nebula filename: %s\r\n", Nebula_filenames[Nebula_index]);
+			temp.Format("\tGenerated nebula pattern: %s\r\n", generated_nebula_pattern_name(Nebula_index));
 			buffer += temp;
 		}
 	}
