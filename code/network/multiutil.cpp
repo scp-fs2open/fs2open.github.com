@@ -3503,9 +3503,10 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, physics_info 
 		a = fl2i(round(r * 16.0f)); 
 		b = fl2i(round(u * 16.0f));
 		c = fl2i(round(f * 32.0f));
-		CAP(a,-2048,2047);
-		CAP(b,-2048,2047);
-		CAP(c,-4096,4095);
+		// the full range of the 13 and 14 bit fields, about 256 m/s each way
+		CAP(a,-4096,4095);
+		CAP(b,-4096,4095);
+		CAP(c,-8192,8191);
 		bitbuffer_put( &buf, (uint)a, 13 );
 		bitbuffer_put( &buf, (uint)b, 13 );
 		bitbuffer_put( &buf, (uint)c, 14 );
