@@ -1112,9 +1112,9 @@ void NavSystem_Do()
 			{
 				if (Objects[Navs[i].target_index].flags[Object::Object_Flags::Should_be_dead])
 				{
-					if (CurrentNav == i)
-						CurrentNav = -1;
 					DelNavPoint(i);
+					// The next nav may also be for a dead ship.
+					--i;
 				}
 			}
 		}
@@ -1360,13 +1360,14 @@ bool DelNavPoint(int nav)
 {	
 	if (nav != -1)
 	{
-		if (nav != MAX_NAVPOINTS-1)
-		{
-			for (int i = nav; i < MAX_NAVPOINTS-1; i++)
-			{
-				Navs[nav] = Navs[nav+1];
-			}
+		if (CurrentNav == nav)
+			nav_set_selection(-1);
+		else if (CurrentNav > nav)
+			--CurrentNav;
 
+		for (int i = nav; i < MAX_NAVPOINTS-1; i++)
+		{
+			Navs[i] = Navs[i+1];
 		}
 		Navs[MAX_NAVPOINTS-1].clear();
 		return true;

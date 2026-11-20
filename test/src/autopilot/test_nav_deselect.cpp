@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>
+#include <iterator>
+
 #include "ai/ai.h"
 #include "autopilot/autopilot.h"
 #include "playerman/player.h"
@@ -49,8 +52,9 @@ protected:
 	bool saved_player_ai = false;
 	bool saved_cinematic = false;
 	object* saved_leader = nullptr;
-	int saved_target_instances[2];
-	char saved_target_names[2][NAME_LENGTH];
+	static constexpr int target_count = 3;
+	int saved_target_instances[target_count];
+	char saved_target_names[target_count][NAME_LENGTH];
 	int saved_carrier_ai_index = -1;
 	int saved_carrier_wingnum = -1;
 	flagset<Ship::Ship_Flags> saved_carrier_flags;
@@ -66,13 +70,14 @@ protected:
 		saved_player_ai = Player_use_ai;
 		saved_cinematic = CinematicStarted;
 		saved_leader = Autopilot_flight_leader;
-		for (int i = 0; i < 2; ++i) {
+		for (int i = 0; i < target_count; ++i) {
 			saved_target_instances[i] = Objects[i].instance;
 			strcpy_s(saved_target_names[i], Ships[i].ship_name);
 			Objects[i].instance = i;
 		}
 		strcpy_s(Ships[0].ship_name, "First target");
 		strcpy_s(Ships[1].ship_name, "Second target");
+		strcpy_s(Ships[2].ship_name, "Third target");
 		for (int i = 0; i < MAX_SHIPS; ++i) {
 			saved_ship_objnums[i] = Ships[i].objnum;
 			Ships[i].objnum = -1;
@@ -123,7 +128,7 @@ protected:
 		Player_use_ai = saved_player_ai;
 		CinematicStarted = saved_cinematic;
 		Autopilot_flight_leader = saved_leader;
-		for (int i = 0; i < 2; ++i) {
+		for (int i = 0; i < target_count; ++i) {
 			Objects[i].instance = saved_target_instances[i];
 			strcpy_s(Ships[i].ship_name, saved_target_names[i]);
 		}
@@ -203,4 +208,131 @@ TEST_F(NavDeselectTest, NoSelectionKeepsCanAutopilotDisabled) {
 	DeselectNav();
 	ASSERT_EQ(-1, CurrentNav);
 	EXPECT_FALSE(CanAutopilot(&vmd_zero_vector, false));
+}
+
+class NavDeleteTest : public NavDeselectTest {
+protected:
+	void SetUp() override {
+		NavDeselectTest::SetUp();
+		strcpy_s(Navs[2].m_NavName, "Third");
+		Navs[2].flags = NP_SHIP;
+		Navs[2].target_index = 2;
+	}
+};
+
+static void ExpectNavPointEquals(const NavPoint& expected, const NavPoint& actual) {
+	EXPECT_STREQ(expected.m_NavName, actual.m_NavName);
+	EXPECT_EQ(expected.flags, actual.flags);
+	EXPECT_EQ(expected.target_index, actual.target_index);
+	EXPECT_EQ(expected.waypoint_num, actual.waypoint_num);
+	for (size_t i = 0; i < std::size(expected.normal_color); ++i) {
+		SCOPED_TRACE(i);
+		EXPECT_EQ(expected.normal_color[i], actual.normal_color[i]);
+		EXPECT_EQ(expected.visited_color[i], actual.visited_color[i]);
+	}
+}
+
+TEST_F(NavDeleteTest, CompactsFirstMiddleAndLastWithoutDuplicates) {
+	NavPoint original[] = {Navs[0], Navs[1], Navs[2]};
+	const int count = static_cast<int>(std::size(original));
+	for (int i = 0; i < count; ++i) {
+		auto& nav = original[i];
+		nav.flags = NP_WAYPOINT;
+		nav.waypoint_num = i + 1;
+		for (size_t channel = 0; channel < std::size(nav.normal_color); ++channel) {
+			nav.normal_color[channel] = static_cast<ubyte>(10 * i + channel);
+			nav.visited_color[channel] = static_cast<ubyte>(100 + 10 * i + channel);
+		}
+	}
+	const NavPoint cleared;
+
+	for (int removed = 0; removed < count; ++removed) {
+		SCOPED_TRACE(removed);
+		for (int i = 0; i < count; ++i) {
+			Navs[i] = original[i];
+		}
+
+		ASSERT_TRUE(DelNavPoint(removed));
+
+		for (int i = 0; i < count - 1; ++i) {
+			SCOPED_TRACE(i);
+			const auto& expected = original[i < removed ? i : i + 1];
+			ExpectNavPointEquals(expected, Navs[i]);
+		}
+		for (int i = count - 1; i < MAX_NAVPOINTS; ++i) {
+			SCOPED_TRACE(i);
+			ExpectNavPointEquals(cleared, Navs[i]);
+		}
+	}
+}
+
+TEST_F(NavDeleteTest, ClearsOccupiedFinalSlotWithoutChangingOtherSlots) {
+	NavPoint original[MAX_NAVPOINTS];
+	for (int i = 0; i < MAX_NAVPOINTS; ++i) {
+		std::snprintf(Navs[i].m_NavName, sizeof(Navs[i].m_NavName), "Nav %d", i);
+		Navs[i].flags = NP_WAYPOINT;
+		Navs[i].target_index = i;
+		Navs[i].waypoint_num = i + 1;
+		original[i] = Navs[i];
+	}
+
+	const int last = MAX_NAVPOINTS - 1;
+	ASSERT_TRUE(DelNavPoint(last));
+
+	for (int i = 0; i < last; ++i) {
+		SCOPED_TRACE(i);
+		ExpectNavPointEquals(original[i], Navs[i]);
+	}
+	ExpectNavPointEquals(NavPoint{}, Navs[last]);
+}
+
+TEST_F(NavDeleteTest, SelectionFollowsNavAfterEarlierDeletion) {
+	SelectNav("Third");
+	ASSERT_EQ(2, CurrentNav);
+
+	ASSERT_TRUE(DelNavPoint("First"));
+
+	EXPECT_EQ(1, CurrentNav);
+	EXPECT_STREQ("Third", Navs[1].m_NavName);
+}
+
+TEST_F(NavDeleteTest, DeletingTheSelectedNavClearsSelection) {
+	SelectNav("First");
+	ASSERT_EQ(0, CurrentNav);
+
+	ASSERT_TRUE(DelNavPoint("First"));
+
+	EXPECT_EQ(-1, CurrentNav);
+	EXPECT_STREQ("Second", Navs[0].m_NavName);
+}
+
+TEST_F(NavDeselectEngagedTest, DeletingEarlierNavKeepsAutopilotEngaged) {
+	EngageOnSecond();
+	ASSERT_EQ(1, CurrentNav);
+
+	ASSERT_TRUE(DelNavPoint("First"));
+
+	EXPECT_EQ(0, CurrentNav);
+	EXPECT_STREQ("Second", Navs[0].m_NavName);
+	EXPECT_TRUE(AutoPilotEngaged);
+	EXPECT_TRUE(Player_use_ai);
+	EXPECT_EQ(AI_GOAL_FLY_TO_SHIP, Ai_info[0].goals[0].ai_mode);
+	EXPECT_STREQ(Ships[1].ship_name, Ai_info[0].goals[0].target_name);
+}
+
+TEST_F(NavDeselectEngagedTest, DeletingSelectedNavEndsEngagedAutopilot) {
+	// Keep the shifted-in target valid so a late shutdown fails on goal cleanup.
+	strcpy_s(Navs[2].m_NavName, "Third");
+	Navs[2].flags = NP_SHIP;
+	Navs[2].target_index = 2;
+	EngageOnSecond();
+	ASSERT_EQ(1, CurrentNav);
+
+	ASSERT_TRUE(DelNavPoint("Second"));
+
+	EXPECT_EQ(-1, CurrentNav);
+	EXPECT_FALSE(AutoPilotEngaged);
+	EXPECT_FALSE(Player_use_ai);
+	EXPECT_EQ(nullptr, Autopilot_flight_leader);
+	ExpectOnlyNavGoalRemoved();
 }
