@@ -1188,7 +1188,11 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
 		
-		auto check = shipp->flags.to_ubyte_vector(ship_flags_out);
+		// this flag describes a lookup table in our own memory, which the joining machine has not built
+		auto flags_to_send = shipp->flags;
+		flags_to_send.remove(Ship::Ship_Flags::Subsystem_cache_valid);
+
+		auto check = flags_to_send.to_ubyte_vector(ship_flags_out);
 		Assertion(check <= 255, "Somehow FSO thinks there are too many ship flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
 
 		auto temp_size = static_cast<ubyte>(check);
