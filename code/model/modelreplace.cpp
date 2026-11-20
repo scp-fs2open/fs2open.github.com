@@ -625,6 +625,11 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 	else {
 		subsystemName = std::get<SCP_string>(sourceId);
 
+		if (engineSubsysMap.empty()) {
+			Warning(LOCATION, "Failed to find engine subsystem %s of POF %s for virtual POF %s. Returning original POF.", subsystemName->c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+			return;
+		}
+
 		auto localit = engineSubsysMap.cbegin();
 		do {
 			if (subsystem_stricmp(localit->second.subsystem_name.c_str(), subsystemName->c_str()) == 0) {
@@ -640,6 +645,11 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 			return;
 		}
 		engineNumber = it->first;
+	}
+
+	if (engineNumber < 0 || engineNumber >= appendingPM->pm()->n_thrusters) {
+		Warning(LOCATION, "Source engine %d on POF %s for virtual POF %s does not exist. Returning original POF", engineNumber + 1, appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
 	}
 
 	int newEngineNumber = reallocate_and_copy_array(pm->thrusters, pm->n_thrusters, 1);
@@ -693,6 +703,11 @@ void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred
 
 	if (dest_subobj_no < 0) {
 		Warning(LOCATION, "Failed to find submodel %s on virtual POF %s. Returning original POF", renameSubmodel.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	if (sourceId < 0 || sourceId >= appendingPM->pm()->n_glow_point_banks) {
+		Warning(LOCATION, "Source glowpoint %d on POF %s for virtual POF %s does not exist. Returning original POF", sourceId + 1, appendingPOF.c_str(), virtualPof.name.c_str());
 		return;
 	}
 
