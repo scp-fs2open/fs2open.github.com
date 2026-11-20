@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+#include "utils/strings.h"	// stricmp, for SCP_vector_contains_lcase
+
 template <typename T>
 class SCP_vector : public std::vector<T, std::allocator<T>>
 {
