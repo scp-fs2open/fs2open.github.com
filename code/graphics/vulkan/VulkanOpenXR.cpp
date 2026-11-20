@@ -13,6 +13,7 @@
 #include "io/cursor.h"
 #include "io/mouse.h"
 
+#include "imgui.h"
 #include <SDL3/SDL_vulkan.h>
 
 #define XR_USE_GRAPHICS_API_VULKAN
@@ -54,7 +55,7 @@ void blit_to_swapchain_image(VulkanRenderer* renderer, vk::Image dst, uint32_t d
 {
 	const vk::CommandBuffer cmd = renderer->getCurrentCommandBuffer();
 	const vk::Image composition = renderer->getCurrentCompositionImage();
-	const vk::Extent2D srcExtent = renderer->getRenderExtent();
+	const vk::Extent2D srcExtent = renderer->getCompositionExtent();
 
 	if (!cmd || !composition || !dst) {
 		return;
@@ -199,6 +200,11 @@ void draw_cursor()
 {
 	auto* cursorManager = io::mouse::CursorManager::get();
 	if (cursorManager == nullptr || !cursorManager->isCursorShown()) {
+		return;
+	}
+
+	// ImGui already drew its own cursor into the frame (see gr_imgui_begin_frame())
+	if (ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().MouseDrawCursor) {
 		return;
 	}
 

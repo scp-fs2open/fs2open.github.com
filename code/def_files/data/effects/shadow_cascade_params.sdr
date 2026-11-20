@@ -1,0 +1,31 @@
+// The shadowCascadeParams uniform block. All shaders that read the shadow cascades include this
+// file, so the block has one declaration. The C++ layout is shadow_cascade_static_data in
+// uniform_structs.h. Change both declarations together.
+
+#ifdef VULKAN
+layout(set = 0, binding = 6, std140)
+#else
+layout(std140)
+#endif
+uniform shadowCascadeParams {
+	int cascade_offset;
+	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	// Padding. The scalars must fill 32 bytes, so that shadow_mv_matrix starts on a 16-byte boundary.
+	int shadowParamsPad0;
+	int shadowParamsPad1;
+	int shadowParamsPad2;
+
+	mat4 shadow_mv_matrix;
+
+	// The camera position in the coordinate space of the ray-tracing structure.
+	// See shadow_cascade_static_data in uniform_structs.h.
+	vec3 shadow_ray_view_origin;
+	int shadow_ray_cull_mask;
+	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
+	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 penumbra_scale[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+};

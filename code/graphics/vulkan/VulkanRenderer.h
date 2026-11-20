@@ -184,6 +184,7 @@ class VulkanRenderer {
 	vk::CommandBuffer getCurrentCommandBuffer() const { return m_currentCommandBuffer; }
 
 	vk::Instance getVkInstance() const { return m_vkInstance.get(); }
+	bool supportsIndependentBlend() const { return m_deviceFeatures.independentBlend == VK_TRUE; }
 	vk::PhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
 	vk::Device getDevice() const { return m_device.get(); }
 	vk::Queue getGraphicsQueue() const { return m_graphicsQueue; }
@@ -205,6 +206,9 @@ class VulkanRenderer {
 	 * chain image. OpenGL does the same thing with Back_framebuffer.
 	 */
 	vk::Extent2D getRenderExtent() const { return m_renderExtent; }
+
+	// The render extent times FSR's upscale factor. Everything after the scene draws at this size.
+	vk::Extent2D getCompositionExtent() const { return m_compositionExtent; }
 
 	/**
 	 * @brief Get the composition image the frame is currently being rendered into
@@ -344,8 +348,20 @@ class VulkanRenderer {
 	 * Begins a new render pass targeting the current swap chain image,
 	 * preserving existing content. Used after off-screen rendering
 	 * (render targets, irradiance map generation) to return to swap chain.
+	 * While a screen layer is active, that layer is what screen drawing returns to.
 	 */
 	void resumeSwapChainPass();
+
+	/**
+	 * @brief Redirect screen drawing into a render target that stands in for the composition image
+	 *
+	 * The layer is cleared to transparent and drawn in gr_screen units like the composition image, with
+	 * coverage alpha blending (see gr_screen_layer_begin()).
+	 */
+	void beginScreenLayer(tcache_slot_vulkan* ts);
+	void endScreenLayer();
+	bool isScreenLayerActive() const { return m_screenLayer != nullptr; }
+	vk::Extent2D getScreenLayerExtent() const { return {m_screenLayer->width, m_screenLayer->height}; }
 
 	/**
 	 * @brief Begin the composition render pass afresh, clearing color and depth
@@ -403,6 +419,11 @@ class VulkanRenderer {
 	vk::Format getDepthFormat() const { return m_depthFormat; }
 
   private:
+	/**
+	 * @brief Rebuild the FXAA and SMAA shaders and pipelines for the current anti-aliasing preset
+	 */
+	void rebuildAntiAliasingShaders();
+
 	/**
 	 * @brief Begin a render pass on the frame command buffer with full state-tracker sync
 	 *
@@ -464,6 +485,11 @@ class VulkanRenderer {
 	bool recreateSwapChain();
 	bool shouldRecreateSwapChain(SwapChainStatus status) const;
 
+	vk::Extent2D wantedCompositionExtent() const;
+	void setCompositionExtent(vk::Extent2D extent);
+	// Recreates the composition and output-sized targets when the FSR upscale factor changed. Outside a frame.
+	void updateCompositionExtent();
+
 	void createImGuiDescriptorPool();
 	void initImGui();
 	void shutdownImGui();
@@ -496,6 +522,7 @@ class VulkanRenderer {
 	// option), so treating the two as one is what put whole frames in the
 	// upper-left corner of the screen.
 	vk::Extent2D m_renderExtent;
+	vk::Extent2D m_compositionExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
@@ -586,6 +613,7 @@ class VulkanRenderer {
 	bool m_supportsRaytracedShadows = false;  // VK_KHR_ray_query + VK_KHR_acceleration_structure + VK_KHR_deferred_host_operations
 	vk::SampleCountFlagBits m_msaaSampleCount = vk::SampleCountFlagBits::e1;  // Validated MSAA sample count
 	bool m_renderTargetActive = false;  // True when rendering to off-screen RT (bm_set_render_target)
+	tcache_slot_vulkan* m_screenLayer = nullptr;
 
 	bool m_debugReportEnabled = false;
 	bool m_debugUtilsEnabled = false;
