@@ -187,6 +187,28 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 
 extern int Framecount;
 
+// A sphere sweep skips faces it already overlaps at the start, so the face ahead on the shot's line wins if nearer.
+static int model_collide_nearest(mc_info* mc)
+{
+	int hit = model_collide(mc);
+	if (mc->flags & MC_CHECK_SPHERELINE) {
+		mc_info line = *mc;
+		line.flags = (mc->flags & ~MC_CHECK_SPHERELINE) | MC_CHECK_RAY;
+		vec3d dir = *mc->p1 - *mc->p0;
+		if (model_collide(&line) &&
+			(hit ? vm_vec_dot(&line.hit_point_world, &dir) < vm_vec_dot(&mc->hit_point_world, &dir)
+				 : line.hit_dist <= 1.0f)) {
+			if (hit) {
+				line.hit_dist = std::min(line.hit_dist, mc->hit_dist);
+			}
+			line.flags = mc->flags;
+			*mc = line;
+			hit = line.num_hits;
+		}
+	}
+	return hit;
+}
+
 //need_postproc, recheck, do collision?
 static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = nullptr)
 {
@@ -261,6 +283,16 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 	mc_hull.p0 = &weapon_start_pos;
 	mc_hull.p1 = &weapon_end_pos;
 	mc_hull.lod = sip->collision_lod;
+
+	int hull_flags = MC_CHECK_MODEL;
+	// model_collide rejects a zero radius; auto-spread ships keep the line so their shield sphere stays outermost,
+	// and so hull_flags stays MC_CHECK_MODEL there for the shield-reuse test below.
+	if (wip->wi_flags[Weapon::Info_Flags::Use_radius_for_ship_collisions] && weapon_objp->radius > 0.0f &&
+		!sip->flags[Ship::Info_Flags::Auto_spread_shields]) {
+		hull_flags |= MC_CHECK_SPHERELINE;
+		mc_hull.radius = weapon_objp->radius;
+	}
+	int shield_flags = MC_CHECK_SHIELD | (hull_flags & MC_CHECK_SPHERELINE);
 
 	// (btw, these are leftover comments from below...)
 	//
@@ -391,14 +423,14 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		} else if (sip->flags[Ship::Info_Flags::Surface_shields]) {
 			if (pm->shield.ntris > 0) {
 				// If there is a shield mesh, we need to check that first
-				mc_shield.flags = MC_CHECK_SHIELD;
-				shield_collision = model_collide(&mc_shield);
+				mc_shield.flags = shield_flags;
+				shield_collision = model_collide_nearest(&mc_shield);
 			}
 
 			if (!shield_collision) {
 				// But if no shield mesh or it was missed, check for a hull collision
-				mc_shield.flags = MC_CHECK_MODEL;
-				shield_collision = model_collide(&mc_shield);
+				mc_shield.flags = hull_flags;
+				shield_collision = model_collide_nearest(&mc_shield);
 
 				// Because we used MC_CHECK_MODEL, the returned hit position might be
 				// in a submodel's frame of reference, so we need to ensure we end up
@@ -409,14 +441,14 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 			}
 		} else {
 			// Normal collision check against a shield mesh
-			mc_shield.flags = MC_CHECK_SHIELD;
-			shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
+			mc_shield.flags = shield_flags;
+			shield_collision = (pm->shield.ntris > 0) ? model_collide_nearest(&mc_shield) : 0;
 		}
 	}
 
 	// If we found a shield collision but were only checking for a simple model
 	// collision, we can re-use the same collision info for the hull as well
-	if (shield_collision && mc_shield.flags == MC_CHECK_MODEL) {
+	if (shield_collision && mc_shield.flags == hull_flags) {
 		mc_hull = mc_shield;
 		hull_collision = shield_collision;
 
@@ -426,8 +458,8 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 			shield_collision = 0;
 		}
 	} else {
-		mc_hull.flags = MC_CHECK_MODEL;
-		hull_collision = model_collide(&mc_hull);
+		mc_hull.flags = hull_flags;
+		hull_collision = model_collide_nearest(&mc_hull);
 	}
 
 	// check if the hit point is beyond the clip plane when warping out.

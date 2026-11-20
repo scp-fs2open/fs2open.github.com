@@ -261,6 +261,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	}}, //special case
 	{"dogfight variant",                Weapon::Info_Flags::Dogfight_weapon,                    true},
 	{"mine",                            Weapon::Info_Flags::Mine,                               true},
+	{"use radius for ship collisions",  Weapon::Info_Flags::Use_radius_for_ship_collisions,     true},
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
