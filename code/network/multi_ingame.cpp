@@ -1096,6 +1096,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
 		Ships[ship_num].flags.reset();
 		Ships[ship_num].flags.set_from_vector(ship_flags);
+		// the server's flags say its subsystem lookup table is built; ours for this new ship is not
+		Ships[ship_num].flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
