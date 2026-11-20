@@ -70,6 +70,12 @@ void GPUMemoryHeap::freeGpuData(size_t offset) {
 gr_buffer_handle GPUMemoryHeap::bufferHandle() {
 	return _bufferHandle;
 }
+size_t GPUMemoryHeap::usedBytes() const {
+	return _allocator->usedBytes();
+}
+size_t GPUMemoryHeap::bufferSize() const {
+	return _bufferSize;
+}
 
 }
 }

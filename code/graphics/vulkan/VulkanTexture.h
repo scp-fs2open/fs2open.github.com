@@ -35,6 +35,7 @@ public:
 	int bitmapHandle = -1;
 	uint32_t arrayIndex = 0;
 	bool used = false;
+	bool pendingPageOut = false;
 
 	// For render targets
 	vk::Framebuffer framebuffer;
@@ -100,14 +101,10 @@ public:
 	 */
 	void shutdown();
 
-	/**
-	 * @brief Flush all GPU texture resources from bitmap slots
-	 *
-	 * Called between missions (from vulkan_bm_page_in_start) to release
-	 * VkImage/VMA allocations for textures that won't be needed.
-	 * Textures are re-uploaded on demand when accessed again.
-	 */
-	void flushTextures() const;
+	// Mark resident images for paging, then retire unused images once bitmap
+	// paging has identified the next mission's texture set.
+	static void pageInStart();
+	void pageInPrepare() const;
 
 	// Bitmap management functions (implement gr_screen function pointers)
 
@@ -131,6 +128,9 @@ public:
 	 * @param compType Compression type (DDS_DXT1/3/5, DDS_BC7) or 0 for uncompressed
 	 */
 	bool bm_data(int handle, bitmap* bm, int compType);
+
+	// Call after unlocking an uploaded bitmap; animations may have loaded every frame.
+	void releaseCpuBitmapData(int handle);
 
 	/**
 	 * @brief Create a render target
@@ -165,7 +165,8 @@ public:
 	vk::Sampler getSampler(vk::Filter magFilter, vk::Filter minFilter,
 	                       vk::SamplerAddressMode addressMode,
 	                       bool enableAnisotropy, float maxAnisotropy,
-	                       bool enableMipmaps);
+	                       bool enableMipmaps, float negativeLodBias = 0.0f,
+	                       bool followTextureFilter = false);
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the 2D fallback texture
@@ -193,6 +194,13 @@ public:
 	 * @brief Get texture slot data
 	 */
 	tcache_slot_vulkan* getTextureSlot(int handle);
+
+	/**
+	 * @brief Upload a cubemap bitmap as a cubemap if it has not been uploaded yet
+	 * @param[in] handle bitmap handle of a DDS cubemap (compressed or not) or a cubemap render target
+	 * @return true if the handle now has a cubemap image view
+	 */
+	bool ensureCubemapUploaded(int handle);
 
 	/**
 	 * @brief Bitmap handle of the render target currently bound via bm_set_render_target,
@@ -281,6 +289,7 @@ private:
 	 * Creates the buffer and allocates CpuOnly memory for it. On failure the
 	 * buffer is destroyed and false is returned (outBuffer left null). Callers
 	 * remain responsible for any image/view they allocated beforehand.
+	 * May wait on the oldest upload fence when the staging budget is full.
 	 */
 	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
 
@@ -297,14 +306,14 @@ private:
 	/**
 	 * @brief Submit an upload command buffer asynchronously and defer resource cleanup
 	 *
-	 * Submits without waitIdle. Queues staging buffer and command buffer for
-	 * deferred destruction/free after enough frames have elapsed.
+	 * Owns staging resources until the submission's fence signals, even when
+	 * level loading does not advance render frames.
 	 */
 	void submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
 	                       VulkanAllocation stagingAllocation);
 
 	/**
-	 * @brief Free command buffers whose GPU work has completed
+	 * @brief Reclaim completed uploads, including their staging memory and fences
 	 */
 	void processPendingCommandBuffers();
 
@@ -351,13 +360,14 @@ private:
 	 * decision.
 	 */
 	static bool releaseAnimationSlotRef(tcache_slot_vulkan* ts);
+	static void keepTexture(tcache_slot_vulkan& texture);
 
 	/**
 	 * @brief Decode a get_bitmap_from_texture() readback buffer into data_out
 	 *
-	 * Handles both the BC-compressed (block-decode via bcdec) and uncompressed
-	 * (per-format channel expand/convert) cases; data_out is tightly packed
-	 * w*h pixels at outChannels (3 or 4) bytes each.
+	 * Handles BC- and ETC2-compressed textures (block-decode via bcdec/etcdec)
+	 * and uncompressed textures (per-format channel expand/convert); data_out
+	 * is tightly packed w*h pixels at outChannels (3 or 4) bytes each.
 	 */
 	static void decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,
 	                          uint32_t w, uint32_t h, uint32_t blockW, uint32_t blockH,
@@ -373,15 +383,19 @@ private:
 	int m_uploadFmtLogCount = 0;    // uploadTexture2D format trace
 	int m_reuploadLogCount = 0;     // uploadTexture2D resident-texture re-upload notice
 
-	// Deferred command buffer free list
+	// In-flight uploads in submission order, each with its own completion fence.
 	struct PendingCommandBuffer {
 		vk::CommandBuffer cb;
-		uint32_t framesRemaining;
+		vk::Buffer stagingBuffer;
+		VulkanAllocation stagingAllocation;
+		vk::Fence fence;
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
+	size_t m_pendingUploadBytes = 0;
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
+	uint m_failedCubemapSignature = 0;
 	VulkanMemoryManager* m_memoryManager = nullptr;
 	vk::CommandPool m_commandPool;
 	vk::Queue m_graphicsQueue;
@@ -412,6 +426,8 @@ private:
 	// Device limits
 	uint32_t m_maxTextureSize = 4096;
 	float m_maxAnisotropy = 1.0f;
+	float m_maxLodBias = 0.0f;
+	bool m_trilinearFiltering = true;
 
 	// Current render target state
 	int m_currentRenderTarget = -1;
@@ -441,8 +457,11 @@ void vulkan_bm_free_data(bitmap_slot* slot, bool release);
 void vulkan_bm_init(bitmap_slot* slot);
 bool vulkan_bm_data(int handle, bitmap* bm);
 void vulkan_bm_page_in_start();
+void vulkan_bm_page_in_prepare();
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags);
 int vulkan_bm_set_render_target(int handle, int face);
+bool vulkan_screen_layer_begin(int bitmap);
+void vulkan_screen_layer_end();
 void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 ubyte* vulkan_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out);
 

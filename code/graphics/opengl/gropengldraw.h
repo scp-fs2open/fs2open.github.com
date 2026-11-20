@@ -57,6 +57,15 @@ void gr_opengl_render_shield_impact(shield_material* material_info,
 
 void opengl_setup_scene_textures();
 void opengl_scene_texture_shutdown();
+
+/**
+ * @brief Gives the bytes that the scene, backbuffer, and distortion textures hold
+ *
+ * The profiler overlay's memory panel adds this value to the "render targets" group. The function
+ * counts only the textures that exist at the moment of the call, thus it gives 0 before
+ * opengl_setup_scene_textures() runs and after opengl_scene_texture_shutdown() runs.
+ */
+size_t opengl_get_scene_render_target_bytes();
 void gr_opengl_scene_texture_begin();
 void gr_opengl_scene_texture_end();
 void gr_opengl_copy_effect_texture();
@@ -153,6 +162,26 @@ void gr_opengl_start_decal_pass();
 void gr_opengl_stop_decal_pass();
 
 void gr_opengl_calculate_irrmap();
+
+bool gr_opengl_screen_layer_begin(int bitmap);
+void gr_opengl_screen_layer_end();
+bool opengl_screen_layer_active();
+
+// What screen drawing goes to: the screen layer if one is active, else the backbuffer
+GLuint opengl_get_screen_framebuffer();
+
+// Converts gr_screen units to pixels of what is being drawn into right now
+GLint opengl_screen_to_pixels(int value);
+
+// The size of the screen (the backbuffer) in pixels, which is larger than gr_screen with the HUD at output resolution
+int opengl_screen_pixel_width();
+int opengl_screen_pixel_height();
+
+// When the scene ends: the screen's viewport if it has more pixels than gr_screen, otherwise left as is
+void opengl_maybe_set_full_screen_viewport();
+
+// A framebuffer holding the screen at gr_screen size, for reading it back. Downscales into a scratch target if needed.
+GLuint opengl_screen_readback_framebuffer();
 
 extern int Scene_texture_initialized;
 

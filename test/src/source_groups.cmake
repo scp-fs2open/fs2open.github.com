@@ -13,29 +13,43 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("Bmpman"
+    bmpman/test_eff.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )
 
-add_file_folder("ControlConfig"
+add_file_folder("Controlconfig"
+    controlconfig/test_bindings.cpp
     controlconfig/test_joy_scaling.cpp
 )
 
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
+    globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
     globalincs/test_version.cpp
 )
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_material.cpp
+	   graphics/test_post_processing.cpp
+	   graphics/test_shader_types.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/test_vulkan_post_processing.cpp
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
 endif()
+
+add_file_folder("IffDefs"
+    iff_defs/test_iff_accessibility.cpp
+)
 
 add_file_folder("Math"
     math/test_vecmat.cpp
@@ -43,6 +57,10 @@ add_file_folder("Math"
 
 add_file_folder("menuui"
     menuui/test_intel_parse.cpp
+)
+
+add_file_folder("missioneditor"
+    missioneditor/test_object_bounds.cpp
 )
 
 add_file_folder("mod"
@@ -53,8 +71,16 @@ add_file_folder("model"
     model/test_modelread.cpp
 )
 
+add_file_folder("network"
+    network/test_multiutil.cpp
+)
+
 add_file_folder("Options"
     options/test_options_manager.cpp
+)
+
+add_file_folder("OSAPI"
+    osapi/test_osregistry.cpp
 )
 
 add_file_folder("Parse"
@@ -81,6 +107,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
     scripting/api/hookvars.cpp
+    scripting/api/shipclass.cpp
 )
 
 add_file_folder("Scripting\\\\Lua"
@@ -95,14 +122,27 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
+add_file_folder("Ship"
+    ship/ship_info.cpp
+)
+
+add_file_folder("Starfield"
+    starfield/test_sun_disc.cpp
+)
+
 add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
     util/test_util.h
 )
 
+add_file_folder("Tracing"
+    tracing/test_frame_profiler.cpp
+)
+
 add_file_folder("Utils"
     utils/HeapAllocatorTest.cpp
+    utils/test_encoding.cpp
 )
 
 add_file_folder("Weapon"

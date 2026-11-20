@@ -67,10 +67,5 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	return ActionResult::Finished;
 }
 
-std::unique_ptr<Action> ParticleEffectAction::clone() const
-{
-	return std::make_unique<ParticleEffectAction>(*this);
-}
-
 } // namespace types
 } // namespace actions

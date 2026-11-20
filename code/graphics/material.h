@@ -79,6 +79,8 @@ public:
 	vec4 Clr;
 	float Clr_scale;
 	int Depth_bias;
+	bool Velocity_output = false;
+	bool Texture_lod_bias = true;
 	bvec4 Color_mask;
 	bool Stencil_test = false;
 	uint32_t Stencil_mask = 0xFF;
@@ -98,6 +100,11 @@ public:
 
 	void set_texture_map(int tex_type, int texture_num);
 	int get_texture_map(int tex_type) const;
+
+	// Returns the -reflect map if present; otherwise returns the -shine slot value (-1 when absent).
+	// If supplied, is_spec_gloss reports whether the chosen texture uses specular/gloss encoding.
+	int get_specular_map(bool* is_spec_gloss = nullptr) const;
+
 	bool is_textured() const;
 
 	void set_texture_type(texture_type t_type);
@@ -130,6 +137,14 @@ public:
 
 	void set_depth_bias(int bias);
 	int get_depth_bias() const;
+
+	// Whether this writes its own motion vectors when the target has a place for them
+	void set_velocity_output(bool output) { Velocity_output = output; }
+	bool get_velocity_output() const { return Velocity_output; }
+
+	// Whether textures take the LOD bias of temporal upscaling, which sharpens what it reconstructs
+	void set_texture_lod_bias(bool bias) { Texture_lod_bias = bias; }
+	bool get_texture_lod_bias() const { return Texture_lod_bias; }
 
 	void set_color(float red, float green, float blue, float alpha);
 	void set_color(int r, int g, int b, int a);
