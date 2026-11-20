@@ -4732,7 +4732,7 @@ void multi_create_list_set_item(int abs_index, int mode) {
 	netgame_info* ng;
 	multi_create_info* mcip = NULL;
 
-	char* campaign_desc = nullptr;
+	SCP_string campaign_desc;
 
 	// if not on the standalone server
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
@@ -4824,7 +4824,7 @@ void multi_create_list_set_item(int abs_index, int mode) {
 		}
 		break;
 	case MULTI_CREATE_SHOW_CAMPAIGNS:
-		char* first_mission = nullptr;
+		SCP_string first_mission;
 		mission* mp = &The_mission;
 
 		// if not on the standalone server
@@ -4851,7 +4851,7 @@ void multi_create_list_set_item(int abs_index, int mode) {
 			// Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
 			Multi_netgame_common_description = PRE_CAMPAIGN_DESC;
 
-			if (campaign_desc) {
+			if (!campaign_desc.empty()) {
 				Multi_netgame_common_description += campaign_desc;
 			} else {
 				Multi_netgame_common_description += "No description available.";
@@ -4860,7 +4860,7 @@ void multi_create_list_set_item(int abs_index, int mode) {
 			Multi_netgame_common_description += DOUBLE_NEW_LINE;
 			Multi_netgame_common_description += PRE_MISSION_DESC;
 
-			int rc = get_mission_info(first_mission, mp, true);
+			int rc = get_mission_info(first_mission.c_str(), mp, true);
 
 			if (!rc && strlen(mp->mission_desc)) {
 				Multi_netgame_common_description += mp->mission_desc;
@@ -4869,15 +4869,6 @@ void multi_create_list_set_item(int abs_index, int mode) {
 			}
 
 			multi_common_set_text(Multi_netgame_common_description.c_str());
-
-			// free the malloc'ed strings from mission_campaign_get_info()
-			if (campaign_desc != nullptr) {
-				vm_free(campaign_desc);
-			}
-
-			if (first_mission != nullptr) {
-				vm_free(first_mission);
-			}
 
 			// standalones should now be able to request the info.
 		} else {
@@ -8717,7 +8708,7 @@ void multi_maybe_set_mission_loop()
 	if ( (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1) && !require_repeat_mission ) {
 
 		char buffer[512];
-		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc);
+		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc.get());
 
 		int choice = popup(0 , 2, POPUP_NO, POPUP_YES, buffer);
 		if (choice == 1) {

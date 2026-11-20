@@ -207,20 +207,18 @@ void campaign_tree_wnd::OnCpgnFileSave()
 	Campaign_tree_viewp->sort_elements();
 
 	SCP_vector<campaign_link> links;
-	for (int i = 0; i < Total_links; i++) {
-		campaign_link link{
-			Links[i].from,
-			Links[i].to,
-			Links[i].sexp,
-			Links[i].node,
-			Links[i].is_mission_loop,
-			Links[i].is_mission_fork,
-			Links[i].mission_branch_txt,
-			Links[i].mission_branch_brief_anim,
-			Links[i].mission_branch_brief_sound
-		};
-
-		links.emplace_back(link);
+	for (const auto& src : Links) {
+		links.emplace_back(campaign_link{
+			src.from,
+			src.to,
+			src.sexp,
+			src.node,
+			src.is_mission_loop,
+			src.is_mission_fork,
+			src.mission_branch_txt.get(),
+			src.mission_branch_brief_anim.get(),
+			src.mission_branch_brief_sound.get()
+		});
 	}
 
 	if (save.save_campaign_file(full_path, links))
@@ -276,18 +274,18 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		Campaign_tree_viewp->sort_elements();
 
 		SCP_vector<campaign_link> links;
-		for (int i = 0; i < Total_links; i++) {
-			campaign_link link{Links[i].from,
-				Links[i].to,
-				Links[i].sexp,
-				Links[i].node,
-				Links[i].is_mission_loop,
-				Links[i].is_mission_fork,
-				Links[i].mission_branch_txt,
-				Links[i].mission_branch_brief_anim,
-				Links[i].mission_branch_brief_sound};
-
-			links.emplace_back(link);
+		for (const auto& src : Links) {
+			links.emplace_back(campaign_link{
+				src.from,
+				src.to,
+				src.sexp,
+				src.node,
+				src.is_mission_loop,
+				src.is_mission_fork,
+				src.mission_branch_txt.get(),
+				src.mission_branch_brief_anim.get(),
+				src.mission_branch_brief_sound.get()
+			});
 		}
 
 		if (save.save_campaign_file((LPCSTR)dlg.GetPathName(), links))
@@ -308,10 +306,11 @@ void campaign_tree_wnd::OnCpgnFileNew()
 			return;
 
 	Campaign.filename[0] = 0;
-	Campaign.num_missions = 0;
+	Campaign.missions.clear();
 	Campaign.num_players = 0;
 	strcpy_s(Campaign.name, "Unnamed");
 	Campaign_tree_viewp->free_links();
+	Elements.clear();
 	Campaign_tree_formp->initialize(true, true);
 	Campaign_modified = 0;
 	Campaign.flags = CF_DEFAULT_VALUE;
@@ -368,20 +367,16 @@ void campaign_tree_wnd::OnErrorChecker()
 int campaign_tree_wnd::error_checker()
 {
 	int i, j, z;
-	int mcount[MAX_CAMPAIGN_MISSIONS], true_at[MAX_CAMPAIGN_MISSIONS];
-
-	for (i=0; i<MAX_CAMPAIGN_MISSIONS; i++) {
-		mcount[i] = 0;
-		true_at[i] = -1;
-	}
+	SCP_vector<int> mcount(Campaign.missions.size(), 0);
+	SCP_vector<int> true_at(Campaign.missions.size(), -1);
 
 	g_err = 0;
-	for (i=0; i<Total_links; i++) {
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		// #1 check: illegal source mission
-		if ( (Links[i].from < 0) || (Links[i].from >= Campaign.num_missions) )
+		if (!Campaign.missions.in_bounds(Links[i].from))
 			return internal_error("Branch #%d has illegal source mission", i);
 		// #2 check: illegal target mission
-		if ( (Links[i].to < -1) || (Links[i].to >= Campaign.num_missions) )
+		if (!Campaign.missions.in_bounds(Links[i].to) && (Links[i].to != -1))
 			return internal_error("Branch #%d has illegal target mission", i);
 		// #3 check: formula syntax
 		Sexp_useful_number = Links[i].from;
@@ -393,7 +388,7 @@ int campaign_tree_wnd::error_checker()
 		// #4 check: always true loop
 		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
 			if (Links[i].sexp == Locked_sexp_true) {
-				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name))
+				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name.get()))
 					return 1;
 			}
 			// no further checking for loop links - in particular, a loop link isn't a regular link
@@ -405,14 +400,14 @@ int campaign_tree_wnd::error_checker()
 
 		// #5 check: always false branch
 		if (Links[i].sexp == Locked_sexp_false) {
-			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name, mcount[z]))
+			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name.get(), mcount[z]))
 				return 1;
 		}
 
 		// #6 check: true middle branch
 		if (Links[i].sexp == Locked_sexp_true) {
 			if (true_at[z] >= 0)
-				if (error("Mission \"%s\" branch %d is true but is not last branch", Campaign.missions[z].name, true_at[z]))
+				if (error("Mission \"%s\" branch %d is true but is not last branch", Campaign.missions[z].name.get(), true_at[z]))
 					return 1;
 
 			true_at[z] = mcount[z];
@@ -420,16 +415,16 @@ int campaign_tree_wnd::error_checker()
 	}
 
 	// #7 check: not always true last branch
-	for (i=0; i<Campaign.num_missions; i++)
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 		if (mcount[i] && true_at[i] < mcount[i])
-			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name))
+			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name.get()))
 				return 1;
 
 	// #8 check: duplicate mission
-	for (i=z=0; i<Campaign.num_missions; i++) {
-		for (j=0; j<Campaign.num_missions; j++)
-			if ((i != j) && !stricmp(Campaign.missions[i].name, Campaign.missions[j].name))
-				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name);
+	for (i = z = 0; i < sz2i(Campaign.missions.size()); i++) {
+		for (j = 0; j < sz2i(Campaign.missions.size()); j++)
+			if ((i != j) && !stricmp(Campaign.missions[i].name.get(), Campaign.missions[j].name.get()))
+				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name.get());
 
 		if (!Campaign.missions[i].level)
 			z++;
@@ -447,12 +442,12 @@ int campaign_tree_wnd::error_checker()
 	// #11 check: Multi player number
 	// check that all missions in a multiplayer game have the same number of players
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
-		for (i = 0; i < Campaign.num_missions; i++ ) {
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 			mission a_mission;
 
-			get_mission_info(Campaign.missions[i].name, &a_mission);
+			get_mission_info(Campaign.missions[i].name.get(), &a_mission);
 			if ( a_mission.num_players != Campaign.num_players ) {
-				if ( error("Mission \"%s\" has %d players.  Multiplayer campaign allows %d", Campaign.missions[i].name, a_mission.num_players, Campaign.num_players) )
+				if ( error("Mission \"%s\" has %d players.  Multiplayer campaign allows %d", Campaign.missions[i].name.get(), a_mission.num_players, Campaign.num_players) )
 					return 1;
 			}
 		}

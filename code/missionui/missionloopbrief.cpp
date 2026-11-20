@@ -155,8 +155,8 @@ void loop_brief_init()
 
 	const char* anim_name;
 	// load animation if any
-	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim != NULL){
-		anim_name = Campaign.missions[Campaign.current_mission].mission_branch_brief_anim;
+	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim != nullptr){
+		anim_name = Campaign.missions[Campaign.current_mission].mission_branch_brief_anim.get();
 	} else {
 		anim_name = "CB_default";
 	}
@@ -172,16 +172,16 @@ void loop_brief_init()
 	}
 
 	// init brief text
-	if(Campaign.missions[Campaign.current_mission].mission_branch_desc != NULL){
-		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
+	if(Campaign.missions[Campaign.current_mission].mission_branch_desc != nullptr){
+		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc.get(), Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
 	}
 
 	bool sound_played = false;
 
 
 	// open sound
-	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound != NULL){
-		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound, ASF_VOICE);
+	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound != nullptr){
+		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound.get(), ASF_VOICE);
 
 		if(Loop_sound != -1){
 			audiostream_play(Loop_sound, Master_voice_volume, 0);
@@ -191,7 +191,7 @@ void loop_brief_init()
 
 	if(sound_played == false) {
 		fsspeech_play(FSSPEECH_FROM_BRIEFING, 
-			Campaign.missions[Campaign.current_mission].mission_branch_desc);
+			Campaign.missions[Campaign.current_mission].mission_branch_desc.get());
 
 	}
 

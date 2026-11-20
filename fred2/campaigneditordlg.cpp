@@ -65,13 +65,13 @@ campaign_editor::campaign_editor()
 int campaign_editor::onRootDeleted(int formula_node)
 {
 	int i;
-	for (i = 0; i < Total_links; i++) {
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == formula_node)) {
 			break;
 		}
 	}
 
-	if (i < Total_links) {
+	if (i < sz2i(Links.size())) {
 		Campaign_tree_viewp->delete_link(i);
 		m_num_links--;
 	}
@@ -89,10 +89,10 @@ SCP_vector<SCP_string> campaign_editor::getMissionNames()
 
 	// only list missions the player could have already played: the current mission and
 	// any mission at an earlier level in the campaign tree
-	for (int i = 0; i < Campaign.num_missions; i++)
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++)
 	{
 		if ((i == Cur_campaign_mission) || (Campaign.missions[i].level < Campaign.missions[Cur_campaign_mission].level))
-			list.emplace_back(Campaign.missions[i].name);
+			list.emplace_back(Campaign.missions[i].name.get());
 	}
 
 	return list;
@@ -215,7 +215,7 @@ void campaign_editor::OnLoad()
 	// try to open the file from the same folder as the campaign
 	if (!m_current_campaign_path.IsEmpty()) {
 		auto full_mission_path = GetPathWithoutFile();
-		full_mission_path.Append(Campaign.missions[Cur_campaign_mission].name);
+		full_mission_path.Append(Campaign.missions[Cur_campaign_mission].name.get());
 
 		auto res = cf_find_file_location((LPCTSTR)full_mission_path, CF_TYPE_MISSIONS, false);
 		if (res.found) {
@@ -400,12 +400,12 @@ void campaign_editor::update()
 
 	// set the number of players in a multiplayer mission equal to the number of players in the first mission
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
-		if ( Campaign.num_missions == 0 ) {
+		if (Campaign.missions.empty()) {
 			Campaign.num_players = 0;
 		} else {
 			mission a_mission;
 
-			get_mission_info(Campaign.missions[0].name, &a_mission);
+			get_mission_info(Campaign.missions[0].name.get(), &a_mission);
 			Campaign.num_players = a_mission.num_players;
 		}
 	}
@@ -451,7 +451,7 @@ void campaign_editor::load_tree(int save_first)
 	GetDlgItem(IDC_LOOP_BRIEF_BROWSE)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_SOUND_BROWSE)->EnableWindow(FALSE);
 
-	for (i=0; i<Total_links; i++) {
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if (Links[i].from == Cur_campaign_mission) {
 			Links[i].node = m_tree._model.load_sub_tree(Links[i].sexp, true, "do-nothing");
 			m_num_links++;
@@ -461,7 +461,7 @@ void campaign_editor::load_tree(int save_first)
 			} else if ( (Links[i].to == -1) && (Links[i].from != -1) ) {
 				strcpy_s(text, "End of Campaign");
 			} else {
-				sprintf(text, "Branch to %s", Campaign.missions[Links[i].to].name);
+				sprintf(text, "Branch to %s", Campaign.missions[Links[i].to].name.get());
 			}
 
 			// insert item into tree
@@ -509,18 +509,16 @@ void campaign_editor::OnEndlabeleditSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 void campaign_editor::save_tree(int clear)
 {
-	int i;
-
 	if (m_last_mission < 0){
 		return;  // nothing to save
 	}
 
-	for (i=0; i<Total_links; i++){
-		if (Links[i].from == m_last_mission) {
-			sexp_unmark_persistent(Links[i].sexp);
-			free_sexp2(Links[i].sexp);
-			Links[i].sexp = m_tree._model.save_tree(Links[i].node);
-			sexp_mark_persistent(Links[i].sexp);
+	for (auto& link : Links) {
+		if (link.from == m_last_mission) {
+			sexp_unmark_persistent(link.sexp);
+			free_sexp2(link.sexp);
+			link.sexp = m_tree._model.save_tree(link.node);
+			sexp_mark_persistent(link.sexp);
 		}
 	}
 
@@ -549,13 +547,13 @@ void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 	// get identifier of parent
 	node = (int)m_tree.GetItemData(h);
-	for (i=0; i<Total_links; i++){
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == node)){
 			break;
 		}
 	}
 
-	if (i == Total_links) {
+	if (i == sz2i(Links.size())) {
 		Cur_campaign_link = -1;
 		return;
 	}
@@ -570,15 +568,14 @@ void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
-void campaign_editor::OnMoveUp() 
+void campaign_editor::OnMoveUp()
 {
 	int i, last = -1;
-	campaign_tree_link temp;
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
 		save_tree();
-		for (i=0; i<Total_links; i++){
+		for (i = 0; i < sz2i(Links.size()); i++) {
 			if (Links[i].from == Cur_campaign_mission) {
 				if (i == Cur_campaign_link){
 					break;
@@ -588,15 +585,13 @@ void campaign_editor::OnMoveUp()
 			}
 		}
 
-		if ((last != -1) && (i < Total_links)) {
+		if ((last != -1) && (i < sz2i(Links.size()))) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[last].node));
 			m_tree.move_root(h1, h2, true);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
-			temp = Links[last];
-			Links[last] = Links[i];
-			Links[i] = temp;
+			std::swap(Links[i], Links[last]);
 			Cur_campaign_link = last;
 		}
 	}
@@ -604,32 +599,29 @@ void campaign_editor::OnMoveUp()
 	GetDlgItem(IDC_SEXP_TREE)->SetFocus();
 }
 
-void campaign_editor::OnMoveDown() 
+void campaign_editor::OnMoveDown()
 {
 	int i, j;
-	campaign_tree_link temp;
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
 		save_tree();
-		for (i=0; i<Total_links; i++)
+		for (i = 0; i < sz2i(Links.size()); i++)
 			if (Links[i].from == Cur_campaign_mission)
 				if (i == Cur_campaign_link)
 					break;
 
-		for (j=i+1; j<Total_links; j++)
+		for (j = i + 1; j < sz2i(Links.size()); j++)
 			if (Links[j].from == Cur_campaign_mission)
 				break;
 
-		if (j < Total_links) {
+		if (j < sz2i(Links.size())) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[j].node));
 			m_tree.move_root(h1, h2, false);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
-			temp = Links[j];
-			Links[j] = Links[i];
-			Links[i] = temp;
+			std::swap(Links[i], Links[j]);
 			Cur_campaign_link = j;
 		}
 	}
@@ -642,34 +634,34 @@ void campaign_editor::move_handler(int node1, int node2, bool insert_before)
 	int index1, index2;
 	campaign_tree_link temp;
 
-	for (index1=0; index1<Total_links; index1++){
+	for (index1 = 0; index1 < sz2i(Links.size()); index1++) {
 		if ((Links[index1].from == Cur_campaign_mission) && (Links[index1].node == node1)){
 			break;
 		}
 	}
-	Assert(index1 < Total_links);
+	Assert(index1 < sz2i(Links.size()));
 
-	for (index2=0; index2<Total_links; index2++){
+	for (index2 = 0; index2 < sz2i(Links.size()); index2++) {
 		if ((Links[index2].from == Cur_campaign_mission) && (Links[index2].node == node2)){
 			break;
 		}
 	}
-	Assert(index2 < Total_links);
+	Assert(index2 < sz2i(Links.size()));
 
-	temp = Links[index1];
+	temp = std::move(Links[index1]);
 
 	int offset = insert_before ? -1 : 0;
 
 	while (index1 < index2 + offset) {
-		Links[index1] = Links[index1 + 1];
+		Links[index1] = std::move(Links[index1 + 1]);
 		index1++;
 	}
 	while (index1 > index2 + offset + 1) {
-		Links[index1] = Links[index1 - 1];
+		Links[index1] = std::move(Links[index1 - 1]);
 		index1--;
 	}
 
-	Links[index1] = temp;
+	Links[index1] = std::move(temp);
 
 	// update Cur_campaign_link
 	Cur_campaign_link = index2;
@@ -679,13 +671,13 @@ void campaign_editor::insert_handler(int old, int node)
 {
 	int i;
 
-	for (i=0; i<Total_links; i++){
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == old)){
 			break;
 		}
 	}
 
-	Assert(i < Total_links);
+	Assert(i < sz2i(Links.size()));
 	Links[i].node = node;
 	return;
 }
@@ -743,34 +735,24 @@ void campaign_editor::save_loop_desc_window()
 		lcl_fred_replace_stuff(m_branch_desc);
 
 		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH - 1);
-		if (Links[Cur_campaign_link].mission_branch_txt) {
-			free(Links[Cur_campaign_link].mission_branch_txt);
-		}
-		if (Links[Cur_campaign_link].mission_branch_brief_anim) {
-			free(Links[Cur_campaign_link].mission_branch_brief_anim);
-		}
-		if (Links[Cur_campaign_link].mission_branch_brief_sound) {
-			free(Links[Cur_campaign_link].mission_branch_brief_sound);
-		}
-
 		if (strlen(buffer)) {
-			Links[Cur_campaign_link].mission_branch_txt = strdup(buffer);
+			Links[Cur_campaign_link].mission_branch_txt.reset(vm_strdup(buffer));
 		} else {
-			Links[Cur_campaign_link].mission_branch_txt = NULL;
+			Links[Cur_campaign_link].mission_branch_txt.reset();
 		}
 
 		deconvert_multiline_string(buffer, m_branch_brief_anim, MAX_FILENAME_LEN - 1);
 		if(strlen(buffer)){
-			Links[Cur_campaign_link].mission_branch_brief_anim = strdup(buffer);
+			Links[Cur_campaign_link].mission_branch_brief_anim.reset(vm_strdup(buffer));
 		} else {
-			Links[Cur_campaign_link].mission_branch_brief_anim = NULL;
+			Links[Cur_campaign_link].mission_branch_brief_anim.reset();
 		}
 
 		deconvert_multiline_string(buffer, m_branch_brief_sound, MAX_FILENAME_LEN - 1);
 		if(strlen(buffer)){
-			Links[Cur_campaign_link].mission_branch_brief_sound = strdup(buffer);
+			Links[Cur_campaign_link].mission_branch_brief_sound.reset(vm_strdup(buffer));
 		} else {
-			Links[Cur_campaign_link].mission_branch_brief_sound = NULL;
+			Links[Cur_campaign_link].mission_branch_brief_sound.reset();
 		}
 	}
 }
@@ -793,21 +775,21 @@ void campaign_editor::update_loop_desc_window()
 
 	// set new text
 	if ((Cur_campaign_link >= 0) && Links[Cur_campaign_link].mission_branch_txt && enable_branch_desc_window) {
-		convert_multiline_string(m_branch_desc, Links[Cur_campaign_link].mission_branch_txt);		
+		convert_multiline_string(m_branch_desc, Links[Cur_campaign_link].mission_branch_txt.get());
 	} else {
 		m_branch_desc = _T("");
 	}
 
 	// set new text
 	if ((Cur_campaign_link >= 0) && Links[Cur_campaign_link].mission_branch_brief_anim && enable_branch_desc_window) {
-		convert_multiline_string(m_branch_brief_anim, Links[Cur_campaign_link].mission_branch_brief_anim);		
+		convert_multiline_string(m_branch_brief_anim, Links[Cur_campaign_link].mission_branch_brief_anim.get());
 	} else {
 		m_branch_brief_anim = _T("");
 	}
 
 	// set new text
 	if ((Cur_campaign_link >= 0) && Links[Cur_campaign_link].mission_branch_brief_sound && enable_branch_desc_window) {
-		convert_multiline_string(m_branch_brief_sound, Links[Cur_campaign_link].mission_branch_brief_sound);
+		convert_multiline_string(m_branch_brief_sound, Links[Cur_campaign_link].mission_branch_brief_sound.get());
 	} else {
 		m_branch_brief_sound = _T("");
 	}
@@ -827,39 +809,27 @@ void campaign_editor::OnToggleLoop()
 	UpdateData(TRUE);
 
 	if ( (Cur_campaign_link >= 0) && (Links[Cur_campaign_link].is_mission_loop || Links[Cur_campaign_link].is_mission_fork) ) {
-		if (Links[Cur_campaign_link].mission_branch_txt) {
-			free(Links[Cur_campaign_link].mission_branch_txt);
-		}
-
-		if (Links[Cur_campaign_link].mission_branch_brief_anim) {
-			free(Links[Cur_campaign_link].mission_branch_brief_anim);
-		}
-
-		if (Links[Cur_campaign_link].mission_branch_brief_sound) {
-			free(Links[Cur_campaign_link].mission_branch_brief_sound);
-		}
-
 		char buffer[MISSION_DESC_LENGTH];
-		
+
 		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH - 1);
 		if (m_branch_desc && strlen(buffer)) {
-			Links[Cur_campaign_link].mission_branch_txt = strdup(buffer);
+			Links[Cur_campaign_link].mission_branch_txt.reset(vm_strdup(buffer));
 		} else {
-			Links[Cur_campaign_link].mission_branch_txt = NULL;
+			Links[Cur_campaign_link].mission_branch_txt.reset();
 		}
 
 		deconvert_multiline_string(buffer, m_branch_brief_anim, MISSION_DESC_LENGTH - 1);
 		if (m_branch_brief_anim && strlen(buffer)) {
-			Links[Cur_campaign_link].mission_branch_brief_anim = strdup(buffer);
+			Links[Cur_campaign_link].mission_branch_brief_anim.reset(vm_strdup(buffer));
 		} else {
-			Links[Cur_campaign_link].mission_branch_brief_anim = NULL;
+			Links[Cur_campaign_link].mission_branch_brief_anim.reset();
 		}
 
 		deconvert_multiline_string(buffer, m_branch_brief_sound, MISSION_DESC_LENGTH - 1);
 		if (m_branch_brief_sound && strlen(buffer)) {
-			Links[Cur_campaign_link].mission_branch_brief_sound = strdup(buffer);
+			Links[Cur_campaign_link].mission_branch_brief_sound.reset(vm_strdup(buffer));
 		} else {
-			Links[Cur_campaign_link].mission_branch_brief_sound = NULL;
+			Links[Cur_campaign_link].mission_branch_brief_sound.reset();
 		}
 	}
 
