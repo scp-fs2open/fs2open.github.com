@@ -1172,12 +1172,12 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 			
 		// targeted subsys index
 		if(Player_ai->targeted_subsys != nullptr){
-			t_subsys = (char)ship_get_subsys_index( Player_ai->targeted_subsys );
+			t_subsys = static_cast<ushort>(ship_get_subsys_index( Player_ai->targeted_subsys ));
 		}
 
 		// locked targeted subsys index
 		if(Player->locking_subsys != nullptr){
-			l_subsys = (char)ship_get_subsys_index( Player->locking_subsys );
+			l_subsys = static_cast<ushort>(ship_get_subsys_index( Player->locking_subsys ));
 		}
 	}
 
