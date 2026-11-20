@@ -33,7 +33,7 @@ public:
 
 	// this was not part of the original design, but is useful when matching up 
 	// timestamps to what is kept internally in this class.
-	int get_mission_start_time() { return _start_time.value(); }
+	std::int64_t get_mission_start_time() { return _start_time.value(); }
 
 	void update_current_time();
 
