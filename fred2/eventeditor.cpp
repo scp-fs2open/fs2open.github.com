@@ -349,28 +349,33 @@ BOOL event_editor::OnInitDialog()
 	box = (CComboBox *) GetDlgItem(IDC_AVI_FILENAME);
 	box->ResetContent();
 	box->AddString("<None>");
-	for (i=0; i<Num_messages; i++) {
-		if (Messages[i].avi_info.name) {
-			maybe_add_head(box, Messages[i].avi_info.name);
-		}
-	}
 
 	if (!Disable_hc_message_ani) {
+		maybe_add_head(box, "Head-TP1");
 		maybe_add_head(box, "Head-TP2");
-		maybe_add_head(box, "Head-VC2");
+		maybe_add_head(box, "Head-TP3");
 		maybe_add_head(box, "Head-TP4");
 		maybe_add_head(box, "Head-TP5");
 		maybe_add_head(box, "Head-TP6");
 		maybe_add_head(box, "Head-TP7");
 		maybe_add_head(box, "Head-TP8");
+		maybe_add_head(box, "Head-VP1");
 		maybe_add_head(box, "Head-VP2");
-		maybe_add_head(box, "Head-VP2");
+		maybe_add_head(box, "Head-CM1");
 		maybe_add_head(box, "Head-CM2");
 		maybe_add_head(box, "Head-CM3");
 		maybe_add_head(box, "Head-CM4");
 		maybe_add_head(box, "Head-CM5");
+		maybe_add_head(box, "Head-VC");
+		maybe_add_head(box, "Head-VC2");
 		maybe_add_head(box, "Head-BSH");
 		
+	}
+
+	for (i=0; i<Num_messages; i++) {
+		if (Messages[i].avi_info.name) {
+			maybe_add_head(box, Messages[i].avi_info.name);
+		}
 	}
 
 	for (auto &thisHead : Custom_head_anis) {
