@@ -174,3 +174,53 @@ TEST(ParseloUtilTest, drop_whitespace) {
 	ASSERT_EQ(test_str, "");
 }
 
+TEST_F(ParseloTest, string_list_missing_paren_at_eof) {
+	read_file_text("string_list.tbl", CF_TYPE_TABLES);
+	reset_parse();
+
+	SCP_vector<SCP_string> strings;
+	try {
+		stuff_string_list(strings);
+		FAIL() << "a string list cut off at the end of the file was accepted";
+	} catch (const os::dialogs::ErrorException& e) {
+		EXPECT_NE(SCP_string(e.what()).find("Reached the end of the file"), SCP_string::npos) << e.what();
+		EXPECT_NE(SCP_string(e.what()).find("Expected ')'"), SCP_string::npos) << e.what();
+	}
+}
+
+TEST_F(ParseloTest, bool_list_missing_paren_at_eof) {
+	read_file_text("bool_list.tbl", CF_TYPE_TABLES);
+	reset_parse();
+
+	bool bools[4];
+	try {
+		stuff_bool_list(bools, 4);
+		FAIL() << "a bool list cut off at the end of the file was accepted";
+	} catch (const os::dialogs::ErrorException& e) {
+		EXPECT_NE(SCP_string(e.what()).find("Reached the end of the file"), SCP_string::npos) << e.what();
+		EXPECT_NE(SCP_string(e.what()).find("Expected ')'"), SCP_string::npos) << e.what();
+	}
+}
+
+TEST_F(ParseloTest, closed_string_list_at_eof) {
+	read_file_text("string_list.tbl", CF_TYPE_TABLES);
+	reset_parse();
+
+	SCP_vector<SCP_string> strings;
+	ASSERT_NO_THROW(stuff_string_list(strings));
+	ASSERT_EQ(strings.size(), 2u);
+	EXPECT_EQ(strings[0], "one");
+	EXPECT_EQ(strings[1], "two");
+}
+
+TEST_F(ParseloTest, closed_bool_list_at_eof) {
+	read_file_text("bool_list.tbl", CF_TYPE_TABLES);
+	reset_parse();
+
+	bool bools[4] = {false, false, false, false};
+	size_t count = 0;
+	ASSERT_NO_THROW(count = stuff_bool_list(bools, 4));
+	ASSERT_EQ(count, 2u);
+	EXPECT_TRUE(bools[0]);
+	EXPECT_FALSE(bools[1]);
+}
