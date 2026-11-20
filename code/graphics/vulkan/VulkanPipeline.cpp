@@ -30,6 +30,7 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       primitiveType == other.primitiveType &&
 	       depthMode == other.depthMode &&
 	       blendMode == other.blendMode &&
+	       coverageAlpha == other.coverageAlpha &&
 	       cullEnabled == other.cullEnabled &&
 	       frontFaceCW == other.frontFaceCW &&
 	       depthWriteEnabled == other.depthWriteEnabled &&
@@ -108,6 +109,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, static_cast<uint64_t>(primitiveType));
 	hashCombine(h, static_cast<uint64_t>(depthMode));
 	hashCombine(h, static_cast<uint64_t>(blendMode));
+	hashCombine(h, static_cast<uint64_t>(coverageAlpha));
 	hashCombine(h, cullEnabled ? 1u : 0u);
 	hashCombine(h, frontFaceCW ? 1u : 0u);
 	hashCombine(h, depthWriteEnabled ? 1u : 0u);
@@ -181,6 +183,17 @@ void VulkanPipelineManager::shutdown()
 
 	m_initialized = false;
 	nprintf(("vulkan", "VulkanPipelineManager: Shutdown complete\n"));
+}
+
+void VulkanPipelineManager::forgetPipelinesOfShaderType(shader_type type)
+{
+	for (auto it = m_pipelines.begin(); it != m_pipelines.end();) {
+		if (it->first.shaderType == type) {
+			it = m_pipelines.erase(it);
+		} else {
+			++it;
+		}
+	}
 }
 
 vk::Pipeline VulkanPipelineManager::getPipeline(const PipelineConfig& config, const vertex_layout& vertexLayout)
@@ -454,7 +467,7 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 			colorBlendAttachments.push_back(createColorBlendAttachment(
 				config.attachmentBlends[i].blendMode, config.attachmentBlends[i].writeMask));
 		} else {
-			colorBlendAttachments.push_back(createColorBlendAttachment(config.blendMode, config.colorWriteMask));
+			colorBlendAttachments.push_back(createColorBlendAttachment(config.blendMode, config.colorWriteMask, config.coverageAlpha));
 		}
 	}
 

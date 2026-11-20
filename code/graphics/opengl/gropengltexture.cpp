@@ -111,6 +111,7 @@ void opengl_tcache_init()
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &GL_max_texture_width);
 
 	GL_max_texture_height = GL_max_texture_width;
+	Gr_max_output_size = GL_max_texture_width;
 
 	// if we are not using sections then make sure we have the min texture size available to us
 	// 1024 is what we need with the standard resolutions - taylor
@@ -1786,13 +1787,12 @@ int opengl_set_render_target( int slot, int face, int is_static )
 			}
 		}
 
-		if(Cmdline_window_res) {
-			GL_state.BindFrameBuffer(Back_framebuffer);
-		}
-		else {
-			GL_state.BindFrameBuffer(0);
+		const GLuint screen_framebuffer = opengl_get_screen_framebuffer();
+		GL_state.BindFrameBuffer(screen_framebuffer);
+		if (screen_framebuffer == 0) {
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		}
+		GL_state.SetCoverageAlpha(opengl_screen_layer_active());
 
 		// done with this render target so lets move on
 		render_target = NULL;
@@ -1828,6 +1828,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 //	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
 	GL_state.BindFrameBuffer(fbo->framebuffer_id);
+	GL_state.SetCoverageAlpha(false);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
 		// For cubemaps we can enable one of the six faces for rendering
@@ -1913,7 +1914,8 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	// Initialize the texture storage of the framebuffer. Framebuffers always have only a single layer in the texture array
 	// This automatically handles cubemaps correctly
-	opengl_tex_array_storage(GL_state.Texture.GetTarget(), ts->mipmap_levels, GL_RGBA8, *w, *h, 1);
+	const bool hdr = (flags & BMP_FLAG_RENDER_TARGET_HDR) != 0;
+	opengl_tex_array_storage(GL_state.Texture.GetTarget(), ts->mipmap_levels, hdr ? GL_RGBA16F : GL_RGBA8, *w, *h, 1);
 
 	if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
 		glGenerateMipmap(GL_state.Texture.GetTarget());
@@ -1922,12 +1924,13 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
 	// Record the bytes of the color texture, which opengl_tex_array_storage() gave the format
-	// GL_RGBA8 (4 bytes for each pixel). A cube map holds 6 faces of that size.
+	// GL_RGBA8 (4 bytes for each pixel) or GL_RGBA16F (8). A cube map holds 6 faces of that size.
+	const size_t bytes_per_pixel = hdr ? 8 : 4;
 	size_t rt_texture_bytes = 0;
 	for (int level = 0; level < ts->mipmap_levels; ++level) {
 		auto level_w = static_cast<size_t>(std::max(1, *w >> level));
 		auto level_h = static_cast<size_t>(std::max(1, *h >> level));
-		rt_texture_bytes += level_w * level_h * 4;
+		rt_texture_bytes += level_w * level_h * bytes_per_pixel;
 	}
 	if (flags & BMP_FLAG_CUBEMAP) {
 		rt_texture_bytes *= 6;
@@ -1957,6 +1960,8 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	// frame buffer
 	glGenFramebuffers(1, &new_fbo->framebuffer_id);
+	// Whatever is being drawn into must stay bound, the render target may be made in the middle of a frame
+	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(new_fbo->framebuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
@@ -1975,7 +1980,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		mprintf(("OpenGL: Unable to create FBO!\n"));
 		auto fbo_id = ts->fbo_id;
 
-		GL_state.BindFrameBuffer(0);
+		GL_state.PopFramebufferState();
 
 		GL_state.Texture.Delete(ts->texture_id);
 		glDeleteTextures(1, &ts->texture_id);
@@ -2023,7 +2028,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	GL_state.BindFrameBuffer(0);
+	GL_state.PopFramebufferState();
 
 	opengl_set_texture_target();
 
@@ -2054,6 +2059,17 @@ GLuint opengl_get_rtt_framebuffer()
 		return 0;
 	else
 		return render_target->framebuffer_id;
+}
+
+GLuint opengl_get_render_target_framebuffer(int handle)
+{
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(handle);
+	if (ts == nullptr) {
+		return 0;
+	}
+
+	auto fbo = opengl_get_fbo(ts->fbo_id);
+	return fbo == nullptr ? 0 : fbo->framebuffer_id;
 }
 
 void gr_opengl_bm_generate_mip_maps(int handle)

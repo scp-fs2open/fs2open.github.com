@@ -6028,6 +6028,9 @@ void ship_init()
 			Ship_types.erase(Ship_types.begin() + idx);
 		}
 
+		Fighter_bomber_valid = false;
+		Ship_type_fighter = Ship_type_bomber = Ship_type_fighter_bomber = -1;
+
 		// See whether this mod defines an explicit "fighter/bomber" type (which would take priority over the special usage), and if not, whether the component types exist
 		if (ship_type_name_lookup(Fighter_bomber_type_name) < 0)
 		{
@@ -6074,6 +6077,7 @@ void ship_init()
 			//Parse main TBL first
 			Removed_ships.clear();
 			Ship_info.clear();
+			Wing_formations.clear();
 			Hud_parsed_ships.clear();
 			parse_shiptbl("ships.tbl");
 
@@ -8579,7 +8583,7 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 	// do standard departure stuff first
 	objp->flags.set(Object::Object_Flags::Should_be_dead);
 	if (objp->type == OBJ_SHIP)
-		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
+		ship_cleanup(objp->instance, infop->parameter_variables.int_value);
 
 	// do the end-mission stuff if it's the player ship
 	if (objp == Player_obj)
@@ -8592,7 +8596,8 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 void ship_actually_depart(int shipnum, int method)
 {
 	dock_function_info dfi;
-	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
+	dfi.parameter_variables.int_value = method;
+
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
 
 	// in a couple of cases we'll need to send a packet to update clients 
@@ -16483,9 +16488,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 }
 
 /**
- * Called in game_shutdown() to free malloced memory
- *
- * NOTE: do not call this function.  It is only called from ::game_shutdown()
+ * Frees the ship tables and other memory allocated by ship_init()
  */
 void ship_close()
 {
@@ -16509,6 +16512,8 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
+
+	Ships_inited = false;
 }	
 
 /**
