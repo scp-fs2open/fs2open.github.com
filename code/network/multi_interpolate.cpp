@@ -111,7 +111,7 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 {
 	// Must be the playback clock, not the raw local clock.  _packets hold timestamps
 	// stamped on the source machine's clock, and nothing ever synchronized the two.
-	auto current_time = Multi_Timing_Info.get_playback_time(_source_player_index);
+	const double current_time = Multi_Timing_Info.get_playback_time_precise(_source_player_index);
 	int current_index = static_cast<int>(_packets.size()) - 2;
 	int prev_index = static_cast<int>(_packets.size()) - 1;
 
@@ -278,7 +278,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	}
 
 	// calc what the current timing should be.  Playback clock, for the same reason as in reassess_packet_index.
-	float numerator = static_cast<float>(Multi_Timing_Info.get_playback_time(_source_player_index)) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
+	float numerator = static_cast<float>(Multi_Timing_Info.get_playback_time_precise(_source_player_index) - _packets[_prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
 	
 	// work around for weird situations that might cause NAN (you just never know with multi)

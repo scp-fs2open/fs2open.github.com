@@ -46,6 +46,9 @@ private:
 	TIMESTAMP _start_time;		// when did the multiplayer mission start
 	int _current_time;		// time delta, how much time has passed since it started on the local instance?
 	int _last_time;		// time delta, how much time passed, last frame? Useful when switching back from simulation mode to interpolation
+	double _current_time_precise;	// _current_time in fractions of a millisecond
+	double _frame_ms;				// length of the last frame in fractions of a millisecond
+	std::uint64_t _last_frame_microseconds;	// mission time at the last update, from the microsecond clock
 	int _skipped_time;		// time delta, how much has time this instance has "skipped" because it is falling behind the server
 									// getting behind the server like that *should* be exceedingly rare, should always be 0 on server
 
@@ -72,6 +75,7 @@ private:
 		int windows_closed;		// short snapping windows give way to long slewing ones
 		int offset;				// applied, slewed offset. playback = _current_time + offset
 		int target_offset;		// where the servo is heading
+		double precise_offset;	// offset in fractions of a millisecond, see get_playback_time_precise()
 
 		int window_min_skew;	// smallest (local - remote) seen in the window so far
 		bool window_has_sample;
@@ -114,6 +118,9 @@ public:
 
 	// Same, for the previous frame.
 	int get_playback_last_time(int player_index) const;
+
+	// The playback clock in fractions of a millisecond, for interpolation.
+	double get_playback_time_precise(int player_index) const;
 
 	// Convert a timestamp received from player_index into the local _current_time that
 	// corresponds to it.  Inverse of get_playback_time().

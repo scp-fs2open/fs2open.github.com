@@ -19,6 +19,18 @@ void multiplayer_timing_info::update_current_time()
 
 	_current_time += _skipped_time;
 
+	const std::uint64_t now_microseconds = timestamp_get_mission_time_in_microseconds();
+	_frame_ms = (now_microseconds > _last_frame_microseconds)
+		? static_cast<double>(now_microseconds - _last_frame_microseconds) / MICROSECONDS_PER_MILLISECOND : 0.0;
+	_last_frame_microseconds = now_microseconds;
+
+	// Both clocks read the same timer, so they stay within a millisecond of each other; a bigger gap means the integer
+	// clock jumped (mission start, in-game join), and the fractional one follows it.
+	_current_time_precise += _frame_ms;
+	if ((_current_time_precise - _current_time > 2.0) || (_current_time - _current_time_precise > 2.0)) {
+		_current_time_precise = _current_time;
+	}
+
 	// now that the local clock has moved, walk each source's playback clock toward its target
 	update_source_clocks();
 }
@@ -50,6 +62,9 @@ multiplayer_timing_info::multiplayer_timing_info()
     _start_time = TIMESTAMP::invalid();
     _current_time = 0;
     _last_time = 0;
+    _current_time_precise = 0.0;
+    _frame_ms = 0.0;
+    _last_frame_microseconds = 0;
     _skipped_time = 0;
     _proposed_skip_time = 0;
     _in_game_time_set = false;
@@ -68,6 +83,9 @@ void multiplayer_timing_info::set_mission_start_time()
 
     _current_time = 0;
     _last_time = 0;
+    _current_time_precise = 0.0;
+    _frame_ms = 0.0;
+    _last_frame_microseconds = timestamp_get_mission_time_in_microseconds();
     _skipped_time = 0;
     _proposed_skip_time = 0;
     _in_game_time_set = false;
@@ -101,6 +119,7 @@ void multiplayer_timing_info::reset_source_clocks()
         sc.windows_closed = 0;
         sc.offset = 0;
         sc.target_offset = 0;
+        sc.precise_offset = 0.0;
         sc.window_min_skew = INT_MAX;
         sc.window_has_sample = false;
         sc.window_end = 0;
@@ -131,6 +150,7 @@ void multiplayer_timing_info::note_packet_time(int player_index, int remote_time
         sc.windows_closed = 0;
         sc.offset = -skew - MULTI_INTERP_BUFFER_MS;
         sc.target_offset = sc.offset;
+        sc.precise_offset = sc.offset;
         sc.window_min_skew = skew;
         sc.window_has_sample = true;
         sc.window_end = _current_time + MULTI_CLOCK_ACQUIRE_WINDOW_MS;
@@ -166,6 +186,7 @@ void multiplayer_timing_info::update_source_clocks()
 
             if (still_acquiring) {
                 sc.offset = sc.target_offset;
+                sc.precise_offset = sc.offset;
             }
 
             sc.windows_closed++;
@@ -185,6 +206,7 @@ void multiplayer_timing_info::update_source_clocks()
         // drift.  Slewing across it would take many seconds of visibly wrong motion.
         if ((diff >= MULTI_CLOCK_SNAP_THRESHOLD_MS) || (diff <= -MULTI_CLOCK_SNAP_THRESHOLD_MS)) {
             sc.offset = sc.target_offset;
+            sc.precise_offset = sc.offset;
             continue;
         }
 
@@ -206,6 +228,26 @@ void multiplayer_timing_info::update_source_clocks()
             sc.offset = sc.target_offset;
         }
     }
+
+    // The integer offset slews in whole milliseconds; ships drawn from it would change speed by a millisecond's worth
+    // each step.  The fractional offset follows it at the same quarter-frame rate without the steps.
+    const double max_precise_step = MAX(1.0, _frame_ms / 4.0);
+    for (auto& sc : _source_clocks) {
+        if (sc.acquired) {
+            double step = sc.offset - sc.precise_offset;
+            CLAMP(step, -max_precise_step, max_precise_step);
+            sc.precise_offset += step;
+        }
+    }
+}
+
+double multiplayer_timing_info::get_playback_time_precise(int player_index) const
+{
+    if (!valid_source(player_index) || !_source_clocks[player_index].acquired) {
+        return static_cast<double>(get_playback_time(player_index));
+    }
+
+    return _current_time_precise + _source_clocks[player_index].precise_offset;
 }
 
 int multiplayer_timing_info::get_playback_time(int player_index) const
