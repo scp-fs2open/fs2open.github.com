@@ -532,6 +532,30 @@ const std::shared_ptr<OverridableHook<>> OnMissionGoalStatusChanged = scripting:
 		{"State", "boolean", "True if the goal was completed, false if it was failed."},
 	});
 
+const std::shared_ptr<Hook<>> OnMissionLogEntry = Hook<>::Factory("On Mission Log Entry",
+	"Called once for each entry added to the mission log, once the event it records has been fully handled: normally "
+	"after the simulation step of the frame, otherwise when the mission ends. Entries a hook script adds are "
+	"delivered after the current batch; any still waiting when the next mission starts are dropped. Not called on "
+	"multiplayer clients.",
+	{
+		{"Type",
+			"string",
+			"The entry type: ShipDestroyed, WingDestroyed, ShipArrived, WingArrived, ShipDeparted, WingDeparted, "
+			"ShipDocked, SubsystemDestroyed, ShipUndocked, ShipDisabled, ShipDisarmed, PlayerCalledForRearm, "
+			"PlayerCalledForReinforcement, GoalSatisfied, GoalFailed, PlayerAbortedRearm, WaypointsDone, "
+			"CargoRevealed, CapSubsystemCargoRevealed or SelfDestructed."},
+		{"Primary", "string", "The name of the ship, wing or goal the entry is about, or an empty string."},
+		{"Secondary",
+			"string",
+			"The name of the second object, such as the killer, the other docked ship or the subsystem, or an "
+			"empty string."},
+		{"Index", "number", "A value that depends on the entry type, such as a wave number or a team, or -1."},
+		{"Hidden",
+			"boolean",
+			"True if the entry is flagged hidden. The mission log screen also leaves out failed bonus goals, which "
+			"are not flagged."},
+	});
+
 const std::shared_ptr<Hook<>> OnMissionAboutToEndHook = Hook<>::Factory("On Mission About To End",
 	"Called when a mission is about to end but has not run any mission-ending logic",
 	{});
