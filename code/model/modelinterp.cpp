@@ -1660,6 +1660,12 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 			current_tri[j % NUM_VERTS_PER_TRI] = index;
 		}
 
+		if ( transparent_tri ) {
+			transparent_indices.push_back(current_tri[0]);
+			transparent_indices.push_back(current_tri[1]);
+			transparent_indices.push_back(current_tri[2]);
+		}
+
 		if ( transparent_indices.empty() ) {
 			continue;
 		}
