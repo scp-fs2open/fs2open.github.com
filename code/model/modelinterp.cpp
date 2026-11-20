@@ -1437,7 +1437,8 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 		new_buffer.flags = 0;
 
-		if (polygon_list[i].n_verts >= USHRT_MAX) {
+		// indices address the submodel's vertex list for all textures, so this texture's index count doesn't bound them
+		if (new_buffer.i_last >= USHRT_MAX) {
 			new_buffer.flags |= VB_FLAG_LARGE_INDEX;
 		}
 
@@ -1659,6 +1660,12 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 			current_tri[j % NUM_VERTS_PER_TRI] = index;
 		}
 
+		if ( transparent_tri ) {
+			transparent_indices.push_back(current_tri[0]);
+			transparent_indices.push_back(current_tri[1]);
+			transparent_indices.push_back(current_tri[2]);
+		}
+
 		if ( transparent_indices.empty() ) {
 			continue;
 		}
@@ -1671,12 +1678,12 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 		buffer_data &new_buff = trans_buffer->tex_buf.back();
 		new_buff.texture = tex_buf->texture;
 
-		if ( transparent_indices.size() > USHRT_MAX ) {
-			new_buff.flags |= VB_FLAG_LARGE_INDEX;
-		}
-
 		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
+		}
+
+		if ( new_buff.i_last >= USHRT_MAX ) {
+			new_buff.flags |= VB_FLAG_LARGE_INDEX;
 		}
 	}
 
