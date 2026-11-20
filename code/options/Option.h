@@ -76,6 +76,7 @@ class OptionBase {
 	float _max = 1;
 
 	bool _is_once = false;
+	bool _is_live = false;
 
 	SCP_unordered_map<PresetKind, SCP_string> _preset_values;
 
@@ -106,6 +107,10 @@ class OptionBase {
 	bool getIsOnce() const;
 	void setIsOnce(bool is_once);
 
+	// True only for options bound with bind_to(), which apply a change at once; any other listener may need a restart
+	bool getIsLive() const;
+	void setIsLive(bool is_live);
+
 	const SCP_string& getConfigKey() const;
 	const SCP_string& getTitle() const;
 	const SCP_string& getDescription() const;
@@ -117,6 +122,15 @@ class OptionBase {
 	virtual bool valueChanged(const json_t* val) const = 0;
 
 	virtual ValueDescription getCurrentValueDescription() const = 0;
+
+	virtual ValueDescription getDefaultValueDescription() const = 0;
+
+	// value only, and only for options that load: serializers and some defaults need systems that start later
+	virtual void rememberDefaultBeforeLoad() const = 0;
+	virtual void forgetDefaultBeforeLoad() const = 0;
+
+	// the remembered default if there is one, else the current one, as stored in a settings file
+	virtual SCP_string getDescribedDefault() const = 0;
 
 	virtual void setValueDescription(const ValueDescription& desc) const = 0;
 
@@ -181,6 +195,8 @@ class Option : public OptionBase {
 	ValueParser _parser;
 
 	bool _hasCustomDefaultFunc = false;
+
+	mutable std::optional<T> _defaultBeforeLoad;
 
 	OptionType _type = OptionType::Selection; // By default the generic type is always a selection
 
@@ -292,6 +308,25 @@ class Option : public OptionBase {
 	{
 		auto val = getValue();
 		return toDescription(val);
+	}
+	ValueDescription getDefaultValueDescription() const override
+	{
+		return toDescription(_defaultValueFunc());
+	}
+	void rememberDefaultBeforeLoad() const override
+	{
+		if (_changeListener) {
+			_defaultBeforeLoad = _defaultValueFunc();
+		}
+	}
+	void forgetDefaultBeforeLoad() const override
+	{
+		_defaultBeforeLoad.reset();
+	}
+	SCP_string getDescribedDefault() const override
+	{
+		auto json = _serializer(_defaultBeforeLoad.has_value() ? *_defaultBeforeLoad : _defaultValueFunc());
+		return json_dump_string_new(json, JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 	}
 	void setValueDescription(const ValueDescription& desc) const override
 	{
@@ -546,6 +581,7 @@ class OptionBuilder {
 	OptionBuilder& change_listener(const ValueChangeListener<T>& listener)
 	{
 		_instance.setChangeListener(listener);
+		_instance.setIsLive(false);
 		return *this;
 	}
 	//The code to run in order to parse the default setting. Option must use default_func instead of defaul_val!
@@ -557,10 +593,12 @@ class OptionBuilder {
 	//The global variable to bind the option to immediately.
 	OptionBuilder& bind_to(T* dest)
 	{
-		return change_listener([dest](const T& val, bool) {
+		change_listener([dest](const T& val, bool) {
 			*dest = val;
 			return true;
 		});
+		_instance.setIsLive(true);
+		return *this;
 	}
 	//The global variable to bind the option to once. Will require game restart to persist changes.
 	OptionBuilder& bind_to_once(T* dest)
