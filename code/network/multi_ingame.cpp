@@ -1041,11 +1041,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	GET_DATA( p_type );	
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
-		int ship_num, objnum;
+		int ship_num, objnum, ship_class;
 		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
+		GET_INT( ship_class );
 		GET_DATA( flag_size );
 
 		ubyte temp;
@@ -1077,6 +1078,11 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
 		}
+		if (ship_class < 0 || ship_class >= ship_info_size()) {
+			mprintf(("ABORTING in-game join since the server sent class %d for ship %s!\n", ship_class, ship_name));
+			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			return;
+		}
 
 		// go ahead and create the parse object.  Set the network signature of this guy before
 		// creation
@@ -1085,6 +1091,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
+
+		// the class may have changed since creation; later packets index subsystems and weapon banks by the server's
+		change_ship_type(ship_num, ship_class, 1);
+
 		Objects[objnum].flags.reset();
 		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
@@ -1123,9 +1133,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
 
 			if ( (team_val != -1) && (slot_index != -1) ) {
-				// change the ship type and the weapons
-				change_ship_type(objp->instance, Wss_slots_teams[team_val][slot_index].ship_class);
-				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
+				// the ship already has the server's class; the loadout's weapons fit only if it is still the loadout's
+				if (Ships[idx].ship_info_index == Wss_slots_teams[team_val][slot_index].ship_class) {
+					wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
+				}
 	
 				// Be sure to mark this ship as as a could_be_player
 				obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player );
@@ -1187,6 +1198,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
+		ADD_INT( shipp->ship_info_index );
 		
 		// this flag describes a lookup table in our own memory, which the joining machine has not built
 		auto flags_to_send = shipp->flags;
