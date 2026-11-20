@@ -8939,9 +8939,6 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
  */
 void ship_actually_depart(int shipnum, int method)
 {
-	Assertion(method & (SHIP_DEPARTED | SHIP_VANISHED | SHIP_DEPARTED_REDALERT),
-		"Invalid departure method '%i' passed to ship_actually_depart for ship %s!", method, Ships[shipnum].ship_name);
-
 	dock_function_info dfi;
 	dfi.parameter_variables.int_value = method;
 
