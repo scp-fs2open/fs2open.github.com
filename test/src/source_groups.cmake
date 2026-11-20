@@ -22,6 +22,7 @@ add_file_folder("CFile"
 )
 
 add_file_folder("Controlconfig"
+    controlconfig/autoshield.cpp
     controlconfig/test_bindings.cpp
 )
 
@@ -68,10 +69,6 @@ add_file_folder("mod"
 
 add_file_folder("model"
     model/test_modelread.cpp
-)
-
-add_file_folder("Controlconfig"
-    controlconfig/autoshield.cpp
 )
 
 add_file_folder("network"
