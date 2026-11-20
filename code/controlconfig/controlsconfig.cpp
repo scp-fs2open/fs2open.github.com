@@ -409,6 +409,7 @@ DCF(cc_adjust, "UI tool Used to adjust positioning and size of the controls conf
  * from this "origin"
  */
 static int Axes_origin[CID_JOY_MAX][JOY_NUM_AXES];
+static const int AXIS_BIND_DELTA = 16384;
 
 // Rotate selItem forwards
 selItem operator++(selItem& item, int) {
@@ -520,7 +521,7 @@ void control_config_detect_axis_reset()
 CC_bind control_config_detect_axis()
 {
 	int dx, dy, dz;
-	int delta = 16384;
+	int delta = AXIS_BIND_DELTA;
 	int axes_values[CID_JOY_MAX][JOY_NUM_AXES];
 	short j;			// cid of the joy that moved
 	short axis = -1;	// index of the detected axis
@@ -589,6 +590,39 @@ CC_bind control_config_detect_axis()
 	}
 	
 	return CC_bind(static_cast<CID>(j), axis, CCF_AXIS);;
+}
+
+/**
+ * @brief Detects a joystick axis pushed far enough to bind it as a button, on the side it was pushed to
+ */
+static CC_bind control_config_detect_axis_button()
+{
+	int axes_values[JOY_NUM_AXES];
+
+	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
+		if (!joy_present(j)) {
+			continue;
+		}
+
+		joystick_read_raw_axis(j, JOY_NUM_AXES, axes_values);
+		for (short i = 0; i < JOY_NUM_AXES; ++i) {
+			if (joy_axis_is_trigger(j, i)) {
+				continue;
+			}
+
+			// The move the axis bind asks for, from where the axis rested: a throttle left off center must not bind.
+			// It must also be past the press point, or the same push would press the new control after the bind.
+			const int moved = axes_values[i] - Axes_origin[j][i];
+			const int travel = abs(axes_values[i] - JOY_AXIS_CENTER);
+			const bool negative = axes_values[i] < JOY_AXIS_CENTER;
+			if ((abs(moved) > AXIS_BIND_DELTA) && (travel >= JOY_AXIS_BUTTON_PRESS)) {
+				const char flags = static_cast<char>(CCF_AXIS_BTN | (negative ? CCF_INVERTED : 0));
+				return {static_cast<CID>(j), i, flags};
+			}
+		}
+	}
+
+	return {};
 }
 
 /**
@@ -745,7 +779,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order, bool API
 
 	CCB old(Control_config[i]);
 
-	Control_config[i].take(new_bind, sel);
+	Control_config[i].take(new_bind, sel, Control_config[i].is_axis());
 
 	if (old == Control_config[i]) {
 		// Binding didn't take
@@ -1090,7 +1124,7 @@ void control_config_scroll_line_down()
 bool control_config_toggle_modifier(int bit, int ctrl, bool API_Access)
 {
 	int k = Control_config[ctrl].get_btn(CID_KEYBOARD);
-	if (k < 0) {
+	if ((k < 0) || Control_config[ctrl].is_axis()) {
 		if (!API_Access)
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return false;
@@ -1177,6 +1211,11 @@ void control_config_do_bind(bool API_Access)
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
 		for (i=0; i<JOY_TOTAL_BUTTONS; ++i) {
 			joy_down_count(CC_bind(static_cast<CID>(j), i), 1);  // clear checking status of all joystick buttons
+		}
+
+		for (short axis = 0; axis < JOY_NUM_AXES; ++axis) {
+			joy_down_count(CC_bind(static_cast<CID>(j), axis, CCF_AXIS_BTN), 1);
+			joy_down_count(CC_bind(static_cast<CID>(j), axis, CCF_AXIS_BTN | CCF_INVERTED), 1);
 		}
 	}
 
@@ -2037,7 +2076,6 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
 			if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
 				// btn is down, save it in j and joy
-				// Cancel axis bind if any button is pressed
 				bind = true;
 				brk = true;
 				break;
@@ -2085,6 +2123,18 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!ccb.empty()) {
 			Axis_override = ccb;
 			bind = true;
+		} else {
+			// A key or button drives an axis at a fixed value; ENTER keeps cancelling the bind
+			const int key = k & KEY_MASK;
+			const bool is_modifier =
+				(key == KEY_LSHIFT) || (key == KEY_RSHIFT) || (key == KEY_LALT) || (key == KEY_RALT);
+			if ((k > 0) && (k != KEY_ENTER) && !is_modifier && Config_allowed[key]) {
+				Axis_override = CC_bind(CID_KEYBOARD, static_cast<short>(k & (KEY_MASK | KEY_SHIFTED | KEY_ALTED)));
+				bind = true;
+			} else if (j < JOY_TOTAL_BUTTONS) {
+				Axis_override = CC_bind(static_cast<CID>(joy), j, CCF_BUTTON);
+				bind = true;
+			}
 		}
 
 		if (!done && bind) {
@@ -2157,6 +2207,19 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 			done = true;
 		}
 
+		if (!done) {
+			const CC_bind axis_bind = control_config_detect_axis_button();
+
+			if (!axis_bind.empty()) {
+				// The push that made the bind must not fire the control later
+				joy_down_count(axis_bind, 1);
+				control_config_bind(ctrl, axis_bind, item, API_Access);
+
+				strcpy_s(bound_string, axis_bind.textify().c_str());
+				done = true;
+			}
+		}
+
 		// Debounce timer to allow mouse double-click (maybe?)
 		if (!done && (ui_timestamp_since(Bind_time) > 375)) {
 			int i;
@@ -2207,6 +2270,16 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 	}
 
 	return (int)done;
+}
+
+/**
+ * @brief Whether a bound key or button is the pressed one, whatever axis direction or BUTTON flag it was bound with
+ */
+static bool same_button(const CC_bind& bound, const CC_bind& pressed)
+{
+	const char ignored = CCF_INVERTED | CCF_BUTTON;
+	return (bound.get_cid() == pressed.get_cid()) && (bound.get_btn() == pressed.get_btn()) &&
+		   ((bound.get_flags() & ~ignored) == pressed.get_flags());
 }
 
 // returns the index of the bind the detected key is matched to. returns -1 if no match or -2 if ESCAPE
@@ -2297,11 +2370,11 @@ int control_config_search_key_on_frame(bool API_Access)
 				if (control_config_is_hidden(Control_config[i])) {
 					continue;
 				}
-				if (Control_config[i].first == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
+				if (same_button(Control_config[i].first, CC_bind(CID_KEYBOARD, static_cast<short>(k)))) {
 					Selected_item = selItem::Primary;
 					ctrl = i;
 					break;
-				} else if (Control_config[i].second == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
+				} else if (same_button(Control_config[i].second, CC_bind(CID_KEYBOARD, static_cast<short>(k)))) {
 					Selected_item = selItem::Secondary;
 					ctrl = i;
 					break;
@@ -2315,11 +2388,11 @@ int control_config_search_key_on_frame(bool API_Access)
 				if (control_config_is_hidden(Control_config[i])) {
 					continue;
 				}
-				if (Control_config[i].first == CC_bind(static_cast<CID>(joy), j)) {
+				if (same_button(Control_config[i].first, CC_bind(static_cast<CID>(joy), j))) {
 					Selected_item = selItem::Primary;
 					ctrl = i;
 					break;
-				} else if (Control_config[i].second == CC_bind(static_cast<CID>(joy), j)) {
+				} else if (same_button(Control_config[i].second, CC_bind(static_cast<CID>(joy), j))) {
 					Selected_item = selItem::Secondary;
 					ctrl = i;
 					break;
@@ -2349,11 +2422,11 @@ int control_config_search_key_on_frame(bool API_Access)
 						if (control_config_is_hidden(Control_config[i])) {
 							continue;
 						}
-						if (Control_config[i].first == CC_bind(CID_MOUSE, j)) {
+						if (same_button(Control_config[i].first, CC_bind(CID_MOUSE, j))) {
 							Selected_item = selItem::Primary;
 							ctrl = i;
 							break;
-						} else if (Control_config[i].second == CC_bind(CID_MOUSE, j)) {
+						} else if (same_button(Control_config[i].second, CC_bind(CID_MOUSE, j))) {
 							Selected_item = selItem::Secondary;
 							ctrl = i;
 							break;
@@ -3002,6 +3075,35 @@ void maybe_invert(bool inv, CC_type type, int &val)
 	}
 }
 
+/**
+ * @brief Whether a key, joystick button, hat or mouse button binding is held down right now
+ * @note Reads key state only: check_control_used's key_is_pressed(.., true) also consumes the key's down count
+ */
+static bool button_bind_held(const CC_bind &bind)
+{
+	if (bind.get_cid() != CID_KEYBOARD) {
+		return joy_down(bind) || mouse_down(bind);
+	}
+
+	const short z = bind.get_btn();
+	const auto key = static_cast<short>(z & KEY_MASK);
+	int mask = 0;
+	if (key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT)) {
+		mask |= KEY_SHIFTED;
+	}
+
+	if (key_is_pressed(KEY_LALT) || key_is_pressed(KEY_RALT)) {
+		mask |= KEY_ALTED;
+	}
+
+	const bool is_modifier = (key == KEY_LALT) || (key == KEY_RALT) || (key == KEY_LSHIFT) || (key == KEY_RSHIFT);
+	if (!is_modifier && ((z & (KEY_SHIFTED | KEY_ALTED)) != mask)) {
+		return false;
+	}
+
+	return key_is_pressed(key);
+}
+
 /*!
  * Scales, and maybe inverts, the input axis values
  *
@@ -3011,6 +3113,7 @@ void maybe_invert(bool inv, CC_type type, int &val)
  * @param[in]   frame_time  Current frame time, used to scale mouse axis
  * @param[in]   axis_in[][] Array of raw axis values
  * @param[out]  axis_out    Output array of the scaled axes
+ * @param[in]   buttons_live False while key and button bindings must be ignored (multiplayer chat entry)
  *
  * @note C++ doesn't like passing multi-dim arrays as arguments
  */
@@ -3019,13 +3122,27 @@ void scale_invert(const CC_bind &bind,
 				CC_type type,
 				float frame_time,
 				int (&axis_in)[CID_JOY_MAX + 1][JOY_NUM_AXES],
-				int *axis_out)
+				int *axis_out,
+				bool buttons_live)
 {
 	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
 	float factor = 0.0f;
 	int dx = 0;
 	const auto cid = bind.get_cid();
 	const auto btn = bind.get_btn();
+
+	// Only keys and BUTTON-flagged binds are buttons here: a flagless joystick bind on an axis control has always meant
+	// that axis
+	if ((cid == CID_KEYBOARD) || (bind.get_flags() & CCF_BUTTON)) {
+		dx = (buttons_live && button_bind_held(bind)) ? F1_0 : 0;
+		maybe_invert(bind.is_inverted(), type, dx);
+		axis_out[action] += dx;
+		return;
+	}
+
+	if ((btn < 0) || (btn >= JOY_NUM_AXES)) {
+		return;
+	}
 
 	factor = (float)Mouse_sensitivity + 1.77f;
 	factor = factor * factor / frame_time / 0.6f;
@@ -3096,6 +3213,9 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	// Read raw mouse
 	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 
+	// Once per frame: multi_ignore_controls() can flush keys
+	const bool buttons_live = !((Game_mode & GM_MULTIPLAYER) && multi_ignore_controls());
+
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
 		const auto action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
 		CCI & item = Control_config[action_id];
@@ -3104,12 +3224,12 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 		// Assumes all axes are uniquely bound to an action
 		// Process first
 		if (!item.first.empty()) {
-			scale_invert(item.first, action, item.type, frame_time, axe, axis_v);
+			scale_invert(item.first, action, item.type, frame_time, axe, axis_v, buttons_live);
 		}
 
 		// Process second.
 		if (!item.second.empty()) {
-			scale_invert(item.second, action, item.type, frame_time, axe, axis_v);
+			scale_invert(item.second, action, item.type, frame_time, axe, axis_v, buttons_live);
 		}
 
 		//Call Lua hooks

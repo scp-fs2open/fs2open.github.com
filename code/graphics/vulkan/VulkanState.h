@@ -77,6 +77,10 @@ class VulkanStateTracker {
 	void setScreenScale(float x, float y);
 	vk::Rect2D screenToFramebuffer(const vk::Rect2D& rect) const;
 
+	// Blend alpha as coverage for the current pass (see createColorBlendAttachment()); reset by every pass begin
+	void setCoverageAlpha(bool enable) { m_coverageAlpha = enable; }
+	bool getCoverageAlpha() const { return m_coverageAlpha; }
+
 	// FSR's subpixel jitter and texture LOD bias, applied only in the scene's own passes. Jittering the viewport rather
 	// than the projection also moves CPU-projected backgrounds, and leaves the matrices motion vectors and the HUD use.
 	void setUpscalerSceneState(float jitterX, float jitterY, float lodBias);
@@ -341,6 +345,7 @@ class VulkanStateTracker {
 
 	float m_screenScaleX = 1.0f;
 	float m_screenScaleY = 1.0f;
+	bool m_coverageAlpha = false;
 	bool m_viewportInScreenUnits = false;
 
 	float m_upscalerJitterX = 0.0f;

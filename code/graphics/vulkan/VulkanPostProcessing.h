@@ -263,6 +263,7 @@ public:
 private:
 	bool createTargets();
 	void destroyTargets();
+	vk::Framebuffer sceneColorFramebuffer();
 
 	struct BloomTarget {
 		vk::Image image;
@@ -279,7 +280,8 @@ private:
 	uint32_t m_height = 0;                      // Half of scene height
 	vk::RenderPass m_renderPass;               // Color-only RGBA16F, loadOp=eDontCare
 	vk::RenderPass m_compositeRenderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
-	vk::Framebuffer m_sceneColorFB;            // Scene color as attachment for bloom composite
+	// Scene color as attachment for bloom composite, for each scene color seen (in VR, FSR has one for each eye)
+	SCP_vector<std::pair<vk::ImageView, vk::Framebuffer>> m_sceneColorFBs;
 	bool m_initialized = false;
 };
 
@@ -525,10 +527,15 @@ public:
 	void destroyTargets();
 
 	static bool wanted();
-	// The context was made for a different version than the one now chosen
-	bool versionChanged() const { return m_context && m_contextMajorVersion != Gr_fsr_major_version; }
+	// The contexts were made for a different version or mode than the one now chosen
+	bool settingsChanged() const
+	{
+		return hasContext() && (m_contextMajorVersion != Gr_fsr_major_version || m_contextMode != Gr_fsr_mode);
+	}
 	bool createResources();
-	const RenderTarget& output() const { return m_output; }
+	bool hasResources() const;
+	// For the eye being rendered
+	const RenderTarget& output() const;
 
 	// Before the scene's first pass. The image offset to draw this frame with, and the texture LOD bias to go with it.
 	void beginFrame(float& imageOffsetX, float& imageOffsetY, float& lodBias);
@@ -537,14 +544,27 @@ public:
 	bool dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion);
 
 private:
+	// FSR's history is per view, so in VR each eye needs its own context, and its own output in case the upscaler reads
+	// that back. In VR, both eyes' are created together, up front.
+	struct View {
+		void* context = nullptr; // ffxContext
+		RenderTarget output;
+		int jitterIndex = 0;
+		float jitterX = 0.0f;
+		float jitterY = 0.0f;
+	};
+
+	View& currentView();
+	const View& currentView() const;
+	size_t viewCount() const;
+	bool hasContext() const { return m_views[0].context || m_views[1].context; }
+	bool createContext(View& view);
+
 	PostProcessContext* m_ctx = nullptr;
-	RenderTarget m_output;
-	void* m_context = nullptr; // ffxContext
+	std::array<View, 2> m_views;
 	int m_contextMajorVersion = 0;
+	FsrMode m_contextMode = FsrMode::Off;
 	int m_jitterPhaseCount = 1;
-	int m_jitterIndex = 0;
-	float m_jitterX = 0.0f;
-	float m_jitterY = 0.0f;
 };
 
 /**
@@ -620,7 +640,8 @@ private:
 	// region per (frame-in-flight, lighting mode) so that no two passes ever pack
 	// into the same bytes. Eventually sharing one region between the scene and
 	// cockpit passes is desired, but it would first require moving the cockpit intensity/
-	// radius modifiers, etc. into the shader.
+	// radius modifiers, etc. into the shader. In VR, both eyes are recorded before either runs, so each eye gets its own
+	// set of regions.
 	static constexpr uint32_t DEFERRED_UBO_REGIONS = MAX_FRAMES_IN_FLIGHT * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES);
 
 	PostProcessContext* m_ctx = nullptr;
@@ -1040,8 +1061,8 @@ public:
 	/**
 	 * @brief Execute SMAA anti-aliasing passes
 	 *
-	 * Called after tonemapping (mutually exclusive with FXAA, selected via
-	 * Gr_aa_mode). Runs edge detection, blending weight calculation, and
+	 * Called after tonemapping (mutually exclusive with FXAA, selected via the
+	 * preset latched at frame start). Runs edge detection, blending weight calculation, and
 	 * neighborhood blending, then resolves the result back into Scene_ldr.
 	 * Must be called outside a render pass.
 	 *
@@ -1059,6 +1080,10 @@ public:
 			m_motionVectors.execute(cmd, m_sceneDepthCopy.view);
 		}
 	}
+
+	// Makes or remakes what FSR needs when its settings change, at the start of a frame, so that it is ready before any
+	// scene needs it
+	void updateUpscalerResources();
 
 	// Selects whether FSR runs for this frame's scene. After prepareMotionVectors(), which it depends on.
 	void prepareUpscaler();
