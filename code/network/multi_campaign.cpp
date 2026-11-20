@@ -175,6 +175,13 @@ void multi_campaign_do_debrief(int player_status)
 	if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Campaign.current_mission != -1) && player_status){				
 		// if players want to go to the next mission
 		if(player_status == 1){
+			// as in single player: stored when moving on (a chosen loop counts), not on a replay or retry
+			if((Campaign.next_mission != Campaign.current_mission)
+				|| (Campaign.loop_enabled && (Campaign.next_mission == Campaign.loop_mission))){
+				mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS, false);
+				mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS, false);
+			}
+
 			// move the multiplayer campaign along
 			multi_campaign_next_mission();			
 
