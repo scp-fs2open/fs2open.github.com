@@ -80,13 +80,18 @@ extern FsrMode Gr_fsr_mode;
 extern int Gr_fsr_major_version;
 // The FSR versions the renderer offers, newest first, such as "4.1.2". Empty without FSR.
 extern SCP_vector<SCP_string> Gr_fsr_versions;
-// The largest image side the renderer supports, which limits the upscale factor. 0 without FSR.
-extern int Gr_fsr_max_output_size;
+// The largest image side the renderer supports, which limits the output scale factor. 0 until the renderer is up.
+extern int Gr_max_output_size;
 
-// Scales the render resolution to cover the window in both axes, keeping its aspect ratio; the final blit squeezes the
-// rest. 1 for Off and AA, and when the window isn't larger than the render resolution.
-float gr_fsr_upscale_factor(FsrMode mode);
-// Framebuffer pixels per gr_screen unit for what's drawn after the scene. Above 1 only while FSR upscales.
+// Draw the HUD and everything else after the scene at the output resolution rather than the render resolution
+extern bool Gr_native_res_hud;
+
+// What Gr_composition_scale should be. While FSR upscales or Gr_native_res_hud is set, this scales the render resolution
+// to cover the output (the window, or an HMD eye image in VR) in both axes, keeping its aspect ratio; the final blit
+// squeezes the rest. Otherwise, or when the output isn't larger than the render resolution, it is 1.
+float gr_wanted_composition_scale(bool fsr_upscaling);
+// Framebuffer pixels per gr_screen unit for what's drawn onto the screen, or into a screen layer, after the scene. Above
+// 1 while FSR upscales or the HUD is drawn at output resolution. Render targets always draw at 1.
 extern float Gr_composition_scale;
 
 bool gr_is_fxaa_mode(AntiAliasMode mode);
@@ -1080,6 +1085,9 @@ typedef struct screen {
 
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
 
+	std::function<bool(int bitmap)> gf_screen_layer_begin;
+	std::function<void()> gf_screen_layer_end;
+
 	std::function<void(bool set_override)> gf_override_fog;
 
 	// ImGui backend integration
@@ -1451,6 +1459,12 @@ void gr_imgui_end_frame();
  */
 bool gr_imgui_frame_active();
 
+/**
+ * @brief Adds the frame profiler overlay and renders the open ImGui frame, once per presented frame. Called by gr_flip(),
+ * or in VR by the HUD panel, so that both eyes show it.
+ */
+void gr_imgui_draw_overlay();
+
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,
@@ -1591,6 +1605,29 @@ inline void gr_set_viewport(int x, int y, int width, int height)
 {
 	gr_screen.gf_set_viewport(x, y, width, height);
 }
+
+/**
+ * @brief Sets up an offscreen layer that screen drawing can be redirected into, e.g. to show the HUD on a VR panel
+ *
+ * Call it while the game starts up, as the layer is a render target like any other.
+ * @param relative_scale The layer's pixels per gr_screen unit, relative to Gr_composition_scale, which it follows
+ */
+void gr_screen_layer_init(float relative_scale);
+
+// Remakes the screen layer for the current Gr_composition_scale. Renderers that change Gr_composition_scale while running call this.
+void gr_screen_layer_resize();
+
+/**
+ * @brief Redirects what is drawn onto the screen into the screen layer
+ *
+ * Unlike bm_set_render_target(), gr_screen stays exactly as it is, so everything lays itself out as it would on the
+ * screen. The layer starts out transparent and holds premultiplied alpha. Render targets set while it is active return
+ * to it. Must not be nested.
+ *
+ * @return The layer's bitmap handle, or -1 if there is no layer
+ */
+int gr_screen_layer_begin();
+void gr_screen_layer_end();
 
 inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)
 {

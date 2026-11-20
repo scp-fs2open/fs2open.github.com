@@ -14,6 +14,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/shadows.h"
 #include "graphics/2d.h"
+#include "graphics/openxr.h"
 #include "graphics/matrix.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
@@ -50,6 +51,8 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	if (m_initialized) {
 		return true;
 	}
+
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 
 	m_ctx.device = device;
 	m_ctx.memoryManager = memMgr;
@@ -675,9 +678,9 @@ void VulkanPostProcessor::setPostProcessInput(const RenderTarget& input)
 	}
 }
 
-void VulkanPostProcessor::prepareUpscaler()
+void VulkanPostProcessor::updateUpscalerResources()
 {
-	if (m_upscaler.versionChanged()) {
+	if (m_upscaler.settingsChanged()) {
 		m_ctx.device.waitIdle();
 		m_upscaler.destroyTargets();
 		// Bloom and tonemapping must not keep the destroyed output, even if the new version then fails
@@ -685,13 +688,24 @@ void VulkanPostProcessor::prepareUpscaler()
 		m_upscalerActive = false;
 	}
 
-	const bool active = m_velocityActive && VulkanUpscaler::wanted() && m_upscaler.createResources();
+	if (VulkanUpscaler::wanted() && VulkanMotionVectors::wanted()) {
+		m_upscaler.createResources();
+	}
+}
+
+void VulkanPostProcessor::prepareUpscaler()
+{
+	const bool active = m_velocityActive && VulkanUpscaler::wanted() && m_upscaler.hasResources();
 
 	if (active != m_upscalerActive) {
 		m_ctx.device.waitIdle();
 		m_upscalerActive = active;
 		setPostProcessInput(postProcessInput());
 		gr_reset_temporal_history();
+	} else if (active) {
+		// In VR, each eye has an output of its own
+		m_bloom.setSceneColor(m_upscaler.output());
+		m_ldr.setSceneColor(m_upscaler.output());
 	}
 
 	float imageOffsetX = 0.0f;
@@ -874,7 +888,8 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// Build pipeline config for tonemapping (fullscreen, no depth, no blending)
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_POST_PROCESS_TONEMAPPING;
-	config.shaderFlags = useLdr ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0;
+	// With LDR targets this is only a copy. Without, it's the actual tonemapping, linear in VR like in executeTonemap().
+	config.shaderFlags = (useLdr || openxr_enabled()) ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0;
 	config.vertexLayoutHash = 0;  // Empty vertex layout
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;

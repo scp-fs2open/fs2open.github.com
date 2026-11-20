@@ -487,7 +487,9 @@ void vulkan_deferred_lighting_msaa()
 		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eUndefined;
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
+		// The previous scene's copy and fog passes may still read it: in VR that is the other eye, in the same command
+		// buffer
+		barrier.srcStage = vk::PipelineStageFlagBits2::eAllTransfer | vk::PipelineStageFlagBits2::eFragmentShader;
 		barrier.srcAccess = {};
 		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 		barrier.dstAccess = {};
@@ -805,8 +807,9 @@ void vulkan_shadow_map_end()
 				barrier.layerCount = 1;
 				barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 				barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-				barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
-				barrier.srcAccess = {};
+				// After the final layout transition of the G-buffer pass that shadow start ended
+				barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+				barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
 				barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 				// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
 				// loadOp=eLoad) reads this attachment; order the read after the transition.
@@ -894,8 +897,9 @@ void vulkan_start_decal_pass()
 		barrier.layerCount = 1;
 		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.srcStage = vk::PipelineStageFlagBits2::eTopOfPipe;
-		barrier.srcAccess = {};
+		// After the final layout transition of the G-buffer pass ended above
+		barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
 		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
 		// eColorAttachmentRead too: the resumed G-buffer pass (renderPassLoad,
 		// loadOp=eLoad) reads this attachment; order the read after the transition.

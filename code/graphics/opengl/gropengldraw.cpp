@@ -20,6 +20,7 @@
 #include "gropengltexture.h"
 #include "gropengltnl.h"
 
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -57,6 +58,9 @@ GLuint Back_depth_texture;
 
 GLuint GammaBlit_framebuffer;
 GLuint GammaBlit_texture;
+
+static GLuint Readback_framebuffer;
+static GLuint Readback_texture;
 
 GLuint Distortion_framebuffer = 0;
 GLuint Distortion_texture[2];
@@ -529,6 +533,11 @@ void opengl_setup_scene_textures()
 	}
 
 	if (Cmdline_window_res) {
+		// With the HUD at output resolution, the backbuffer is that large and the scene is stretched into it
+		Gr_composition_scale = gr_wanted_composition_scale(false);
+		const int back_w = opengl_screen_pixel_width();
+		const int back_h = opengl_screen_pixel_height();
+
 		//Gen Framebuffer
 		glGenFramebuffers(1, &Back_framebuffer);
 		GL_state.BindFrameBuffer(Back_framebuffer);
@@ -549,7 +558,7 @@ void opengl_setup_scene_textures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, back_w, back_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Back_texture, 0);
 		opengl_set_object_label(GL_TEXTURE, Back_texture, "Backbuffer texture");
@@ -570,8 +579,8 @@ void opengl_setup_scene_textures()
 		glTexImage2D(GL_TEXTURE_2D,
 			0,
 			Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
-			gr_screen.max_w,
-			gr_screen.max_h,
+			back_w,
+			back_h,
 			0,
 			GL_DEPTH_STENCIL,
 			Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_UNSIGNED_INT_24_8,
@@ -591,7 +600,7 @@ void opengl_setup_scene_textures()
 		GL_state.BindFrameBuffer(GammaBlit_framebuffer);
 		opengl_set_object_label(GL_FRAMEBUFFER, GammaBlit_framebuffer, "Gamma blit framebuffer");
 
-		if (Scene_ldr_texture != 0 && Scene_texture_width == gr_screen.max_w && Scene_texture_height == gr_screen.max_h) {
+		if (Scene_ldr_texture != 0 && Scene_texture_width == back_w && Scene_texture_height == back_h) {
 			// Scene_ldr_texture is dead scratch by flip time: its consumers (tonemap, AA, the final
 			// post pass) all write before reading within gr_opengl_post_process_end(), which completes
 			// before the flip. Reuse it as the gamma pass target instead of allocating another
@@ -612,10 +621,30 @@ void opengl_setup_scene_textures()
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, back_w, back_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, GammaBlit_texture, 0);
 			opengl_set_object_label(GL_TEXTURE, GammaBlit_texture, "Gamma blit texture");
+		}
+
+		if (back_w != gr_screen.max_w || back_h != gr_screen.max_h) {
+			// Screen readbacks (screenshots, popup backgrounds) are expected at gr_screen size
+			glGenFramebuffers(1, &Readback_framebuffer);
+			GL_state.BindFrameBuffer(Readback_framebuffer);
+			opengl_set_object_label(GL_FRAMEBUFFER, Readback_framebuffer, "Screen readback framebuffer");
+
+			glGenTextures(1, &Readback_texture);
+
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+			GL_state.Texture.Enable(Readback_texture);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Readback_texture, 0);
+			opengl_set_object_label(GL_TEXTURE, Readback_texture, "Screen readback texture");
 		}
 
 		GL_state.BindFrameBuffer(Back_framebuffer);
@@ -747,6 +776,16 @@ void opengl_scene_texture_shutdown()
 		GammaBlit_framebuffer = 0;
 	}
 
+	if (Readback_texture) {
+		glDeleteTextures(1, &Readback_texture);
+		Readback_texture = 0;
+	}
+
+	if (Readback_framebuffer) {
+		glDeleteFramebuffers(1, &Readback_framebuffer);
+		Readback_framebuffer = 0;
+	}
+
 	glDeleteTextures(2, Distortion_texture);
 	Distortion_texture[0] = 0;
 	Distortion_texture[1] = 0;
@@ -808,10 +847,13 @@ size_t opengl_get_scene_render_target_bytes()
 	// of the scene textures.
 	const auto screen_w = static_cast<size_t>(gr_screen.max_w);
 	const auto screen_h = static_cast<size_t>(gr_screen.max_h);
+	const auto back_w = static_cast<size_t>(opengl_screen_pixel_width());
+	const auto back_h = static_cast<size_t>(opengl_screen_pixel_height());
 
-	add_texture(Back_texture, screen_w, screen_h, RGBA16F_BYTES);
-	add_texture(Back_depth_texture, screen_w, screen_h, DEPTH24_STENCIL8_BYTES);
-	add_texture(GammaBlit_texture, screen_w, screen_h, RGBA8_BYTES);
+	add_texture(Back_texture, back_w, back_h, RGBA16F_BYTES);
+	add_texture(Back_depth_texture, back_w, back_h, DEPTH24_STENCIL8_BYTES);
+	add_texture(GammaBlit_texture, back_w, back_h, RGBA8_BYTES);
+	add_texture(Readback_texture, screen_w, screen_h, RGBA8_BYTES);
 
 	// The two distortion textures always have the size 32x32.
 	add_texture(Distortion_texture[0], 32, 32, RGBA8_BYTES);
@@ -924,6 +966,7 @@ void gr_opengl_scene_texture_end()
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 		GL_state.PopFramebufferState();
+		opengl_maybe_set_full_screen_viewport();
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
@@ -1304,6 +1347,111 @@ void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloa
 	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRIS, &vert_def, 3, glVertices, sizeof(glVertices));
+}
+
+static GLuint Screen_layer_framebuffer = 0;
+static GLint Screen_layer_saved_viewport[4];
+
+bool gr_opengl_screen_layer_begin(int bitmap)
+{
+	const GLuint framebuffer = opengl_get_render_target_framebuffer(bitmap);
+	if (framebuffer == 0) {
+		return false;
+	}
+
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(framebuffer);
+	Screen_layer_framebuffer = framebuffer;
+
+	int tex_w, tex_h;
+	bm_get_info(bitmap, &tex_w, &tex_h);
+	glGetIntegerv(GL_VIEWPORT, Screen_layer_saved_viewport);
+	glViewport(0, 0, tex_w, tex_h);
+
+	const GLboolean scissor = GL_state.ScissorTest(GL_FALSE);
+	const bvec4 color_mask = GL_state.ColorMask(true, true, true, true);
+	const GLboolean depth_mask = GL_state.DepthMask(GL_TRUE);
+	// NanoVG strokes test against the stencil, so it has to start out at zero as well. Every stencil user sets its own
+	// mask, like gr_opengl_stencil_clear() relies on too.
+	GL_state.StencilMask(0xFF);
+	glClearStencil(0);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	GL_state.DepthMask(depth_mask);
+	GL_state.ColorMask(color_mask.x, color_mask.y, color_mask.z, color_mask.w);
+	GL_state.ScissorTest(scissor);
+
+	GL_state.SetCoverageAlpha(true);
+
+	return true;
+}
+
+void gr_opengl_screen_layer_end()
+{
+	GL_state.SetCoverageAlpha(false);
+	Screen_layer_framebuffer = 0;
+	GL_state.PopFramebufferState();
+
+	glViewport(Screen_layer_saved_viewport[0], Screen_layer_saved_viewport[1], Screen_layer_saved_viewport[2],
+		Screen_layer_saved_viewport[3]);
+}
+
+bool opengl_screen_layer_active()
+{
+	return Screen_layer_framebuffer != 0;
+}
+
+GLuint opengl_get_screen_framebuffer()
+{
+	if (Screen_layer_framebuffer != 0) {
+		return Screen_layer_framebuffer;
+	}
+	return Cmdline_window_res ? Back_framebuffer : 0;
+}
+
+GLint opengl_screen_to_pixels(int value)
+{
+	// Only the screen (or screen layer) has more pixels than gr_screen units, the scene texture and render targets never do
+	const float scale = (GL_rendering_to_texture || Scene_framebuffer_in_frame) ? 1.0f : Gr_composition_scale;
+	return static_cast<GLint>(std::lround(value * scale));
+}
+
+void opengl_maybe_set_full_screen_viewport()
+{
+	// The scene ran at gr_screen size, but a backbuffer at output resolution is larger than that
+	if (!fl_equal(Gr_composition_scale, 1.0f) && !GL_rendering_to_texture) {
+		glViewport(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height());
+	}
+}
+
+int opengl_screen_pixel_width()
+{
+	return static_cast<int>(std::lround(gr_screen.max_w * Gr_composition_scale));
+}
+
+int opengl_screen_pixel_height()
+{
+	return static_cast<int>(std::lround(gr_screen.max_h * Gr_composition_scale));
+}
+
+GLuint opengl_screen_readback_framebuffer()
+{
+	if (!Cmdline_window_res) {
+		return 0;
+	}
+	if (Readback_framebuffer == 0) {
+		return Back_framebuffer;
+	}
+
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBufferBoth(Back_framebuffer, Readback_framebuffer);
+	const GLboolean scissor = GL_state.ScissorTest(GL_FALSE);
+	glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, gr_screen.max_w, gr_screen.max_h,
+		GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	GL_state.ScissorTest(scissor);
+	GL_state.PopFramebufferState();
+
+	return Readback_framebuffer;
 }
 
 void gr_opengl_render_decals(decal_material* material_info,

@@ -32,6 +32,10 @@ void VulkanRenderer::beginTrackedRenderPass(const PassBeginDesc& desc)
 		// Everything the engine draws onto the composition image is in gr_screen units
 		m_stateTracker->setScreenScale(static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width),
 			static_cast<float>(m_compositionExtent.height) / static_cast<float>(m_renderExtent.height));
+	} else if (m_screenLayer != nullptr && (desc.renderPass == m_screenLayer->renderPass || desc.renderPass == m_screenLayer->renderPassLoad)) {
+		m_stateTracker->setScreenScale(static_cast<float>(m_screenLayer->width) / static_cast<float>(m_renderExtent.width),
+			static_cast<float>(m_screenLayer->height) / static_cast<float>(m_renderExtent.height));
+		m_stateTracker->setCoverageAlpha(true);
 	}
 	m_stateTracker->setColorAttachmentCount(desc.colorAttachmentCount);
 	m_stateTracker->setCurrentSampleCount(desc.sampleCount);
@@ -103,7 +107,7 @@ void VulkanRenderer::acquireNextSwapChainImage()
 }
 vk::Extent2D VulkanRenderer::wantedCompositionExtent() const
 {
-	const float factor = vulkan_upscaler_usable() ? gr_fsr_upscale_factor(Gr_fsr_mode) : 1.0f;
+	const float factor = gr_wanted_composition_scale(vulkan_upscaler_usable() && Gr_fsr_mode == FsrMode::Upscale);
 	return {static_cast<uint32_t>(std::lround(m_renderExtent.width * factor)),
 		static_cast<uint32_t>(std::lround(m_renderExtent.height * factor))};
 }
@@ -112,6 +116,7 @@ void VulkanRenderer::setCompositionExtent(vk::Extent2D extent)
 {
 	m_compositionExtent = extent;
 	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
+	gr_screen_layer_resize();
 }
 
 void VulkanRenderer::updateCompositionExtent()
@@ -159,6 +164,14 @@ void VulkanRenderer::setupFrame()
 	}
 
 	updateCompositionExtent();
+	if (m_postProcessor && m_postProcessor->isInitialized()) {
+		m_postProcessor->updateUpscalerResources();
+	}
+
+	// before recording: in VR both eyes record into one command buffer, which must not hold a pipeline destroyed here
+	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
+		rebuildAntiAliasingShaders();
+	}
 
 	// Free completed texture upload command buffers
 	Assertion(m_textureManager, "Vulkan TextureManager not initialized in setupFrame!");
@@ -380,6 +393,21 @@ void VulkanRenderer::resumeSceneRendering()
 	pass.extent = m_postProcessor->getSceneExtent();
 	pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::rebuildAntiAliasingShaders()
+{
+	mprintf(("Vulkan: anti-aliasing preset changed, rebuilding its shaders\n"));
+	// the preset is compiled into these shaders, and earlier frames may still be drawing with their pipelines
+	m_device->waitIdle();
+	for (auto type : {SDR_TYPE_POST_PROCESS_FXAA,
+			 SDR_TYPE_POST_PROCESS_SMAA_EDGE,
+			 SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
+			 SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING}) {
+		m_pipelineManager->forgetPipelinesOfShaderType(type);
+		m_shaderManager->forgetShaderType(type);
+	}
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 }
 
 void VulkanRenderer::endSceneRendering()
@@ -675,6 +703,16 @@ void VulkanRenderer::resumeSwapChainPass()
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
+	if (m_screenLayer != nullptr) {
+		PassBeginDesc pass;
+		pass.renderPass = m_screenLayer->renderPassLoad;
+		pass.framebuffer = m_screenLayer->framebuffer;
+		pass.extent = vk::Extent2D(m_screenLayer->width, m_screenLayer->height);
+		pass.clearValues = ArrayView<vk::ClearValue>(clearValues.data(), m_screenLayer->depthImage ? 2 : 1);
+		beginTrackedRenderPass(pass);
+		return;
+	}
+
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
@@ -683,8 +721,43 @@ void VulkanRenderer::resumeSwapChainPass()
 	beginTrackedRenderPass(pass);
 }
 
+void VulkanRenderer::beginScreenLayer(tcache_slot_vulkan* ts)
+{
+	Assertion(m_screenLayer == nullptr, "Screen layers must not be nested!");
+	Assertion(!m_renderTargetActive, "A screen layer cannot be started while rendering to a texture!");
+
+	m_currentCommandBuffer.endRenderPass();
+	m_screenLayer = ts;
+
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+	PassBeginDesc pass;
+	pass.renderPass = ts->renderPass;
+	pass.framebuffer = ts->framebuffer;
+	pass.extent = vk::Extent2D(ts->width, ts->height);
+	pass.clearValues = ArrayView<vk::ClearValue>(clearValues.data(), ts->depthImage ? 2 : 1);
+	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::endScreenLayer()
+{
+	if (m_screenLayer == nullptr) {
+		return;
+	}
+
+	m_currentCommandBuffer.endRenderPass();
+	m_screenLayer = nullptr;
+	resumeSwapChainPass();
+}
+
 void VulkanRenderer::restartCompositionPass()
 {
+	// The next eye of a VR frame renders a scene of its own, without a setupFrame() of its own
+	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
+
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
