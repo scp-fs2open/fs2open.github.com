@@ -40,9 +40,9 @@ private:
 	char m_display[NAME_LENGTH];
 	float m_radius {0.0f};
 
-	int	m_modelnum {-1};
+	int	m_modelnum {-1};	// @checkpoint skip: re-acquired from the saved model name
 	int m_objnum {-1};                 // objnum of this jump node
-	int m_polymodel_instance_num {-1}; // polymodel instance number, used for rotations 
+	int m_polymodel_instance_num {-1}; // polymodel instance number, used for rotations @checkpoint skip: re-acquired from the saved model name
 
 	int m_flags {0};
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)

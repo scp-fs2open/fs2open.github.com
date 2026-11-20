@@ -10,7 +10,6 @@
 
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "object/object.h"

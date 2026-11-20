@@ -165,7 +165,7 @@ typedef struct beam {
 	vec3d	target_pos2;				// if we're targeting a location in space (optional second point)
 	int		target_sig;				// target sig
 	ship_subsys *subsys;				// subsys its being fired from
-	beam		*next, *prev;			// link list stuff
+	beam		*next, *prev;			// link list stuff @checkpoint skip: list link, rebuilt when the element is linked in again
 	vec3d	local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	

@@ -12,7 +12,6 @@
 
 #include "cfile/cfile.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/utility.h"

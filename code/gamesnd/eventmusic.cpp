@@ -8,7 +8,6 @@
  */
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "gamesnd/eventmusic.h"
 
 #include "cmdline/cmdline.h"

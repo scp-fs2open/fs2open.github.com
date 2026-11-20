@@ -140,7 +140,7 @@ add_file_folder("Checkpoint"
 	checkpoint/prompt.h
 	checkpoint/registry.h
 	checkpoint/rules.h
-	checkpoint/serialize.h
+	checkpoint/codec_impl.h
 	checkpoint/store.cpp
 	checkpoint/store.h
 )

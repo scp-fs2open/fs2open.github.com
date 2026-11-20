@@ -8,7 +8,6 @@
 */
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "ship/shipfx.h"
 #include "ship/split_ship.h"
 

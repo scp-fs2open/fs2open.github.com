@@ -8,7 +8,6 @@
 */
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "weapon/shockwave.h"
 #include "asteroid/asteroid.h"
 #include "gamesnd/gamesnd.h"

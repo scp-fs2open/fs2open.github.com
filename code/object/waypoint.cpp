@@ -2,7 +2,6 @@
 #include <cctype>
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "object/waypoint.h"

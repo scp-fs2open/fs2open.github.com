@@ -5,12 +5,17 @@
 // Structs are written as tagged fields (name hash, length, payload) and every struct carries its own length, so a
 // reader skips fields it doesn't know and leaves fields that are missing from the data untouched.  Which fields a
 // struct has comes from generated field lists (see tools/fieldscan); how a field is written is decided by its type
-// alone.  Supported out of the box: scalars, enums, scanned structs, arrays, the SCP containers, strings, pair, tuple,
-// unique_ptr and optional.  Everything else needs one of the extension points below, which are filled in by
-// checkpoint/rules.h; an unsupported type is a compile error.
+// alone.
+//
+// This header is what engine files see: it handles scalars, key types (checkpoint_key / from_checkpoint_key), arrays,
+// the SCP containers, strings, pair, tuple, unique_ptr, optional, and raw pointers to containers or strings, which are
+// owned by the struct that holds them and saved by value.  Every other type (scanned structs, enums, flag sets, raw
+// types, pool pointers and the special cases in checkpoint/rules.h) goes through save_external / load_external, which
+// are compiled once, in checkpoint/checkpoint_fields.cpp, with the generated field lists and the rules (see
+// checkpoint/codec_impl.h).  A type that has no rule there shows up as an undefined reference to
+// checkpoint::save_external<T> when linking; inside a scanned struct, it is a compile error naming the type.
 
 #include "globalincs/pstypes.h"
-#include "globalincs/flagset.h"
 
 #include <array>
 #include <cstdint>
@@ -18,7 +23,6 @@
 #include <deque>
 #include <functional>
 #include <memory>
-#include <new>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -223,106 +227,30 @@ class Reader {
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Extension points
+// Types handled by checkpoint/checkpoint_fields.cpp
+
+// Saves and loads a type that needs the generated field lists or the rules; defined in checkpoint/codec_impl.h and
+// instantiated in checkpoint/checkpoint_fields.cpp for every scanned struct and enum and every type with a rule.
+template <typename T>
+void save_external(Writer& w, const T& v);
+template <typename T>
+void load_external(Reader& r, T& v);
+// Creates an element of a type without a default constructor when loading grows a container (see Factory).
+template <typename T>
+T make_external();
+
+// The part of the schema fingerprint that covers the layout of the scanned structs.
+uint32_t scanned_struct_fingerprint();
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Codecs
 
 /**
- * @brief The fields of a struct.  Specialized by the generated field lists via the macros below; each specialization
- * calls v.template field<&S::member>("member") for every member.
- */
-template <typename T>
-struct Fields {
-	static constexpr bool scanned = false;
-};
-
-#define CHECKPOINT_FIELDS_BEGIN(S)                                                                                     \
-	template <>                                                                                                        \
-	struct checkpoint::Fields<S> {                                                                                     \
-		static constexpr bool scanned = true;                                                                          \
-		template <typename V>                                                                                          \
-		static void each(V& v)                                                                                         \
-		{
-#define CHECKPOINT_FIELD(S, member) v.template field<&S::member>(#member);
-#define CHECKPOINT_FIELDS_END(S)                                                                                       \
-		}                                                                                                              \
-	};
-
-/**
- * @brief The enumerators of an enum, by name.  Specialized by the generated lists for the enums in the struct list;
- * enums and flagsets are saved by enumerator name, so reordering or inserting enumerators keeps saved data valid.
- */
-template <typename E>
-struct EnumNames {
-	static constexpr bool listed = false;
-};
-
-#define CHECKPOINT_ENUM_BEGIN(E)                                                                                       \
-	template <>                                                                                                        \
-	struct checkpoint::EnumNames<E> {                                                                                  \
-		static constexpr bool listed = true;                                                                           \
-		static const SCP_vector<std::pair<const char*, E>>& values()                                                   \
-		{                                                                                                              \
-			static const SCP_vector<std::pair<const char*, E>> list = {
-#define CHECKPOINT_ENUM_VALUE(E, enumerator) {#enumerator, E::enumerator},
-#define CHECKPOINT_ENUM_END(E)                                                                                         \
-			};                                                                                                         \
-			return list;                                                                                               \
-		}                                                                                                              \
-	};
-
-// A trivially copyable type that may be written as raw bytes (it holds no pointers, handles or padding-sensitive data).
-template <typename T>
-struct is_raw : std::false_type {};
-
-// A type that is never saved: fields of this type keep whatever value they have when loading.
-template <typename T>
-struct is_transient : std::false_type {};
-
-// A single field that is never saved, e.g. &ship::model_instance_num.
-template <auto Member>
-struct is_skipped : std::false_type {};
-
-/**
- * @brief How to save a pointer into a pool of objects: as an index.  Specializations provide
- *   static int index_of(const T* p);
- *   static T* at(int index);
- * A null pointer is saved as -1; other negative indexes are available for sentinel objects outside the pool.
- */
-template <typename T>
-struct PoolTraits;
-
-/**
- * @brief Creates elements when loading grows a container.  Types without a default constructor need a
- * specialization providing static T make(); raw types are created from zero bytes and then overwritten.
- */
-template <typename T, typename Enable = void>
-struct Factory {
-	static T make()
-	{
-		if constexpr (std::is_default_constructible_v<T>) {
-			return T();
-		} else {
-			static_assert(is_raw<T>::value, "checkpoint: this type has no default constructor; give it a Factory specialization in checkpoint/rules.h");
-			alignas(T) ubyte storage[sizeof(T)] = {};
-			return *std::launder(reinterpret_cast<T*>(storage));
-		}
-	}
-};
-
-// Additional data written after the fields of a struct, for members that need context from other members.
-template <typename T>
-struct Extra {
-	static constexpr bool present = false;
-};
-
-/**
- * @brief The codec for one type.  The primary template handles scalars, enums, raw and scanned types and pool
- * pointers; specializations handle containers and the special cases in checkpoint/rules.h.
+ * @brief The codec for one type.  The primary template handles scalars and key types and hands everything else to
+ * save_external / load_external; specializations handle containers.
  */
 template <typename T, typename Enable = void>
 struct Codec;
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Implementation
 
 template <typename T>
 struct dependent_false : std::false_type {};
@@ -334,247 +262,93 @@ template <typename T>
 struct has_checkpoint_key<T, std::void_t<decltype(T::from_checkpoint_key(std::declval<const T&>().checkpoint_key()))>>
 	: std::true_type {};
 
-template <typename T, typename = void>
-struct has_pool_traits : std::false_type {};
+// Containers and strings.  Nothing points at a container it doesn't own, so a raw pointer to one is saved by value.
 template <typename T>
-struct has_pool_traits<T, std::void_t<decltype(PoolTraits<T>::index_of(nullptr))>> : std::true_type {};
+struct is_container : std::false_type {};
+template <typename T>
+struct is_container<SCP_vector<T>> : std::true_type {};
+template <typename T, typename A>
+struct is_container<std::vector<T, A>> : std::true_type {};
+template <typename T>
+struct is_container<SCP_list<T>> : std::true_type {};
+template <typename T, typename A>
+struct is_container<std::deque<T, A>> : std::true_type {};
+template <typename T, typename L>
+struct is_container<SCP_set<T, L>> : std::true_type {};
+template <typename K, typename V, typename L>
+struct is_container<SCP_map<K, V, L>> : std::true_type {};
+template <typename K, typename V, typename H, typename E>
+struct is_container<SCP_unordered_map<K, V, H, E>> : std::true_type {};
+template <typename C, typename Tr, typename A>
+struct is_container<std::basic_string<C, Tr, A>> : std::true_type {};
 
-// A field whose type is transient, or an array or sequence of transient elements, is not saved.
 template <typename T>
-struct is_transient_field : is_transient<T> {};
-template <typename T, size_t N>
-struct is_transient_field<T[N]> : is_transient_field<T> {};
-template <typename T, size_t N>
-struct is_transient_field<std::array<T, N>> : is_transient_field<T> {};
+struct is_owned_pointer : std::false_type {};
 template <typename T>
-struct is_transient_field<SCP_vector<T>> : is_transient_field<T> {};
-template <typename T>
-struct is_transient_field<SCP_list<T>> : is_transient_field<T> {};
+struct is_owned_pointer<T*> : is_container<std::remove_cv_t<T>> {};
 
 template <typename T>
 void save(Writer& w, const T& v);
 template <typename T>
 void load(Reader& r, T& v);
 
+// Raw bytes, for scalars and trivially copyable types without pointers or handles
 template <typename T>
-struct FieldSaver {
-	Writer& w;
-	const T& object;
-
-	template <auto Member>
-	void field(const char* name)
-	{
-		using F = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<const T&>().*Member)>>;
-		if constexpr (is_skipped<Member>::value || is_transient_field<F>::value) {
-			return;
-		} else {
-			w.u32(name_hash(name));
-			auto at = w.begin_block();
-			if (w.trace() == nullptr) {
-				save(w, object.*Member);
-			} else {
-				TraceScope scope(w, name);
-				save(w, object.*Member);
-				// structs record their own fields; everything else is recorded as one value
-				if constexpr (!Fields<F>::scanned)
-					w.trace()->entries.push_back({w.trace()->current_path(), at + sizeof(uint32_t), w.size()});
-			}
-			w.end_block(at);
-		}
-	}
+struct RawCodec {
+	static_assert(std::is_trivially_copyable_v<T>, "checkpoint: only trivially copyable types can be saved as raw bytes");
+	static void save(Writer& w, const T& v) { w.value(v); }
+	static void load(Reader& r, T& v) { r.value(v); }
 };
 
-struct TaggedField {
-	uint32_t hash;
-	Reader data;
-};
-
-// Values written as raw bytes have a fixed size; everything else is self-delimiting.
+// The stable key of a key type
 template <typename T>
-constexpr bool is_fixed_size_v = !has_checkpoint_key<T>::value && !std::is_enum_v<T> && (std::is_arithmetic_v<T> || is_raw<T>::value);
-
-// Arrays and vectors whose elements are written as raw bytes
-template <typename T>
-struct fixed_size_elements {
-	static constexpr bool value = false;
-	using type = void;
-};
-template <typename T, size_t N>
-struct fixed_size_elements<T[N]> {
-	static constexpr bool value = is_fixed_size_v<T>;
-	using type = T;
-};
-template <typename T, size_t N>
-struct fixed_size_elements<std::array<T, N>> {
-	static constexpr bool value = is_fixed_size_v<T>;
-	using type = T;
-};
-template <typename T>
-struct fixed_size_elements<SCP_vector<T>> {
-	static constexpr bool value = is_fixed_size_v<T>;
-	using type = T;
-};
-
-/**
- * @brief Whether the saved data of a field fits the field's current type.  A raw field, or an array or vector of raw
- * elements, whose type changed size since the data was saved would be misread; such a field is left as it is.
- */
-template <typename F>
-bool payload_fits(Reader data)
-{
-	if constexpr (is_fixed_size_v<F>) {
-		return data.remaining() == static_cast<ptrdiff_t>(sizeof(F));
-	} else if constexpr (fixed_size_elements<F>::value) {
-		auto count = data.u32();
-		return !data.failed() && data.remaining() == static_cast<ptrdiff_t>(count * sizeof(typename fixed_size_elements<F>::type));
-	} else {
-		return true;
-	}
-}
-
-template <typename T>
-struct FieldLoader {
-	SCP_vector<TaggedField>& fields;
-	T& object;
-	LoadContext* context;
-	int found = 0;
-
-	template <auto Member>
-	void field(const char* name)
-	{
-		using F = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<T&>().*Member)>>;
-		if constexpr (is_skipped<Member>::value || is_transient_field<F>::value) {
-			return;
-		} else {
-			auto hash = name_hash(name);
-			for (auto& tagged : fields) {
-				if (tagged.hash == hash) {
-					if (!payload_fits<F>(tagged.data)) {
-						if (tagged.data.context() != nullptr)
-							++tagged.data.context()->mismatched_fields;
-						++found;
-						return;
-					}
-					load(tagged.data, object.*Member);
-					++found;
-					return;
-				}
-			}
-			// not in the data: keep the current value
-			if (!fields.empty() && context != nullptr)
-				context->missing_fields.insert(name);
-		}
-	}
-};
-
-constexpr uint32_t EXTRA_HASH = name_hash("#extra");
-
-template <typename T>
-void save_struct(Writer& w, const T& v)
-{
-	auto at = w.begin_block();
-	FieldSaver<T> saver{w, v};
-	Fields<T>::each(saver);
-	if constexpr (Extra<T>::present) {
-		w.u32(EXTRA_HASH);
-		auto extra = w.begin_block();
-		if (w.trace() == nullptr) {
-			Extra<T>::save(w, v);
-		} else {
-			// recorded as one value, so verification compares it like a field
-			TraceScope scope(w, "#extra");
-			Extra<T>::save(w, v);
-			w.trace()->entries.push_back({w.trace()->current_path(), extra + sizeof(uint32_t), w.size()});
-		}
-		w.end_block(extra);
-	}
-	w.end_block(at);
-}
-
-template <typename T>
-void load_struct(Reader& r, T& v)
-{
-	auto block = r.block();
-	SCP_vector<TaggedField> fields;
-	while (!block.at_end() && !block.failed()) {
-		auto hash = block.u32();
-		fields.push_back({hash, block.block()});
-	}
-	if (block.failed()) {
-		r.fail();
-		return;
-	}
-
-	FieldLoader<T> loader{fields, v, r.context()};
-	Fields<T>::each(loader);
-
-	int known = loader.found;
-	if constexpr (Extra<T>::present) {
-		for (auto& tagged : fields) {
-			if (tagged.hash == EXTRA_HASH) {
-				Extra<T>::load(tagged.data, v);
-				++known;
-			}
-		}
-	}
-
-	if (r.context() != nullptr)
-		r.context()->unknown_fields += static_cast<int>(fields.size()) - known;
-}
-
-template <typename E>
-void save_enumerator(Writer& w, E v);
-template <typename E>
-void load_enumerator(Reader& r, E& v);
-
-template <typename T, typename Enable>
-struct Codec {
-	static void save(Writer& w, const T& v)
-	{
-		if constexpr (has_checkpoint_key<T>::value) {
-			checkpoint::save(w, v.checkpoint_key());
-		} else if constexpr (std::is_enum_v<T>) {
-			static_assert(EnumNames<T>::listed,
-				"checkpoint: enums are saved by name. Add \"enum <name> <header>\" to checkpoint/checkpoint_structs.txt.");
-			save_enumerator(w, v);
-		} else if constexpr (std::is_arithmetic_v<T> || is_raw<T>::value) {
-			w.value(v);
-		} else if constexpr (std::is_pointer_v<T> && has_pool_traits<std::remove_cv_t<std::remove_pointer_t<T>>>::value) {
-			using P = PoolTraits<std::remove_cv_t<std::remove_pointer_t<T>>>;
-			int32_t index = (v == nullptr) ? -1 : static_cast<int32_t>(P::index_of(v));
-			w.value(index);
-		} else if constexpr (Fields<T>::scanned) {
-			save_struct(w, v);
-		} else {
-			static_assert(dependent_false<T>::value,
-				"checkpoint: no rule for this type. Add it to the struct list, or give it a rule in checkpoint/rules.h "
-				"(is_raw, is_transient, PoolTraits or a Codec specialization), or skip the field with is_skipped.");
-		}
-	}
-
+struct KeyCodec {
+	static void save(Writer& w, const T& v) { checkpoint::save(w, v.checkpoint_key()); }
 	static void load(Reader& r, T& v)
 	{
-		if constexpr (has_checkpoint_key<T>::value) {
-			std::decay_t<decltype(v.checkpoint_key())> key{};
-			checkpoint::load(r, key);
-			if (!r.failed())
-				v = T::from_checkpoint_key(key);
-		} else if constexpr (std::is_enum_v<T>) {
-			load_enumerator(r, v);
-		} else if constexpr (std::is_arithmetic_v<T> || is_raw<T>::value) {
-			r.value(v);
-		} else if constexpr (std::is_pointer_v<T> && has_pool_traits<std::remove_cv_t<std::remove_pointer_t<T>>>::value) {
-			using P = PoolTraits<std::remove_cv_t<std::remove_pointer_t<T>>>;
-			int32_t index = -1;
-			if (r.value(index))
-				v = (index == -1) ? nullptr : P::at(index);
-		} else if constexpr (Fields<T>::scanned) {
-			load_struct(r, v);
-		} else {
-			static_assert(dependent_false<T>::value, "checkpoint: no rule for this type (see Codec::save)");
-		}
+		std::decay_t<decltype(v.checkpoint_key())> key{};
+		checkpoint::load(r, key);
+		if (!r.failed())
+			v = T::from_checkpoint_key(key);
 	}
 };
+
+// An owned container behind a raw pointer, saved by value; a null pointer is saved as absent
+template <typename T>
+struct OwnedPointerCodec {
+	static void save(Writer& w, const T& v)
+	{
+		w.value(static_cast<ubyte>(v != nullptr));
+		if (v != nullptr)
+			checkpoint::save(w, *v);
+	}
+	static void load(Reader& r, T& v)
+	{
+		ubyte present = 0;
+		r.value(present);
+		if (present == 0) {
+			delete v;
+			v = nullptr;
+			return;
+		}
+		if (v == nullptr)
+			v = new std::remove_pointer_t<T>();
+		checkpoint::load(r, *v);
+	}
+};
+
+// Everything else, compiled in checkpoint/checkpoint_fields.cpp
+template <typename T>
+struct ExternalCodec {
+	static void save(Writer& w, const T& v) { save_external<T>(w, v); }
+	static void load(Reader& r, T& v) { load_external<T>(r, v); }
+};
+
+template <typename T, typename Enable>
+struct Codec
+	: std::conditional_t<has_checkpoint_key<T>::value, KeyCodec<T>,
+		  std::conditional_t<std::is_arithmetic_v<T>, RawCodec<T>,
+			  std::conditional_t<is_owned_pointer<T>::value, OwnedPointerCodec<T>, ExternalCodec<T>>>> {};
 
 template <typename T>
 void save(Writer& w, const T& v)
@@ -588,76 +362,21 @@ void load(Reader& r, T& v)
 	Codec<T>::load(r, v);
 }
 
-// An enumerator is saved by name; values without a name (combinations, casts) are saved as "#<number>".
-template <typename E>
-void save_enumerator(Writer& w, E v)
+// Saves a trivially copyable type that is defined in a source file as raw bytes.  Only that file can save the type, so
+// its rule lives there instead of in checkpoint/rules.h.  Use at global scope, after the type's definition.
+#define CHECKPOINT_LOCAL_RAW(T)                                                                                        \
+	template <>                                                                                                        \
+	struct checkpoint::Codec<T> : ::checkpoint::RawCodec<T> {}
+
+// An element for a container that loading grows
+template <typename T>
+T make_element()
 {
-	for (const auto& entry : EnumNames<E>::values()) {
-		if (entry.second == v) {
-			checkpoint::save(w, SCP_string(entry.first));
-			return;
-		}
-	}
-	checkpoint::save(w, "#" + std::to_string(static_cast<long long>(v)));
+	if constexpr (std::is_default_constructible_v<T>)
+		return T();
+	else
+		return make_external<T>();
 }
-
-template <typename E>
-void load_enumerator(Reader& r, E& v)
-{
-	SCP_string name;
-	checkpoint::load(r, name);
-	if (r.failed())
-		return;
-	if (!name.empty() && name[0] == '#') {
-		v = static_cast<E>(strtoll(name.c_str() + 1, nullptr, 10));
-		return;
-	}
-	for (const auto& entry : EnumNames<E>::values()) {
-		if (name == entry.first) {
-			v = entry.second;
-			return;
-		}
-	}
-	if (r.context() != nullptr)
-		++r.context()->unknown_enumerators;
-}
-
-// A flagset is saved as the names of its set flags.
-template <typename E>
-struct Codec<flagset<E>> {
-	static_assert(EnumNames<E>::listed,
-		"checkpoint: flags are saved by name. Add \"enum <name> <header>\" to checkpoint/checkpoint_structs.txt.");
-
-	static void save(Writer& w, const flagset<E>& v)
-	{
-		SCP_vector<SCP_string> names;
-		for (const auto& entry : EnumNames<E>::values()) {
-			if (v[entry.second])
-				names.emplace_back(entry.first);
-		}
-		checkpoint::save(w, names);
-	}
-	static void load(Reader& r, flagset<E>& v)
-	{
-		SCP_vector<SCP_string> names;
-		checkpoint::load(r, names);
-		if (r.failed())
-			return;
-		v.reset();
-		for (const auto& name : names) {
-			bool known = false;
-			for (const auto& entry : EnumNames<E>::values()) {
-				if (name == entry.first) {
-					v.set(entry.second);
-					known = true;
-					break;
-				}
-			}
-			if (!known && r.context() != nullptr)
-				++r.context()->unknown_enumerators;
-		}
-	}
-};
 
 // Sequences are written as a count followed by the elements.  Arrays with a fixed size load as many elements as fit.
 
@@ -735,7 +454,7 @@ struct SequenceCodec {
 		while (v.size() > count)
 			v.pop_back();
 		while (v.size() < count)
-			v.push_back(Factory<T>::make());
+			v.push_back(make_element<T>());
 		for (auto& element : v) {
 			if (r.failed())
 				break;

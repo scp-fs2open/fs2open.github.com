@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "checkpoint/codec.h"
+#include "checkpoint/codec_impl.h"
 
 namespace {
 
@@ -30,6 +30,21 @@ struct Outer {
 	Inner* pooled = nullptr;
 	int skipped = 0;
 	SCP_vector<int> transient_type;
+};
+
+// raw pointers to containers and strings are owned by the struct and saved by value
+struct OwningPointers {
+	SCP_vector<int>* list = nullptr;
+	SCP_string* text = nullptr;
+
+	OwningPointers() = default;
+	OwningPointers(const OwningPointers&) = delete;
+	OwningPointers& operator=(const OwningPointers&) = delete;
+	~OwningPointers()
+	{
+		delete list;
+		delete text;
+	}
 };
 
 // two versions of the same struct, for checking that changed structs still load
@@ -92,8 +107,6 @@ struct PoolTraits<Inner> {
 	static int index_of(const Inner* p) { return static_cast<int>(p - Pool); }
 	static Inner* at(int index) { return &Pool[index]; }
 };
-template <>
-struct is_skipped<&Outer::skipped> : std::true_type {};
 } // namespace checkpoint
 
 CHECKPOINT_ENUM_BEGIN(Mode)
@@ -123,8 +136,13 @@ CHECKPOINT_FIELD(Outer, more_flags)
 CHECKPOINT_FIELD(Outer, pair)
 CHECKPOINT_FIELD(Outer, tuple)
 CHECKPOINT_FIELD(Outer, pooled)
-CHECKPOINT_FIELD(Outer, skipped)
+// skipped: skipped
 CHECKPOINT_FIELDS_END(Outer)
+
+CHECKPOINT_FIELDS_BEGIN(OwningPointers)
+CHECKPOINT_FIELD(OwningPointers, list)
+CHECKPOINT_FIELD(OwningPointers, text)
+CHECKPOINT_FIELDS_END(OwningPointers)
 
 CHECKPOINT_FIELDS_BEGIN(Old)
 CHECKPOINT_FIELD(Old, kept)
@@ -281,6 +299,37 @@ TEST(CheckpointCodec, empty_owned_and_optional_values_are_cleared)
 	EXPECT_EQ(loaded.owned, nullptr);
 	EXPECT_FALSE(loaded.maybe.has_value());
 	EXPECT_EQ(loaded.pooled, nullptr);
+}
+
+TEST(CheckpointCodec, owned_container_pointers_are_saved_by_value)
+{
+	OwningPointers original;
+	original.list = new SCP_vector<int>{1, 2};
+	original.text = new SCP_string("text");
+
+	checkpoint::Buffer buffer;
+	checkpoint::Writer w(buffer);
+	checkpoint::save(w, original);
+
+	// a present value replaces the current one; an absent one clears it
+	OwningPointers loaded;
+	loaded.list = new SCP_vector<int>{9};
+	checkpoint::Reader r(buffer);
+	checkpoint::load(r, loaded);
+	ASSERT_FALSE(r.failed());
+	ASSERT_NE(loaded.list, nullptr);
+	EXPECT_EQ(*loaded.list, (SCP_vector<int>{1, 2}));
+	ASSERT_NE(loaded.text, nullptr);
+	EXPECT_EQ(*loaded.text, "text");
+
+	OwningPointers empty;
+	checkpoint::Buffer empty_buffer;
+	checkpoint::Writer empty_writer(empty_buffer);
+	checkpoint::save(empty_writer, empty);
+	checkpoint::Reader empty_reader(empty_buffer);
+	checkpoint::load(empty_reader, loaded);
+	EXPECT_EQ(loaded.list, nullptr);
+	EXPECT_EQ(loaded.text, nullptr);
 }
 
 TEST(CheckpointCodec, changed_struct_loads_known_fields)

@@ -29,7 +29,7 @@ typedef struct prop {
 	char prop_name[NAME_LENGTH];
 	int objnum;
 	int prop_info_index;
-	int model_instance_num;
+	int model_instance_num;	// @checkpoint skip: re-acquired after loading
 	realtime_stamp create_time;           // time prop was created, set by gettime()
 	fix time_created;
 	float alpha_mult;

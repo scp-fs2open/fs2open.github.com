@@ -12,7 +12,6 @@
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"

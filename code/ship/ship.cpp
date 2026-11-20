@@ -17,7 +17,6 @@
 #include "autopilot/autopilot.h"
 #include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "debugconsole/console.h"
@@ -11482,7 +11481,6 @@ CHECKPOINT_OBJECT_TYPE(OBJ_GHOST, ship_checkpoint_save, ghost_checkpoint_restore
  */
 static void ship_model_change(int n, int ship_type)
 {
-	int			i;
 	ship_info	*sip;
 	ship			*sp;
 	polymodel * pm;

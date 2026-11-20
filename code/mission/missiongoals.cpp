@@ -11,7 +11,6 @@
 
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"

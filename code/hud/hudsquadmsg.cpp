@@ -10,7 +10,6 @@
 #include "ai/aigoals.h"
 #include "ai/ailua.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hudmessage.h"

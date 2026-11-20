@@ -29,7 +29,6 @@
 #include "camera/camera.h"
 #include "checkpoint/checkpoint.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "camera/photomode.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
@@ -28095,8 +28094,8 @@ int sexp_savestate_check(int node)
 	int index = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return SEXP_FALSE;
-	const char* mission = (CDR(node) >= 0) ? CTEXT(CDR(node)) : nullptr;
-	return checkpoint::has_slot(index, mission) ? SEXP_TRUE : SEXP_FALSE;
+	const char* mission_name = (CDR(node) >= 0) ? CTEXT(CDR(node)) : nullptr;
+	return checkpoint::has_slot(index, mission_name) ? SEXP_TRUE : SEXP_FALSE;
 }
 
 void sexp_savestate_assist(int node)

@@ -3,7 +3,6 @@
 #include "asteroid/asteroid.h"
 #include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "debris/debris.h"
 #include "freespace.h"
 #include "model/model.h"

@@ -1,16 +1,23 @@
 #pragma once
 
-// The type and field rules of the checkpoint codec.  Everything that is not plain data, a container or a scanned struct
-// needs exactly one rule here; see checkpoint/codec.h for what each extension point means.
+// The type rules of the checkpoint codec.  Everything that is not plain data, a container or a scanned struct needs
+// exactly one rule here; see checkpoint/codec_impl.h for what each extension point means.  Only
+// checkpoint/checkpoint_fields.cpp includes this file.
+//
+// Every member of a scanned struct is saved, unless its type is transient here or the member is marked in its header
+// at the end of its line, on its own or after the member's comment:
+//
+//     int model_instance_num;		// @checkpoint skip: re-acquired after loading
 //
 // Guidelines:
-// - is_raw is for trivially copyable types without pointers or resource handles.  Prefer adding a struct to
+// - Type rules are only for types with a single meaning.  Generic types (ints, vectors, pointers to scalars, generic
+//   wrappers) never get a rule; a member of such a type that must not be saved is skipped at the member.
+// - CHECKPOINT_RAW is for trivially copyable types without pointers or resource handles.  Prefer adding a struct to
 //   checkpoint_structs.txt, which tolerates changes to the struct between versions.
 // - is_transient is for types that are rebuilt on load (resources, caches, links) and never saved.
-// - is_skipped is for single fields of that kind whose type is too general to mark, such as an int handle, and for
-//   fields that are set from mission or table data when the mission is loaded.
+// - A rule must come after the rules of the types it saves, since each macro instantiates its type where it stands.
 
-#include "checkpoint/codec.h"
+#include "checkpoint/codec_impl.h"
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
@@ -51,37 +58,34 @@ namespace checkpoint {
 
 // --- raw plain data --------------------------------------------------------------------------------------------------
 
-template <> struct is_raw<vec3d> : std::true_type {};
-template <> struct is_raw<matrix> : std::true_type {};
-template <> struct is_raw<angles> : std::true_type {};
-template <> struct is_raw<TIMESTAMP> : std::true_type {};
-template <> struct is_raw<animation::ModelAnimationSet::RunningAnimationState> : std::true_type {};
-template <> struct is_raw<anchor_t> : std::true_type {};
-template <> struct is_raw<gamesnd_id> : std::true_type {};
-template <> struct is_raw<control_info> : std::true_type {};
-template <> struct is_raw<button_info> : std::true_type {};
-template <> struct is_raw<beam_info> : std::true_type {};
-template <> struct is_raw<ship_spark> : std::true_type {};
-template <> struct is_raw<ship_subsys_info> : std::true_type {};
-template <> struct is_raw<guard_range_entry> : std::true_type {};
-template <> struct is_raw<debris_electrical_arc> : std::true_type {};
-template <> struct is_raw<modular_curves_entry_instance> : std::true_type {};
-template <> struct is_raw<alt_class> : std::true_type {};
-template <> struct is_raw<multi_local_options> : std::true_type {};
-template <> struct is_raw<multi_server_options> : std::true_type {};
-template <> struct is_raw<gameversion::version> : std::true_type {};
-template <> struct is_raw<sound_env> : std::true_type {};
-template <> struct is_raw<color> : std::true_type {};
+CHECKPOINT_RAW(vec3d);
+CHECKPOINT_RAW(matrix);
+CHECKPOINT_RAW(angles);
+CHECKPOINT_RAW(TIMESTAMP);
+CHECKPOINT_RAW(animation::ModelAnimationSet::RunningAnimationState);
+CHECKPOINT_RAW(anchor_t);
+CHECKPOINT_RAW(gamesnd_id);
+CHECKPOINT_RAW(control_info);
+CHECKPOINT_RAW(button_info);
+CHECKPOINT_RAW(beam_info);
+CHECKPOINT_RAW(ship_spark);
+CHECKPOINT_RAW(ship_subsys_info);
+CHECKPOINT_RAW(guard_range_entry);
+CHECKPOINT_RAW(debris_electrical_arc);
+CHECKPOINT_RAW(modular_curves_entry_instance);
+CHECKPOINT_RAW(alt_class);
+CHECKPOINT_RAW(multi_local_options);
+CHECKPOINT_RAW(multi_server_options);
+CHECKPOINT_RAW(gameversion::version);
+CHECKPOINT_RAW(sound_env);
+CHECKPOINT_RAW(color);
 
 // --- transient types: rebuilt on load, never saved ------------------------------------------------------------------
 
 template <> struct is_transient<sound_handle> : std::true_type {};
 template <> struct is_transient<std::unique_ptr<WarpEffect>> : std::true_type {};		// re-created by ship_set_warp_effects
-template <> struct is_transient<std::unique_ptr<ship_subsys*[]>> : std::true_type {};	// subsystem index, rebuilt on demand
 template <> struct is_transient<std::unique_ptr<sexp_cached_data>> : std::true_type {};	// evaluation cache
 template <> struct is_transient<ship_subsys_sentinel> : std::true_type {};				// rebuilt with the subsystem list
-template <> struct is_transient<util::event<void, object*>> : std::true_type {};		// Lua callbacks
-template <> struct is_transient<util::reset_on_move<p_dock_instance*>> : std::true_type {};	// parse-time docking
 template <> struct is_transient<beam_collision> : std::true_type {};					// recomputed every frame
 template <> struct is_transient<ship_electrical_arc> : std::true_type {};				// visual effect
 template <> struct is_transient<model_electrical_arc> : std::true_type {};				// visual effect
@@ -90,120 +94,13 @@ template <> struct is_transient<submodel_instance*> : std::true_type {};				// s
 template <> struct is_transient<mc_info*> : std::true_type {};							// collision scratch data
 template <> struct is_transient<htarget_list*> : std::true_type {};					// hotkey list links
 
-// --- skipped fields --------------------------------------------------------------------------------------------------
-
-// intrusive list links, rebuilt when the element is linked in again
-template <> struct is_skipped<&object::next> : std::true_type {};
-template <> struct is_skipped<&object::prev> : std::true_type {};
-template <> struct is_skipped<&ship_subsys::next> : std::true_type {};
-template <> struct is_skipped<&ship_subsys::prev> : std::true_type {};
-template <> struct is_skipped<&beam::next> : std::true_type {};
-template <> struct is_skipped<&beam::prev> : std::true_type {};
-template <> struct is_skipped<&shockwave::next> : std::true_type {};
-template <> struct is_skipped<&shockwave::prev> : std::true_type {};
-template <> struct is_skipped<&p_object::next> : std::true_type {};
-template <> struct is_skipped<&p_object::prev> : std::true_type {};
-
-// resources and list memberships that are re-acquired after loading
-template <> struct is_skipped<&object::objsnd_num> : std::true_type {};
-template <> struct is_skipped<&ship::model_instance_num> : std::true_type {};
-template <> struct is_skipped<&ship::cockpit_model_instance> : std::true_type {};
-template <> struct is_skipped<&ship::ship_list_index> : std::true_type {};
-template <> struct is_skipped<&weapon::model_instance_num> : std::true_type {};
-template <> struct is_skipped<&weapon::missile_list_index> : std::true_type {};
-template <> struct is_skipped<&debris::model_instance_num> : std::true_type {};
-// model numbers differ between sessions; hull debris uses its ship class's model, which the restore takes again
-template <> struct is_skipped<&debris::model_num> : std::true_type {};
-// positions in the ship's object sound list, which is rebuilt; firing loops restart by themselves
-template <> struct is_skipped<&ship_weapon::firing_loop_sounds> : std::true_type {};
-template <> struct is_skipped<&asteroid::model_instance_num> : std::true_type {};
-template <> struct is_skipped<&prop::model_instance_num> : std::true_type {};
-template <> struct is_skipped<&external_weapon_state::model_instance> : std::true_type {};
-template <> struct is_skipped<&external_weapon_state::model_instance_weapon> : std::true_type {};
-
-// set up from table data when a shockwave is created, or every frame
-template <> struct is_skipped<&shockwave::model_id> : std::true_type {};
-template <> struct is_skipped<&shockwave::current_bitmap> : std::true_type {};
-
-// set up from table data when a subsystem is created
-template <> struct is_skipped<&ship_subsys::system_info> : std::true_type {};
-template <> struct is_skipped<&ship::beam_sys_info> : std::true_type {};
-
-// set from mission data when the mission is loaded
-template <> struct is_skipped<&mission::skybox_model_animations> : std::true_type {};
-
-// the operator a node refers to is looked up from its text again; operator indices change as operators are added
-template <> struct is_skipped<&sexp_node::op_index> : std::true_type {};
-
-// The pilot's all-time statistics belong to the pilot, not to the mission: they only change when a mission is accepted,
-// and a checkpoint must not roll them back.  The mission's own statistics (the m_ members) are saved.
-template <> struct is_skipped<&scoring_struct::score> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::rank> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::medal_counts> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::kills> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::assists> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::kill_count> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::kill_count_ok> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::p_shots_fired> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::s_shots_fired> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::p_shots_hit> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::s_shots_hit> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::p_bonehead_hits> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::s_bonehead_hits> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::bonehead_kills> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::missions_flown> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::flight_time> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::last_flown> : std::true_type {};
-template <> struct is_skipped<&scoring_struct::last_backup> : std::true_type {};
-
-// re-acquired by the jump node's object, from the model name it saves
-template <> struct is_skipped<&CJumpNode::m_modelnum> : std::true_type {};
-template <> struct is_skipped<&CJumpNode::m_polymodel_instance_num> : std::true_type {};
-template <> struct is_skipped<&wing::wing_insignia_texture> : std::true_type {};
-template <> struct is_skipped<&p_object::replacement_textures> : std::true_type {};
-
-// the pilot rather than the mission: identity, settings and campaign-persistent data
-template <> struct is_skipped<&player::callsign> : std::true_type {};
-template <> struct is_skipped<&player::short_callsign> : std::true_type {};
-template <> struct is_skipped<&player::short_callsign_width> : std::true_type {};
-template <> struct is_skipped<&player::image_filename> : std::true_type {};
-template <> struct is_skipped<&player::s_squad_filename> : std::true_type {};
-template <> struct is_skipped<&player::s_squad_name> : std::true_type {};
-template <> struct is_skipped<&player::m_squad_filename> : std::true_type {};
-template <> struct is_skipped<&player::m_squad_name> : std::true_type {};
-template <> struct is_skipped<&player::current_campaign> : std::true_type {};
-template <> struct is_skipped<&player::readyroom_listing_mode> : std::true_type {};
-template <> struct is_skipped<&player::save_flags> : std::true_type {};
-template <> struct is_skipped<&player::last_ship_flown_si_index> : std::true_type {};
-template <> struct is_skipped<&player::auto_advance> : std::true_type {};
-template <> struct is_skipped<&player::m_local_options> : std::true_type {};
-template <> struct is_skipped<&player::m_server_options> : std::true_type {};
-template <> struct is_skipped<&player::insignia_texture> : std::true_type {};
-template <> struct is_skipped<&player::tips> : std::true_type {};
-template <> struct is_skipped<&player::failures_this_session> : std::true_type {};
-template <> struct is_skipped<&player::show_skip_popup> : std::true_type {};
-template <> struct is_skipped<&player::variables> : std::true_type {};
-template <> struct is_skipped<&player::containers> : std::true_type {};
-template <> struct is_skipped<&player::player_was_multi> : std::true_type {};
-template <> struct is_skipped<&player::language> : std::true_type {};
-// copies of the controls for scripts, refreshed every frame
-template <> struct is_skipped<&player::lua_ci> : std::true_type {};
-template <> struct is_skipped<&player::lua_bi> : std::true_type {};
-template <> struct is_skipped<&player::lua_bi_full> : std::true_type {};
-
-// handled by Extra<object> and Extra<ai_goal> below
-template <> struct is_skipped<&object::dock_list> : std::true_type {};
-template <> struct is_skipped<&object::dead_dock_list> : std::true_type {};
-template <> struct is_skipped<&ai_goal::target_name> : std::true_type {};
-template <> struct is_skipped<&ai_goal::docker> : std::true_type {};
-template <> struct is_skipped<&ai_goal::dockee> : std::true_type {};
-
 // --- factories for types without a default constructor ---------------------------------------------------------------
 
 template <>
 struct Factory<ship_registry_entry> {
 	static ship_registry_entry make() { return ship_registry_entry(""); }
 };
+CHECKPOINT_FACTORY(ship_registry_entry);
 
 // --- pools -----------------------------------------------------------------------------------------------------------
 
@@ -220,36 +117,42 @@ struct PoolTraits<object> {
 		return (index >= 0 && index < MAX_OBJECTS) ? &Objects[index] : nullptr;
 	}
 };
+CHECKPOINT_POOL(object);
 
 template <>
 struct PoolTraits<beam> {
 	static int index_of(const beam* p) { return BEAM_INDEX(p); }
 	static beam* at(int index) { return (index >= 0 && index < MAX_BEAMS) ? &Beams[index] : nullptr; }
 };
+CHECKPOINT_POOL(beam);
 
 template <>
 struct PoolTraits<shockwave> {
 	static int index_of(const shockwave* p) { return static_cast<int>(p - Shockwaves); }
 	static shockwave* at(int index) { return (index >= 0 && index < MAX_SHOCKWAVES) ? &Shockwaves[index] : nullptr; }
 };
+CHECKPOINT_POOL(shockwave);
 
 template <>
 struct PoolTraits<ai_profile_t> {
 	static int index_of(const ai_profile_t* p) { return AI_PROFILES_INDEX(p); }
 	static ai_profile_t* at(int index) { return (index >= 0 && index < MAX_AI_PROFILES) ? &Ai_profiles[index] : nullptr; }
 };
+CHECKPOINT_POOL(ai_profile_t);
 
 template <>
 struct PoolTraits<traitor_override_t> {
 	static int index_of(const traitor_override_t* p) { return static_cast<int>(p - Traitor_overrides.data()); }
 	static traitor_override_t* at(int index) { return SCP_vector_inbounds(Traitor_overrides, index) ? &Traitor_overrides[index] : nullptr; }
 };
+CHECKPOINT_POOL(traitor_override_t);
 
 template <>
 struct PoolTraits<p_object> {
 	static int index_of(const p_object* p) { return POBJ_INDEX(p); }
 	static p_object* at(int index) { return SCP_vector_inbounds(Parse_objects, index) ? &Parse_objects[index] : nullptr; }
 };
+CHECKPOINT_POOL(p_object);
 
 // --- custom codecs ---------------------------------------------------------------------------------------------------
 
@@ -258,7 +161,7 @@ struct PoolTraits<p_object> {
  * plus its position in that ship's subsystem list, and resolved once all ships have their subsystems again.
  */
 template <>
-struct Codec<ship_subsys*> {
+struct Rule<ship_subsys*> {
 	static void save(Writer& w, ship_subsys* const& v)
 	{
 		// a pointer may outlive its ship, e.g. in a weapon fired by a destroyed turret; it is saved as null then
@@ -310,10 +213,11 @@ struct Codec<ship_subsys*> {
 		});
 	}
 };
+CHECKPOINT_RULE(ship_subsys*);
 
 // Bitmap handles are not stable between sessions, so bitmaps are saved by name and loaded again.
 template <>
-struct Codec<generic_bitmap> {
+struct Rule<generic_bitmap> {
 	static void save(Writer& w, const generic_bitmap& v) { checkpoint::save(w, SCP_string(v.filename)); }
 	static void load(Reader& r, generic_bitmap& v)
 	{
@@ -323,32 +227,11 @@ struct Codec<generic_bitmap> {
 		v.bitmap_id = filename.empty() ? -1 : bm_load(v.filename);
 	}
 };
-
-// An owned, optional list of objects a countermeasure has already been ignored by.
-template <>
-struct Codec<SCP_vector<int>*> {
-	static void save(Writer& w, SCP_vector<int>* const& v)
-	{
-		w.value(static_cast<ubyte>(v != nullptr));
-		if (v != nullptr)
-			checkpoint::save(w, *v);
-	}
-	static void load(Reader& r, SCP_vector<int>*& v)
-	{
-		ubyte present = 0;
-		r.value(present);
-		delete v;
-		v = nullptr;
-		if (present != 0) {
-			v = new SCP_vector<int>();
-			checkpoint::load(r, *v);
-		}
-	}
-};
+CHECKPOINT_RULE(generic_bitmap);
 
 // Volumetric nebulae are mission data and rendering resources; sexps can only switch them on and off.
 template <>
-struct Codec<volumetric_nebula> {
+struct Rule<volumetric_nebula> {
 	static void save(Writer& w, const volumetric_nebula& v) { w.value(static_cast<ubyte>(v.get_enabled())); }
 	static void load(Reader& r, volumetric_nebula& v)
 	{
@@ -357,12 +240,13 @@ struct Codec<volumetric_nebula> {
 		v.set_enabled(enabled != 0);
 	}
 };
+CHECKPOINT_RULE(volumetric_nebula);
 
-template <> struct is_raw<object_ship_wing_point_team> : std::true_type {};
+CHECKPOINT_RAW(object_ship_wing_point_team);
 
 // Lua values can't be saved; orders given by Lua AI sexps are rebuilt from their sexp text once the objects are back.
 template <>
-struct Codec<ai_lua_parameters> {
+struct Rule<ai_lua_parameters> {
 	// operator numbers change as operators are added, so the operator is saved by name
 	static void save(Writer& w, const ai_lua_parameters& v)
 	{
@@ -384,9 +268,10 @@ struct Codec<ai_lua_parameters> {
 			ai_lua_parameters_rebuild(v);
 	}
 };
+CHECKPOINT_RULE(ai_lua_parameters);
 
 template <typename T>
-struct Codec<reload_pct<T>> {
+struct Rule<reload_pct<T>> {
 	static void save(Writer& w, const reload_pct<T>& v)
 	{
 		checkpoint::save(w, v._points_per_bank);

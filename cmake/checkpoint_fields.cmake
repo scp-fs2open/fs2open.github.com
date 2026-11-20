@@ -55,7 +55,7 @@ function(target_checkpoint_fields _target)
 	)
 
 	target_sources(${_target} PRIVATE "${_stamp}")
-	# public, so files of other targets can register state too
-	target_include_directories(${_target} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+	# only checkpoint/checkpoint_fields.cpp includes the generated header
+	target_include_directories(${_target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 	source_group("Generated Files\\Checkpoint" FILES "${_stamp}" "${_output}")
 endfunction()

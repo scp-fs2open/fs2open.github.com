@@ -13,7 +13,6 @@
 #include "mission/missiongoals.h"
 #include "parse/generic_log.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
 #include "utils/Random.h"

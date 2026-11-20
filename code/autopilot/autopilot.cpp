@@ -12,7 +12,6 @@
 #include "camera/camera.h"
 #include "cfile/cfile.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"

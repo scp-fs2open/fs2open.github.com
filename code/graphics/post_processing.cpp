@@ -1,6 +1,5 @@
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "post_processing.h"
 
 #include "graphics/grinternal.h"

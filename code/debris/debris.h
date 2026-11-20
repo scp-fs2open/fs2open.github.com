@@ -46,8 +46,8 @@ typedef struct debris {
 	gamesnd_id ambient_sound;		// Ambient looping sound
 	int		objnum = -1;			// What object this is linked to
 	float		lifeleft;			// When 0 or less object dies
-	int		model_num;				// What model this uses
-	int		model_instance_num;		// What model instance this uses - needed for arcs
+	int		model_num;				// What model this uses @checkpoint skip: model numbers differ between sessions; hull debris takes its ship class's model again
+	int		model_instance_num;		// What model instance this uses - needed for arcs @checkpoint skip: re-acquired after loading
 	int		submodel_num;			// What submodel this uses
 	TIMESTAMP	arc_next_time;		// When the next damage/emp arc will be created.
 	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment

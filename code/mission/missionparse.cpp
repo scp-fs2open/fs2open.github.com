@@ -21,7 +21,6 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "gamesnd/eventmusic.h"

@@ -12,7 +12,6 @@
 #include "asteroid/asteroid.h"
 #include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"
 #include "freespace.h"
@@ -90,7 +89,7 @@ typedef struct asteroid_target {
 // if default throwing behavior is enabled, then this should always have at most 1 target or possibly none, determined the retail way
 // if not, then this is whatever number of mission-specified ships (after they arrive, list is sanitized when they exit)
 SCP_vector<asteroid_target> Asteroid_targets;
-template <> struct checkpoint::is_raw<asteroid_target> : std::true_type {};
+CHECKPOINT_LOCAL_RAW(asteroid_target);
 CHECKPOINT_GLOBAL(Asteroid_targets);
 
 

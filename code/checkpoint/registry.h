@@ -7,7 +7,7 @@
 //     int Mission_end_time;
 //     CHECKPOINT_GLOBAL(Mission_end_time);
 //
-// They are saved with the generic codec (see checkpoint/serialize.h) and restored after the mission has been
+// They are saved with the generic codec (see checkpoint/codec.h) and restored after the mission has been
 // reloaded, so everything that is not registered starts from its mission-start value.  Globals that need more than
 // that register save and load functions with CHECKPOINT_GLOBAL_FUNCTIONS, and work that must happen once all globals
 // are loaded is registered with CHECKPOINT_AFTER_GLOBALS, and work that needs the restored objects with
@@ -16,9 +16,9 @@
 // Object types register how their instance data is saved and how runtime resources are re-acquired after loading,
 // with CHECKPOINT_OBJECT_TYPE.  Object types that are not registered are dropped by a checkpoint.
 //
-// This header brings only the generic codec, which covers scalars, strings, containers and key types.  A file that
-// registers a global of a scanned struct, an enum or a type with a rule includes checkpoint/serialize.h as well; without
-// it, the codec reports the type as having no rule at compile time.
+// Any type can be registered: scalars, containers and key types are handled here, and scanned structs, enums and
+// types with a rule (see checkpoint/rules.h) are compiled once, in checkpoint/checkpoint_fields.cpp.  A type without a
+// rule is reported when linking, as an undefined reference to checkpoint::save_external<T>.
 
 #include "checkpoint/codec.h"
 

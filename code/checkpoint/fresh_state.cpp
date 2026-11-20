@@ -1,6 +1,6 @@
 #include "checkpoint/fresh_state.h"
 
-#include "checkpoint/serialize.h"
+#include "checkpoint/codec.h"
 
 #include "ai/ai.h"
 #include "globalincs/linklist.h"

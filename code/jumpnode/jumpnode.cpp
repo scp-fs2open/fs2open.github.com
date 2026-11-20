@@ -9,7 +9,6 @@
 
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "hud/hud.h"
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"

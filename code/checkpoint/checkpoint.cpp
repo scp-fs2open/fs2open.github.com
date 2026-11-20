@@ -1,7 +1,6 @@
 #include "checkpoint/checkpoint.h"
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "checkpoint/fresh_state.h"
 #include "checkpoint/store.h"
 
@@ -200,32 +199,10 @@ void mix(uint32_t& hash, const char* text)
 	mix(hash, text, strlen(text) + 1);
 }
 
-template <typename T>
-struct FingerprintVisitor {
-	uint32_t& hash;
-
-	template <auto Member>
-	void field(const char* name)
-	{
-		using F = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<T&>().*Member)>>;
-		uint32_t size = sizeof(F);
-		mix(hash, name);
-		mix(hash, &size, sizeof(size));
-	}
-};
-
 uint32_t schema_fingerprint()
 {
 	static const uint32_t fingerprint = [] {
-		uint32_t hash = 2166136261u;
-#define CHECKPOINT_FINGERPRINT_STRUCT(S)                                                                               \
-		{                                                                                                              \
-			mix(hash, #S);                                                                                             \
-			FingerprintVisitor<S> visitor{hash};                                                                       \
-			Fields<S>::each(visitor);                                                                                  \
-		}
-		CHECKPOINT_SCANNED_STRUCTS(CHECKPOINT_FINGERPRINT_STRUCT)
-#undef CHECKPOINT_FINGERPRINT_STRUCT
+		uint32_t hash = scanned_struct_fingerprint();
 		for (const auto& handler : global_handlers())
 			mix(hash, handler.name);
 		return hash;

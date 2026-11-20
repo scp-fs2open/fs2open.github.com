@@ -26,7 +26,6 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -327,8 +326,8 @@ typedef struct {
 static SCP_vector<huge_fire_info> Ai_huge_fire_info;
 
 // set by good-primary-time and good-secondary-time
-template <> struct checkpoint::is_raw<primary_fire_info> : std::true_type {};
-template <> struct checkpoint::is_raw<huge_fire_info> : std::true_type {};
+CHECKPOINT_LOCAL_RAW(primary_fire_info);
+CHECKPOINT_LOCAL_RAW(huge_fire_info);
 CHECKPOINT_GLOBAL(Preferred_primary_info);
 CHECKPOINT_GLOBAL(Ai_huge_fire_info);
 

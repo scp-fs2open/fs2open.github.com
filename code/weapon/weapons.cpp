@@ -16,7 +16,6 @@
 #include "asteroid/asteroid.h"
 #include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "debugconsole/console.h"

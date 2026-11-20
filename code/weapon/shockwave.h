@@ -59,7 +59,7 @@ struct shockwave_info_ref : session_index {
 };
 
 typedef struct shockwave {
-	shockwave	*next, *prev;
+	shockwave	*next, *prev;	// @checkpoint skip: list link, rebuilt when the element is linked in again
 	int			flags;
 	int			objnum;					// index into Objects[] for shockwave
 	SCP_vector<std::pair<int, int>>			obj_sig_hitlist;
@@ -72,12 +72,12 @@ typedef struct shockwave {
 	float		blast;					// amount of blast to apply
 	int			next_blast;				// timestamp for when to apply next blast damage
 	shockwave_info_ref	shockwave_info_index;
-	int			current_bitmap;
+	int			current_bitmap;	// @checkpoint skip: set up from table data when created, or every frame
 	float		time_elapsed;			// in seconds
 	float		total_time;				// total lifetime of animation in seconds
 	int			delay_stamp;			// for delayed shockwaves
 	angles		rot_angles;
-	int			model_id;
+	int			model_id;	// @checkpoint skip: set up from table data when created, or every frame
 	gamesnd_id  blast_sound_id;
 } shockwave;
 

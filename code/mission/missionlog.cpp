@@ -8,7 +8,6 @@
 */ 
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "iff_defs/iff_defs.h"

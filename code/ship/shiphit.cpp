@@ -14,7 +14,6 @@
 
 #include "asteroid/asteroid.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "debris/debris.h"
 #include "fireball/fireballs.h"
 #include "freespace.h"

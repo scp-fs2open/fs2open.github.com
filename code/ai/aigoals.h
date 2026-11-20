@@ -120,7 +120,7 @@ struct ai_lua_parameters {
 	// For orders given by a Lua AI sexp, the operator and its argument list as sexp text, from which checkpoints
 	// rebuild the arguments.
 	int sexp_op = -1;
-	SCP_string sexp_arguments;
+	SCP_string sexp_arguments = {};
 };
 
 // Rebuilds the Lua arguments of an order from its sexp text, evaluating the arguments again.
@@ -136,7 +136,7 @@ typedef struct ai_goal {
 	fix	time;					// time at which this goal was issued.
 	int	priority;			// how important is this goal -- number 0 - 100
 
-	const char *target_name;	// name of the thing that this goal acts upon
+	const char *target_name;	// name of the thing that this goal acts upon @checkpoint skip: saved by Extra<ai_goal> in checkpoint/rules.h
 	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
 	int wp_list_index;			// waypoints that this ship might fly.
 	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
@@ -152,12 +152,12 @@ typedef struct ai_goal {
 	union {
 		const char *name;
 		int	index;
-	} docker;
+	} docker;	// @checkpoint skip: saved by Extra<ai_goal> in checkpoint/rules.h
 	
 	union {
 		const char *name;
 		int	index;
-	} dockee;
+	} dockee;	// @checkpoint skip: saved by Extra<ai_goal> in checkpoint/rules.h
 
 	ai_lua_parameters lua_ai_target;
 

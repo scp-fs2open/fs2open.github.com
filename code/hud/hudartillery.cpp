@@ -12,7 +12,6 @@
 
 #include "ai/ai.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"

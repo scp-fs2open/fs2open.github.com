@@ -48,7 +48,6 @@
 #include "checkpoint/checkpoint.h"
 #include "checkpoint/prompt.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
@@ -449,7 +448,7 @@ struct death_checkpoint_state {
 	int popup_wait = -1;	// milliseconds until the died popup, or -1 if not waiting
 	bool popup_active = false;
 };
-template <> struct checkpoint::is_raw<death_checkpoint_state> : std::true_type {};
+CHECKPOINT_LOCAL_RAW(death_checkpoint_state);
 
 static death_checkpoint_state death_checkpoint_capture()
 {

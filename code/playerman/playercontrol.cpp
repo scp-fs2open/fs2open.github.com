@@ -12,7 +12,6 @@
 #include "camera/camera.h"
 #include "camera/photomode.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
 #include "freespace.h"

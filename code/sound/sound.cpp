@@ -9,7 +9,6 @@
 
 #include "cfile/cfile.h"
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "gamesnd/eventmusic.h"

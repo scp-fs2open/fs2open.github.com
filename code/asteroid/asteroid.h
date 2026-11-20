@@ -109,7 +109,7 @@ typedef	struct asteroid {
 	int		flags;
 	flagset<Object::Raw_Pof_Flags> render_flags; // Render flags
 	int		objnum;
-	int		model_instance_num;
+	int		model_instance_num;	// @checkpoint skip: re-acquired after loading
 	int		asteroid_type;		// 0..MAX_DEBRIS_TYPES
 	int		asteroid_subtype;	// Index in asteroid_info for modelnum and modelp
 	TIMESTAMP	check_for_wrap;		// timestamp to check for asteroid wrapping around field

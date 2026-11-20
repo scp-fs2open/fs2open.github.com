@@ -7,7 +7,6 @@
 
 
 #include "checkpoint/registry.h"
-#include "checkpoint/serialize.h"
 #include "def_files/def_files.h"
 #include "hud/hud.h"
 #include "iff_defs/iff_defs.h"

@@ -51,7 +51,7 @@ typedef struct cscrew_info {
 #define MAX_CORKSCREW_MISSILES	200
 cscrew_info	Corkscrew_missiles[MAX_CORKSCREW_MISSILES];
 
-template <> struct checkpoint::is_raw<cscrew_info> : std::true_type {};
+CHECKPOINT_LOCAL_RAW(cscrew_info);
 CHECKPOINT_GLOBAL(Corkscrew_missiles);
 
 // ------------------------------------------------------------------

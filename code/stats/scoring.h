@@ -93,28 +93,28 @@ public:
 	int flags;
 
 	// All-time total
-	int score;								// all time score
-	int rank;								// all time rank
-	SCP_vector<int> medal_counts;			// all time medal counts
+	int score;								// all time score @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	int rank;								// all time rank @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	SCP_vector<int> medal_counts;			// all time medal counts @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
 
-	SCP_vector<int> kills;					// only valid kills (i.e. not on friendlies). Sized to ship_info_size() after table parse.
-	int assists;							// alltime assists
-	int kill_count;						// total alltime kills
-	int kill_count_ok;					// total valid alltime kills (no friendlies)
-	unsigned int p_shots_fired;		// primary weapon shots fired
-	unsigned int s_shots_fired;		// secondary weapon shots fired
+	SCP_vector<int> kills;					// only valid kills (i.e. not on friendlies). Sized to ship_info_size() after table parse. @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	int assists;							// alltime assists @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	int kill_count;						// total alltime kills @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	int kill_count_ok;					// total valid alltime kills (no friendlies) @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	unsigned int p_shots_fired;		// primary weapon shots fired @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	unsigned int s_shots_fired;		// secondary weapon shots fired @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
 
-	unsigned int p_shots_hit;			// primary weapon shots hit
-	unsigned int s_shots_hit;			// secondary weapon shots hit
+	unsigned int p_shots_hit;			// primary weapon shots hit @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	unsigned int s_shots_hit;			// secondary weapon shots hit @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
 
-	unsigned int p_bonehead_hits;		// alltime primary friendly hits
-	unsigned int s_bonehead_hits;		// alltime secondary friendly hits
-    int          bonehead_kills;		// alltime friendly kills
+	unsigned int p_bonehead_hits;		// alltime primary friendly hits @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	unsigned int s_bonehead_hits;		// alltime secondary friendly hits @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+    int          bonehead_kills;		// alltime friendly kills @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
 
-	unsigned int missions_flown;		// total # of missions flown
-	unsigned int flight_time;			// total # of flight hours the player has
-	_fs_time_t last_flown;					// last time the player has flown
-	_fs_time_t last_backup;					// so we can easily call scoring_level_backout()
+	unsigned int missions_flown;		// total # of missions flown @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	unsigned int flight_time;			// total # of flight hours the player has @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	_fs_time_t last_flown;					// last time the player has flown @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
+	_fs_time_t last_backup;					// so we can easily call scoring_level_backout() @checkpoint skip: all-time pilot statistic; a checkpoint must not roll it back (the m_ members are the mission's)
 
 	// Mission total
 	int m_medal_earned;					// which medal (if any) earned this mission

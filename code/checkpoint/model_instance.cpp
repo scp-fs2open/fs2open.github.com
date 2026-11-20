@@ -1,6 +1,5 @@
 #include "checkpoint/model_instance.h"
 
-#include "checkpoint/serialize.h"
 
 #include "bmpman/bmpman.h"
 #include "model/animation/modelanimation.h"
