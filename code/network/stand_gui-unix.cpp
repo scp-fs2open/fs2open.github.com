@@ -683,8 +683,15 @@ static void *webserverCallback(enum mg_event event, struct mg_connection *conn) 
         break;
     }
     case MG_NEW_REQUEST: {
-        bool requestHandled = webserverApiRequest(conn, ri);
-        return requestHandled ? const_cast<char*>("") : NULL;
+        if (webserverApiRequest(conn, ri)) {
+            return const_cast<char*>("");
+        }
+        // with no +webui_root the document root is "", so mongoose would map the URL onto the filesystem
+        if (Multi_options_g.webuiRootDirectory.empty()) {
+            sendResponse(conn, std::string(), HTTP_404_NOT_FOUND);
+            return const_cast<char*>("");
+        }
+        return nullptr;
     }
     default:
         break;
