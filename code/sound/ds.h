@@ -61,8 +61,9 @@ void ds_close();
 int ds_load_buffer(int *sid, int flags, sound::IAudioFile* file);
 void ds_unload_buffer(int sid);
 ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData* enhanced_sound_data, float volume,
-                        float pan, int looping, bool is_voice_msg = false);
+                        float pan, int looping, bool is_voice_msg = false, bool radio_filter = false);
 int ds_get_channel(ds_sound_handle sig);
+
 int ds_get_channel_raw(ds_sound_handle sig);
 int ds_is_channel_playing(int channel);
 bool ds_is_channel_paused(int channel_id);

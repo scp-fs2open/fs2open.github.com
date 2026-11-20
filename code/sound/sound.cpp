@@ -573,6 +573,34 @@ void snd_close(void)
 	ds_close();		// Close DirectSound off
 }
 
+static bool Radio_voice_filter = false;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto RadioVoiceFilterOption __UNUSED = options::OptionBuilder<bool>("Audio.RadioVoiceFilter",
+	std::pair<const char*, int>{"Radio Voice Filter", -1},
+	std::pair<const char*, int>{"Radio messages get a filtered voice (needs EFX) over static, heavier in nebulae", -1})
+	.category(std::make_pair("Audio", 1826))
+	.level(options::ExpertLevel::Advanced)
+	.default_val(false)
+	.bind_to(&Radio_voice_filter)
+	.importance(68)
+	.finish();
+
+bool snd_radio_voice_filter_enabled()
+{
+	return Radio_voice_filter;
+}
+
+float snd_voice_volume_scale_for_looping()
+{
+	// snd_play_looping() multiplies by the effects volume, so this cancels it out
+	const float effects = Master_sound_volume * aav_effect_volume;
+	if (effects <= 0.0f) {
+		return 0.0f;
+	}
+	return (Master_voice_volume * aav_voice_volume) / effects;
+}
+
 // ---------------------------------------------------------------------------------------
 //	snd_play_raw()
 //
@@ -582,7 +610,8 @@ void snd_close(void)
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority, bool is_voice)
+sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority, bool is_voice,
+                          bool radio_message)
 {
 	game_snd gs;
 
@@ -604,7 +633,7 @@ sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, in
 	gs.volume_range = util::UniformFloatRange(1.0f);
 	gs.pitch_range = util::UniformFloatRange(1.0f);
 
-	return snd_play(&gs, pan, vol_scale, priority, true);
+	return snd_play(&gs, pan, vol_scale, priority, true, radio_message);
 }
 
 MONITOR( NumSoundsStarted )
@@ -627,7 +656,7 @@ MONITOR( NumSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bool is_voice_msg)
+sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bool is_voice_msg, bool radio_message)
 {
 	float volume;
 	loaded_sound* snd;
@@ -679,7 +708,8 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 
 	sound_handle handle;
 	if ( volume > MIN_SOUND_VOLUME ) {
-		handle = ds_play( snd->sid, entry->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume, pan, 0, is_voice_msg);
+		handle = ds_play(snd->sid, entry->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume, pan, 0,
+			is_voice_msg, radio_message && Radio_voice_filter);
 
 		if (handle.isValid()) {
 			snd_set_pitch(handle, gs->pitch_range.next());
