@@ -156,7 +156,7 @@ bool isBlendingEnabled(gr_alpha_blend mode)
 	return mode != ALPHA_BLEND_NONE;
 }
 
-vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend mode, const bvec4& colorWriteMask)
+vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend mode, const bvec4& colorWriteMask, bool coverageAlpha)
 {
 	vk::PipelineColorBlendAttachmentState attachment;
 
@@ -169,9 +169,16 @@ vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend 
 	attachment.dstColorBlendFactor = dstFactor;
 	attachment.colorBlendOp = vk::BlendOp::eAdd;
 
-	// Alpha blend - same as color for most modes
-	attachment.srcAlphaBlendFactor = srcFactor;
-	attachment.dstAlphaBlendFactor = dstFactor;
+	if (!coverageAlpha) {
+		attachment.srcAlphaBlendFactor = srcFactor;
+		attachment.dstAlphaBlendFactor = dstFactor;
+	} else if (mode == ALPHA_BLEND_ADDITIVE || mode == ALPHA_BLEND_ALPHA_ADDITIVE) {
+		attachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
+		attachment.dstAlphaBlendFactor = vk::BlendFactor::eOne;
+	} else {
+		attachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+		attachment.dstAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+	}
 	attachment.alphaBlendOp = vk::BlendOp::eAdd;
 
 	// Color write mask from material

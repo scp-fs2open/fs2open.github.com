@@ -21,6 +21,7 @@
 #include "ship/ship_flags.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
+#include "graphics/openxr.h"
 #include "hud/hud.h"
 #include "gamesequence/gamesequence.h"
 #include "mission/missiongoals.h"
@@ -351,7 +352,9 @@ int Normal_key_set[] = {
 		
 	COMMS_MENU_MOVE_UP,
 	COMMS_MENU_MOVE_DOWN,
-	COMMS_MENU_SELECT
+	COMMS_MENU_SELECT,
+
+	VR_RECENTER
 };
 
 int Dead_key_set[] = {
@@ -393,7 +396,9 @@ int Dead_key_set[] = {
 	MULTI_OBSERVER_ZOOM_TO,
 
 	TIME_SPEED_UP,
-	TIME_SLOW_DOWN
+	TIME_SLOW_DOWN,
+
+	VR_RECENTER
 };
 
 int Critical_key_set[] = {	
@@ -501,7 +506,9 @@ int Non_critical_key_set[] = {
 
 	COMMS_MENU_MOVE_UP,
 	COMMS_MENU_MOVE_DOWN,
-	COMMS_MENU_SELECT
+	COMMS_MENU_SELECT,
+
+	VR_RECENTER
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -2626,6 +2633,10 @@ int button_function(int n)
 
 		case PHOTO_MODE_PARAM_INCREASE:
 			game_adjust_photo_mode_filter_parameter(1);
+			break;
+
+		case VR_RECENTER:
+			openxr_request_recenter();
 			break;
 
 		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
