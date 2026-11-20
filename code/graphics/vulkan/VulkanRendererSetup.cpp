@@ -1083,14 +1083,12 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 	}
 
-	// FSR adds to the feature set audited above, for AMD's shaders and host code. It's disabled in VR for now.
-	if (!openxr_requested()) {
-		vulkan_upscaler_prepare_device(m_vkInstance.get(),
-			deviceValues.device,
-			deviceValues.graphicsQueueIndex.index,
-			supportedFeatures,
-			deviceCreateChain.get<vk::DeviceCreateInfo>());
-	}
+	// FSR adds to the feature set audited above, for AMD's shaders and host code
+	vulkan_upscaler_prepare_device(m_vkInstance.get(),
+		deviceValues.device,
+		deviceValues.graphicsQueueIndex.index,
+		supportedFeatures,
+		deviceCreateChain.get<vk::DeviceCreateInfo>());
 
 	if (openxr_requested())
 		m_device = vulkan_openxr_create_device(deviceValues.device, deviceCreateChain.get<vk::DeviceCreateInfo>());
@@ -1109,6 +1107,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	m_physicalDevice = deviceValues.device;
 	// Cache properties + features once (the limit/feature getters read these).
 	m_deviceProperties = m_physicalDevice.getProperties();
+	Gr_max_output_size = static_cast<int>(m_deviceProperties.limits.maxImageDimension2D);
 	m_deviceFeatures = m_physicalDevice.getFeatures();
 	m_graphicsQueueFamilyIndex = deviceValues.graphicsQueueIndex.index;
 	m_presentQueueFamilyIndex = deviceValues.presentQueueIndex.index;

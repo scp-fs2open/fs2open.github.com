@@ -33,6 +33,7 @@ struct PipelineConfig {
 	primitive_type primitiveType = PRIM_TYPE_TRIS;
 	gr_zbuffer_type depthMode = ZBUFFER_TYPE_NONE;
 	gr_alpha_blend blendMode = ALPHA_BLEND_NONE;
+	bool coverageAlpha = false;  // see createColorBlendAttachment()
 	bool cullEnabled = true;
 	bool frontFaceCW = false;  // Match OpenGL default (CCW); models override to CW
 	bool depthWriteEnabled = true;
@@ -158,6 +159,11 @@ public:
 	 * @brief Get number of cached pipelines
 	 */
 	size_t getPipelineCount() const { return m_pipelines.size(); }
+
+	/**
+	 * @brief Destroy every cached pipeline built from a shader type; the caller must know the GPU is done with them
+	 */
+	void forgetPipelinesOfShaderType(shader_type type);
 
 	/**
 	 * @brief Check if a draw needs a fallback buffer for a given vertex attribute

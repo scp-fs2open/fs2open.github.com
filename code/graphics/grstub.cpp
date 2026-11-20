@@ -657,6 +657,9 @@ void gr_stub_init_function_pointers() {
 
 	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
 
+	gr_screen.gf_screen_layer_begin = [](int /*bitmap*/) { return false; };
+	gr_screen.gf_screen_layer_end = []() {};
+
 	gr_screen.gf_override_fog = [](bool /*b*/) {};
 
 	gr_screen.gf_openxr_get_extensions = gr_stub_openxr_get_extensions;

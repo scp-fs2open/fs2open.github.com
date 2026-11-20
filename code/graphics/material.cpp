@@ -301,6 +301,15 @@ int material::get_texture_map(int tex_type) const
 	return Texture_maps[tex_type];
 }
 
+int material::get_specular_map(bool* is_spec_gloss) const
+{
+	const auto reflect_map = get_texture_map(TM_SPEC_GLOSS_TYPE);
+	if (is_spec_gloss != nullptr) {
+		*is_spec_gloss = reflect_map >= 0;
+	}
+	return reflect_map >= 0 ? reflect_map : get_texture_map(TM_SPECULAR_TYPE);
+}
+
 bool material::is_textured() const
 {
 	return 
@@ -787,7 +796,7 @@ int model_material::get_shader_runtime_flags() const {
 		flags |= MODEL_SDR_FLAG_DIFFUSE;
 	if (get_texture_map(TM_GLOW_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_GLOW;
-	if (get_texture_map(TM_SPECULAR_TYPE) >= 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0)
+	if (get_specular_map() >= 0)
 		flags |= MODEL_SDR_FLAG_SPEC;
 	if (get_texture_map(TM_NORMAL_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_NORMAL;
