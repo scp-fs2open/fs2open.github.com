@@ -16,7 +16,8 @@ bool FictionViewerDialogModel::apply() {
 	const bool empty = stage.story_filename[0] == '\0';
 
 	if (empty) {
-		_fictionViewerStages.clear();
+		// only the first stage is edited here, so only it goes; a mission can carry more
+		_fictionViewerStages.erase(_fictionViewerStages.begin());
 		Mission_music[SCORE_FICTION_VIEWER] = -1;
 	} else {
 		// Keep whatever you've edited in _fictionViewerStages

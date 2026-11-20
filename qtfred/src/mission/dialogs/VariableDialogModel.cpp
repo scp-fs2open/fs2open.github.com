@@ -1,5 +1,6 @@
 #include "VariableDialogModel.h"
 
+#include "missioneditor/sexp_tree_model.h"
 #include "parse/sexp.h"
 
 #include <algorithm>
@@ -32,42 +33,43 @@ bool VariableDialogModel::apply()
 
 	// Loop through our new list of deleted variables and remove them from the global state.
 	for (const auto& original_name : m_deleted_variables) {
-		for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-			if (!stricmp(Sexp_variables[i].variable_name, original_name.c_str())) {
-				sexp_variable_delete(i);
-				break;
-			}
+		const int i = get_index_sexp_variable_name(original_name.c_str());
+		if (i >= 0) {
+			sexp_variable_delete(i);
 		}
 	}
 
-	for (const auto& var_info : m_variables) {
-		bool found = false;
-		// Existing variable that might be modified or deleted
-		if (!var_info.originalName.empty()) {
-			for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-				if (!stricmp(Sexp_variables[i].variable_name, var_info.originalName.c_str())) {
-					if (var_info.name != var_info.originalName) {
-						renamedVariables.emplace_back(i, var_info.originalName);
-					}
-					strcpy_s(Sexp_variables[i].variable_name, var_info.name.c_str());
-					Sexp_variables[i].type = var_info.flags;
-
-					if (var_info.is_string) {
-						strcpy_s(Sexp_variables[i].text, var_info.stringValue.c_str());
-						Sexp_variables[i].type |= SEXP_VARIABLE_STRING;
-					} else {
-						strcpy_s(Sexp_variables[i].text, std::to_string(var_info.numberValue).c_str());
-						Sexp_variables[i].type |= SEXP_VARIABLE_NUMBER;
-					}
-					found = true;
-					break;
-				}
-			}
+	// find every existing variable by its old name before any is renamed, or two variables that swap names
+	// would both find the first one
+	SCP_vector<int> existing_index(m_variables.size(), -1);
+	for (size_t v = 0; v < m_variables.size(); ++v) {
+		if (!m_variables[v].originalName.empty()) {
+			existing_index[v] = get_index_sexp_variable_name(m_variables[v].originalName.c_str());
 		}
+	}
 
-		// New variable
-		if (!found) {
-			int flags = var_info.flags;
+	for (size_t v = 0; v < m_variables.size(); ++v) {
+		const auto& var_info = m_variables[v];
+		const int i = existing_index[v];
+		// Existing variable that might be modified
+		if (i >= 0) {
+			if (var_info.name != var_info.originalName) {
+				renamedVariables.emplace_back(i, var_info.originalName);
+			}
+			strcpy_s(Sexp_variables[i].variable_name, var_info.name.c_str());
+			// the stored flags still hold the type the variable was loaded with; the dialog's type is set below
+			Sexp_variables[i].type = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
+
+			if (var_info.is_string) {
+				strcpy_s(Sexp_variables[i].text, var_info.stringValue.c_str());
+				Sexp_variables[i].type |= SEXP_VARIABLE_STRING;
+			} else {
+				strcpy_s(Sexp_variables[i].text, std::to_string(var_info.numberValue).c_str());
+				Sexp_variables[i].type |= SEXP_VARIABLE_NUMBER;
+			}
+		} else {
+			// New variable
+			int flags = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
 			const char* value_str;
 			SCP_string num_val_str;
 
@@ -81,6 +83,16 @@ bool VariableDialogModel::apply()
 			}
 			sexp_add_variable(value_str, var_info.name.c_str(), flags, -1);
 		}
+	}
+
+	// events, cues and the team loadout refer to a variable by name, so a rename has to reach them too
+	if (!renamedVariables.empty()) {
+		SCP_unordered_map<SCP_string, SCP_string> new_names;
+		for (const auto& renamed : renamedVariables) {
+			new_names[renamed.second] = Sexp_variables[renamed.first].variable_name;
+		}
+
+		SexpTreeModel::rename_variable_references(new_names);
 	}
 
 	// Apply Container Changes
@@ -237,6 +249,14 @@ bool VariableDialogModel::checkValidity()
 		}
 		if (!names_taken.insert(var.name).second) {
 			error_message += "Duplicate variable name found: \"" + var.name + "\"\n";
+		}
+
+		// the team loadout reads its variables by type, and a mission saved with the wrong one does not load
+		const int idx = var.originalName.empty() ? -1 : get_index_sexp_variable_name(var.originalName.c_str());
+		if (idx >= 0 && var.is_string != ((Sexp_variables[idx].type & SEXP_VARIABLE_STRING) != 0) &&
+			SexpTreeModel::get_loadout_variable_count(idx) > 0) {
+			error_message +=
+				"The type of variable \"" + var.name + "\" cannot change while the team loadout uses it.\n";
 		}
 	}
 
