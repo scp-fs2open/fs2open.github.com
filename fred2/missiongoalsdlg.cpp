@@ -71,6 +71,10 @@ int CMissionGoalsDlg::onRootDeleted(int formula_node)
 	m_goals.erase(m_goals.begin() + i);
 	m_sig.erase(m_sig.begin() + i);
 
+	// if a row is left the tree selects it next and sets this again; if none is, the fields must not stay live
+	cur_goal = -1;
+	update_cur_goal();
+
 	return formula_node;
 }
 void CMissionGoalsDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }

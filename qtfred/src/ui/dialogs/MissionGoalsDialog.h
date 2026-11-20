@@ -37,8 +37,8 @@ private slots:
 	void on_goalDescription_textChanged(const QString& text);
 	void on_goalScore_valueChanged(int value);
 	void on_goalTeamCombo_currentIndexChanged(int team);
-	void on_objectiveInvalidCheck_stateChanged(bool checked);
-	void on_noCompletionMusicCheck_stateChanged(bool checked);
+	void on_objectiveInvalidCheck_stateChanged(int state);
+	void on_noCompletionMusicCheck_stateChanged(int state);
 	void on_newObjectiveBtn_clicked();
 
 	void on_goalEventTree_selectedRootChanged(int formula);

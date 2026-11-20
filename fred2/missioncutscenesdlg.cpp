@@ -71,6 +71,10 @@ int CMissionCutscenesDlg::onRootDeleted(int formula_node)
 	m_cutscenes.erase(m_cutscenes.begin() + i);
 	m_sig.erase(m_sig.begin() + i);
 
+	// if a row is left the tree selects it next and sets this again; if none is, the fields must not stay live
+	cur_cutscene = -1;
+	update_cur_cutscene();
+
 	return formula_node;
 }
 void CMissionCutscenesDlg::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }

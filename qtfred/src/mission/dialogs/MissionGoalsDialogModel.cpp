@@ -113,6 +113,8 @@ void MissionGoalsDialogModel::deleteGoal(int node) {
 	Assert(i < m_goals.size());
 	m_goals.erase(m_goals.begin() + i);
 	m_sig.erase(m_sig.begin() + i);
+	// the index now names whichever goal moved into this slot, so no goal is current until one is selected
+	cur_goal = -1;
 
 	set_modified();
 	modelChanged();

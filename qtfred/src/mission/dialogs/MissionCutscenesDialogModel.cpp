@@ -103,6 +103,8 @@ void MissionCutscenesDialogModel::deleteCutscene(int node)
 	Assertion(i < m_cutscenes.size(), "Invalid cutscene index!");
 	m_cutscenes.erase(m_cutscenes.begin() + i);
 	m_sig.erase(m_sig.begin() + i);
+	// the index now names whichever cutscene moved into this slot, so none is current until one is selected
+	cur_cutscene = -1;
 
 	set_modified();
 	modelChanged();
