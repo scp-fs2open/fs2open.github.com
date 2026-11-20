@@ -1916,7 +1916,8 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 		for ( j = 0; j < newb->num_icons; j++ ) {
 			if ( ( cb->icons[i].id != 0 ) && ( cb->icons[i].id == newb->icons[j].id ) ) {
 				is_gone=0;
-				if ( vm_vec_cmp(&cb->icons[i].pos, &newb->icons[j].pos) ) {
+				// with no time to move in, the icon is drawn at its new position; a mover would divide by zero
+				if ( (time != 0.0f) && vm_vec_cmp(&cb->icons[i].pos, &newb->icons[j].pos) ) {
 
 					k = brief_get_free_move_icon();				
 					if ( k == -1 ) {
