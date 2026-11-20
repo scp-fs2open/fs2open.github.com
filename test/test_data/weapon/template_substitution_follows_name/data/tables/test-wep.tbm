@@ -1,0 +1,16 @@
+#Weapon Templates
+
+$Template:	Sub Base
+$substitute:	Sub Other
+	+period:	2
+
+#End
+
+#Primary Weapons
+
+$Name:	Sub Other
+
+$Name:	Sub Derived
++Use Template:	Sub Base
+
+#End
