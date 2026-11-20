@@ -959,6 +959,15 @@ void EndAutoPilot()
 	}
 }
 
+// End autopilot while the old nav is still selected so shutdown removes its goals.
+static void nav_set_selection(int nav)
+{
+	if (nav == CurrentNav)
+		return;
+	if (AutoPilotEngaged)
+		EndAutoPilot();
+	CurrentNav = nav;
+}
 
 // ********************************************************************************************
 
@@ -1547,7 +1556,7 @@ void SelectNav(const char *Nav)
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 	{
 		if (!stricmp(Navs[i].m_NavName, Nav))
-			if (!(Nav_Get_Flags(Nav) & NP_HIDDEN || Nav_Get_Flags(Nav) & NP_NOACCESS)) CurrentNav = i;
+			if (!(Nav_Get_Flags(Nav) & NP_HIDDEN || Nav_Get_Flags(Nav) & NP_NOACCESS)) nav_set_selection(i);
 	}
 }
 
@@ -1555,11 +1564,7 @@ void SelectNav(const char *Nav)
 // Deselects any navpoint selected.
 void DeselectNav()
 {
-	// Shutdown removes goals using the selected nav and must precede clearing it.
-	if (AutoPilotEngaged) {
-		EndAutoPilot();
-	}
-	CurrentNav = -1;
+	nav_set_selection(-1);
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
