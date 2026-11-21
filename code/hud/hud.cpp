@@ -4382,9 +4382,6 @@ int hud_get_default_gauge_index(const char *name)
 	return -1;
 }
 
-/**
- * @brief Whether the player's current HUD has a gauge of this object type (HUD_OBJECT_*) that would draw right now
- */
 bool hud_config_controls_gauge(const HudGauge* gauge)
 {
 	// the Auto Shields indicator is switched by its in-game option, not by HUD Config
