@@ -310,7 +310,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 {
 	wss_unit_wep_h current;
 	int bank = -1;
-	int wepIndex = INT_MAX; // Left out of range if the value fails to parse, so the setter rejects it
+	int wepIndex = INT_MAX; // Out of range, so a value that fails to parse is rejected
 	if (!ade_get_args(L, "oi|i", l_Loadout_Weapon.Get(&current), &bank, &wepIndex))
 		return ADE_RETURN_NIL;
 
@@ -327,9 +327,9 @@ ADE_INDEXER(l_Loadout_Weapon,
 		bankType = WP_MISSILE;
 	}
 
+	wepIndex--; // Convert from Lua
 	bank--; //Convert from Lua
 	if (ADE_SETTING_VAR) {
-		wepIndex--; // Convert from Lua
 		if (Game_mode & GM_MULTIPLAYER) {
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
@@ -392,13 +392,14 @@ ADE_VIRTVAR(ShipClassIndex,
 	"The index or nil if handle is invalid")
 {
 	int current;
-	int shipIndex = INT_MAX; // Left out of range if the value fails to parse, so the setter rejects it
+	int shipIndex = INT_MAX; // Out of range, so a value that fails to parse is rejected
 	if (!ade_get_args(L, "o|i", l_Loadout_Ship.Get(&current), &shipIndex)) {
 		return ADE_RETURN_NIL;
 	}
 
+	shipIndex--; //Convert from Lua
+
 	if (ADE_SETTING_VAR) {
-		shipIndex--; //Convert from Lua
 		if (Game_mode & GM_MULTIPLAYER) {
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
