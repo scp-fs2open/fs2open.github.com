@@ -123,7 +123,6 @@ add_file_folder("Scripting\\\\Lua"
 
 add_file_folder("Ship"
     ship/ship_info.cpp
-    ship/ship_subsys.cpp
 )
 
 add_file_folder("Starfield"
