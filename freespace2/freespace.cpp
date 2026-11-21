@@ -176,6 +176,7 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/libs/audio.h"
 #include "scripting/api/objs/gamestate.h"
 #include "scripting/api/objs/camera.h"
 #include "scripting/global_hooks.h"
@@ -991,6 +992,7 @@ void game_level_close()
 		obj_reset_colliders();
 		multi_interpolate_clear_all(); // object related
 		sexp_music_close();	// Goober5000
+		scripting::api::script_music_close();
 		event_music_level_close();
 		game_stop_looped_sounds();
 		snd_stop_all();
@@ -1060,6 +1062,8 @@ void game_level_close()
 	{
 		scripting::hooks::OnMissionEndHook->run();
 	}
+
+	Game_level_loaded = false;
 }
 
 time_t load_gl_init;
@@ -1075,6 +1079,8 @@ void game_level_init()
 {
 	game_busy( NOX("** starting game_level_init() **") );
 	load_gl_init = time(nullptr);
+
+	Game_level_loaded = true;
 
 	// seed the random number generator in multiplayer
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -5506,7 +5512,7 @@ void game_leave_state( int old_state, int new_state )
 			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
 
-				if ( going_to_menu_state(new_state) ) {
+				if ( going_to_menu_state(new_state) || (new_state == GS_STATE_START_GAME) ) {
 					freespace_stop_mission();
 				}
 			}
@@ -5551,7 +5557,7 @@ void game_leave_state( int old_state, int new_state )
 				if ( !going_to_briefing_state(new_state) ) {
 					common_select_close();
 
-					if ( going_to_menu_state(new_state) ) {
+					if ( going_to_menu_state(new_state) || (new_state == GS_STATE_START_GAME) ) {
 						freespace_stop_mission();
 					}
 				}
@@ -5564,7 +5570,7 @@ void game_leave_state( int old_state, int new_state )
 			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
 
-				if ( going_to_menu_state(new_state) ) {
+				if ( going_to_menu_state(new_state) || (new_state == GS_STATE_START_GAME) ) {
 					freespace_stop_mission();
 				}
 			}

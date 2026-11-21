@@ -11,6 +11,7 @@
 
 #include "scripting/lua/LuaValue.h"
 
+#include "scripting/api/libs/audio.h"
 #include "scripting/api/objs/bytearray.h"
 #include "scripting/api/objs/audio_stream.h"
 #include "sound/audiostr.h"
@@ -79,7 +80,9 @@ ADE_FUNC(openAudioStreamMem,
         return ade_set_args(L, "o", l_AudioStream.Set(-1));
     }
 
-	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+	int signature = audiostream_get_signature(ah);
+	script_music_track(signature);
+	return ade_set_args(L, "o", l_AudioStream.Set(signature));
 }
 
 

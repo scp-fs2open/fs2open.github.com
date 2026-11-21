@@ -3,7 +3,9 @@
 
 #include "audio.h"
 
+#include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/systemvars.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
 #include "mission/missionmessage.h"
@@ -20,6 +22,33 @@ extern float Master_event_music_volume;
 
 namespace scripting {
 namespace api {
+
+// Signatures of streams opened by scripts during a mission (including its briefings and debriefing)
+static SCP_vector<int> Script_music_signatures;
+
+void script_music_track(int signature)
+{
+	// the debriefing comes after the level is closed, so its streams are swept at the next level close
+	if (Game_level_loaded || (gameseq_get_state() == GS_STATE_DEBRIEF))
+		Script_music_signatures.push_back(signature);
+}
+
+void script_music_close()
+{
+	// a stream that is still playing was presumably meant to continue, so check it again next time
+	auto it = std::remove_if(Script_music_signatures.begin(), Script_music_signatures.end(), [](int signature)
+	{
+		int handle = audiostream_get_by_signature(signature);
+		if (handle < 0)
+			return true;
+		if (audiostream_is_playing(handle))
+			return false;
+
+		audiostream_close_file(handle, false);
+		return true;
+	});
+	Script_music_signatures.erase(it, Script_music_signatures.end());
+}
 
 //**********LIBRARY: Audio
 ADE_LIB(l_Audio, "Audio", "ad", "Sound/Music Library");
@@ -253,7 +282,7 @@ ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
 	}
 }
 
-ADE_FUNC(playMusic, l_Audio, "string Filename, [number volume = 1.0, boolean looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
+ADE_FUNC(playMusic, l_Audio, "string Filename, [number volume = 1.0, boolean looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure.  The handle is an opaque number that is only valid while the stream is open.")
 {
 	const char* s;
 	float volume = 1.0f;
@@ -269,7 +298,10 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [number volume = 1.0, boolean loo
 	volume = Master_event_music_volume;
 
 	audiostream_play(ah, volume, loop ? 1 : 0);
-	return ade_set_args(L, "i", ah);
+
+	int signature = audiostream_get_signature(ah);
+	script_music_track(signature);
+	return ade_set_args(L, "i", signature);
 }
 
 ADE_FUNC(stopMusic,
@@ -287,11 +319,8 @@ ADE_FUNC(stopMusic,
 	if(!ade_get_args(L, "i|bs", &ah, &fade, &music_type))
 		return ADE_RETURN_NIL;
 
-	if (ah >= MAX_AUDIO_STREAMS || ah < 0 )
-		return ADE_RETURN_NIL;
-
 	if (music_type == NULL) {
-		audiostream_close_file(ah, fade);
+		audiostream_close_file(audiostream_get_by_signature(ah), fade);
 	} else {
 		if (!stricmp(music_type, "briefing"))	{
 			briefing_stop_music(fade);
@@ -321,19 +350,23 @@ ADE_FUNC(pauseMusic,
 	if(!ade_get_args(L, "ib", &ah, &pause))
 		return ADE_RETURN_NIL;
 
-	if (ah >= 0 && ah < MAX_AUDIO_STREAMS)
-	{
-		if (pause)
-			audiostream_pause(ah, true);
-		else
-			audiostream_unpause(ah, true);
-	}
-	else if (ah == -1)
+	if (ah == -1)
 	{
 		if (pause)
 			audiostream_pause_all(true);
 		else
 			audiostream_unpause_all(true);
+	}
+	else
+	{
+		int streamHandle = audiostream_get_by_signature(ah);
+		if (streamHandle >= 0)
+		{
+			if (pause)
+				audiostream_pause(streamHandle, true);
+			else
+				audiostream_unpause(streamHandle, true);
+		}
 	}
 
 	return ADE_RETURN_NIL;
@@ -373,7 +406,9 @@ ADE_FUNC(openAudioStream,
 	if (ah < 0)
 		return ade_set_args(L, "o", l_AudioStream.Set(-1));
 
-	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+	int signature = audiostream_get_signature(ah);
+	script_music_track(signature);
+	return ade_set_args(L, "o", l_AudioStream.Set(signature));
 }
 
 ADE_FUNC(pauseWeaponSounds,
