@@ -29,6 +29,10 @@ add_file_folder("Controlconfig"
     controlconfig/test_bindings.cpp
 )
 
+add_file_folder("Cutscene"
+    cutscene/test_cutscene_parse.cpp
+)
+
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_polymorphic.cpp
