@@ -4527,8 +4527,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	}
 
 	targeted_subsys = NULL;
-	if ( t_subsys >= 0 ) {
-		Assert( target_objp != NULL );
+	if ( (t_subsys >= 0) && (target_objp != NULL) && (target_objp->type == OBJ_SHIP) ) {
 		targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 	}
 
@@ -7632,8 +7631,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	wp->target_sig = homing_object->signature;
 	wp->homing_pos = homing_goal;
 
-	if ( h_subsys >= 0 ) {
-		Assert( homing_object->type == OBJ_SHIP );
+	if ( (h_subsys >= 0) && (homing_object->type == OBJ_SHIP) ) {
 		wp->homing_subsys = ship_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
 	}
 

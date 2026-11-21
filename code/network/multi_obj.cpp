@@ -1758,7 +1758,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 		if (temp_lock_info.obj != nullptr && shipp != nullptr) {
 			// if the subsystem is the special null value.
-			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM) {
+			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM || temp_lock_info.obj->type != OBJ_SHIP) {
 				temp_lock_info.subsys = nullptr;
 			} // otherwise look it up to store the lock onto the subsystem
 			else {
