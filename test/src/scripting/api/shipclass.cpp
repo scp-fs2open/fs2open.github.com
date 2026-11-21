@@ -82,8 +82,9 @@ class ScriptingShipclassTest : public test::scripting::ScriptingTestFixture {
 
 		_saved_wss_slots = Wss_slots;
 		Wss_slots = Wss_slots_teams[0];
-		for (int slot = 0; slot < 2; slot++) {
-			Wss_slots[slot].ship_class = slot == 0 ? 0 : 3;
+		const int slot_classes[] = {0, 3, 1};
+		for (int slot = 0; slot < 3; slot++) {
+			Wss_slots[slot].ship_class = slot_classes[slot];
 			for (int bank = 0; bank < MAX_SHIP_WEAPONS; bank++) {
 				Wss_slots[slot].wep[bank] = -1;
 				Wss_slots[slot].wep_count[bank] = -1;
@@ -93,7 +94,7 @@ class ScriptingShipclassTest : public test::scripting::ScriptingTestFixture {
 
 	void TearDown() override
 	{
-		for (int slot = 0; slot < 2; slot++) {
+		for (int slot = 0; slot < 3; slot++) {
 			Wss_slots_teams[0][slot] = wss_unit();
 		}
 		Wss_slots = _saved_wss_slots;

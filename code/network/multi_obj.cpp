@@ -1172,12 +1172,12 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 			
 		// targeted subsys index
 		if(Player_ai->targeted_subsys != nullptr){
-			t_subsys = (char)ship_get_subsys_index( Player_ai->targeted_subsys );
+			t_subsys = static_cast<ushort>(ship_get_subsys_index( Player_ai->targeted_subsys ));
 		}
 
 		// locked targeted subsys index
 		if(Player->locking_subsys != nullptr){
-			l_subsys = (char)ship_get_subsys_index( Player->locking_subsys );
+			l_subsys = static_cast<ushort>(ship_get_subsys_index( Player->locking_subsys ));
 		}
 	}
 
@@ -1205,7 +1205,7 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 				subsystems.push_back(OOC_INDEX_NULLPTR_SUBSYSEM);
 			} // otherwise, just send the subsystem index.
 			else {
-				subsystems.push_back( (ushort)std::distance( GET_FIRST(&Ships[lock.obj->instance].subsys_list), lock.subsys) );
+				subsystems.push_back( static_cast<ushort>(ship_get_subsys_index(lock.subsys)) );
 			}
 				
 			count++;
@@ -1711,7 +1711,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 				aip->targeted_subsys = nullptr;
 
 				if ((t_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-					aip->targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
+					aip->targeted_subsys = multi_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
 				}
 			}
 
@@ -1719,7 +1719,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 			if (shipp != nullptr) {
 				if ((l_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-					pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
+					pl->m_player->locking_subsys = multi_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
 				}
 			}
 		}
@@ -1758,17 +1758,11 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 		if (temp_lock_info.obj != nullptr && shipp != nullptr) {
 			// if the subsystem is the special null value.
-			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM) {
+			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM || temp_lock_info.obj->type != OBJ_SHIP) {
 				temp_lock_info.subsys = nullptr;
 			} // otherwise look it up to store the lock onto the subsystem
 			else {
-				ship_subsys* ml_target_subsysp = GET_FIRST(&Ships[temp_lock_info.obj->instance].subsys_list);
-
-				for (int j = 0; j < subsystem_index; j++) {
-					ml_target_subsysp = GET_NEXT(ml_target_subsysp);
-				}
-
-				temp_lock_info.subsys = ml_target_subsysp;
+				temp_lock_info.subsys = multi_get_indexed_subsys(&Ships[temp_lock_info.obj->instance], subsystem_index);
 			}
 			// store the lock.
 			shipp->missile_locks.push_back(temp_lock_info);
