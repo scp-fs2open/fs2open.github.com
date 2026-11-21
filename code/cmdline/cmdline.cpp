@@ -678,7 +678,11 @@ SCP_string cmdline_build_string()
 			cmdline << " " << parmp->name;
 
 			if (parmp->args) {
-				cmdline << " " << parmp->args;
+				if (parmp == &bootstrap_arg) {
+					cmdline << " \"" << parmp->args << '"';
+				} else {
+					cmdline << " " << parmp->args;
+				}
 			}
 
 			found++;
@@ -690,6 +694,20 @@ SCP_string cmdline_build_string()
 	}
 
 	return cmdline.str();
+}
+
+SCP_vector<SCP_string> cmdline_build_args()
+{
+	SCP_vector<SCP_string> args;
+	for (auto parm = GET_FIRST(&Parm_list); parm != END_OF_LIST(&Parm_list); parm = GET_NEXT(parm)) {
+		if (parm->name_found) {
+			args.emplace_back(parm->name);
+			if (parm->args) {
+				args.emplace_back(parm->args);
+			}
+		}
+	}
+	return args;
 }
 
 // prints simple cmdline to multi.log

@@ -64,11 +64,21 @@ TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
 		fs::remove(manifest, error);
 	});
 
-	const auto json = json_dump_string_new(json_pack("{s:i,s:s,s:s,s:[s,s,s]}",
+	const std::unique_ptr<json_t> json(json_pack("{s:i,s:s,s:s,s:[s,s,s]}",
 		"version", 1, "mod_id", "test-mod", "workfolder", base.u8string().c_str(),
-		"roots", primary.u8string().c_str(), "wrong_data_case", "list_files_in_vps_and_dirs"), 0);
-	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json);
-	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str()));
+		"roots", primary.u8string().c_str(), "wrong_data_case", "list_files_in_vps_and_dirs"));
+	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json_dump_string(json.get(), 0));
+	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str(), base.parent_path().string().c_str()));
+	ASSERT_NE(nullptr, mod_bootstrap_get());
+	EXPECT_EQ(base, fs::path(mod_bootstrap_get()->workfolder));
+	EXPECT_TRUE(mod_bootstrap_contains_path((primary / "data" / "tables" / "ships.tbl").string()));
+	EXPECT_FALSE(mod_bootstrap_contains_path((base.parent_path() / "cfile-other" / "mission.fs2").string()));
+
+	ASSERT_EQ(0, json_object_del(json.get(), "workfolder"));
+	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json_dump_string(json.get(), 0));
+	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str(), base.string().c_str()));
+	ASSERT_NE(nullptr, mod_bootstrap_get());
+	EXPECT_EQ(base, fs::path(mod_bootstrap_get()->workfolder));
 	ASSERT_FALSE(cfile_init(""));
 
 	const auto winning_table = cf_find_file_location("ships.tbl", CF_TYPE_TABLES);

@@ -16,6 +16,7 @@
 #include "FREDView.h"
 #include "FredRender.h"
 #include "cfile/cfile.h"
+#include "cfile/mod_bootstrap.h"
 #include "Grid.h"
 #include "MainFrm.h"
 #include "MFCGraphicsOperations.h"
@@ -4203,6 +4204,7 @@ void CFREDView::OnRunFreeSpace()
 	// reconstruct command line
 	extern SCP_string cmdline_build_string();
 	auto commandArgs = cmdline_build_string();
+	const auto working_dir = mod_bootstrap_get() ? Fred_base_dir : nullptr;
 
 	for (const auto &nameAttempt: nameAttempts) {
 		// CreateProcess actually writes to the C-string, so we have to make it modifiable
@@ -4211,7 +4213,7 @@ void CFREDView::OnRunFreeSpace()
 		strcat(fullString.get(), commandArgs.c_str());
 
 		// try to start FS2_open
-		r = CreateProcess(nullptr, fullString.get(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
+		r = CreateProcess(nullptr, fullString.get(), nullptr, nullptr, FALSE, 0, nullptr, working_dir, &si, &pi);
 		if (r) {
 			break;
 		}

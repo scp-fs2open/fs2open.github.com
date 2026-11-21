@@ -1919,13 +1919,7 @@ void game_init()
 	mprintf(("Memory: %d MiB\n", SDL_GetSystemRAM()));
 	mprintf(("Build: %s, " SIZE_T_ARG "-bit, %s-endian\n", get_exe_name(nullptr),
 			 sizeof(void*) << 3, (SDL_BYTEORDER == SDL_LIL_ENDIAN) ? "little" : "big"));
-	if (const auto bootstrap = mod_bootstrap_get()) {
-		mprintf(("Bootstrap: '%s' (version %d, mod '%s', workfolder '%s')\n", cmdline_bootstrap_path(),
-			bootstrap->version, bootstrap->mod_id.c_str(), bootstrap->workfolder.c_str()));
-		for (size_t i = 0; i < bootstrap->roots.size(); ++i) {
-			mprintf(("  roots[%zu]: '%s'\n", i, bootstrap->roots[i].c_str()));
-		}
-	}
+	mod_bootstrap_log();
 
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
@@ -7042,15 +7036,7 @@ int game_main(int argc, char *argv[])
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
 	}
-	const char* bootstrap_path = nullptr;
-	try {
-		bootstrap_path = cmdline_bootstrap_path();
-		mod_bootstrap_init(bootstrap_path);
-	} catch (const std::exception& error) {
-		const auto message = SCP_string("Could not load -bootstrap") +
-			(bootstrap_path ? SCP_string(" '") + bootstrap_path + "'" : "") + ": " + error.what();
-		fprintf(stderr, "%s\n", message.c_str());
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, message.c_str());
+	if (!mod_bootstrap_init_from_cmdline()) {
 		return 1;
 	}
 

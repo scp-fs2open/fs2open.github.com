@@ -900,7 +900,7 @@ void os_init_registry_stuff(const char* company, const char* app)
 	SCP_string mod_id;
 	if (bootstrap) {
 		mod_id = bootstrap->mod_id;
-	} else if (Cmdline_mod != nullptr) {
+	} else if (!Fred_running && Cmdline_mod != nullptr) {
 		SCP_string str = Cmdline_mod;
 		// Trim any trailing folders so we get just the name of the root mod folder
 		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));

@@ -100,6 +100,7 @@ public:
 	 * @returns FALSE otherwise
 	 */
 	virtual BOOL OnOpenDocument(LPCTSTR lpszPathName);
+	BOOL DoSave(LPCTSTR pathname, BOOL replace = TRUE) override;
 
 	/**
 	* @brief Handler for saving a document
@@ -176,6 +177,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 private:
+	bool _saveBootstrapMissionAs = false;
+
 	/**
 	 * @brief Recreate child dialogs.
 	 * @author Goober5000

@@ -75,7 +75,7 @@ class Editor : public QObject {
 	const QString& autosaveDirectory() const { return _autosaveDirectory; }
 
 	/*! Load a mission. */
-	bool loadMission(const std::string& filepath, int flags = 0);
+	bool loadMission(const std::string& filepath, int flags = 0, const std::string& document_path = {});
 
 	void markObject(int objId);
 	void unmarkObject(int objId);
@@ -270,6 +270,7 @@ class Editor : public QObject {
 	QString  _autosaveDirectory;
 	QString  _currentMissionPath;
 
+	QString autosavePathFor(const QString& missionPath) const;
 	void clearMission(bool fast_reload = false);
 
 	void initialSetup();

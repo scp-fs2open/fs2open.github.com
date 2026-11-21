@@ -33,6 +33,7 @@
 #include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
+#include "cfile/mod_bootstrap.h"
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "weapon/weapon.h"
@@ -278,8 +279,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
-	os_init(Osreg_class_name, Osreg_app_name);
-
 	timer_init();
 
 	Assert(strlen(Fred_base_dir) > 0); //-V805
@@ -292,6 +291,12 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		// Command line contained an option that terminates the program immediately
 		exit(1);
 	}
+	if (!mod_bootstrap_init_from_cmdline(Fred_base_dir)) {
+		return false;
+	}
+
+	mod_bootstrap_log();
+	os_init(Osreg_class_name, Osreg_app_name);
 
 #ifndef NDEBUG
 	#if FS_VERSION_REVIS == 0
