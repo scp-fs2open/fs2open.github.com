@@ -38159,7 +38159,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe Ship's Name (ship must be in-mission)\r\n" },
 
 	{ OP_NAV_DEL, "del-nav\r\n"
-		"Deletes a nav point. Takes 1 Argument...\r\n"
+		"Deletes a nav point. Deleting the selected nav point clears the selection and ends autopilot if it is engaged.\r\n"
+		"Takes 1 Argument...\r\n"
 		"\t1:\tNavPoint Name" },
 
 	{ OP_NAV_HIDE, "hide-nav\r\n"
@@ -38218,13 +38219,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 boolean argument.\r\n"
 		"\t1:\tSet to true to enable autopilot, set to false to disable autopilot." },
 
-	{ OP_NAV_SELECT, "nav-select (Action operator)\r\n"
-		"\tSelects a nav point.\r\n\r\n"
+	{ OP_NAV_SELECT, "select-nav (Action operator)\r\n"
+		"\tSelects a nav point. Selecting a different nav point ends autopilot if it is engaged.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the nav point." },
 
-	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
-		"\tDeselects any navpoint selected.\r\n\r\n"
+	{ OP_NAV_UNSELECT, "unselect-nav (Action operator)\r\n"
+		"\tLeaves no nav point selected. Ends autopilot if it is engaged.\r\n\r\n"
 		"Takes no arguments..." },
 
 	{ OP_NAV_SET_COLOR, "nav-set-color (Action operator)\r\n"

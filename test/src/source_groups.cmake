@@ -13,6 +13,10 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("Autopilot"
+    autopilot/test_nav_deselect.cpp
+)
+
 add_file_folder("Bmpman"
     bmpman/test_eff.cpp
 )
