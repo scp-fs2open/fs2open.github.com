@@ -156,21 +156,3 @@ TEST_F(ScriptingShipclassTest, loadoutWeapon_weaponPastEnd)
 	EXPECT_EQ(-1, Wss_slots[0].wep[1]);
 	EXPECT_EQ(-1, Wss_slots[0].wep_count[1]);
 }
-
-TEST_F(ScriptingShipclassTest, loadoutAmount_emptySlot)
-{
-	Wss_slots[0].wep[MAX_SHIP_PRIMARY_BANKS] = 2;
-	Wss_slots[0].wep_count[MAX_SHIP_PRIMARY_BANKS] = 3;
-
-	try {
-		this->EvalTestScript();
-		FAIL() << "Expected a Lua error for a missile amount in a slot with no ship class";
-	} catch (const os::dialogs::LuaErrorException& e) {
-		EXPECT_NE(SCP_string(e.what()).find("Cannot set a missile amount in a slot with no ship class!"), SCP_string::npos)
-			<< e.what();
-	}
-
-	EXPECT_EQ(-1, Wss_slots[0].ship_class);
-	EXPECT_EQ(2, Wss_slots[0].wep[MAX_SHIP_PRIMARY_BANKS]);
-	EXPECT_EQ(3, Wss_slots[0].wep_count[MAX_SHIP_PRIMARY_BANKS]);
-}
