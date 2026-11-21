@@ -16104,7 +16104,10 @@ void multi_sexp_destroy_subsys_instantly()
 	int subsys_index;
 	ship_subsys *ss;
 
-	Current_sexp_network_packet.get_ship(shipp);
+	if (!Current_sexp_network_packet.get_ship(shipp)) {
+		Current_sexp_network_packet.discard_remaining_callback_data();
+		return;
+	}
 
 	// destroy subsystems
 	while (Current_sexp_network_packet.get_int(subsys_index))

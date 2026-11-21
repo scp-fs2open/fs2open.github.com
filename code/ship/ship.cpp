@@ -15550,6 +15550,9 @@ void ship_index_subsystems(ship *shipp)
  */
 ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 {
+	Assertion(index >= 0,
+		"Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
+
 	// multiplayer packets carry these indexes, and the two machines can hold different classes for one ship
 	const auto& sip = Ship_info[sp->ship_info_index];
 	const int n_subsystems = sip.n_subsystems;
@@ -15568,8 +15571,8 @@ ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 		return nullptr;
 	}
 
-	// might need to refresh the cache
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	// might need to refresh the cache; a copied flagset can say the table is built when it is not
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	return sp->subsys_list_indexer[index];
@@ -15589,7 +15592,7 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 
 	// might need to refresh the cache
 	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	Assertion(subsys->parent_subsys_index >= 0, "Somehow a subsystem could not be found in its parent ship %s's subsystem list!", sp->ship_name);

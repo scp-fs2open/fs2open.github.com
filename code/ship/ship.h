@@ -739,7 +739,7 @@ public:
 	// describing the state of all engines combined) -- MWA 4/1/97
 	ship_subsys_sentinel	subsys_list;						//	linked list of subsystems for this ship.
 	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
-	bool	subsys_index_warned;					// an out-of-range subsystem index has been reported for this ship
+	bool	subsys_index_warned = false;			// an out-of-range subsystem index has been reported for this ship
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 

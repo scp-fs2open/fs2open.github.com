@@ -1096,8 +1096,6 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
 		Ships[ship_num].flags.reset();
 		Ships[ship_num].flags.set_from_vector(ship_flags);
-		// the server's flags say its subsystem lookup table is built; ours for this new ship is not
-		Ships[ship_num].flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1188,7 +1186,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
 		
-		// this flag describes a lookup table in our own memory, which the joining machine has not built
+		// this flag describes a lookup table in our own memory; older joining clients trust it and crash
 		auto flags_to_send = shipp->flags;
 		flags_to_send.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 
