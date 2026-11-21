@@ -56,16 +56,15 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 	if (!document) {
 		throw json_exception(error);
 	}
-	if (!json_is_object(document.get())) {
+	if (json_typeof(document.get()) != JSON_OBJECT) {
 		throw std::runtime_error("the top-level value must be a JSON object");
 	}
-	const auto version = json_object_get(document.get(), "version");
-	const auto format_version = json_integer_value(version);
-	if (!json_is_integer(version) || format_version != 1) {
+	const auto format_version = json_integer_value(json_object_get(document.get(), "version"));
+	if (format_version != 1) {
 		throw std::runtime_error("expected bootstrap version 1");
 	}
 	const auto roots = json_object_get(document.get(), "roots");
-	if (!json_is_array(roots)) {
+	if (!roots || json_typeof(roots) != JSON_ARRAY) {
 		throw std::runtime_error("roots must be an array of directory paths");
 	}
 
@@ -76,8 +75,8 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 		result.launch_directory = launch_directory;
 	}
 	const auto mod_id = json_object_get(document.get(), "mod_id");
-	if (mod_id && !json_is_null(mod_id)) {
-		if (!json_is_string(mod_id)) {
+	if (mod_id && json_typeof(mod_id) != JSON_NULL) {
+		if (json_typeof(mod_id) != JSON_STRING) {
 			throw std::runtime_error("mod_id must be a string or null");
 		}
 		result.mod_id = json_string_value(mod_id);
@@ -91,11 +90,12 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 	}
 
 	const auto workfolder = json_object_get(document.get(), "workfolder");
-	if (workfolder && !json_is_null(workfolder) && !json_is_string(workfolder)) {
+	const auto workfolder_type = workfolder ? json_typeof(workfolder) : JSON_NULL;
+	if (workfolder_type != JSON_NULL && workfolder_type != JSON_STRING) {
 		throw std::runtime_error("workfolder must be an absolute path or null");
 	}
 	fs::path base;
-	if (json_is_string(workfolder) && json_string_length(workfolder) != 0) {
+	if (workfolder_type == JSON_STRING && json_string_length(workfolder) != 0) {
 		base = fs::u8path(json_string_value(workfolder));
 	} else if (launch_directory) {
 		base = fs::path(launch_directory);
@@ -112,7 +112,7 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 	json_t* root;
 	json_array_foreach(roots, index, root) {
 		const auto field = "roots[" + std::to_string(index) + "]";
-		if (!json_is_string(root) || json_string_length(root) == 0) {
+		if (!root || json_typeof(root) != JSON_STRING || json_string_length(root) == 0) {
 			throw std::runtime_error(field + " must be a nonempty directory path");
 		}
 		result.roots.push_back(resolve_directory(fs::u8path(json_string_value(root)), base, field));
