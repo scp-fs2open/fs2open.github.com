@@ -14,6 +14,8 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
 using namespace options;
 
 // OptionsManager is a process-wide singleton, so overrides and pending edits set by one test would
@@ -636,6 +638,143 @@ TEST_F(OptionsManagerOverride, UpscaleFilterAppliesWithoutARestart)
 	EXPECT_FALSE(without_ingame);
 	EXPECT_TRUE(applied_linear);
 	EXPECT_TRUE(is_linear);
+}
+
+// 640x480 on a 1920x1080 OpenGL window: the frame fills 1440x1080 in the middle
+class KeepAspectRatio : public OptionsManagerOverride {
+  protected:
+	void SetUp() override
+	{
+		saved_window_res = Cmdline_window_res;
+		saved_mode = gr_screen.mode;
+		saved_w = gr_screen.max_w;
+		saved_h = gr_screen.max_h;
+		saved_state = Gr_configured_window_state;
+		saved_ingame = Using_in_game_options;
+		saved_vr = Cmdline_enable_vr;
+		saved_fred = Fred_running;
+
+		Cmdline_window_res.emplace(static_cast<uint16_t>(1920), static_cast<uint16_t>(1080));
+		gr_screen.mode = GraphicsAPI::OpenGL;
+		gr_screen.max_w = 640;
+		gr_screen.max_h = 480;
+		Gr_configured_window_state = os::ViewportState::Fullscreen;
+		Using_in_game_options = true;
+	}
+
+	void TearDown() override
+	{
+		setKeep(false);
+		Cmdline_window_res = saved_window_res;
+		gr_screen.mode = saved_mode;
+		gr_screen.max_w = saved_w;
+		gr_screen.max_h = saved_h;
+		Gr_configured_window_state = saved_state;
+		Using_in_game_options = saved_ingame;
+		Cmdline_enable_vr = saved_vr;
+		Fred_running = saved_fred;
+		OptionsManagerOverride::TearDown();
+	}
+
+	static void setKeep(bool keep)
+	{
+		std::unique_ptr<json_t> value(keep ? json_true() : json_false());
+		OptionsManager::instance()->getOptionByKey("Graphics.KeepAspectRatio")->valueChanged(value.get());
+	}
+
+	static std::array<int, 4> rect()
+	{
+		std::array<int, 4> r{};
+		gr_present_rect(r[0], r[1], r[2], r[3]);
+		return r;
+	}
+
+	std::optional<std::pair<uint16_t, uint16_t>> saved_window_res;
+	GraphicsAPI saved_mode{};
+	int saved_w = 0, saved_h = 0;
+	os::ViewportState saved_state{};
+	bool saved_ingame = false;
+	bool saved_vr = false;
+	int saved_fred = 0;
+};
+
+TEST_F(KeepAspectRatio, StretchesWhenOff)
+{
+	setKeep(false);
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+}
+
+TEST_F(KeepAspectRatio, PillarboxesAndMapsTheMouse)
+{
+	setKeep(true);
+	EXPECT_EQ(rect(), (std::array<int, 4>{240, 0, 1440, 1080}));
+
+	float x = 240.0f + 720.0f, y = 540.0f;
+	gr_window_to_render_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 320.0f);
+	EXPECT_FLOAT_EQ(y, 240.0f);
+	gr_render_to_window_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 960.0f);
+	EXPECT_FLOAT_EQ(y, 540.0f);
+
+	float dx = 225.0f, dy = 225.0f;
+	gr_window_to_render_delta(dx, dy);
+	EXPECT_FLOAT_EQ(dx, 100.0f);
+	EXPECT_FLOAT_EQ(dy, 100.0f);
+}
+
+TEST_F(KeepAspectRatio, LetterboxesATallerScreen)
+{
+	setKeep(true);
+	Cmdline_window_res.emplace(static_cast<uint16_t>(1280), static_cast<uint16_t>(1024));
+	gr_screen.max_w = 1920;
+	gr_screen.max_h = 1080;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 152, 1280, 720}));
+
+	float x = 640.0f, y = 152.0f + 360.0f;
+	gr_window_to_render_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 960.0f);
+	EXPECT_FLOAT_EQ(y, 540.0f);
+	gr_render_to_window_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 640.0f);
+	EXPECT_FLOAT_EQ(y, 512.0f);
+}
+
+// 1720x720 on 1920x1080 leaves 277 rows; the odd row goes to the bottom bar, where the blit puts it
+TEST_F(KeepAspectRatio, OddBarTotalPutsTheExtraRowAtTheBottom)
+{
+	setKeep(true);
+	gr_screen.max_w = 1720;
+	gr_screen.max_h = 720;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 138, 1920, 803}));
+
+	float x = 0.0f, y = 138.0f;
+	gr_window_to_render_pos(x, y);
+	EXPECT_FLOAT_EQ(y, 0.0f);
+	gr_render_to_window_pos(x, y);
+	EXPECT_FLOAT_EQ(y, 138.0f);
+}
+
+TEST_F(KeepAspectRatio, InEveryWindowMode)
+{
+	setKeep(true);
+	for (auto state : {os::ViewportState::Windowed, os::ViewportState::Borderless}) {
+		Gr_configured_window_state = state;
+		EXPECT_EQ(rect(), (std::array<int, 4>{240, 0, 1440, 1080}));
+	}
+}
+
+TEST_F(KeepAspectRatio, StretchesInVulkanVRAndFRED)
+{
+	setKeep(true);
+	gr_screen.mode = GraphicsAPI::Vulkan;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+	gr_screen.mode = GraphicsAPI::OpenGL;
+	Cmdline_enable_vr = true;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+	Cmdline_enable_vr = false;
+	Fred_running = 1;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
 }
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
