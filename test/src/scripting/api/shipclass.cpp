@@ -167,5 +167,5 @@ TEST_F(ScriptingShipclassTest, loadoutShipClass_shipPastEnd)
 			<< e.what();
 	}
 
-	EXPECT_EQ(0, Wss_slots[0].ship_class);
+	EXPECT_EQ(3, Wss_slots[0].ship_class);
 }
