@@ -176,7 +176,8 @@ const char *cf_get_filename(const CFILE *cfile);
 int cf_get_dir_type(const CFILE *cfile);
 
 // Opens the file.  If no path is given, use the extension to look into the
-// default path.  If mode is NULL, delete the file.
+// default path.  If mode is NULL, delete the file.  When reading, localize
+// opens the copy in the current language's subfolder if there is one.
 CFILE* _cfopen(const char* source_file, int line, const char* filename, const char* mode,
                int dir_type = CF_TYPE_ANY, bool localize = false, uint32_t location_flags = CF_LOCATION_ALL);
 #define cfopen(...) _cfopen(LOCATION, __VA_ARGS__) // Pass source location to the function
@@ -419,6 +420,10 @@ struct CFileLocationExt : public CFileLocation {
 // Returns: If not found returns -1, else returns offset into ext_list.
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
 CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype);
+
+// the localized version of a file (in the current language's subfolder) if it exists, otherwise the file as given
+// the language folder goes directly before the filename, so for a bare name it must be directly inside the path type's folder
+SCP_string cf_localize_filename(const char* filename, int pathtype, int num_ext = 0, const char** ext_list = nullptr);
 
 // Functions to change directories
 int cfile_chdir(const char *dir);

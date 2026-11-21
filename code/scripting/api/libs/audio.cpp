@@ -342,8 +342,9 @@ ADE_FUNC(pauseMusic,
 ADE_FUNC(openAudioStream,
 	l_Audio,
 	"string fileName, enumeration stream_type /* AUDIOSTREAM_* */",
-	"Opens an audio stream of the specified file and type. An audio stream is meant for more long time sounds since "
-	"they are streamed from the file instead of loaded in its entirety.",
+	"Opens an audio stream of the specified file and type. An audio stream is meant for longer sounds since "
+	"it is streamed from the file instead of loaded in its entirety. A voice stream (AUDIOSTREAM_VOICE) will open "
+	"a localized file (i.e. a copy in the current language's subfolder) if one exists.",
 	"audio_stream",
 	"A handle to the opened stream or invalid on error")
 {
