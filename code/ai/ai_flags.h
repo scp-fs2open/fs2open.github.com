@@ -208,6 +208,7 @@ namespace AI {
 									// b) a dynamic chase saves previous_mode/previous_submode; it and strafe entry leave them alone during an ongoing dynamic goal (evading a weapon still overwrites them, which is harmless since the evade resume re-processes orders);
 									// c) resuming guard duty discards any subsystem target and path left over from the interruption;
 									// d) a ship ordered to guard itself, or to guard a wing it leads (including one that becomes leader mid-mission), treats that goal as unachievable instead of holding it forever
+		Player_wing_orders_same_priority_as_ship_orders,	// player orders to a wing get the same goal priority as orders to an individual ship, rather than a lower one
 
 		NUM_VALUES
 	};

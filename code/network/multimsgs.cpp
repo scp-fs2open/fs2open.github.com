@@ -4422,10 +4422,9 @@ void send_player_order_packet(int type, int index, int cmd)
 	val = (ubyte)type;
 	ADD_DATA(val);         // ship order or wing order, or message all fighters
 
-	// if we are not messaging all ships or wings, add the index, which is the shipnum or wingnum
-	if ( val != SQUAD_MSG_ALL ){
-		ADD_INT(index);  // net signature of target ship
-	}
+	// for a ship order the index is the ship's net signature and for a wing order the wingnum; for SQUAD_MSG_ALL
+	// it is the SmallCraftFlavor, so that all-fighters and all-bombers don't degrade to fighters-and-bombers
+	ADD_INT(index);
 
 	ADD_INT(cmd);         // the command itself
 
@@ -4469,10 +4468,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	
 	GET_DATA( type );
-	if ( type != SQUAD_MSG_ALL ){
-		GET_INT( index );
-	}
-
+	GET_INT( index );	// ship net signature or wingnum, or the SmallCraftFlavor for SQUAD_MSG_ALL
 	GET_INT( command );
 	GET_USHORT( target_net_signature );
 	GET_SHORT( t_subsys );
@@ -4488,6 +4484,12 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	objp = &Objects[Net_players[player_num].m_player->objnum];
 	if ( objp->type != OBJ_SHIP ) {
 		nprintf(("Network", "not doing player order because object requestting is not a ship\n"));
+		return;
+	}
+
+	// the command indexes Player_orders
+	if ( !SCP_vector_inbounds(Player_orders, command) ) {
+		nprintf(("Network", "Received player order packet with invalid command %d\n", command));
 		return;
 	}
 
@@ -4511,8 +4513,18 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	// check to see if the type of order is a reinforcement call.  If so, intercept it, and
 	// then call them in.
 	if ( type == SQUAD_MSG_REINFORCEMENT ) {
-		Assert(Reinforcements.in_bounds(index));
+		if ( !Reinforcements.in_bounds(index) ) {
+			nprintf(("Network", "Received player order packet with invalid reinforcement %d\n", index));
+			return;
+		}
+
 		hud_squadmsg_call_reinforcement(Reinforcements[index], player_num);
+		return;
+	}
+
+	// only the reinforcement call sends the placeholder order
+	if ( command == NO_ORDER_ITEM ) {
+		nprintf(("Network", "Received player order packet with no order\n"));
 		return;
 	}
 
@@ -4527,8 +4539,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	}
 
 	targeted_subsys = NULL;
-	if ( t_subsys != -1 ) {
-		Assert( target_objp != NULL );
+	if ( (t_subsys >= 0) && (target_objp->type == OBJ_SHIP) && (t_subsys < ship_get_num_subsys(&Ships[target_objp->instance])) ) {
 		targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 	}
 
@@ -4546,11 +4557,34 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	aip->targeted_subsys = targeted_subsys;
 
 	if ( type == SQUAD_MSG_SHIP ) {
-		hud_squadmsg_send_ship_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
+		// here the index is the ordered ship's net signature
+		object *ordered_objp = nullptr;
+		if ( (index > 0) && (index <= USHRT_MAX) ) {
+			ordered_objp = multi_get_network_object(static_cast<ushort>(index));
+		}
+
+		if ( (ordered_objp != nullptr) && (ordered_objp->type == OBJ_SHIP) ) {
+			hud_squadmsg_send_ship_command(ordered_objp->instance, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
+		} else {
+			nprintf(("Network", "Received player order packet for net signature %d, which is not a ship\n", index));
+		}
 	} else if ( type == SQUAD_MSG_WING ) {
-		hud_squadmsg_send_wing_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
+		if ( (index >= 0) && (index < Num_wings) && (Wings[index].current_count > 0) ) {
+			hud_squadmsg_send_wing_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
+		} else {
+			nprintf(("Network", "Received player order packet with invalid wing %d\n", index));
+		}
 	} else if ( type == SQUAD_MSG_ALL ) {
-		hud_squadmsg_send_to_all_fighters( command, player_num );
+		// here the index is the SmallCraftFlavor; validate it, since it came off the wire
+		auto flavor = SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS;
+		if ( (index >= static_cast<int>(SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS))
+			&& (index <= static_cast<int>(SmallCraftFlavor::ALL_BOMBERS)) ) {
+			flavor = static_cast<SmallCraftFlavor>(index);
+		} else {
+			mprintf(("Received player order packet with invalid small craft flavor %d; assuming all fighters and bombers\n", index));
+		}
+
+		hud_squadmsg_send_to_all_fighters( command, player_num, flavor );
 	}
 
 	Assert(tobjnum_save != Ships[aip->shipnum].objnum);	//	make sure not targeting self
