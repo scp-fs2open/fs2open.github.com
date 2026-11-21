@@ -439,7 +439,7 @@ void std_connect_handle_passwd_change()
 int std_connect_lindex_to_npindex(int index)
 {
 	HWND ctrl;			
-	// a list line holds an IPv6 address of up to 45 characters and a ping
+	// a line on this list holds an IPv6 address of up to 45 characters and a ping
 	char list_text[100];
 	char addr_text[50];
 	int ret,idx;
