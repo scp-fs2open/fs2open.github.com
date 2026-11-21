@@ -372,12 +372,10 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 				if (fpi->active == 2) {
 					setGaugeColor(HUD_C_BRIGHT, config);
 					filled = true;
-				}
-				else if (fpi->active == 1) {
+				} else if (fpi->active == 1) {
 					setGaugeColor(HUD_C_NORMAL, config);
 					filled = true;
-				}
-				else {
+				} else {
 					setGaugeColor(HUD_C_DIM, config);
 					filled = false;
 				}
