@@ -250,7 +250,7 @@ ADE_VIRTVAR(Disabled,
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "b", current.getControl()->disabled);
+	return ade_set_args(L, "b", control_config_is_hidden(*current.getControl()));
 }
 
 ADE_VIRTVAR(IsAxis,

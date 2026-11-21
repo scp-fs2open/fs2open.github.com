@@ -758,7 +758,7 @@ void hud_config_render_gauges(bool API_Access)
 				gauge->setFont();
 				gauge->render(0, true);
 			}
-			if (HC_gauge_list_clear) {
+			if (HC_gauge_list_clear && hud_config_controls_gauge(gauge.get())) {
 				HC_gauge_map.emplace_back(std::make_pair(gauge->getConfigId(), gauge.get()));
 			}
 		}
@@ -771,7 +771,7 @@ void hud_config_render_gauges(bool API_Access)
 				gauge->setFont();
 				gauge->render(0, true);
 			}
-			if (HC_gauge_list_clear) {
+			if (HC_gauge_list_clear && hud_config_controls_gauge(gauge.get())) {
 				HC_gauge_map.emplace_back(std::make_pair(gauge->getConfigId(), gauge.get()));
 			}
 		}

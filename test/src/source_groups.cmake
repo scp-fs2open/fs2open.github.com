@@ -26,6 +26,7 @@ add_file_folder("CFile"
 )
 
 add_file_folder("Controlconfig"
+    controlconfig/autoshield.cpp
     controlconfig/test_bindings.cpp
 )
 

@@ -621,6 +621,11 @@ public:
 HudGauge *hud_get_custom_gauge(const char *name, bool check_all_gauges = false);
 int hud_get_default_gauge_index(const char *name);
 HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges = false);
+/**
+ * @brief Whether the player's current HUD has a gauge of this object type (HUD_OBJECT_*) that would draw right now
+ */
+bool hud_player_gauge_can_render(int object_type);
+bool hud_config_controls_gauge(const HudGauge* gauge);
 
 extern SCP_vector<SCP_polymorphic<HudGauge>> default_hud_gauges;
 

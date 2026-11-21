@@ -4382,6 +4382,26 @@ int hud_get_default_gauge_index(const char *name)
 	return -1;
 }
 
+bool hud_config_controls_gauge(const HudGauge* gauge)
+{
+	// the Auto Shields indicator is switched by its in-game option, not by HUD Config
+	return gauge->getObjectType() != HUD_OBJECT_AUTO_SHIELDS;
+}
+
+bool hud_player_gauge_can_render(int object_type)
+{
+	if ((Player_ship == nullptr) || (Player_ship->ship_info_index < 0)) {
+		return false;
+	}
+
+	const auto& sip_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges;
+	const auto& gauges = sip_gauges.empty() ? default_hud_gauges : sip_gauges;
+
+	return std::any_of(gauges.begin(), gauges.end(), [object_type](const auto& gauge) {
+		return gauge->getObjectType() == object_type && gauge->canRender();
+	});
+}
+
 HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges)
 {
 	auto gauge = hud_get_custom_gauge(name, check_all_custom_gauges);

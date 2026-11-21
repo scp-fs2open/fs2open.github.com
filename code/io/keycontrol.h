@@ -36,5 +36,22 @@ void process_set_of_keys(int key, int count, int *list);
 void game_process_pause_key();
 void button_strip_noncritical_keys(button_info *bi);
 
+class player;
+/**
+ * @brief Whether the player has allowed auto shield equalization in the options (or a mod preset it)
+ */
+bool auto_shield_equalize_allowed();
+
+/**
+ * @brief Whether auto shield equalization is actually in effect for this player: allowed in the options,
+ * toggled on, not paused, and Equalize Shields not blocked by a table, mission or script
+ */
+bool auto_shield_equalize_running(const player* pl);
+
+/**
+ * @brief After the controls tables are read: in each preset, unbinds the toggle from any key the table already gives
+ * another control
+ */
+void auto_shield_equalize_init_control();
 
 #endif
