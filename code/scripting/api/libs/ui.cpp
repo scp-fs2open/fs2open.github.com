@@ -1681,6 +1681,13 @@ ADE_FUNC(get3dOverheadChoices,
 		(int)Default_overhead_ship_style);
 }
 
+// The loadout slots, wings and pools are null outside ship and weapon selection, including during a mission.
+// initSelect() sets them without setting Common_select_inited, so check the pointers rather than that flag.
+static bool loadout_data_ready()
+{
+	return Wss_slots != nullptr && Ss_wings != nullptr && Ss_pool != nullptr && Wl_pool != nullptr;
+}
+
 ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
 ADE_INDEXER(l_Ship_Pool,
 	"number Index, number amount",
@@ -1691,6 +1698,9 @@ ADE_INDEXER(l_Ship_Pool,
 	int idx;
 	int amount;
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
+		return ADE_RETURN_NIL;
+
+	if (Ss_pool == nullptr)
 		return ADE_RETURN_NIL;
 
 	if (idx < 1 || idx > ship_info_size()) {
@@ -1732,6 +1742,9 @@ ADE_INDEXER(l_Weapon_Pool,
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
+	if (Wl_pool == nullptr)
+		return ADE_RETURN_NIL;
+
 	if (idx < 1 || idx > weapon_info_size()) {
 		return ADE_RETURN_NIL;
 	};
@@ -1771,6 +1784,9 @@ ADE_FUNC(resetSelect,
 
 	SCP_UNUSED(L); // unused parameter
 
+	if (!loadout_data_ready())
+		return ADE_RETURN_NIL;
+
 	//Reset ships pool
 	ss_init_pool(&Team_data[Common_team]);
 	ss_init_units();
@@ -1802,6 +1818,9 @@ ADE_INDEXER(l_Loadout_Wings,
 ADE_FUNC(__len, l_Loadout_Wings, nullptr, "The number of loadout wings", "number", "The number of loadout wings.")
 {
 	int count = 0;
+
+	if (Ss_wings == nullptr)
+		return ade_set_args(L, "i", count);
 
 	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
 		if (Ss_wings[i].ss_slots[0].in_mission)
@@ -1846,6 +1865,9 @@ ADE_FUNC(sendShipRequestPacket,
 	if (!ade_get_args(L, "iiiii", &fromType, &toType, &fromSlot, &toSlot, &shipClassIdx))
 		return ADE_RETURN_NIL;
 
+	if (!loadout_data_ready())
+		return ADE_RETURN_NIL;
+
 	// --revelant points to convert from lua indecies to c
 	multi_ts_drop(fromType, --fromSlot, toType, --toSlot,  --shipClassIdx);
 
@@ -1865,6 +1887,9 @@ ADE_FUNC(sendWeaponRequestPacket,
 	int toList;
 	int shipSlot;
 	if (!ade_get_args(L, "iiiii", &fromBank, &toBank, &fromList, &toList, &shipSlot))
+		return ADE_RETURN_NIL;
+
+	if (!loadout_data_ready())
 		return ADE_RETURN_NIL;
 
 	// --revelant points to convert from lua indecies to c

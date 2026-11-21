@@ -1,4 +1,5 @@
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
@@ -155,4 +156,27 @@ TEST_F(ScriptingShipclassTest, loadoutWeapon_weaponPastEnd)
 
 	EXPECT_EQ(-1, Wss_slots[0].wep[1]);
 	EXPECT_EQ(-1, Wss_slots[0].wep_count[1]);
+}
+
+TEST_F(ScriptingShipclassTest, loadout_outsideSelection)
+{
+	// Outside ship and weapon selection, including during a mission, these are null.
+	// TearDown restores Wss_slots.
+	struct RestorePointers {
+		ss_wing_info* wings = Ss_wings;
+		SCP_map<int, int>* ship_pool = Ss_pool;
+		SCP_map<int, int>* weapon_pool = Wl_pool;
+		~RestorePointers()
+		{
+			Ss_wings = wings;
+			Ss_pool = ship_pool;
+			Wl_pool = weapon_pool;
+		}
+	} restore;
+	Wss_slots = nullptr;
+	Ss_wings = nullptr;
+	Ss_pool = nullptr;
+	Wl_pool = nullptr;
+
+	this->EvalTestScript();
 }
