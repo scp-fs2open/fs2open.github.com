@@ -142,7 +142,7 @@ namespace
 
 		float dx = e.motion.xrel;
 		float dy = e.motion.yrel;
-		gr_window_to_render_pos(dx, dy);
+		gr_window_to_render_delta(dx, dy);
 
 		mouse_event(x, y, dx, dy);
 

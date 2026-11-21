@@ -1289,21 +1289,68 @@ static const SCP_vector<std::pair<int, std::pair<const char*, int>>> UpscaleFilt
                                                                                            {1, {"Nearest", -1}}};
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto UpscaleFilterOption __UNUSED = options::OptionBuilder<int>("Graphics.UpscaleFilter",
+static auto UpscaleFilterOption = options::OptionBuilder<int>("Graphics.UpscaleFilter",
                      std::pair<const char*, int>{"Upscale Filter", -1},
-                     std::pair<const char*, int>{"OpenGL only. How the frame is scaled to the window when the window size differs from the render resolution. Nearest keeps sharp pixels, square at whole-number scales. Vulkan always uses nearest, after FSR when FSR is on. VR output does not change.", -1})
+                     std::pair<const char*, int>{"How the frame is scaled to the window when the window size differs from the render resolution. Nearest keeps sharp pixels, square at whole-number scales. VR output does not change. Not available with HUD at output resolution.", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .values(UpscaleFilterValues)
                      .default_val(0)
                      .bind_to(&Upscale_filter)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .importance(0)
+                     .importance(97)
                      .finish();
 
 bool gr_upscale_nearest()
 {
-	return Using_in_game_options && Upscale_filter == 1;
+	// With the HUD at output resolution, the scene is already scaled with linear filtering into a back buffer that
+	// covers the window, and Nearest would only drop HUD rows when that buffer is scaled down
+	return Using_in_game_options && Upscale_filter == 1 && !Gr_native_res_hud;
+}
+
+static bool Keep_aspect_ratio = false;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto KeepAspectRatioOption = options::OptionBuilder<bool>("Graphics.KeepAspectRatio",
+                     std::pair<const char*, int>{"Keep Aspect Ratio", -1},
+                     std::pair<const char*, int>{"When the render resolution has a different shape than the window, show it at its own aspect ratio with black bars instead of stretching it. Not available with HUD at output resolution.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(false)
+                     .bind_to(&Keep_aspect_ratio)
+                     .importance(96)
+                     .finish();
+
+void gr_present_rect(int& x, int& y, int& w, int& h)
+{
+	Assertion(Cmdline_window_res, "gr_present_rect() needs -window_res, which every non-FRED run sets");
+	x = 0;
+	y = 0;
+	w = Cmdline_window_res->first;
+	h = Cmdline_window_res->second;
+
+	// Only the OpenGL window output has bars. The HUD at output resolution covers the window, so it is not shrunk.
+	if (!Using_in_game_options || !Keep_aspect_ratio || gr_screen.mode != GraphicsAPI::OpenGL || Cmdline_enable_vr ||
+		Fred_running || Gr_native_res_hud) {
+		return;
+	}
+
+	// A fit within one pixel of the window is rounding, not a different shape: no bar, and no clear every frame
+	const auto src_w = static_cast<int64_t>(gr_screen.max_w);
+	const auto src_h = static_cast<int64_t>(gr_screen.max_h);
+	if (w * src_h > h * src_w) {
+		const int fit_w = static_cast<int>(h * src_w / src_h);
+		if (w - fit_w > 1) {
+			x = (w - fit_w) / 2;
+			w = fit_w;
+		}
+	} else {
+		const int fit_h = static_cast<int>(w * src_h / src_w);
+		if (h - fit_h > 1) {
+			y = (h - fit_h) / 2;
+			h = fit_h;
+		}
+	}
 }
 
 // trilinear, which the launcher setting has always defaulted to
@@ -2210,8 +2257,22 @@ void gr_window_to_render_pos(float& x, float& y)
 		return;
 	}
 
-	x *= i2fl(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first);
-	y *= i2fl(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second);
+	int rx, ry, rw, rh;
+	gr_present_rect(rx, ry, rw, rh);
+	x = (x - i2fl(rx)) * i2fl(gr_screen.max_w) / i2fl(rw);
+	y = (y - i2fl(ry)) * i2fl(gr_screen.max_h) / i2fl(rh);
+}
+
+void gr_window_to_render_delta(float& dx, float& dy)
+{
+	if (!Cmdline_window_res) {
+		return;
+	}
+
+	int rx, ry, rw, rh;
+	gr_present_rect(rx, ry, rw, rh);
+	dx *= i2fl(gr_screen.max_w) / i2fl(rw);
+	dy *= i2fl(gr_screen.max_h) / i2fl(rh);
 }
 
 void gr_render_to_window_pos(float& x, float& y)
@@ -2220,8 +2281,10 @@ void gr_render_to_window_pos(float& x, float& y)
 		return;
 	}
 
-	x *= static_cast<float>(Cmdline_window_res->first) / i2fl(gr_screen.max_w);
-	y *= static_cast<float>(Cmdline_window_res->second) / i2fl(gr_screen.max_h);
+	int rx, ry, rw, rh;
+	gr_present_rect(rx, ry, rw, rh);
+	x = x * i2fl(rw) / i2fl(gr_screen.max_w) + i2fl(rx);
+	y = y * i2fl(rh) / i2fl(gr_screen.max_h) + i2fl(ry);
 }
 
 int gr_get_resolution_class(int width, int height)
@@ -2901,6 +2964,15 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		options_mgr->removeOption(HDRPeakOption);
 	}
 	shadows_remove_unsupported_options();
+
+	// Only the OpenGL window output uses these two, and not with the HUD at output resolution. Not removed on Stub:
+	// the unit tests look them up.
+	if (gr_screen.mode == GraphicsAPI::Vulkan || Gr_native_res_hud) {
+		options::OptionsManager::instance()->removeOption(UpscaleFilterOption);
+	}
+	if (gr_screen.mode == GraphicsAPI::Vulkan || Gr_native_res_hud || Cmdline_enable_vr) {
+		options::OptionsManager::instance()->removeOption(KeepAspectRatioOption);
+	}
 
 	if(Cmdline_enable_vr)
 		openxr_init();

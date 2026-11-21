@@ -165,7 +165,17 @@ void gr_opengl_flip()
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_BACK);
-		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, gr_upscale_nearest() ? GL_NEAREST : GL_LINEAR);
+		int rx, ry, rw, rh;
+		gr_present_rect(rx, ry, rw, rh);
+		if (rw != Cmdline_window_res->first || rh != Cmdline_window_res->second) {
+			// The window keeps old contents, so clear the bars each frame. glClear obeys the color mask and the scissor.
+			GL_state.ColorMask(true, true, true, true);
+			GL_state.ScissorTest(GL_FALSE);
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
+		const int bottom = gr_present_rect_bottom(ry, rh, Cmdline_window_res->second);
+		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), rx, bottom, rx + rw, bottom + rh, GL_COLOR_BUFFER_BIT, gr_upscale_nearest() ? GL_NEAREST : GL_LINEAR);
 		glDrawBuffer(GL_NONE);
 
 		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
