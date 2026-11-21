@@ -271,7 +271,6 @@ ADE_INDEXER(l_Loadout_Amount,
 			if (wip->subtype == WP_LASER) {
 				capacity = 1;
 			} else {
-				// Only a missile's capacity depends on the ship class
 				int ship_class = current.getBank()->ship_class;
 				if (!Ship_info.in_bounds(ship_class)) {
 					LuaError(L, "Cannot set a missile amount in a slot with no ship class!");
@@ -326,8 +325,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 	int ship_class = current.getBank()->ship_class;
 	ship_info* sip = Ship_info.in_bounds(ship_class) ? &Ship_info[ship_class] : nullptr;
 	int bankType = -1;
-	// Decide if we're setting a valid primary or secondary bank on the current ship class.
-	// A slot with no ship class has no valid bank.
+	// Decide if we're setting a valid primary or secondary bank on the current ship class
 	if (sip != nullptr) {
 		if (bank <= sip->num_primary_banks) {
 			bankType = WP_LASER;
