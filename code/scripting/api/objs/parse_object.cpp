@@ -284,7 +284,7 @@ ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the p
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&poh->getObject()->orient)));
 }
 
-ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed ship.", "shipclass", "The ship class")
+ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed ship. Setting it before the ship arrives changes the class the way change-ship-class does, and parse subsystem handles taken earlier may then refer to a different subsystem.", "shipclass", "The ship class")
 {
 	parse_object_h* poh = nullptr;
 	int newClass        = -1;
@@ -297,8 +297,13 @@ ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed
 	if (!poh->isValid())
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	if (ADE_SETTING_VAR && newClass >= 0) {
-		poh->getObject()->ship_class = newClass;
+	if (ADE_SETTING_VAR && newClass >= 0 && newClass != poh->getObject()->ship_class) {
+		auto entry = ship_registry_get(poh->getObject()->name);
+		if (entry != nullptr && entry->status == ShipStatus::NOT_YET_PRESENT) {
+			swap_parse_object(poh->getObject(), newClass);
+		} else {
+			poh->getObject()->ship_class = newClass;
+		}
 	}
 
 	return ade_set_args(L, "o", l_Shipclass.Set(poh->getObject()->ship_class));
