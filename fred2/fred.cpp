@@ -22,6 +22,8 @@
 #include "CampaignTreeView.h"
 #include "CampaignTreeWnd.h"
 
+#include "cfile/cfilesystem.h"
+#include "cfile/mod_bootstrap.h"
 #include "globalincs/mspdb_callstack.h"
 #include "graphics/2d.h"
 #include "io/key.h"
@@ -336,6 +338,14 @@ BOOL CFREDApp::InitInstance() {
 	OnFileNew();
 
 	if (m_pMainWnd == NULL) return FALSE;
+
+	if (mod_bootstrap_get()) {
+		SCP_string directory;
+		if (cf_create_default_path_string(directory, CF_TYPE_MISSIONS, nullptr,
+			CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_PRIMARY_MOD)) {
+			m_sInitialDir = directory.c_str();
+		}
+	}
 
 	// apply the saved main menu layout preference (the new layout is loaded by default)
 	if (Classic_menu_layout)

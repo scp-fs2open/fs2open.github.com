@@ -8,6 +8,7 @@
 */
 
 #include "cmdline/cmdline.h"
+#include "cfile/mod_bootstrap.h"
 #include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
 #include "cfile/cfilesystem.h"
 #include "fireball/fireballs.h"
@@ -423,6 +424,12 @@ int Cmdline_no_enhanced_sound = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
+cmdline_parm bootstrap_arg("-bootstrap", "Load the ordered mod roots from an absolute bootstrap.json path", AT_STRING);
+
+const char* cmdline_bootstrap_path()
+{
+	return bootstrap_arg.found() ? bootstrap_arg.str() : nullptr;
+}
 cmdline_parm campaign_arg("-campaign", "Set current campaign", AT_STRING);	// Cmdline_campaign
 
 char *Cmdline_mod = NULL; //DTP for mod argument
@@ -671,7 +678,11 @@ SCP_string cmdline_build_string()
 			cmdline << " " << parmp->name;
 
 			if (parmp->args) {
-				cmdline << " " << parmp->args;
+				if (parmp == &bootstrap_arg) {
+					cmdline << " \"" << parmp->args << '"';
+				} else {
+					cmdline << " " << parmp->args;
+				}
 			}
 
 			found++;
@@ -683,6 +694,20 @@ SCP_string cmdline_build_string()
 	}
 
 	return cmdline.str();
+}
+
+SCP_vector<SCP_string> cmdline_build_args()
+{
+	SCP_vector<SCP_string> args;
+	for (auto parm = GET_FIRST(&Parm_list); parm != END_OF_LIST(&Parm_list); parm = GET_NEXT(parm)) {
+		if (parm->name_found) {
+			args.emplace_back(parm->name);
+			if (parm->args) {
+				args.emplace_back(parm->args);
+			}
+		}
+	}
+	return args;
 }
 
 // prints simple cmdline to multi.log
@@ -1917,7 +1942,7 @@ bool SetCmdlineParams()
 	}
 
 
-	if(mod_arg.found() ) {
+	if (mod_arg.found() && !bootstrap_arg.found()) {
 		Cmdline_mod = mod_arg.str();
 
 		// strip off blank space if it's there

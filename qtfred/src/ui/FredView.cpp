@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QKeyEvent>
 #include <QProcess>
+#include <cfile/mod_bootstrap.h>
 #include <QSignalBlocker>
 #include <QSettings>
 #include <QDateTime>
@@ -83,7 +84,7 @@
 #include "mission/object.h"
 
 // Forward-declare global-scope function before entering any namespace
-SCP_string cmdline_build_string();
+SCP_vector<SCP_string> cmdline_build_args();
 
 namespace {
 
@@ -372,11 +373,13 @@ void FredView::loadMissionFile(const QString& pathName, int flags) {
 		// probably good to clear selections in qtFRED too
 		fred->clean_up_selections();
 
-		auto pathToLoad = pathName.toStdString();
+		const auto originalPath = pathName.toStdString();
+		auto pathToLoad = originalPath;
 		if (!(flags & MPF_IS_TEMPLATE) && _viewport->Offer_autosave_recovery)
 			fred->maybeUseAutosave(pathToLoad);
 
-		fred->loadMission(pathToLoad, flags);
+		const auto documentPath = mod_bootstrap_get() && pathToLoad != originalPath ? originalPath : std::string{};
+		fred->loadMission(pathToLoad, flags, documentPath);
 
 		QApplication::restoreOverrideCursor();
 		autoRunErrorChecker();
@@ -521,12 +524,12 @@ bool FredView::saveMissionAs() {
 	if (!performPreSaveCheck(&fixCount))
 		return false;
 
-	const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
-	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
-	if (saveName.isEmpty())
+	const QString lastDir = mod_bootstrap_get()
+		? fso::fred::util::getLastDir("missions/bootstrapSaveMission", QDir::homePath())
+		: fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
+	const auto selectedPath = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
+	if (selectedPath.isEmpty())
 		return false;
-
-	fso::fred::util::saveLastDir("missions/saveMission", saveName);
 
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
@@ -537,7 +540,13 @@ bool FredView::saveMissionAs() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	const auto nativePath = QDir::toNativeSeparators(selectedPath);
+	if (save.save_mission_file(nativePath.toUtf8().constData())) {
+		QMessageBox::warning(this, tr("Save mission"), tr("Could not save %1.").arg(selectedPath));
+		return false;
+	}
+	saveName = selectedPath;
+	fso::fred::util::saveLastDir(mod_bootstrap_get() ? "missions/bootstrapSaveMission" : "missions/saveMission", selectedPath);
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
 
@@ -801,9 +810,14 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 		return;
 	}
 
-	QString args = QString::fromStdString(cmdline_build_string());
+	QStringList args;
+	for (const auto& arg : cmdline_build_args()) {
+		args.append(QString::fromStdString(arg));
+	}
+	const auto bootstrap = mod_bootstrap_get();
+	const auto workingDir = bootstrap ? QString::fromStdString(bootstrap->launch_directory) : QString();
 
-	if (!QProcess::startDetached(exePath, args.split(' ', Qt::SkipEmptyParts))) {
+	if (!QProcess::startDetached(exePath, args, workingDir)) {
 		QMessageBox::warning(this, tr("Run FreeSpace"),
 			tr("Failed to launch: %1").arg(exePath));
 	}
@@ -840,7 +854,9 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	if (!filepath.empty()) {
 		auto qpath = QString::fromStdString(filepath);
 		// Templates are loaded to edit, not saved back to their original path
-		if (!qpath.endsWith(".fst", Qt::CaseInsensitive)) {
+		if (mod_bootstrap_contains_path(filepath)) {
+			saveName.clear();
+		} else if (!qpath.endsWith(".fst", Qt::CaseInsensitive)) {
 			saveName = qpath;
 		}
 		addToRecentFiles(qpath);
@@ -849,7 +865,7 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	}
 
 	// Update autosave path and start/stop timer based on whether we have a named file.
-	fred->setCurrentMissionPath(saveName);
+	fred->setCurrentMissionPath(mod_bootstrap_get() ? QString::fromStdString(filepath) : saveName);
 	restartAutosaveTimer();
 
 	_missionModified = false;

@@ -1,11 +1,17 @@
 
 #include <cfile/cfile.h>
 #include <cfile/cfilesystem.h>
+#include <cfile/mod_bootstrap.h>
 #include <globalincs/systemvars.h>
 #include <graphics/font.h>
 #include <gtest/gtest.h>
+#include <libs/jansson.h>
 #include <osapi/dialogs.h>
 #include <utils/finally.h>
+
+#include <SDL3/SDL_timer.h>
+#include <filesystem>
+#include <fstream>
 
 #include "util/FSTestFixture.h"
 
@@ -44,6 +50,47 @@ TEST_F(CFileInitTest, right_data_case) {
 	ASSERT_FALSE(cfile_init(cfile_dir.c_str()));
 
 	ASSERT_TRUE(cf_exists("ships.tbl", CF_TYPE_TABLES));
+}
+
+TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
+{
+	namespace fs = std::filesystem;
+	const auto base = (fs::path(TEST_DATA_PATH) / "cfile").lexically_normal();
+	const auto primary = base / "right_data_case";
+	const auto manifest = fs::temp_directory_path() / ("fso-bootstrap-" + std::to_string(SDL_GetTicksNS()) + ".json");
+	auto cleanup = util::finally([&] {
+		mod_bootstrap_init(nullptr);
+		std::error_code error;
+		fs::remove(manifest, error);
+	});
+
+	const std::unique_ptr<json_t> json(json_pack("{s:i,s:s,s:s,s:[s,s,s]}",
+		"version", 1, "mod_id", "test-mod", "workfolder", base.u8string().c_str(),
+		"roots", primary.u8string().c_str(), "wrong_data_case", "list_files_in_vps_and_dirs"));
+	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json_dump_string(json.get(), 0));
+	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str(), base.parent_path().string().c_str()));
+	ASSERT_NE(nullptr, mod_bootstrap_get());
+	EXPECT_EQ(base, fs::path(mod_bootstrap_get()->workfolder));
+	EXPECT_TRUE(mod_bootstrap_contains_path((primary / "data" / "tables" / "ships.tbl").string()));
+	EXPECT_FALSE(mod_bootstrap_contains_path((base.parent_path() / "cfile-other" / "mission.fs2").string()));
+
+	ASSERT_EQ(0, json_object_del(json.get(), "workfolder"));
+	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json_dump_string(json.get(), 0));
+	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str(), base.string().c_str()));
+	ASSERT_NE(nullptr, mod_bootstrap_get());
+	EXPECT_EQ(base, fs::path(mod_bootstrap_get()->workfolder));
+	ASSERT_FALSE(cfile_init(""));
+
+	const auto winning_table = cf_find_file_location("ships.tbl", CF_TYPE_TABLES);
+	ASSERT_TRUE(winning_table.found);
+	EXPECT_EQ(primary / "data" / "tables" / "ships.tbl", fs::path(winning_table.full_name));
+	EXPECT_TRUE(cf_find_file_location("ships.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_SECONDARY_MODS).found);
+	EXPECT_TRUE(cf_find_file_location("test.tbl", CF_TYPE_TABLES).offset);
+
+	SCP_string output;
+	ASSERT_TRUE(cf_create_default_path_string(output, CF_TYPE_TABLES, "output.tbl", static_cast<uint32_t>(CF_LOCATION_ALL), true));
+	EXPECT_EQ(base / "data" / "tables" / "output.tbl", fs::path(output));
+	EXPECT_FALSE(cf_create_default_path_string(output, CF_TYPE_TABLES, "output.tbl", CF_LOCATION_TYPE_PRIMARY_MOD, true));
 }
 
 class CFileTest : public test::FSTestFixture {

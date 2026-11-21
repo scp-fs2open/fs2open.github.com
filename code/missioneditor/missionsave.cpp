@@ -83,25 +83,19 @@
 	} while (false)
 
 
-int Fred_mission_save::autosave_mission_file(char* pathname)
+int Fred_mission_save::autosave_mission_file(const char* pathname)
 {
-	char backup_name[256], name2[256];
-	int i;
-
-	auto len = strlen(pathname);
-	strcpy_s(backup_name, pathname);
-	strcpy_s(name2, pathname);
-	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
-	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
-		sprintf(backup_name + len, ".%.3d", i - 1);
-		sprintf(name2 + len, ".%.3d", i);
-		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
+	SCP_string newest_backup;
+	sprintf(newest_backup, "%s.%03d", pathname, MISSION_BACKUP_DEPTH);
+	cf_delete(newest_backup.c_str(), CF_TYPE_MISSIONS);
+	for (int i = MISSION_BACKUP_DEPTH; i > 1; --i) {
+		SCP_string previous_backup;
+		sprintf(previous_backup, "%s.%03d", pathname, i - 1);
+		cf_rename(previous_backup.c_str(), newest_backup.c_str(), CF_TYPE_MISSIONS);
+		newest_backup = std::move(previous_backup);
 	}
 
-	strcpy(backup_name + len, ".001");
-
-	save_mission_internal(backup_name);
+	save_mission_internal(newest_backup.c_str());
 
 	return err;
 }

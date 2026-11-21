@@ -44,6 +44,6 @@ bool cf_check_location_flags(uint32_t check_flags, uint32_t desired_flags);
 int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename = nullptr,
                                   uint32_t location_flags = CF_LOCATION_ALL);
 int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename = nullptr,
-                                  uint32_t location_flags = CF_LOCATION_ALL);
+                                  uint32_t location_flags = CF_LOCATION_ALL, bool for_write = false);
 
 #endif	//_CFILESYSTEM_H

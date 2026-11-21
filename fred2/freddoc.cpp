@@ -31,6 +31,7 @@
 #include "ai/aigoals.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
+#include "cfile/mod_bootstrap.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "localization/fhash.h"
@@ -45,6 +46,9 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 #include "scripting/global_hooks.h"
+#include "osapi/osapi.h"
+
+#include <filesystem>
 
 extern int Num_objects;
 
@@ -90,22 +94,41 @@ void CFREDDoc::AssertValid() const {
 }
 #endif //_DEBUG
 
-bool CFREDDoc::autoload() {
-	char name[256], backup_name[256];
-	int i;
-	bool r;
-	FILE *fp;
-
-	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
-		return 0;
+static SCP_string mission_backup_base(bool resolve_legacy_dir = false)
+{
+	if (const auto bootstrap = mod_bootstrap_get()) {
+		const auto id = bootstrap->mod_id.empty() ? SCP_string("retail") : bootstrap->mod_id;
+		auto path = std::filesystem::path(os_get_config_path("data/fred2/autosave/" + id + "/" + MISSION_BACKUP_NAME));
+		if (path.is_relative()) {
+			path = std::filesystem::path(Fred_base_dir) / path;
+		}
+		return path.lexically_normal().string();
 	}
 
-	strcat_s(name, MISSION_BACKUP_NAME);
-	strcpy_s(backup_name, name);
-	strcat_s(name, ".002");
+	SCP_string directory;
+	if (resolve_legacy_dir && !cf_create_default_path_string(directory, CF_TYPE_MISSIONS)) {
+		return {};
+	}
+	return directory + MISSION_BACKUP_NAME;
+}
+
+static SCP_string mission_backup_file(const SCP_string& base, int slot)
+{
+	SCP_string filename;
+	sprintf(filename, "%s.%03d", base.c_str(), slot);
+	return filename;
+}
+
+bool CFREDDoc::autoload() {
+	int i;
+	const auto base = mission_backup_base(true);
+	if (base.empty()) {
+		return false;
+	}
+	const auto previous = mission_backup_file(base, 2);
 
 	// Check if Backup.002 exists
-	fp = fopen(name, "r");
+	FILE* fp = fopen(previous.c_str(), "r");
 	if (!fp)
 		return 0;
 	fclose(fp);
@@ -113,19 +136,15 @@ bool CFREDDoc::autoload() {
 	clean_up_selections();
 
 	// Load Backup.002
-	r = load_mission(name, MPF_FAST_RELOAD);
+	const auto r = load_mission(previous.c_str(), MPF_FAST_RELOAD);
 	Update_window = 1;
 
 	// Delete Backup.001
-	auto len = strlen(backup_name);
-	strcat_s(backup_name, ".001");
-	cf_delete(backup_name, CF_TYPE_MISSIONS);
+	cf_delete(mission_backup_file(base, 1).c_str(), CF_TYPE_MISSIONS);
 
 	// Rename Backups. .002 becomes .001, .003 becomes .002, etc.
 	for (i = 1; i < MISSION_BACKUP_DEPTH; i++) {
-		sprintf(backup_name + len, ".%.3d", i + 1);
-		sprintf(name + len, ".%.3d", i);
-		cf_rename(backup_name, name, CF_TYPE_MISSIONS);
+		cf_rename(mission_backup_file(base, i + 1).c_str(), mission_backup_file(base, i).c_str(), CF_TYPE_MISSIONS);
 		undo_desc[i] = undo_desc[i + 1];
 	}
 
@@ -161,7 +180,16 @@ int CFREDDoc::autosave(char *desc) {
 		Briefing_dialog->update_data(1);
 	}
 
-	if (save.autosave_mission_file(MISSION_BACKUP_NAME)) {
+	const auto backup = mission_backup_base();
+	std::error_code directory_error;
+	if (mod_bootstrap_get()) {
+		std::filesystem::create_directories(std::filesystem::path(backup).parent_path(), directory_error);
+		if (directory_error) {
+			mprintf(("FRED2 could not create the autosave directory for '%s': %s\n",
+				backup.c_str(), directory_error.message().c_str()));
+		}
+	}
+	if (directory_error || save.autosave_mission_file(backup.c_str())) {
 		Undo_count = Undo_available = 0;
 		return -1;
 	}
@@ -182,23 +210,18 @@ int CFREDDoc::autosave(char *desc) {
 }
 
 int CFREDDoc::check_undo() {
-	char name[256];
-	FILE *fp;
-
 	Undo_available = 0;
 	if (!Undo_count) {
 		return 0;
 	}
 
-	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+	const auto base = mission_backup_base(true);
+	if (base.empty()) {
 		return 0;
 	}
 
-	strcat_s(name, MISSION_BACKUP_NAME);
-	strcat_s(name, ".002");
-
 	// Check if Backup.002 exists
-	fp = fopen(name, "r");
+	FILE* fp = fopen(mission_backup_file(base, 2).c_str(), "r");
 	if (!fp)
 		return 0;
 	fclose(fp);
@@ -611,6 +634,8 @@ BOOL CFREDDoc::OnNewDocument() {
 	if (!CDocument::OnNewDocument())
 		return FALSE;
 
+	_saveBootstrapMissionAs = false;
+
 	// TODO: add reinitialization code here
 	// (SDI documents will reuse this document)
 
@@ -619,6 +644,7 @@ BOOL CFREDDoc::OnNewDocument() {
 
 BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 {
+	const auto save_as = mod_bootstrap_contains_path(pathname);
 	// don't process any objects if the window focus is lost and reacquired
 	clean_up_selections();
 
@@ -653,12 +679,10 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	// now check all the autosaves
 	SCP_string backup_name;
 	CFileLocation backup_res;
+	const auto backup_base = mission_backup_base();
 	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
 	{
-		backup_name = MISSION_BACKUP_NAME;
-		char extension[5];
-		sprintf(extension, ".%.3d", i);
-		backup_name += extension;
+		backup_name = mission_backup_file(backup_base, i);
 
 		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
 		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
@@ -694,7 +718,29 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	Fred_view_wnd->global_error_check();
 	autosave("nothing");
 	Undo_count = 0;
+	_saveBootstrapMissionAs = save_as;
 	return TRUE;
+}
+
+BOOL CFREDDoc::DoSave(LPCTSTR pathname, BOOL replace)
+{
+	CString selected;
+	if (_saveBootstrapMissionAs && (!pathname || GetPathName().CompareNoCase(pathname) == 0)) {
+		const auto filename = std::filesystem::path(static_cast<LPCTSTR>(GetPathName())).filename().string();
+		CFileDialog dialog(FALSE, "fs2", filename.c_str(),
+			OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR,
+			"FS2 missions (*.fs2)|*.fs2||", AfxGetMainWnd());
+		if (dialog.DoModal() != IDOK) {
+			return FALSE;
+		}
+		selected = dialog.GetPathName();
+		pathname = selected;
+	}
+	const auto saved = CDocument::DoSave(pathname, replace);
+	if (saved && replace) {
+		_saveBootstrapMissionAs = false;
+	}
+	return saved;
 }
 
 // For tokenizing

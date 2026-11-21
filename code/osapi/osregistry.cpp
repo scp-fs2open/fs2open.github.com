@@ -9,6 +9,7 @@
 
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
+#include "cfile/mod_bootstrap.h"
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 #include "osregistry.h"
@@ -895,7 +896,11 @@ void os_init_registry_stuff(const char* company, const char* app)
 	// Handle mod specific settings and in-game options through a mod specific file
 	// This gets the mod file using the mod cmdline string, stripping Launcher version data
 	// so that mod settings are mod-version agnostic but still specific to a unique mod.
-	if (Cmdline_mod != nullptr) {
+	const auto bootstrap = mod_bootstrap_get();
+	SCP_string mod_id;
+	if (bootstrap) {
+		mod_id = bootstrap->mod_id;
+	} else if (!Fred_running && Cmdline_mod != nullptr) {
 		SCP_string str = Cmdline_mod;
 		// Trim any trailing folders so we get just the name of the root mod folder
 		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
@@ -951,26 +956,23 @@ void os_init_registry_stuff(const char* company, const char* app)
 
 		// Now we know we have just the mod root and the version. So drop the version and we're done!
 		size_t pos = str.rfind("-");
-		str = (pos != std::string::npos) ? str.substr(0, pos) : str;
+		mod_id = (pos != std::string::npos) ? str.substr(0, pos) : str;
 
-		// Make sure we have a usable string
-		if (str.length() > 0) {
-			// Append "_settings.ini" and use the data/ directory
-			Mod_options_file_name = "data/" + str + "_settings.ini";
-
-			// Test if the new save file exists
-			FILE* file = fopen(os_get_config_path(Mod_options_file_name).c_str(), "r");
-			if (file != nullptr) {
-				fclose(file);
-			} else {
-				Ingame_options_save_found = false;
-			}
-		} else {
+		if (mod_id.empty()) {
 			// If we can't find the mod specific string then fallback to the fs2_open ini
 			// We don't set Ingame_options_save_found to false here because if we do that
 			// then we are assuming we have a proper save file to use later during runtime,
 			// but in this case we do not.
 			Mod_options_file_name = Osreg_config_file_name;
+		}
+	}
+	if (!mod_id.empty()) {
+		Mod_options_file_name = "data/" + mod_id + "_settings.ini";
+		FILE* file = fopen(os_get_config_path(Mod_options_file_name).c_str(), "r");
+		if (file != nullptr) {
+			fclose(file);
+		} else {
+			Ingame_options_save_found = false;
 		}
 	}
 

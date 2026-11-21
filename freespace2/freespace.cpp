@@ -44,6 +44,7 @@
 #include "bmpman/bmpman.h"
 #include "camera/photomode.h"
 #include "cfile/cfile.h"
+#include "cfile/mod_bootstrap.h"
 #include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
@@ -1918,6 +1919,7 @@ void game_init()
 	mprintf(("Memory: %d MiB\n", SDL_GetSystemRAM()));
 	mprintf(("Build: %s, " SIZE_T_ARG "-bit, %s-endian\n", get_exe_name(nullptr),
 			 sizeof(void*) << 3, (SDL_BYTEORDER == SDL_LIL_ENDIAN) ? "little" : "big"));
+	mod_bootstrap_log();
 
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
@@ -7032,6 +7034,9 @@ int game_main(int argc, char *argv[])
 #endif // _WIN32
 
 	if ( !parse_cmdline(argc, argv) ) {
+		return 1;
+	}
+	if (!mod_bootstrap_init_from_cmdline()) {
 		return 1;
 	}
 
