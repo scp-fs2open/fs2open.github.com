@@ -72,6 +72,7 @@ add_file_folder("model"
 
 add_file_folder("network"
     network/test_multiutil.cpp
+    network/test_psnet2.cpp
 )
 
 add_file_folder("Options"
