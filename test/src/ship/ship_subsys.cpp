@@ -9,6 +9,7 @@
 #include "osapi/dialogs.h"
 #include "particle/ParticleManager.h"
 #include "ship/ship.h"
+#include "utils/finally.h"
 
 class ShipSubsysIndexTest : public test::FSTestFixture {
   public:
@@ -119,22 +120,25 @@ TEST_F(ShipSubsysIndexTest, subsys_index_lookup_rebuilds_a_missing_table)
 
 	// ship_get_subsys_index reaches the ship through Objects[], so this ship lives in the global slots
 	auto& shipp = Ships[0];
+	ship_subsys subsystems[2];
+	auto cleanup = util::finally([&shipp]() {
+		list_init(&shipp.subsys_list);
+		shipp.clear();
+		Ship_info.pop_back();
+	});
+
 	shipp.clear();
 	shipp.ship_info_index = static_cast<int>(Ship_info.size()) - 1;
 	Objects[0].type = OBJ_SHIP;
 	Objects[0].instance = 0;
 
-	ship_subsys subsystems[2];
 	list_init(&shipp.subsys_list);
 	for (auto& ss : subsystems) {
 		ss.parent_objnum = 0;
+		ss.parent_subsys_index = -1;
 		list_append(&shipp.subsys_list, &ss);
 	}
 	shipp.flags.set(Ship::Ship_Flags::Subsystem_cache_valid);
 
 	EXPECT_EQ(ship_get_subsys_index(&subsystems[1]), 1);
-
-	list_init(&shipp.subsys_list);
-	shipp.clear();
-	Ship_info.pop_back();
 }
