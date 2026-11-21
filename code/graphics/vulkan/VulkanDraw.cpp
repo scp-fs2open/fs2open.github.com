@@ -415,7 +415,7 @@ void VulkanDrawManager::zbufferClear(int mode)
 		// Clear depth buffer (clamped: gr_screen can exceed a smaller render target)
 		vk::ClearAttachment clearAttachment;
 		clearAttachment.aspectMask = vk::ImageAspectFlagBits::eDepth;
-		clearAttachment.clearValue.depthStencil.depth = 1.0f;
+		clearAttachment.clearValue.depthStencil.depth = gr_far_depth();
 		clearAttachment.clearValue.depthStencil.stencil = 0;
 
 		vk::ClearRect clearRect;
@@ -467,7 +467,7 @@ void VulkanDrawManager::stencilClear()
 	// Clear stencil buffer (clamped: gr_screen can exceed a smaller render target)
 	vk::ClearAttachment clearAttachment;
 	clearAttachment.aspectMask = vk::ImageAspectFlagBits::eStencil;
-	clearAttachment.clearValue.depthStencil.depth = 1.0f;
+	clearAttachment.clearValue.depthStencil.depth = gr_far_depth();
 	clearAttachment.clearValue.depthStencil.stencil = 0;
 
 	vk::ClearRect clearRect;
@@ -752,7 +752,9 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle,
 	}
 
 	stateTracker->bindPipeline(pipeline, pipelineManager->getPipelineLayout());
-	stateTracker->setDepthBias(1024.0f, 1.0f); // GL shadow pass: gr_zbias(-1024) = polygon offset factor 1, units 1024
+	// GL shadow pass: gr_zbias(-1024) = polygon offset factor 1, units 1024; reversed depth flips both
+	const float bias_sign = Gr_reversed_depth_active ? -1.0f : 1.0f;
+	stateTracker->setDepthBias(bias_sign * 1024.0f, bias_sign);
 
 	// Bind descriptor sets: shadowMapData (per-draw) and shadowCascadeParams
 	// (bound separately, per-frame, via shadow_cascade_params_bind) both live in

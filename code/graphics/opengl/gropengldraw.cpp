@@ -294,12 +294,12 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D,
 		0,
-		GL_DEPTH24_STENCIL8,
+		Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 		Scene_texture_width,
 		Scene_texture_height,
 		0,
-		GL_DEPTH_COMPONENT,
-		GL_FLOAT,
+		Gr_reversed_depth_active ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
+		Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_FLOAT,
 		nullptr);
 	opengl_set_object_label(GL_TEXTURE, Cockpit_depth_texture, "Cockpit depth texture");
 
@@ -323,12 +323,12 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D,
 		0,
-		GL_DEPTH24_STENCIL8,
+		Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 		Scene_texture_width,
 		Scene_texture_height,
 		0,
-		GL_DEPTH_COMPONENT,
-		GL_FLOAT,
+		Gr_reversed_depth_active ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
+		Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_FLOAT,
 		nullptr);
 	opengl_set_object_label(GL_TEXTURE, Scene_depth_texture, "Scene depth texture");
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
@@ -517,7 +517,7 @@ void opengl_setup_scene_textures()
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
 			Cmdline_msaa_enabled,
-			GL_DEPTH24_STENCIL8,
+			Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 			Scene_texture_width,
 			Scene_texture_height,
 			GL_TRUE);
@@ -578,12 +578,12 @@ void opengl_setup_scene_textures()
 
 		glTexImage2D(GL_TEXTURE_2D,
 			0,
-			GL_DEPTH24_STENCIL8,
+			Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 			back_w,
 			back_h,
 			0,
 			GL_DEPTH_STENCIL,
-			GL_UNSIGNED_INT_24_8,
+			Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_UNSIGNED_INT_24_8,
 			nullptr);
 		opengl_set_object_label(GL_TEXTURE, Back_depth_texture, "Backbuffer depth texture");
 
@@ -802,11 +802,12 @@ void opengl_scene_texture_shutdown()
 size_t opengl_get_scene_render_target_bytes()
 {
 	// The bytes for each pixel come from the internal formats that opengl_setup_scene_textures()
-	// gives to these textures: GL_RGBA16F holds 8 bytes, GL_RGBA8 and GL_DEPTH24_STENCIL8 hold 4.
+	// gives to these textures: GL_RGBA16F holds 8 bytes, GL_RGBA8 and GL_DEPTH24_STENCIL8 hold 4, and
+	// GL_DEPTH32F_STENCIL8 (reversed depth) holds 8.
 	// Keep the values below equal to the formats at the creation sites in that function.
 	constexpr size_t RGBA16F_BYTES = 8;
 	constexpr size_t RGBA8_BYTES = 4;
-	constexpr size_t DEPTH24_STENCIL8_BYTES = 4;
+	const size_t DEPTH_STENCIL_BYTES = Gr_reversed_depth_active ? 8 : 4;
 
 	size_t bytes = 0;
 
@@ -829,8 +830,8 @@ size_t opengl_get_scene_render_target_bytes()
 	add_texture(Scene_emissive_texture, scene_w, scene_h, RGBA16F_BYTES);
 	add_texture(Scene_composite_texture, scene_w, scene_h, RGBA16F_BYTES);
 	add_texture(Scene_luminance_texture, scene_w, scene_h, RGBA16F_BYTES);
-	add_texture(Cockpit_depth_texture, scene_w, scene_h, DEPTH24_STENCIL8_BYTES);
-	add_texture(Scene_depth_texture, scene_w, scene_h, DEPTH24_STENCIL8_BYTES);
+	add_texture(Cockpit_depth_texture, scene_w, scene_h, DEPTH_STENCIL_BYTES);
+	add_texture(Scene_depth_texture, scene_w, scene_h, DEPTH_STENCIL_BYTES);
 
 	// The multisample textures hold one value for each sample, thus their bytes go up with the
 	// MSAA level. Cmdline_msaa_enabled holds the number of samples and is 0 when MSAA is off.
@@ -841,7 +842,7 @@ size_t opengl_get_scene_render_target_bytes()
 	add_texture(Scene_normal_texture_ms, scene_w, scene_h, RGBA16F_BYTES, samples);
 	add_texture(Scene_specular_texture_ms, scene_w, scene_h, RGBA8_BYTES, samples);
 	add_texture(Scene_emissive_texture_ms, scene_w, scene_h, RGBA16F_BYTES, samples);
-	add_texture(Scene_depth_texture_ms, scene_w, scene_h, DEPTH24_STENCIL8_BYTES, samples);
+	add_texture(Scene_depth_texture_ms, scene_w, scene_h, DEPTH_STENCIL_BYTES, samples);
 
 	// The back buffer and gamma blit textures use the size of the screen, not the (clamped) size
 	// of the scene textures.
@@ -851,7 +852,7 @@ size_t opengl_get_scene_render_target_bytes()
 	const auto back_h = static_cast<size_t>(opengl_screen_pixel_height());
 
 	add_texture(Back_texture, back_w, back_h, RGBA16F_BYTES);
-	add_texture(Back_depth_texture, back_w, back_h, DEPTH24_STENCIL8_BYTES);
+	add_texture(Back_depth_texture, back_w, back_h, DEPTH_STENCIL_BYTES);
 	add_texture(GammaBlit_texture, back_w, back_h, RGBA8_BYTES);
 	add_texture(Readback_texture, screen_w, screen_h, RGBA8_BYTES);
 
