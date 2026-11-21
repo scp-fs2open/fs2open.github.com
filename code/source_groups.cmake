@@ -243,6 +243,12 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/effect-f.sdr
 	def_files/data/effects/effect-g.sdr
 	def_files/data/effects/effect-v.sdr
+	def_files/data/effects/CORTAOBase.h
+	def_files/data/effects/CORTAOFilterPass.h
+	def_files/data/effects/CORTAOMainPass.h
+	def_files/data/effects/cortao-filter-f.sdr
+	def_files/data/effects/cortao-main-f.sdr
+	def_files/data/effects/cortao-prepass-f.sdr
 	def_files/data/effects/envmap-sphere-warp-f.sdr
 	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
@@ -460,6 +466,9 @@ add_file_folder("Graphics"
 	graphics/debug_sphere.h
 	graphics/color.cpp
 	graphics/color.h
+	graphics/cortao_occluder_lut.h
+	graphics/cortao_params.cpp
+	graphics/cortao_params.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.cpp
@@ -484,10 +493,10 @@ add_file_folder("Graphics"
 	graphics/shader_types.cpp
 	graphics/shader_types.h
 	graphics/render_queue.h
-	graphics/rtao.cpp
-	graphics/rtao.h
 	graphics/shadows.cpp
 	graphics/shadows.h
+	graphics/ssao.cpp
+	graphics/ssao.h
 	graphics/tmapper.h
 	graphics/uniforms.cpp
 	graphics/uniforms.h
@@ -502,6 +511,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
 		graphics/opengl/gropengl.cpp
 		graphics/opengl/gropenglbmpman.cpp
+		graphics/opengl/gropenglcortao.cpp
 		graphics/opengl/gropengldeferred.cpp
 		graphics/opengl/gropengldraw.cpp
 		graphics/opengl/gropenglopenxr.cpp
@@ -519,6 +529,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
 		graphics/opengl/gropengl.h
 		graphics/opengl/gropenglbmpman.h
+		graphics/opengl/gropenglcortao.h
 		graphics/opengl/gropengldeferred.h
 		graphics/opengl/gropengldraw.h
 		graphics/opengl/gropenglopenxr.h
@@ -625,6 +636,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessing.h
 		graphics/vulkan/VulkanPostProcessingBloom.cpp
 		graphics/vulkan/VulkanPostProcessingCommon.cpp
+		graphics/vulkan/VulkanPostProcessingCortao.cpp
 		graphics/vulkan/VulkanPostProcessingDistortion.cpp
 		graphics/vulkan/VulkanPostProcessingFog.cpp
 		graphics/vulkan/VulkanPostProcessingGBuffer.cpp

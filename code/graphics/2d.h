@@ -265,6 +265,10 @@ enum shader_type {
 
 	SDR_TYPE_MOTION_VECTORS,
 
+	SDR_TYPE_CORTAO_PREPASS,
+	SDR_TYPE_CORTAO_MAIN,
+	SDR_TYPE_CORTAO_FILTER,
+
 	NUM_SHADER_TYPES
 };
 
@@ -295,7 +299,18 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
-#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
+#define SDR_FLAG_DEFERRED_SSAO (1 << 2)
+#define SDR_FLAG_DEFERRED_SSAO_DEBUG (1 << 3)
+#define SDR_FLAG_DEFERRED_SSAO_BENT_NORMAL (1 << 4)
+
+// CORTAO main pass sample count. Without either flag, the main pass uses 16 samples.
+#define SDR_FLAG_CORTAO_SAMPLES_4 (1 << 0)
+#define SDR_FLAG_CORTAO_SAMPLES_8 (1 << 1)
+// CORTAO main pass and filter pass: also write the bent normal
+#define SDR_FLAG_CORTAO_MAIN_BENT_NORMAL (1 << 2)
+
+#define SDR_FLAG_CORTAO_LARGE_FILTER (1 << 0)
+#define SDR_FLAG_CORTAO_FILTER_BENT_NORMAL (1 << 1)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
@@ -411,7 +426,10 @@ enum class gr_capability {
 	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
 	// otherwise texture-object state shared by every sampler bound to that texture.
 	CAPABILITY_SHADOW_CONTACT_HARDENING,
-	CAPABILITY_FSR
+	CAPABILITY_FSR,
+	// The CORTAO screen-space ambient occlusion passes (graphics/ssao.h). OpenGL needs GLSL 4.20:
+	// 4.00 for fma() and bitCount(), and 4.20 for the scalar swizzles in CORTAOFilterPass.h.
+	CAPABILITY_SCREEN_SPACE_AO
 };
 
 struct gr_capability_def {
