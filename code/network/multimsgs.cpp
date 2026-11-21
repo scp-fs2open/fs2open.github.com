@@ -73,6 +73,7 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
 #include "network/multi_fstracker.h"
 #include "network/multi_sw.h"
 #include "network/multi_sexp.h"
@@ -1770,6 +1771,9 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 				break;
 			case KICK_REASON_INGAME_ENDED:
 				notify_code = MULTI_END_NOTIFY_KICKED_INGAME_ENDED;
+				break;
+			case KICK_REASON_SEXP_MISMATCH:
+				notify_code = MULTI_END_NOTIFY_KICKED_SEXP_MISMATCH;
 				break;
 			default:
 				notify_code = MULTI_END_NOTIFY_KICKED;
@@ -4573,6 +4577,12 @@ void send_file_sig_packet(ushort sum_sig,int length_sig)
 	BUILD_HEADER(FILE_SIG_INFO);
 	ADD_USHORT(sum_sig);
 	ADD_INT(length_sig);
+	const uint builtin_fingerprint = sexp::builtin_operator_fingerprint();
+	ADD_UINT(builtin_fingerprint);
+	const uint dynamic_fingerprint = sexp::dynamic_operator_fingerprint();
+	ADD_UINT(dynamic_fingerprint);
+	const ubyte dynamic_must_match = sexp::dynamic_sexps_must_match() ? 1 : 0;
+	ADD_DATA(dynamic_must_match);
 		
 	multi_io_send_reliable(Net_player, data, packet_size);
 }
@@ -4581,6 +4591,9 @@ void process_file_sig_packet(ubyte *data, header *hinfo)
 {
 	int offset;
 	int length_sig;
+	uint builtin_fingerprint;
+	uint dynamic_fingerprint;
+	ubyte dynamic_must_match;
 	ushort sum_sig;	
 	offset = HEADER_LENGTH;
 
@@ -4589,8 +4602,16 @@ void process_file_sig_packet(ubyte *data, header *hinfo)
 	
 	GET_USHORT(sum_sig);
 	GET_INT(length_sig);
+	GET_UINT(builtin_fingerprint);
+	GET_UINT(dynamic_fingerprint);
+	GET_DATA(dynamic_must_match);
 	PACKET_SET_SIZE();
-	server_verify_filesig(hinfo->id, sum_sig, length_sig);	
+	server_verify_filesig(hinfo->id,
+		sum_sig,
+		length_sig,
+		builtin_fingerprint,
+		dynamic_fingerprint,
+		dynamic_must_match != 0);
 }
 
 void send_file_sig_request(char *file_name)

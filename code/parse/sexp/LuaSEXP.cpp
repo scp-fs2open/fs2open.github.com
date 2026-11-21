@@ -6,6 +6,8 @@
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
+#include "network/multi.h"
+#include "network/multi_sexp.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
@@ -31,6 +33,7 @@
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "prop/prop.h"
+#include "utils/finally.h"
 #include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
@@ -272,6 +275,9 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	}
 	case OPF_POINT: {
 		auto wpt = find_matching_waypoint(CTEXT(node));
+		if (wpt == nullptr) {
+			return LuaValue::createValue(_action.getLuaState(), l_Waypoint.Set(object_h()));
+		}
 		return LuaValue::createValue(_action.getLuaState(), l_Waypoint.Set(object_h(wpt->get_objnum())));
 	}
 	case OPF_SHIP_POINT:
@@ -364,6 +370,9 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_MISSION_CUSTOM_STRING: {
 		auto cs = get_custom_string_by_name(CTEXT(node));
 		auto table = luacpp::LuaTable::create(_action.getLuaState());
+		if (cs == nullptr) {
+			return table;
+		}
 
 		table.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->name));
 		table.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs->value));
@@ -459,7 +468,7 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 	}
 }
 
-luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node, int parent_node) const {
+luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node, int parent_node, SCP_vector<SCP_string>* arg_text) const {
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter
@@ -469,6 +478,12 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node, int parent_node) con
 		if (argnum < (int)_argument_types.size()) {
 			// This is a parameter in the normal list so we add it to the normal parameter list
 			luaParameters.push_back(sexpToLua(node, argnum, parent_node));
+			if (arg_text != nullptr) {
+				arg_text->emplace_back();
+				if (!argumentToText(node, argnum, luaParameters.back(), arg_text->back())) {
+					arg_text->back().clear();
+				}
+			}
 
 			node = CDR(node);
 			++argnum;
@@ -482,7 +497,14 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node, int parent_node) con
 			// If we reach the end of the parameter list inside this for loop we just exit since all parameters are optional
 			for (auto i = 0; i < (int)_varargs_type_pattern.size() && node != -1; ++i) {
 				// i + 1 since lua arrays are 1-indexed
-				varargs_part.addValue(i + 1, sexpToLua(node, argnum, parent_node));
+				auto value = sexpToLua(node, argnum, parent_node);
+				if (arg_text != nullptr) {
+					arg_text->emplace_back();
+					if (!argumentToText(node, argnum, value, arg_text->back())) {
+						arg_text->back().clear();
+					}
+				}
+				varargs_part.addValue(i + 1, value);
 
 				node = CDR(node);
 				++argnum;
@@ -503,7 +525,22 @@ int LuaSEXP::execute(int node, int parent_node) {
 		return SEXP_CANT_EVAL;
 	}
 
-	LuaValueList luaParameters = getSEXPArgumentList(node, parent_node);
+	// a flagged SEXP run from inside another flagged action reaches clients as part of that outer action
+	static int flagged_actions_running = 0;
+	const bool send_to_clients = _run_on_clients && MULTIPLAYER_MASTER && (flagged_actions_running == 0);
+	SCP_vector<SCP_string> arg_text;
+	LuaValueList luaParameters = getSEXPArgumentList(node, parent_node, send_to_clients ? &arg_text : nullptr);
+
+	// sent before the action runs, so a Lua error here still leaves clients running the same call
+	const bool sent = send_to_clients && sendToClients(arg_text);
+	if (sent) {
+		++flagged_actions_running;
+	}
+	auto running_guard = util::finally([sent] {
+		if (sent) {
+			--flagged_actions_running;
+		}
+	});
 
 	// All parameters are now in LuaValues, time to call our function
 	try {
@@ -524,6 +561,211 @@ int LuaSEXP::execute(int node, int parent_node) {
 		}
 	}
 }
+bool lua_sexp_quote_text(const char* value, SCP_string& text) {
+	// longer text is cut short when the client parses it, and a leading @ would read the client's own variable
+	if ((strlen(value) >= TOKEN_LENGTH) || (value[0] == '@')) {
+		return false;
+	}
+
+	text = "\"";
+	for (const char* ch = value; *ch != '\0'; ++ch) {
+		// run_sexp reads a lone ! as a quote mark and !! as !, and has no way to escape a quote mark
+		if (*ch == '!') {
+			text += "!!";
+		} else if (*ch == '"') {
+			return false;
+		} else {
+			text += *ch;
+		}
+	}
+	text += '"';
+	return true;
+}
+
+bool lua_sexp_arguments_are_plain(const SCP_string& text, int* value_count) {
+	int values = 0;
+	size_t i = 0;
+	while (i < text.size()) {
+		if (text[i] == ' ') {
+			++i;
+			continue;
+		}
+		if (text[i] == '"') {
+			++i;
+			if ((i < text.size()) && (text[i] == '@')) {
+				return false;
+			}
+			size_t length = 0;
+			while ((i < text.size()) && (text[i] != '"')) {
+				// run_sexp turns a lone ! into a quote mark, which would end the string early
+				if (text[i] == '!') {
+					if ((i + 1 >= text.size()) || (text[i + 1] != '!')) {
+						return false;
+					}
+					++i;
+				}
+				++i;
+				++length;
+			}
+			if ((i >= text.size()) || (length >= TOKEN_LENGTH)) {
+				return false;
+			}
+			++i;
+		} else if (text.compare(i, 8, "( true )") == 0) {
+			i += 8;
+		} else if (text.compare(i, 9, "( false )") == 0) {
+			i += 9;
+		} else {
+			const size_t number_start = i;
+			if (text[i] == '-') {
+				++i;
+			}
+			const size_t digits_start = i;
+			while ((i < text.size()) && isdigit(static_cast<unsigned char>(text[i]))) {
+				++i;
+			}
+			// the server only sends ints, and the client's atoi is undefined outside that range
+			if ((i == digits_start) || (i - digits_start > 10)) {
+				return false;
+			}
+			const long long number = std::strtoll(text.c_str() + number_start, nullptr, 10);
+			if ((number < INT_MIN) || (number > INT_MAX)) {
+				return false;
+			}
+		}
+		// the parser reads two values with no space between them differently, which can move where a string ends
+		if ((i < text.size()) && (text[i] != ' ')) {
+			return false;
+		}
+		++values;
+	}
+	if (value_count != nullptr) {
+		*value_count = values;
+	}
+	return true;
+}
+
+bool LuaSEXP::argumentToText(int node, int argnum, const luacpp::LuaValue& value, SCP_string& text) const {
+	switch (getArgumentInternalType(argnum).second) {
+	case OPF_NUMBER: {
+		// numbers and booleans come from the value the server's Lua got, so they are not evaluated again
+		const auto number = value.getValue<float>();
+		if (std::isnan(number)) {
+			return false;
+		}
+		// casting a float outside the int range is undefined; INT_MAX and INT_MIN become the same floats again
+		if (number >= 2147483648.0f) {
+			text = std::to_string(INT_MAX);
+		} else if (number < -2147483648.0f) {
+			text = std::to_string(INT_MIN);
+		} else {
+			text = std::to_string(static_cast<int>(number));
+		}
+		return true;
+	}
+	case OPF_BOOL:
+		text = value.getValue<bool>() ? "( true )" : "( false )";
+		return true;
+	default:
+		// an operator or container data is evaluated each time it is read, so a second read could differ
+		if ((Sexp_nodes[node].first != -1) || (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA)) {
+			return false;
+		}
+		// a number (a sound given by its table index) has to stay a number on the client
+		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) {
+			text = std::to_string(sexp_atoi(node));
+			return true;
+		}
+		return lua_sexp_quote_text(CTEXT(node), text);
+	}
+}
+
+void LuaSEXP::warnNotSent(const char* reason) const {
+	// once per SEXP, since an every-time event would otherwise warn every frame
+	if (_warned_not_sent) {
+		return;
+	}
+	_warned_not_sent = true;
+	ReleaseWarning(LOCATION, "Lua SEXP %s was not sent to multiplayer clients: %s.", _name.c_str(), reason);
+}
+
+// One SEXP's data has to fit in one SEXP packet along with its header
+static constexpr size_t LUA_SEXP_MAX_ARGUMENT_TEXT = SEXP_MAX_PACKET_SIZE / 2;
+
+bool LuaSEXP::sendToClients(const SCP_vector<SCP_string>& arg_text) const {
+	SCP_string text;
+	for (const auto& arg : arg_text) {
+		if (arg.empty()) {
+			warnNotSent("an argument is a nested SEXP, container data, not a number, or text that has a quote mark, "
+						"starts with @ or is 32 characters or longer");
+			return false;
+		}
+		text += ' ';
+		text += arg;
+	}
+
+	if (text.size() > LUA_SEXP_MAX_ARGUMENT_TEXT) {
+		warnNotSent("its arguments are too long");
+		return false;
+	}
+
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_string(text);
+	Current_sexp_network_packet.end_callback();
+	return true;
+}
+
+bool LuaSEXP::runsOnClients() const {
+	return _run_on_clients;
+}
+
+SCP_string LuaSEXP::getArgumentLayout() const {
+	// "ship" and "shipname" share OPF_SHIP but give Lua a handle or a string
+	SCP_string layout;
+	for (const auto& type : _argument_types) {
+		layout += type.first;
+		layout += ' ';
+	}
+	layout += '|';
+	for (const auto& type : _varargs_type_pattern) {
+		layout += ' ';
+		layout += type.first;
+	}
+	return layout;
+}
+
+bool LuaSEXP::executeMulti() {
+	// only the server's own SEXPs reach clients; one a player sends to the server is not run there
+	if (!_run_on_clients || MULTIPLAYER_MASTER) {
+		return false;
+	}
+
+	SCP_string arg_text;
+	if (!Current_sexp_network_packet.get_string(arg_text)) {
+		return false;
+	}
+
+	// the text is parsed as SEXP code, so it must not be able to carry anything but values
+	int value_count = 0;
+	if (!lua_sexp_arguments_are_plain(arg_text, &value_count)) {
+		Warning(LOCATION, "The server sent arguments for Lua SEXP %s that are not plain values; not running it.", _name.c_str());
+		return true;
+	}
+
+	// run_sexp skips the argument count check, and with no repeat pattern getSEXPArgumentList never ends on extras
+	const bool too_many = (value_count > _max_args) ||
+		(_varargs_type_pattern.empty() && (value_count > static_cast<int>(_argument_types.size())));
+	if ((value_count < _min_args) || too_many) {
+		Warning(LOCATION, "The server sent %d arguments for Lua SEXP %s; not running it.", value_count, _name.c_str());
+		return true;
+	}
+
+	// only the arguments travel; the SEXP list fingerprint checked at mission load makes this number this SEXP here
+	const SCP_string sexp_text = "( " + _name + arg_text + " )";
+	run_sexp(sexp_text.c_str());
+	return true;
+}
+
 int LuaSEXP::getReturnType() {
 	return _return_type;
 }
@@ -623,6 +865,24 @@ void LuaSEXP::parseTable() {
 		}
 	} else {
 		_return_type = OPR_NULL;
+	}
+
+	if (optional_string("$Run On Multiplayer Clients:")) {
+		stuff_boolean(&_run_on_clients);
+
+		// a client only repeats the action; a returned value would have nothing to go to
+		if (_run_on_clients && (_return_type != OPR_NULL)) {
+			error_display(0, "Lua SEXP %s returns a value, so it cannot run on multiplayer clients.", _name.c_str());
+			_run_on_clients = false;
+		}
+
+		// clients rebuild the call as text, where run_sexp would read a ! in the name as a quote mark
+		if (_run_on_clients && (_name.find('!') != SCP_string::npos)) {
+			error_display(0,
+				"Lua SEXP %s has a ! in its name, so it cannot run on multiplayer clients.",
+				_name.c_str());
+			_run_on_clients = false;
+		}
 	}
 
 	SCP_stringstream help_text;
@@ -852,6 +1112,20 @@ void LuaSEXP::parseTable() {
 			}
 		}
 		param_index++;
+	}
+
+	if (_run_on_clients) {
+		for (const auto* types : {&_argument_types, &_varargs_type_pattern}) {
+			for (const auto& type : *types) {
+				// the variable itself cannot be sent, only its value
+				if (_run_on_clients && (type.second == OPF_VARIABLE_NAME)) {
+					error_display(0,
+						"Lua SEXP %s has a variable name parameter, so it cannot run on multiplayer clients.",
+						_name.c_str());
+					_run_on_clients = false;
+				}
+			}
+		}
 	}
 
 	_help_text = help_text.str();

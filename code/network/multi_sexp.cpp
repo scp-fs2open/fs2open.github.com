@@ -81,8 +81,8 @@ void sexp_network_packet::ensure_space_remains(size_t data_size)
         type[i] = packet_data_type::NOT_DATA;
     }
 
-    // if we have an existing argument count we need to update where to put it too
-    if (current_argument_count) {
+    // a SEXP in progress has its argument count slot in the data that just slid down
+    if (callback_started) {
         argument_count_index = argument_count_index - sub_packet_size;
     }
 
@@ -163,6 +163,7 @@ void sexp_network_packet::initialize()
     packet_size = 0;
     argument_count_index = -1;
     current_argument_count = 0;
+    callback_started = false;
 }
 
 void sexp_network_packet::start_callback()
