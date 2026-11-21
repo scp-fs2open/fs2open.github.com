@@ -1554,11 +1554,15 @@ bool Nav_UnSet_Visited(const char *Nav)
 // Selects a navpoint by name.
 void SelectNav(const char *Nav)
 {
+	// Keep the last match, and change the selection once so a duplicate name does not end autopilot.
+	int nav = -1;
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 	{
 		if (!stricmp(Navs[i].m_NavName, Nav))
-			if (!(Nav_Get_Flags(Nav) & NP_HIDDEN || Nav_Get_Flags(Nav) & NP_NOACCESS)) nav_set_selection(i);
+			if (!(Nav_Get_Flags(Nav) & NP_HIDDEN || Nav_Get_Flags(Nav) & NP_NOACCESS)) nav = i;
 	}
+	if (nav >= 0)
+		nav_set_selection(nav);
 }
 
 // ********************************************************************************************

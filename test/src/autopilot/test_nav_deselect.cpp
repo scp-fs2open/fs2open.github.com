@@ -175,6 +175,8 @@ TEST_F(NavDeselectEngagedTest, SelectingDifferentNavEndsEngagedAutopilot) {
 }
 
 TEST_F(NavDeselectEngagedTest, ReselectingSameNavKeepsAutopilotEngaged) {
+	// An earlier nav with the same name must not end autopilot on the way to the last match.
+	strcpy_s(Navs[0].m_NavName, "Second");
 	EngageOnSecond();
 	ASSERT_EQ(1, CurrentNav);
 
