@@ -178,20 +178,29 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 	return false;
 }
 
-static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFlavor flavor)
+static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFlavor flavor, const ship* ordering_shipp)
 {
 	// retail behavior: a fighters-and-bombers order classifies each wing by its leader alone
 	if (flavor == SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS) {
 		return true;
 	}
 
+	bool any_recipient = false;
 	for (int j = 0; j < wing_entry.current_count; j++) {
 		int shipnum = wing_entry.ship_index[j];
-		if ((shipnum >= 0) && !is_smallcraft_flavor(&Ship_info[Ships[shipnum].ship_info_index], flavor)) {
+		// the ordering ship never takes the order, so its class doesn't make the wing mixed
+		if ((shipnum < 0) || (&Ships[shipnum] == ordering_shipp)) {
+			continue;
+		}
+
+		if (!is_smallcraft_flavor(&Ship_info[Ships[shipnum].ship_info_index], flavor)) {
 			return false;
 		}
+		any_recipient = true;
 	}
-	return true;
+
+	// a wing holding only the ordering ship has nobody to order
+	return any_recipient;
 }
 
 void hud_init_comm_orders()
@@ -1069,7 +1078,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 			continue;
 
 		// a wing order reaches every member, so a wing with any non-matching craft goes to the per-ship pass
-		if ( !wing_takes_flavor_order_as_unit(Wings[i], flavor) )
+		if ( !wing_takes_flavor_order_as_unit(Wings[i], flavor, ordering_shipp) )
 			continue;
 
 		if ( Wings[i].flags[Ship::Wing_Flags::Departing] )
@@ -1236,7 +1245,13 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 	// check for multiplayer mode
 	if(MULTIPLAYER_CLIENT){
-		send_player_order_packet(SQUAD_MSG_SHIP, shipnum, command);
+		// the ship may have been removed while the menu was open
+		if ( Ships[shipnum].objnum < 0 ) {
+			return 0;
+		}
+
+		// ship numbers differ between machines once a player has joined in progress, so send the net signature
+		send_player_order_packet(SQUAD_MSG_SHIP, Objects[Ships[shipnum].objnum].net_signature, command);
 		return 0;
 	}
 

@@ -78,6 +78,7 @@ class player;
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
 // Version 64 - 9/5/2026 - Player order packet always carries its index field, which holds the small craft flavor for "message all"
+//                         and the ordered ship's net signature for a ship order
 // STANDALONE_ONLY
 
 #define MULTI_FS_SERVER_VERSION							64
