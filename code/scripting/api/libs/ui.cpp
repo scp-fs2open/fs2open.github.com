@@ -1681,8 +1681,6 @@ ADE_FUNC(get3dOverheadChoices,
 		(int)Default_overhead_ship_style);
 }
 
-// The loadout slots, wings and pools are null outside ship and weapon selection, including during a mission.
-// initSelect() sets them without setting Common_select_inited, so check the pointers rather than that flag.
 static bool loadout_data_ready()
 {
 	return Wss_slots != nullptr && Ss_wings != nullptr && Ss_pool != nullptr && Wl_pool != nullptr;

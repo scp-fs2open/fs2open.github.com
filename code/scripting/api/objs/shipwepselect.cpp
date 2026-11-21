@@ -11,7 +11,6 @@ ss_wing_info_h::ss_wing_info_h() : ss_wing(-1) {}
 ss_wing_info_h::ss_wing_info_h(int l_wing) : ss_wing(l_wing) {}
 bool ss_wing_info_h::isValid() const
 {
-	// Ss_wings, Wss_slots and the pools are null outside ship and weapon selection, including during a mission
 	return ss_wing >= 0 && Ss_wings != nullptr;
 }
 ss_wing_info* ss_wing_info_h::getWing() const
