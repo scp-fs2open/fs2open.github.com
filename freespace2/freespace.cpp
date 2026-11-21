@@ -1976,8 +1976,8 @@ void game_init()
 	mod_table_init();		// load in all the mod dependent settings
 
 	static auto FramerateCapOption = options::OptionBuilder<int>("Graphics.FramerateCap",
-					 std::pair<const char*, int>{"Frame Rate Limit", 1936},
-					 std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1937})
+					 std::pair<const char*, int>{"Frame Rate Limit", 1952},
+					 std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1953})
 					 .category(std::make_pair("Graphics", 1825))
 					 .level(options::ExpertLevel::Advanced)
 					 .range(MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP)
@@ -1991,7 +1991,7 @@ void game_init()
 						// Clamp saved out-of-range values
 						return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
 					 })
-					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1938)) : std::to_string(value); })
+					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1954)) : std::to_string(value); })
 					 .parser([]() {
 						int value;
 						stuff_int(&value);
