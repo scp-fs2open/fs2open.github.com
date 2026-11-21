@@ -406,7 +406,7 @@ ADE_VIRTVAR(ShipClassIndex,
 		}
 		if (shipIndex > -1) {
 			// If we're not trying to empty the slot then make sure it's a valid ship index
-			if (shipIndex > ship_info_size()) {
+			if (shipIndex >= ship_info_size()) {
 				LuaError(L, "The provided ship index is invalid!");
 			} else {
 				Wss_slots[current].ship_class = shipIndex;

@@ -156,3 +156,16 @@ TEST_F(ScriptingShipclassTest, loadoutWeapon_weaponPastEnd)
 	EXPECT_EQ(-1, Wss_slots[0].wep[1]);
 	EXPECT_EQ(-1, Wss_slots[0].wep_count[1]);
 }
+
+TEST_F(ScriptingShipclassTest, loadoutShipClass_shipPastEnd)
+{
+	try {
+		this->EvalTestScript();
+		FAIL() << "Expected a Lua error for a ship class index one past the end";
+	} catch (const os::dialogs::LuaErrorException& e) {
+		EXPECT_NE(SCP_string(e.what()).find("The provided ship index is invalid!"), SCP_string::npos)
+			<< e.what();
+	}
+
+	EXPECT_EQ(0, Wss_slots[0].ship_class);
+}
