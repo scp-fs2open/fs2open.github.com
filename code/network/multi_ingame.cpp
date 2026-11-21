@@ -1041,12 +1041,13 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	GET_DATA( p_type );	
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
-		int ship_num, objnum, ship_class;
+		int ship_num, objnum;
+		short ship_class;
 		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_INT( ship_class );
+		GET_SHORT( ship_class );
 		GET_DATA( flag_size );
 
 		ubyte temp;
@@ -1078,6 +1079,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
 		}
+
 		if (ship_class < 0 || ship_class >= ship_info_size()) {
 			mprintf(("ABORTING in-game join since the server sent class %d for ship %s!\n", ship_class, ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
@@ -1196,7 +1198,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_INT( shipp->ship_info_index );
+		ADD_SHORT( static_cast<short>(shipp->ship_info_index) );
 		
 		// this flag describes a lookup table in our own memory; it should not be passed to other clients
 		auto flags_to_send = shipp->flags;
