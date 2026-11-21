@@ -31,11 +31,15 @@ private slots:
 	void on_applyTypeButton_clicked();
 	void on_applyTeamButton_clicked();
 
+protected:
+	void focusInEvent(QFocusEvent* e) override;
+
 private:  // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 
-	EditorViewport * _viewport = nullptr;
+	FredView*        _fredView  = nullptr;
+	EditorViewport*  _viewport  = nullptr;
     std::unique_ptr<Ui::ShieldSystemDialog> ui;
 	std::unique_ptr<ShieldSystemDialogModel> _model;
 };

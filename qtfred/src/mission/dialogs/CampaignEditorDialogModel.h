@@ -61,6 +61,9 @@ struct ICampaignEditorTreeOps {
 	// Asks the tree to create a new, default SEXP (i.e., "true")
 	virtual int createDefaultSexp() = 0;
 
+	// Asks the tree to discard all of its internal nodes and visuals
+	virtual void clearTree() = 0;
+
 	// Asks the tree to completely rebuild its view from a list of branches
 	virtual void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches, const SCP_string& currentMissionName) = 0;
 
@@ -80,11 +83,19 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	// Working-state serialization for the in-dialog undo stack: the whole
+	// campaign working copy (specs, flags, custom data, tech arrays, missions
+	// with branches, and branch sexps round-tripped through the tree ops).
+	// Selections, the campaign filename, and the available-missions list are
+	// excluded; restore reloads the available list and clears selections.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	static SCP_vector<SCP_string> getCampaignTypes();
 
 	void createNewCampaign();
 	void loadCampaignFromFile(const SCP_string& filename);
-	void saveCampaign(const SCP_string& filename);
+	bool saveCampaign(const SCP_string& filename);
 	bool checkValidity();
 	CampaignFormat getSaveFormat() const;
 	void setSaveFormat(CampaignFormat fmt);
@@ -138,6 +149,18 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int getCurrentMissionDebriefingPersona() const;
 	void setCurrentMissionDebriefingPersona(int persona_index);
 
+	// Index-addressed setters for undo commands: undo must target the mission
+	// or branch that was edited even if the selection has moved since.
+	void setMissionBriefingCutsceneAt(int missionIndex, const SCP_string& cutscene);
+	void setMissionMainhallAt(int missionIndex, const SCP_string& mainhall);
+	void setMissionSubstituteMainhallAt(int missionIndex, const SCP_string& mainhall);
+	void setMissionDebriefingPersonaAt(int missionIndex, int persona_index);
+	void setBranchLoopDescriptionAt(int missionIndex, int branchIndex, const SCP_string& descr);
+	void setBranchLoopAnimAt(int missionIndex, int branchIndex, const SCP_string& anim);
+	void setBranchLoopVoiceAt(int missionIndex, int branchIndex, const SCP_string& voice);
+
+	int findMissionIndexByFilename(const SCP_string& filename) const;
+
 	// Loop Data
 	SCP_string getCurrentBranchLoopDescription() const;
 	void setCurrentBranchLoopDescription(const SCP_string& descr);
@@ -149,6 +172,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 
 	// Sexp tree
 	void removeBranchByTreeId(int formula_id);
+	void changeBranchFormula(int old_formula, int new_formula);
 
 	// Campaign Graph
 	const SCP_vector<CampaignMissionData>& getCampaignMissions() const;
@@ -164,13 +188,18 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	bool getCurrentBranchIsSpecial() const;
 
 	void setModified() { set_modified(); }
+	// Undo/redo landing back on the stack's clean index means the working
+	// copy matches the saved file again.
+	void setUnmodified() { _modified = false; }
 	int addBranchIdIfMissing(CampaignBranchData& b); // assigns a unique id once
 	CampaignBranchData* findBranchById(int missionIdx, int branchId);
 
 	// Tech
 	SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedShips() const;
+	bool getAllowedShip(int ship_class_index) const;
 	void setAllowedShip(int ship_class_index, bool allowed);
 	SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedWeapons() const;
+	bool getAllowedWeapon(int weapon_class_index) const;
 	void setAllowedWeapon(int weapon_class_index, bool allowed);
 
 	// Lists

@@ -2,6 +2,9 @@
 
 #include "SceneBrowserModel.h"
 
+#include "mission/commands/FredCommands.h"
+#include "mission/object.h"
+
 #include <globalincs/linklist.h>
 #include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
@@ -209,39 +212,56 @@ bool SceneBrowserModel::isDefaultLayer(const QString& name)
 
 void SceneBrowserModel::moveObjectToLayer(int objNum, const QString& layerName)
 {
-	// Single inline call: temporary QByteArray lives until end of full expression — safe.
-	_viewport->moveObjectToLayer(objNum, layerName.toUtf8().constData());
+	SCP_string newLayer = layerName.toUtf8().constData();
+	SCP_string oldLayer = _viewport->getObjectLayerName(objNum);
+	_viewport->moveObjectToLayer(objNum, newLayer);
 	buildTree();
 	treeStructureChanged();
+	if (oldLayer != newLayer && query_valid_object(objNum)) {
+		SCP_vector<fso::fred::ObjectLayerChange> changes = {{Objects[objNum].signature, std::move(oldLayer), std::move(newLayer)}};
+		_editor->undoStack()->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, _editor));
+	}
 }
 
 void SceneBrowserModel::moveWingToLayer(int wingIndex, const QString& layerName)
 {
 	if (wingIndex < 0 || wingIndex >= MAX_WINGS) return;
 	const QByteArray layer = layerName.toUtf8();
+	SCP_string newLayer = layer.constData();
+	SCP_vector<fso::fred::ObjectLayerChange> changes;
 	for (int si = 0; si < Wings[wingIndex].wave_count; si++) {
 		int shipIdx = Wings[wingIndex].ship_index[si];
 		if (shipIdx < 0) continue;
 		int objNum = Ships[shipIdx].objnum;
 		if (objNum >= 0 && Objects[objNum].type != OBJ_NONE) {
-			_viewport->moveObjectToLayer(objNum, layer.constData());
+			SCP_string before = _viewport->getObjectLayerName(objNum);
+			if (before != newLayer)
+				changes.push_back({Objects[objNum].signature, std::move(before), newLayer});
+			_viewport->moveObjectToLayer(objNum, newLayer);
 		}
 	}
 	buildTree();
 	treeStructureChanged();
+	if (!changes.empty())
+		_editor->undoStack()->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, _editor));
 }
 
 void SceneBrowserModel::moveWaypointPathToLayer(int waypointListIndex, const QString& layerName)
 {
 	if (!SCP_vector_inbounds(Waypoint_lists, waypointListIndex)) return;
 	auto& wl = Waypoint_lists[waypointListIndex];
+	if (wl.get_waypoints().empty()) return;
+	SCP_string newLayer = layerName.toUtf8().constData();
+	int firstObjNum = wl.get_waypoints().front().get_objnum();
+	SCP_string oldLayer = _viewport->getObjectLayerName(firstObjNum);
 	// Moving any one waypoint propagates to the whole path (EditorViewport::setObjectLayerByIndex).
-	// Single inline call — temporary QByteArray lives until end of full expression — safe.
-	if (!wl.get_waypoints().empty()) {
-		_viewport->moveObjectToLayer(wl.get_waypoints().front().get_objnum(), layerName.toUtf8().constData());
-	}
+	_viewport->moveObjectToLayer(firstObjNum, newLayer);
 	buildTree();
 	treeStructureChanged();
+	if (oldLayer != newLayer && query_valid_object(firstObjNum)) {
+		SCP_vector<fso::fred::ObjectLayerChange> changes = {{Objects[firstObjNum].signature, std::move(oldLayer), std::move(newLayer)}};
+		_editor->undoStack()->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, _editor));
+	}
 }
 
 // ---------------------------------------------------------------------------

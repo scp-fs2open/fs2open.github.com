@@ -337,15 +337,20 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
 	if (_moveShipsWhenUndocking) {
+		object* mover;
 		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0) {
 			vm_vec_scale_add2(&objp2->pos,
 				&v,
 				ship_class_get_length(&Ship_info[Ships[objp2->instance].ship_info_index]));
+			mover = objp2;
 		} else {
 			vm_vec_scale_add2(&objp1->pos,
 				&v,
 				ship_class_get_length(&Ship_info[Ships[objp1->instance].ship_info_index]) * -1.0f);
+			mover = objp1;
 		}
+		// the moved ship may still be docked to others; they come along
+		object_moved(mover);
 	}
 
 	ai_do_objects_undocked_stuff(objp1, objp2);

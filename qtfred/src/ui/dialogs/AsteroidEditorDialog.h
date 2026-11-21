@@ -5,6 +5,8 @@
 #include <mission/dialogs/AsteroidEditorDialogModel.h>
 #include <ui/FredView.h>
 
+class QLineEdit;
+
 namespace fso::fred::dialogs {
 
 namespace Ui {
@@ -70,9 +72,16 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 
+	// Shared by the twelve bound-box edits: applies the text and pushes one
+	// merging command per box field that also restores the line edit on undo.
+	void changeBoxText(QLineEdit* edit, AsteroidEditorDialogModel::_box_line_edits type, const QString& text);
+	void changeFieldType(field_type_t type, debris_genre_t genre);
+
 	// Boilerplate
-	EditorViewport* _viewport = nullptr;
-	Editor* _editor = nullptr;
+	EditorViewport* _viewport    = nullptr;
+	Editor*         _editor      = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	std::unique_ptr<Ui::AsteroidEditorDialog> ui;
 	std::unique_ptr<AsteroidEditorDialogModel> _model;
 

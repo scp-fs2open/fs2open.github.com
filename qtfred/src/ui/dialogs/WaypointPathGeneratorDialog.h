@@ -17,6 +17,13 @@ class WaypointPathGeneratorDialog : public QDialog {
 	WaypointPathGeneratorDialog(FredView* parent, EditorViewport* viewport);
 	~WaypointPathGeneratorDialog() override;
 
+	void accept() override;
+	void reject() override;
+
+  protected:
+	void closeEvent(QCloseEvent* e) override;
+	void focusInEvent(QFocusEvent* e) override;
+
   private slots:
 	void on_pathNameLineEdit_editingFinished();
 
@@ -41,7 +48,9 @@ class WaypointPathGeneratorDialog : public QDialog {
 	void on_buttonBox_rejected();
 
   private: // NOLINT(readability-redundant-access-specifiers)
-	EditorViewport* _viewport;
+	EditorViewport* _viewport    = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	std::unique_ptr<Ui::WaypointPathGeneratorDialog> ui;
 	std::unique_ptr<WaypointPathGeneratorDialogModel> _model;
 

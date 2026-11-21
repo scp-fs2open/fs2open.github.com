@@ -1,11 +1,30 @@
+#include <QFocusEvent>
+#include <ui/util/DialogUndo.h>
 #include <QRadioButton>
 #include "ShieldSystemDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_ShieldSystemDialog.h"
+#include "mission/commands/FredCommands.h"
+#include "ui/FredView.h"
+#include <ship/ship.h>
+#include <object/object.h>
 
 namespace fso::fred::dialogs {
 
 namespace {
+
+SCP_vector<BatchFlagCommand::ShipSnapshot> captureShipFlagSnapshots()
+{
+	SCP_vector<BatchFlagCommand::ShipSnapshot> snaps;
+	for (const auto& ship : Ships) {
+		if (ship.objnum >= 0) {
+			snaps.push_back({ Objects[ship.objnum].signature,
+			                  Objects[ship.objnum].flags,
+			                  ship.flags });
+		}
+	}
+	return snaps;
+}
 
 QString statusLabelText(GlobalShieldStatus status)
 {
@@ -37,19 +56,34 @@ void clearRadioPair(QRadioButton* a, QRadioButton* b)
 
 ShieldSystemDialog::ShieldSystemDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent),
+	_fredView(parent),
 	_viewport(viewport),
 	ui(new Ui::ShieldSystemDialog()),
 	_model(new ShieldSystemDialogModel(this, viewport)) {
+
     ui->setupUi(this);
+    util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	initializeUi();
 	updateUi();
+
+	// Keep the dialog in sync when the undo stack changes per-ship shield flags.
+	connect(viewport->editor, &Editor::missionChanged, this, [this]() {
+		_model->refresh();
+		updateUi();
+	});
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
 
 ShieldSystemDialog::~ShieldSystemDialog() = default;
+
+void ShieldSystemDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::focusInEvent(e);
+}
 
 void ShieldSystemDialog::initializeUi() {
 	util::SignalBlockers blockers(this);
@@ -136,12 +170,26 @@ void ShieldSystemDialog::on_teamNoShieldRadio_toggled(bool checked) {
 }
 
 void ShieldSystemDialog::on_applyTypeButton_clicked() {
+	auto before = captureShipFlagSnapshots();
 	_model->applyType(ui->typeHasShieldRadio->isChecked());
+	auto after = captureShipFlagSnapshots();
+	if (before != after) {
+		_fredView->mainUndoStack()->push(
+			new BatchFlagCommand(std::move(before), std::move(after),
+			                     _viewport->editor, tr("Apply Shield System by Class")));
+	}
 	updateUi();
 }
 
 void ShieldSystemDialog::on_applyTeamButton_clicked() {
+	auto before = captureShipFlagSnapshots();
 	_model->applyTeam(ui->teamHasShieldRadio->isChecked());
+	auto after = captureShipFlagSnapshots();
+	if (before != after) {
+		_fredView->mainUndoStack()->push(
+			new BatchFlagCommand(std::move(before), std::move(after),
+			                     _viewport->editor, tr("Apply Shield System by Team")));
+	}
 	updateUi();
 }
 

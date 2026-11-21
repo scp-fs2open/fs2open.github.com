@@ -18,6 +18,9 @@ class PropEditorDialog : public QDialog {
 	PropEditorDialog(FredView* parent, EditorViewport* viewport);
 	~PropEditorDialog() override;
 
+ protected:
+	void changeEvent(QEvent* e) override;
+
  private slots:
 	void on_propNameLineEdit_editingFinished();
 	void on_nextButton_clicked();
@@ -25,9 +28,10 @@ class PropEditorDialog : public QDialog {
 	void on_layerCombo_currentIndexChanged(int index);
 
  private: // NOLINT(readability-redundant-access-specifiers)
+	FredView*       _fredView;
+	EditorViewport* _viewport;
 	std::unique_ptr<::Ui::PropEditorDialog> ui;
 	std::unique_ptr<PropEditorDialogModel> _model;
-	EditorViewport* _viewport;
 
 	void initializeUi();
 	void updateUi();

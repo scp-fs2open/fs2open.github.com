@@ -32,6 +32,9 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	int getSingleShip() const;
 	bool getIfMultipleShips() const;
 
+  protected:
+	void changeEvent(QEvent*) override;
+
   private slots:
 
 	void on_textureReplacementButton_clicked();
@@ -96,6 +99,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView* _fredView;
 
 	bool _cues_hidden = false;
 	bool _show_sexp_help = false; // session-local help visibility, seeded from the saved preference

@@ -1,0 +1,1014 @@
+// ---------------------------------------------------------------------------
+// CROSS-REFERENCE MAINTENANCE
+// ---------------------------------------------------------------------------
+// Fields captured / restored here must stay in sync with:
+//   code/missioneditor/missionsave.cpp  (save_objects, save_common_object_data,
+//                                        save_warp_params, save_turret_info,
+//                                        save_single_dock_instance)
+//   code/mission/missionparse.cpp       (parse_object, parse_common_object_data)
+//
+// When any of those files gains or removes a field, update this file too.
+// ---------------------------------------------------------------------------
+
+#include "ObjectCapture.h"
+
+#include <algorithm>
+
+#include <ai/ai.h>
+#include <globalincs/linklist.h>
+#include <jumpnode/jumpnode.h>
+#include <mission/missionparse.h>
+#include <bmpman/bmpman.h>
+#include <model/model.h>
+#include <object/object.h>
+#include <object/objectdock.h>
+#include <object/waypoint.h>
+#include <parse/sexp.h>
+#include <prop/prop.h>
+#include <ship/ship.h>
+#include <model/modelreplace.h>
+#include <missioneditor/common.h>
+
+#include "../../ui/FredView.h"
+#include "../Editor.h"
+
+namespace fso::fred {
+
+// ===========================================================================
+// CapturedShip — construction / destruction / move semantics
+// ===========================================================================
+
+CapturedShip::~CapturedShip()
+{
+	auto freeDup = [](int& dup) {
+		if (dup >= 0) {
+			free_sexp2(dup);
+			dup = SHIP_CUE_NONE;
+		}
+	};
+	freeDup(arrival_cue_dup);
+	freeDup(departure_cue_dup);
+}
+
+CapturedShip& CapturedShip::operator=(CapturedShip&& o) noexcept
+{
+	if (this == &o) return *this;
+
+	// Release any cues we currently own before overwriting
+	if (arrival_cue_dup >= 0)   { free_sexp2(arrival_cue_dup);   arrival_cue_dup   = SHIP_CUE_NONE; }
+	if (departure_cue_dup >= 0) { free_sexp2(departure_cue_dup); departure_cue_dup = SHIP_CUE_NONE; }
+
+	objType           = o.objType;
+	primaryPlayerStart = o.primaryPlayerStart;
+	registryIndex = o.registryIndex;
+	signature         = o.signature;
+	pos               = o.pos;
+	orient            = o.orient;
+	memcpy(ship_name, o.ship_name, sizeof(ship_name));
+	display_name      = std::move(o.display_name);
+	ship_info_index   = o.ship_info_index;
+	team              = o.team;
+	team_name         = std::move(o.team_name);
+	alt_type_index    = o.alt_type_index;
+	callsign_index    = o.callsign_index;
+	alt_classes       = std::move(o.alt_classes);
+
+	arrival_location  = o.arrival_location;
+	arrival_distance  = o.arrival_distance;
+	arrival_anchor    = o.arrival_anchor;
+	arrival_path_mask = o.arrival_path_mask;
+	arrival_delay     = o.arrival_delay;
+	arrival_cue_dup   = o.arrival_cue_dup;
+	o.arrival_cue_dup = SHIP_CUE_NONE;
+
+	departure_location  = o.departure_location;
+	departure_anchor    = o.departure_anchor;
+	departure_path_mask = o.departure_path_mask;
+	departure_delay     = o.departure_delay;
+	departure_cue_dup   = o.departure_cue_dup;
+	o.departure_cue_dup = SHIP_CUE_NONE;
+
+	warpin_params_index  = o.warpin_params_index;
+	warpout_params_index = o.warpout_params_index;
+
+	initial_velocity = o.initial_velocity;
+	initial_hull     = o.initial_hull;
+	initial_shields  = o.initial_shields;
+
+	weapons          = o.weapons;
+	for (int i = 0; i < MAX_AI_GOALS; i++) ai_goals[i] = std::move(o.ai_goals[i]);
+	kamikaze_damage  = o.kamikaze_damage;
+
+	cargo1 = o.cargo1;
+	memcpy(cargo_title, o.cargo_title, sizeof(cargo_title));
+
+	subsystems = std::move(o.subsystems);
+	flags      = o.flags;
+	obj_flags  = o.obj_flags;
+	ai_flags   = o.ai_flags;
+	memcpy(fred_alt_name, o.fred_alt_name, sizeof(fred_alt_name));
+	memcpy(fred_callsign, o.fred_callsign, sizeof(fred_callsign));
+
+	respawn_priority   = o.respawn_priority;
+	escort_priority    = o.escort_priority;
+	guardian_threshold = o.guardian_threshold;
+	special_explosion  = o.special_explosion;
+	special_hitpoints  = o.special_hitpoints;
+	special_shield_pts = o.special_shield_pts;
+	hotkey             = o.hotkey;
+
+	dock_instances   = std::move(o.dock_instances);
+	final_death_time = o.final_death_time;
+	orders_accepted  = std::move(o.orders_accepted);
+	group            = o.group;
+	fred_layer       = std::move(o.fred_layer);
+	score            = o.score;
+	assist_score_pct = o.assist_score_pct;
+	persona_index    = o.persona_index;
+	texture_replacements = std::move(o.texture_replacements);
+
+	reinforcement      = o.reinforcement;
+
+	originalShipIndex = o.originalShipIndex;
+	wingNum           = o.wingNum;
+
+	return *this;
+}
+
+CapturedShip::CapturedShip(CapturedShip&& o) noexcept
+{
+	*this = std::move(o);
+}
+
+// ===========================================================================
+// captureShip / restoreShip
+// ===========================================================================
+
+int captureSexpCue(int cue)
+{
+	if (cue == Locked_sexp_true)  return SHIP_CUE_LOCKED_TRUE;
+	if (cue == Locked_sexp_false) return SHIP_CUE_LOCKED_FALSE;
+	if (cue < 0)                  return SHIP_CUE_NONE;
+	// TODO(sexp_tree_refactor): dup_sexp_chain shallow-copies SEXP_FLAG_VARIABLE nodes;
+	// variable-reference indices become dangling after free_sexp2() on the live tree.
+	return dup_sexp_chain(cue);
+}
+
+int materializeSexpCue(int cue_dup)
+{
+	if (cue_dup == SHIP_CUE_LOCKED_TRUE)  return Locked_sexp_true;
+	if (cue_dup == SHIP_CUE_LOCKED_FALSE) return Locked_sexp_false;
+	if (cue_dup == SHIP_CUE_NONE)         return -1;
+	return dup_sexp_chain(cue_dup);
+}
+
+void freeSexpCueDup(int& cue_dup)
+{
+	if (cue_dup >= 0)
+		free_sexp2(cue_dup);
+	cue_dup = SHIP_CUE_NONE;
+}
+
+AnchorRef captureAnchor(anchor_t anchor)
+{
+	AnchorRef r;
+	r.target = anchor_to_target(anchor);
+	if (r.target >= 0 && r.target < MAX_SHIPS && Ships[r.target].objnum >= 0)
+		r.shipSig = Objects[Ships[r.target].objnum].signature;
+	return r;
+}
+
+anchor_t AnchorRef::toAnchor() const
+{
+	if (shipSig >= 0) {
+		const int objNum = obj_get_by_signature(shipSig);
+		if (objNum >= 0)
+			return target_to_anchor(Objects[objNum].instance);
+		// The ship is gone: its old slot may hold another ship now.
+		return anchor_t::invalid();
+	}
+	return target_to_anchor(target);
+}
+
+CapturedReinforcement captureReinforcement(const char* name)
+{
+	CapturedReinforcement r;
+	for (int i = 0; i < static_cast<int>(Reinforcements.size()); i++) {
+		if (!stricmp(Reinforcements[i].name, name)) {
+			r.present = true;
+			r.index   = i;
+			r.entry   = Reinforcements[i];
+			break;
+		}
+	}
+	return r;
+}
+
+void restoreReinforcement(const char* name, const CapturedReinforcement& r)
+{
+	auto it = std::find_if(Reinforcements.begin(), Reinforcements.end(),
+	                       [&](const reinforcements& e) { return !stricmp(e.name, name); });
+	if (!r.present) {
+		if (it != Reinforcements.end())
+			Reinforcements.erase(it);
+		return;
+	}
+	reinforcements entry = r.entry;
+	strcpy_s(entry.name, name); // the entry is keyed by the current name
+	if (it != Reinforcements.end()) {
+		*it = entry;
+	} else {
+		const int size = static_cast<int>(Reinforcements.size());
+		const int at   = (r.index < 0) ? size : std::min(r.index, size);
+		Reinforcements.insert(Reinforcements.begin() + at, entry);
+	}
+}
+
+void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinforcement>>& items)
+{
+	// Erasures and in-place updates first, then inserts by ascending old index.
+	SCP_vector<const std::pair<SCP_string, CapturedReinforcement>*> inserts;
+	for (const auto& item : items) {
+		const bool listed = std::any_of(Reinforcements.begin(), Reinforcements.end(),
+		                                [&](const reinforcements& e) { return !stricmp(e.name, item.first.c_str()); });
+		if (item.second.present && !listed)
+			inserts.push_back(&item);
+		else
+			restoreReinforcement(item.first.c_str(), item.second);
+	}
+	std::sort(inserts.begin(), inserts.end(),
+	          [](const auto* a, const auto* b) { return a->second.index < b->second.index; });
+	for (const auto* item : inserts)
+		restoreReinforcement(item->first.c_str(), item->second);
+}
+
+// Editor-visible equality for one initial-orders slot. Strings are compared by
+// content (an apply can re-point target_name without changing it), and the
+// dock point unions are compared per their *_index_valid flags.
+bool aiGoalEditorEqual(const ai_goal& a, const ai_goal& b)
+{
+	auto strEq = [](const char* x, const char* y) {
+		if (x == y) return true;
+		if (!x || !y) return false;
+		return stricmp(x, y) == 0;
+	};
+
+	if (a.ai_mode != b.ai_mode)
+		return false;
+	if (a.ai_mode == AI_GOAL_NONE)
+		return true; // empty slots; remaining fields are meaningless
+	if (a.ai_submode != b.ai_submode || a.priority != b.priority)
+		return false;
+	if (!strEq(a.target_name, b.target_name))
+		return false;
+
+	const bool aDockerIdx = a.flags[AI::Goal_Flags::Docker_index_valid];
+	if (aDockerIdx != b.flags[AI::Goal_Flags::Docker_index_valid])
+		return false;
+	if (aDockerIdx ? (a.docker.index != b.docker.index) : !strEq(a.docker.name, b.docker.name))
+		return false;
+
+	const bool aDockeeIdx = a.flags[AI::Goal_Flags::Dockee_index_valid];
+	if (aDockeeIdx != b.flags[AI::Goal_Flags::Dockee_index_valid])
+		return false;
+	if (aDockeeIdx ? (a.dockee.index != b.dockee.index) : !strEq(a.dockee.name, b.dockee.name))
+		return false;
+
+	return true;
+}
+
+void syncShipRegistryEntry(int shipIndex, int preferredEntry)
+{
+	const ship& s = Ships[shipIndex];
+	auto owns = [&](int e) {
+		return Ship_registry[e].shipnum == shipIndex && Ship_registry[e].objnum == s.objnum;
+	};
+	int entry = -1;
+
+	// Reclaim the entry the ship had before it was deleted, if it still carries the
+	// ship's name and no other name is keyed to it.
+	if (preferredEntry >= 0 && preferredEntry < static_cast<int>(Ship_registry.size())
+	    && !stricmp(Ship_registry[preferredEntry].name, s.ship_name)
+	    && std::none_of(Ship_registry_map.begin(), Ship_registry_map.end(), [&](const auto& kv) {
+		       return kv.second == preferredEntry && stricmp(kv.first.c_str(), s.ship_name) != 0;
+	       })) {
+		// Disown any other entry of this ship (the one create_ship() made) and drop its keys.
+		for (int e = 0; e < static_cast<int>(Ship_registry.size()); e++) {
+			if (e == preferredEntry || !owns(e)) continue;
+			for (auto k = Ship_registry_map.begin(); k != Ship_registry_map.end();)
+				k = (k->second == e) ? Ship_registry_map.erase(k) : std::next(k);
+			Ship_registry[e].objnum  = -1;
+			Ship_registry[e].shipnum = -1;
+		}
+		Ship_registry[preferredEntry].objnum  = s.objnum;
+		Ship_registry[preferredEntry].shipnum = shipIndex;
+		entry = preferredEntry;
+	}
+
+	// Already right: the ship's name is keyed to its own entry.
+	if (entry < 0) {
+		auto it = Ship_registry_map.find(s.ship_name);
+		if (it != Ship_registry_map.end() && owns(it->second))
+			entry = it->second;
+	}
+
+	// Otherwise prefer the ship's entry that some key still points at (it was
+	// renamed away or left behind), then any entry of the ship, then a new one.
+	if (entry < 0) {
+		for (const auto& [key, e] : Ship_registry_map) {
+			if (owns(e)) {
+				entry = e;
+				break;
+			}
+		}
+	}
+	if (entry < 0) {
+		for (int e = static_cast<int>(Ship_registry.size()) - 1; e >= 0; e--) {
+			if (owns(e)) {
+				entry = e;
+				break;
+			}
+		}
+	}
+	if (entry < 0) {
+		ship_registry_entry fresh(s.ship_name);
+		fresh.status  = ShipStatus::PRESENT;
+		fresh.objnum  = s.objnum;
+		fresh.shipnum = shipIndex;
+		Ship_registry.push_back(fresh);
+		entry = static_cast<int>(Ship_registry.size()) - 1;
+	}
+
+	// Drop other keys that still point at this entry, then key it by the name.
+	for (auto k = Ship_registry_map.begin(); k != Ship_registry_map.end();) {
+		if (k->second == entry && stricmp(k->first.c_str(), s.ship_name) != 0)
+			k = Ship_registry_map.erase(k);
+		else
+			++k;
+	}
+	strcpy_s(Ship_registry[entry].name, s.ship_name);
+	Ship_registry[entry].status = ShipStatus::PRESENT;
+	Ship_registry_map[s.ship_name] = entry;
+}
+
+void syncAllShipRegistryEntries()
+{
+	for (const object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (p->type == OBJ_SHIP || p->type == OBJ_START)
+			syncShipRegistryEntry(p->instance);
+	}
+}
+
+flagset<Object::Object_Flags> withLiveEditorObjectFlags(flagset<Object::Object_Flags> saved,
+                                                        const flagset<Object::Object_Flags>& live)
+{
+	static const Object::Object_Flags liveBits[] = {
+		Object::Object_Flags::Marked,
+		Object::Object_Flags::Temp_marked,
+		Object::Object_Flags::Hidden,
+		Object::Object_Flags::Locked_from_editing,
+		Object::Object_Flags::Should_be_dead,
+		Object::Object_Flags::Was_rendered,
+		Object::Object_Flags::Not_in_coll,
+		Object::Object_Flags::Docked_already_handled,
+		Object::Object_Flags::Collision_cache_stale,
+	};
+	for (const auto f : liveBits)
+		saved.set(f, live[f]);
+	return saved;
+}
+
+SCP_vector<CapturedSubsys> captureSubsystemOverrides(const ship& s)
+{
+	// Only record entries that deviate from class-table defaults
+	SCP_vector<CapturedSubsys> out;
+	const ship_subsys* ss = GET_FIRST(&s.subsys_list);
+	while (ss != END_OF_LIST(&s.subsys_list)) {
+		const bool is_turret = (ss->system_info && ss->system_info->type == SUBSYSTEM_TURRET);
+		if (ss->current_hits || is_turret || ss->subsys_cargo_name > 0) {
+			CapturedSubsys css{};
+			strcpy_s(css.name, ss->system_info->subobj_name);
+			css.current_hits   = ss->current_hits;
+			css.cargo_name_idx = ss->subsys_cargo_name;
+			strcpy_s(css.cargo_title, ss->subsys_cargo_title);
+			css.is_turret      = is_turret;
+			if (is_turret) css.turret_weapons = ss->weapons;
+			out.push_back(css);
+		}
+		ss = GET_NEXT(ss);
+	}
+	return out;
+}
+
+void restoreSubsystemOverrides(ship& s, const SCP_vector<CapturedSubsys>& subsystems)
+{
+	// Apply stored overrides by matching subobj_name
+	for (const auto& css : subsystems) {
+		ship_subsys* ptr = GET_FIRST(&s.subsys_list);
+		while (ptr != END_OF_LIST(&s.subsys_list)) {
+			if (ptr->system_info && !stricmp(ptr->system_info->subobj_name, css.name)) {
+				ptr->current_hits      = css.current_hits;
+				ptr->subsys_cargo_name = css.cargo_name_idx;
+				strcpy_s(ptr->subsys_cargo_title, css.cargo_title);
+				if (css.is_turret) ptr->weapons = css.turret_weapons;
+				break;
+			}
+			ptr = GET_NEXT(ptr);
+		}
+	}
+}
+
+CapturedShip captureShip(int objNum)
+{
+	const object&   o  = Objects[objNum];
+	const ship&     s  = Ships[o.instance];
+	const ai_info&  ai = Ai_info[s.ai_index];
+
+	CapturedShip c;
+
+	// Object
+	c.objType   = o.type;
+	c.primaryPlayerStart = (o.type == OBJ_START && Player_start_shipnum == o.instance);
+	c.registryIndex = ship_registry_get_index(s.ship_name);
+	c.signature = o.signature;
+	c.pos       = o.pos;
+	c.orient    = o.orient;
+
+	// Identity
+	strcpy_s(c.ship_name, s.ship_name);
+	c.display_name   = s.display_name;
+	c.ship_info_index = s.ship_info_index;
+	c.team           = s.team;
+	c.team_name      = s.team_name;
+	c.alt_type_index = s.alt_type_index;
+	c.callsign_index = s.callsign_index;
+
+	for (const auto& ac : s.s_alt_classes) {
+		CapturedAltClass cac;
+		cac.ship_class             = ac.ship_class;
+		cac.variable_index         = ac.variable_index;
+		cac.default_to_this_class  = ac.default_to_this_class;
+		c.alt_classes.push_back(cac);
+	}
+
+	// Arrival / departure — dup cues so this struct owns a live copy
+	c.arrival_cue_dup   = captureSexpCue(s.arrival_cue);
+	c.departure_cue_dup = captureSexpCue(s.departure_cue);
+
+	c.arrival_location   = s.arrival_location;
+	c.arrival_distance   = s.arrival_distance;
+	c.arrival_anchor     = s.arrival_anchor;
+	c.arrival_path_mask  = s.arrival_path_mask;
+	c.arrival_delay      = s.arrival_delay;
+	c.departure_location  = s.departure_location;
+	c.departure_anchor    = s.departure_anchor;
+	c.departure_path_mask = s.departure_path_mask;
+	c.departure_delay     = s.departure_delay;
+
+	// Warp parameters — indices are stable (Warp_params[] never shrinks)
+	c.warpin_params_index  = s.warpin_params_index;
+	c.warpout_params_index = s.warpout_params_index;
+
+	// Initial conditions (FRED repurposes runtime object fields for these)
+	c.initial_velocity = static_cast<int>(o.phys_info.speed);
+	c.initial_hull     = fl2i(o.hull_strength);
+	c.initial_shields  = fl2i(o.shield_quadrant[0]);
+
+	// Weapons / AI
+	c.weapons         = s.weapons;
+	c.kamikaze_damage = ai.kamikaze_damage;
+	for (int i = 0; i < MAX_AI_GOALS; i++) c.ai_goals[i] = ai.goals[i];
+
+	// Cargo
+	c.cargo1 = s.cargo1;
+	strcpy_s(c.cargo_title, s.cargo_title);
+
+	// Subsystems
+	c.subsystems = captureSubsystemOverrides(s);
+
+	// Flags
+	c.flags     = s.flags;
+	c.obj_flags = o.flags;
+	c.ai_flags  = ai.ai_flags;
+
+	// FRED alt name / callsign (slot-keyed; see CapturedShip)
+	strcpy_s(c.fred_alt_name, Fred_alt_names[o.instance]);
+	strcpy_s(c.fred_callsign, Fred_callsigns[o.instance]);
+
+	// Misc
+	c.respawn_priority   = s.respawn_priority;
+	c.escort_priority    = s.escort_priority;
+	c.guardian_threshold = s.ship_guardian_threshold;
+
+	c.special_explosion.enabled = s.use_special_explosion;
+	if (s.use_special_explosion) {
+		c.special_explosion.damage         = s.special_exp_damage;
+		c.special_explosion.blast          = s.special_exp_blast;
+		c.special_explosion.inner_radius   = s.special_exp_inner;
+		c.special_explosion.outer_radius   = s.special_exp_outer;
+		c.special_explosion.use_shockwave  = s.use_shockwave;
+		c.special_explosion.shockwave_speed = s.special_exp_shockwave_speed;
+		c.special_explosion.deathroll_time  = s.special_exp_deathroll_time;
+	}
+	c.special_hitpoints  = s.special_hitpoints;
+	c.special_shield_pts = s.special_shield;
+	c.hotkey             = s.hotkey;
+
+	// Docking — record both dock-point names for each docked pair
+	const int myModelNum = Ship_info[s.ship_info_index].model_num;
+	for (const dock_instance* di = o.dock_list; di != nullptr; di = di->next) {
+		if (di->docked_objp == nullptr) continue;
+		const ship& other      = Ships[di->docked_objp->instance];
+		const int otherModelNum = Ship_info[other.ship_info_index].model_num;
+
+		CapturedDockInstance cdi{};
+		strcpy_s(cdi.docked_with, other.ship_name);
+		strcpy_s(cdi.docker_point, model_get_dock_name(myModelNum,    di->dockpoint_used));
+
+		// Find the matching entry on the other ship to get its dock point index
+		for (const dock_instance* odi = di->docked_objp->dock_list; odi; odi = odi->next) {
+			if (odi->docked_objp == &o) {
+				strcpy_s(cdi.dockee_point, model_get_dock_name(otherModelNum, odi->dockpoint_used));
+				break;
+			}
+		}
+		c.dock_instances.push_back(cdi);
+	}
+
+	// Kill before mission
+	c.final_death_time = s.flags[Ship::Ship_Flags::Kill_before_mission] ? s.final_death_time : -1;
+
+	// Orders / group
+	c.orders_accepted = s.orders_accepted;
+	c.group           = s.group;
+
+	// Layer
+	c.fred_layer = s.fred_layer;
+
+	// Score
+	c.score           = s.score;
+	c.assist_score_pct = s.assist_score_pct;
+
+	// Persona
+	c.persona_index = s.persona_index;
+
+	// Reinforcement entry (erased by delete_object; re-added on restore)
+	c.reinforcement = captureReinforcement(s.ship_name);
+
+	// Texture replacements — filtered from the global Fred_texture_replacements
+	for (const auto& tr : Fred_texture_replacements) {
+		if (!stricmp(s.ship_name, tr.ship_name) && !tr.from_table)
+			c.texture_replacements.push_back(tr);
+	}
+
+	// Wing context
+	c.originalShipIndex = o.instance;
+	c.wingNum           = s.wingnum;
+
+	return c;
+}
+
+static void transferSexpCue(int& cue_dup, int& dest)
+{
+	if      (cue_dup == SHIP_CUE_LOCKED_TRUE)  dest = Locked_sexp_true;
+	else if (cue_dup == SHIP_CUE_LOCKED_FALSE) dest = Locked_sexp_false;
+	else if (cue_dup == SHIP_CUE_NONE)         { /* keep create_ship default */ }
+	else dest = cue_dup; // transfer ownership
+	// The ship now holds the cue, sentinels included, so this capture holds
+	// nothing (recaptureShipForRedo requires SHIP_CUE_NONE).
+	cue_dup = SHIP_CUE_NONE;
+}
+
+int restoreShip(CapturedShip& c, Editor* editor)
+{
+	matrix orient = c.orient;
+	vec3d  pos    = c.pos;
+	const int newObj = editor->create_ship(&orient, &pos, c.ship_info_index);
+	if (newObj < 0) return -1;
+
+	object&   o  = Objects[newObj];
+	ship&     s  = Ships[o.instance];
+	ai_info&  ai = Ai_info[s.ai_index];
+
+	// Reapply the original signature so signature-keyed commands stay valid.
+	if (c.signature > 0)
+		o.signature = c.signature;
+
+	// Identity. create_ship registered the ship under its generated name, so
+	// point the registry at the restored name (no sexp rewriting here, unlike
+	// Editor::rename_ship).
+	strcpy_s(s.ship_name, c.ship_name);
+	syncShipRegistryEntry(o.instance, c.registryIndex);
+	s.display_name   = c.display_name;
+	s.team           = c.team;
+	s.team_name      = c.team_name;
+	s.alt_type_index = c.alt_type_index;
+	s.callsign_index = c.callsign_index;
+
+	s.s_alt_classes.clear();
+	for (const auto& cac : c.alt_classes) {
+		alt_class ac;
+		ac.ship_class            = cac.ship_class;
+		ac.variable_index        = cac.variable_index;
+		ac.default_to_this_class = cac.default_to_this_class;
+		s.s_alt_classes.push_back(ac);
+	}
+
+	// Transfer SEXP cue ownership — no second dup
+	transferSexpCue(c.arrival_cue_dup,   s.arrival_cue);
+	transferSexpCue(c.departure_cue_dup, s.departure_cue);
+
+	s.arrival_location   = c.arrival_location;
+	s.arrival_distance   = c.arrival_distance;
+	s.arrival_anchor     = c.arrival_anchor;
+	s.arrival_path_mask  = c.arrival_path_mask;
+	s.arrival_delay      = c.arrival_delay;
+	s.departure_location  = c.departure_location;
+	s.departure_anchor    = c.departure_anchor;
+	s.departure_path_mask = c.departure_path_mask;
+	s.departure_delay     = c.departure_delay;
+
+	// Warp params
+	s.warpin_params_index  = c.warpin_params_index;
+	s.warpout_params_index = c.warpout_params_index;
+
+	// Initial conditions
+	o.phys_info.speed   = static_cast<float>(c.initial_velocity);
+	o.hull_strength     = static_cast<float>(c.initial_hull);
+	o.shield_quadrant[0] = static_cast<float>(c.initial_shields);
+
+	// Weapons / AI
+	s.weapons         = c.weapons;
+	ai.kamikaze_damage = c.kamikaze_damage;
+	for (int i = 0; i < MAX_AI_GOALS; i++) ai.goals[i] = c.ai_goals[i];
+
+	// Cargo
+	s.cargo1 = c.cargo1;
+	strcpy_s(s.cargo_title, c.cargo_title);
+
+	// Subsystems
+	restoreSubsystemOverrides(s, c.subsystems);
+
+	// Flags
+	s.flags     = c.flags;
+	o.flags     = withLiveEditorObjectFlags(c.obj_flags, o.flags);
+	ai.ai_flags = c.ai_flags;
+
+	// FRED alt name / callsign, written into the new slot (which may hold a
+	// stale value from an earlier ship)
+	strcpy_s(Fred_alt_names[o.instance], c.fred_alt_name);
+	strcpy_s(Fred_callsigns[o.instance], c.fred_callsign);
+
+	// Misc
+	s.respawn_priority        = c.respawn_priority;
+	s.escort_priority         = c.escort_priority;
+	s.ship_guardian_threshold = c.guardian_threshold;
+
+	s.use_special_explosion = c.special_explosion.enabled;
+	if (c.special_explosion.enabled) {
+		s.special_exp_damage          = c.special_explosion.damage;
+		s.special_exp_blast           = c.special_explosion.blast;
+		s.special_exp_inner           = c.special_explosion.inner_radius;
+		s.special_exp_outer           = c.special_explosion.outer_radius;
+		s.use_shockwave               = c.special_explosion.use_shockwave;
+		s.special_exp_shockwave_speed = c.special_explosion.shockwave_speed;
+		s.special_exp_deathroll_time  = c.special_explosion.deathroll_time;
+	}
+	s.special_hitpoints = c.special_hitpoints;
+	s.special_shield    = c.special_shield_pts;
+	s.hotkey            = c.hotkey;
+
+	// Kill before mission
+	if (c.final_death_time >= 0) {
+		s.flags.set(Ship::Ship_Flags::Kill_before_mission);
+		s.final_death_time = c.final_death_time;
+	}
+
+	// Orders / group
+	s.orders_accepted = c.orders_accepted;
+	s.group           = c.group;
+
+	// Layer
+	s.fred_layer = c.fred_layer;
+
+	// Score
+	s.score           = c.score;
+	s.assist_score_pct = c.assist_score_pct;
+
+	// Persona
+	s.persona_index = c.persona_index;
+
+	// Re-add the Reinforcements[] entry that delete_object() erased.
+	// Back in its old place in the list, with its settings.
+	if (c.reinforcement.present)
+		restoreReinforcement(c.ship_name, c.reinforcement);
+
+	// Texture replacements — add this ship's entries back to the global list,
+	// then rebuild the model instance's textures so the viewport shows them.
+	if (!c.texture_replacements.empty()) {
+		for (auto tr : c.texture_replacements) {
+			strcpy_s(tr.ship_name, c.ship_name);
+			Fred_texture_replacements.push_back(tr);
+		}
+		rebuildShipPmiTextures(o.instance);
+	}
+
+	// OBJ_START (player start): create_ship creates OBJ_SHIP; fix the type if needed.
+	// This mirrors what missionparse does when OF_Player_start is set.
+	if (c.objType == OBJ_START) {
+		o.type = OBJ_START;
+		Player_starts++; // deleting the start decremented it
+		if (c.primaryPlayerStart)
+			Player_start_shipnum = o.instance; // deleting it moved this to another start
+	}
+
+	return newObj;
+}
+
+void restoreShipReferences(const char* name, Editor* editor)
+{
+	char invalidated[NAME_LENGTH + 2];
+	sprintf(invalidated, "<%s>", name);
+	update_sexp_references(invalidated, name);
+	editor->ai_update_goal_references(sexp_ref_type::SHIP, invalidated, name);
+	// restoreShip() already put the ship's texture replacements back under its name;
+	// the <name> copies the delete left behind are stale, so drop them.
+	removeShipTextureReplacements(invalidated);
+	// Same for the Reinforcements entry: the delete renamed it to <name> before
+	// delete_reinforcement(name) could find it, and restoreShip() re-added the real one.
+	Reinforcements.erase(std::remove_if(Reinforcements.begin(), Reinforcements.end(),
+	                                    [&](const reinforcements& r) { return !stricmp(r.name, invalidated); }),
+	                     Reinforcements.end());
+}
+
+// Remove all Fred_texture_replacements entries belonging to the named ship.
+// Called from DeleteObjectsCommand::redo() before re-deleting ships.
+void removeShipTextureReplacements(const char* ship_name)
+{
+	Fred_texture_replacements.erase(
+		std::remove_if(Fred_texture_replacements.begin(), Fred_texture_replacements.end(),
+			[ship_name](const texture_replace& tr) {
+				return !stricmp(tr.ship_name, ship_name) && !tr.from_table;
+			}),
+		Fred_texture_replacements.end());
+}
+
+void rebuildShipPmiTextures(int shipIndex)
+{
+	ship& shipp  = Ships[shipIndex];
+	auto* pmi    = model_get_instance(shipp.model_instance_num);
+	auto* pm     = model_get(Ship_info[shipp.ship_info_index].model_num);
+
+	auto load_tex = [](const char* name) -> int {
+		if (lcase_equal(name, "invisible"))
+			return REPLACE_WITH_INVISIBLE;
+		int id = bm_load(name);
+		if (id < 0) {
+			int nf, fps;
+			id = bm_load_animation(name, &nf, &fps, nullptr, nullptr, false, true);
+		}
+		return id;
+	};
+
+	// Collect non-table entries for this ship.
+	SCP_vector<const texture_replace*> entries;
+	for (const auto& tr : Fred_texture_replacements)
+		if (!tr.from_table && !stricmp(tr.ship_name, shipp.ship_name))
+			entries.push_back(&tr);
+
+	if (entries.empty()) {
+		// No replacements — restore default textures.
+		pmi->texture_replace = nullptr;
+	} else {
+		pmi->texture_replace = std::make_shared<model_texture_replace>();
+		for (const auto* tr : entries) {
+			int id = load_tex(tr->new_texture);
+			if (id == -1)
+				continue;
+			for (int j = 0; j < pm->n_textures; j++) {
+				int tnum = pm->maps[j].FindTexture(tr->old_texture);
+				if (tnum >= 0)
+					(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = id;
+			}
+		}
+	}
+
+	// Re-layer from_table entries (remove_ship_entries leaves them intact, but
+	// make_shared above would have wiped them; nullptr case needs them applied too).
+	bool hasTable = false;
+	for (const auto& tr : Fred_texture_replacements)
+		if (tr.from_table && !stricmp(tr.ship_name, shipp.ship_name)) { hasTable = true; break; }
+
+	if (hasTable) {
+		if (!pmi->texture_replace)
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
+		for (const auto& tr : Fred_texture_replacements) {
+			if (!tr.from_table || stricmp(tr.ship_name, shipp.ship_name) != 0)
+				continue;
+			int id = (tr.new_texture_id != -1) ? tr.new_texture_id : load_tex(tr.new_texture);
+			if (id == -1)
+				continue;
+			for (int j = 0; j < pm->n_textures; j++) {
+				int tnum = pm->maps[j].FindTexture(tr.old_texture);
+				if (tnum >= 0)
+					(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = id;
+			}
+		}
+	}
+}
+
+void recaptureShipForRedo(CapturedShip& data, int objNum)
+{
+	Assertion(data.arrival_cue_dup == SHIP_CUE_NONE,
+	          "recaptureShipForRedo: arrival_cue_dup must be SHIP_CUE_NONE before recapture (was %d)",
+	          data.arrival_cue_dup);
+	Assertion(data.departure_cue_dup == SHIP_CUE_NONE,
+	          "recaptureShipForRedo: departure_cue_dup must be SHIP_CUE_NONE before recapture (was %d)",
+	          data.departure_cue_dup);
+	const ship& s = Ships[Objects[objNum].instance];
+	// Re-dup cues before delete_marked() frees them.
+	data.arrival_cue_dup   = captureSexpCue(s.arrival_cue);
+	data.departure_cue_dup = captureSexpCue(s.departure_cue);
+	// Clean up this ship's texture replacements from the global list; they
+	// will be re-added by restoreShip() on the next undo().
+	removeShipTextureReplacements(s.ship_name);
+}
+
+// ===========================================================================
+// captureWaypointList / restoreWaypointListProperties
+// ===========================================================================
+
+CapturedWaypointList captureWaypointList(int listIndex,
+                                          const SCP_vector<int>& deletedObjNums,
+                                          bool entireList)
+{
+	const waypoint_list& wl = Waypoint_lists[listIndex];
+	const auto& wpts = wl.get_waypoints();
+
+	CapturedWaypointList cwl;
+	cwl.listName   = wl.get_name();
+	cwl.listIndex  = listIndex;
+	cwl.entirePath = entireList;
+	cwl.no_lines   = wl.get_no_draw_lines();
+	cwl.has_color  = wl.get_has_custom_color();
+	cwl.color_r    = wl.get_color_r();
+	cwl.color_g    = wl.get_color_g();
+	cwl.color_b    = wl.get_color_b();
+	cwl.fred_layer = wl.get_fred_layer();
+
+	for (int i = 0; i < (int)wpts.size(); i++) {
+		const int objNum = wpts[i].get_objnum();
+		if (objNum < 0) continue;
+		bool isDeleted = std::find(deletedObjNums.begin(), deletedObjNums.end(), objNum)
+		                 != deletedObjNums.end();
+		if (!isDeleted) {
+			cwl.entirePath = false;
+			continue;
+		}
+		CapturedWaypointPoint pt;
+		pt.pos = Objects[objNum].pos;
+		// Not the predecessor's instance: instances encode the path's list index,
+		// which shifts when an earlier path is deleted.
+		pt.indexInPath = i;
+		pt.signature = Objects[objNum].signature;
+		cwl.points.push_back(pt);
+	}
+
+	return cwl;
+}
+
+void restoreWaypointListProperties(const CapturedWaypointList& data)
+{
+	waypoint_list* wl = find_matching_waypoint_list(data.listName.c_str());
+	if (!wl) return;
+
+	wl->set_no_draw_lines(data.no_lines);
+	if (data.has_color)
+		wl->set_color(data.color_r, data.color_g, data.color_b);
+	else
+		wl->clear_color();
+	wl->set_fred_layer(data.fred_layer);
+}
+
+// ===========================================================================
+// captureJumpNode / restoreJumpNode
+// ===========================================================================
+
+CapturedJumpNode captureJumpNode(int objNum)
+{
+	CapturedJumpNode cjn{};
+	for (int i = 0; i < static_cast<int>(Jump_nodes.size()); i++) {
+		const auto& jn = Jump_nodes[i];
+		if (jn.GetSCPObjectNumber() != objNum) continue;
+
+		cjn.listIndex = i;
+
+		cjn.signature = Objects[objNum].signature;
+		cjn.pos = *jn.GetPosition();
+		strcpy_s(cjn.name, jn.GetName());
+
+		cjn.has_display_name = jn.HasDisplayName();
+		if (cjn.has_display_name)
+			strcpy_s(cjn.display_name, jn.GetDisplayName());
+
+		cjn.has_special_model = jn.IsSpecialModel();
+		if (cjn.has_special_model) {
+			const polymodel* pm = model_get(jn.GetModelNumber());
+			if (pm) strcpy_s(cjn.model_file, pm->filename);
+		}
+
+		cjn.has_custom_color = jn.IsColored();
+		if (cjn.has_custom_color) {
+			const color& col = jn.GetColor();
+			cjn.color_r = col.red;
+			cjn.color_g = col.green;
+			cjn.color_b = col.blue;
+			cjn.color_a = col.alpha;
+		}
+
+		cjn.hidden     = jn.IsHidden();
+		cjn.fred_layer = jn.GetFredLayer();
+		break;
+	}
+	return cjn;
+}
+
+int restoreJumpNode(const CapturedJumpNode& data, Editor* /*editor*/)
+{
+	CJumpNode jn(&data.pos);
+	jn.SetName(data.name);
+
+	if (data.has_display_name)
+		jn.SetDisplayName(data.display_name);
+
+	if (data.has_special_model && data.model_file[0] != '\0')
+		jn.SetModel(data.model_file);
+
+	if (data.has_custom_color)
+		jn.SetAlphaColor(data.color_r, data.color_g, data.color_b, data.color_a);
+
+	if (data.hidden)
+		jn.SetVisibility(false);
+
+	jn.SetFredLayer(data.fred_layer);
+
+	const int newObj = jn.GetSCPObjectNumber();
+	// Back at its old place in the list, which is the save order.
+	const int size = static_cast<int>(Jump_nodes.size());
+	const int at   = (data.listIndex < 0) ? size : std::min(data.listIndex, size);
+	Jump_nodes.insert(Jump_nodes.begin() + at, std::move(jn));
+
+	// Reapply the original signature so signature-keyed commands stay valid.
+	if (newObj >= 0 && data.signature > 0)
+		Objects[newObj].signature = data.signature;
+
+	return newObj;
+}
+
+// ===========================================================================
+// captureProp / restoreProp
+// ===========================================================================
+
+CapturedProp captureProp(int objNum)
+{
+	CapturedProp cp{};
+	cp.signature = Objects[objNum].signature;
+	cp.pos    = Objects[objNum].pos;
+	cp.orient = Objects[objNum].orient;
+	cp.no_collide = !Objects[objNum].flags[Object::Object_Flags::Collides];
+
+	const prop* propp = prop_id_lookup(Objects[objNum].instance);
+	if (propp) {
+		cp.prop_info_index = propp->prop_info_index;
+		strcpy_s(cp.prop_name, propp->prop_name);
+		cp.fred_layer = propp->fred_layer;
+	}
+	return cp;
+}
+
+int restoreProp(const CapturedProp& data, Editor* /*editor*/)
+{
+	matrix orient = data.orient;
+	vec3d  pos    = data.pos;
+	const int newObj = prop_create(&orient, &pos, data.prop_info_index);
+	if (newObj < 0) return -1;
+
+	// Reapply the original signature so signature-keyed commands stay valid.
+	if (data.signature > 0)
+		Objects[newObj].signature = data.signature;
+
+	prop* propp = prop_id_lookup(Objects[newObj].instance);
+	if (propp) {
+		strcpy_s(propp->prop_name, data.prop_name);
+		propp->fred_layer = data.fred_layer;
+	}
+
+	if (data.no_collide)
+		Objects[newObj].flags.remove(Object::Object_Flags::Collides);
+	else
+		Objects[newObj].flags.set(Object::Object_Flags::Collides);
+
+	return newObj;
+}
+
+} // namespace fso::fred

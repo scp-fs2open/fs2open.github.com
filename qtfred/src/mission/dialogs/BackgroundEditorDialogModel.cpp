@@ -2,6 +2,8 @@
 #include "BackgroundEditorDialogModel.h"
 
 #include "graphics/light.h"
+#include <QDataStream>
+#include <QIODevice>
 #include "math/bitarray.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
@@ -36,6 +38,7 @@ void BackgroundEditorDialogModel::initializeData()
 	_initial_fog_near_dist = Neb2_fog_near_distance;
 	_initial_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
 	_initial_fog_clip = Neb2_fog_clip_distance;
+	_initial_fog_save_legacy = Neb2_fog_save_legacy_values;
 
 	_modified = false;
 }
@@ -57,7 +60,225 @@ void BackgroundEditorDialogModel::reject()
 	// do nothing
 }
 
+QByteArray BackgroundEditorDialogModel::captureState() const
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+	ds.setVersion(QDataStream::Qt_5_0);
+
+	// Model internal selection (restored so undo re-selects the same item)
+	ds << (qint32)_selectedBitmapIndex << (qint32)_selectedSunIndex;
+
+	// Backgrounds vector
+	ds << (qint32)Backgrounds.size();
+	ds << (qint32)Cur_background;
+	for (const auto& bg : Backgrounds) {
+		ds << bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file];
+		ds << (qint32)bg.bitmaps.size();
+		for (const auto& bm : bg.bitmaps) {
+			ds << QByteArray(bm.filename);
+			ds << bm.scale_x << bm.scale_y;
+			ds << (qint32)bm.div_x << (qint32)bm.div_y;
+			ds << bm.ang.p << bm.ang.b << bm.ang.h;
+		}
+		ds << (qint32)bg.suns.size();
+		for (const auto& s : bg.suns) {
+			ds << QByteArray(s.filename);
+			ds << s.scale_x << s.scale_y;
+			ds << (qint32)s.div_x << (qint32)s.div_y;
+			ds << s.ang.p << s.ang.b << s.ang.h;
+		}
+	}
+
+	// Mission flags touched by the background editor
+	ds << The_mission.flags[Mission::Mission_Flags::Fullneb];
+	ds << The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails];
+	ds << The_mission.flags[Mission::Mission_Flags::Fullneb_background_bitmaps];
+	ds << The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override];
+	ds << The_mission.flags[Mission::Mission_Flags::Subspace];
+
+	// Nebula globals
+	ds << Neb2_awacs;
+	ds << QByteArray(Neb2_texture_name);
+	ds << QByteArray(Mission_parse_storm_name);
+	const auto poofs = getSelectedPoofs();
+	ds << (qint32)poofs.size();
+	for (const auto& p : poofs)
+		ds << QByteArray::fromStdString(p);
+	ds << Neb2_fog_1000m_visibility;
+	ds << Neb2_fog_near_distance;
+	ds << Neb2_fog_skybox_clip_distance;
+	ds << Neb2_fog_clip_distance;
+	ds << Neb2_fog_save_legacy_values;
+	ds << (qint32)Neb2_fog_color[0];
+	ds << (qint32)Neb2_fog_color[1];
+	ds << (qint32)Neb2_fog_color[2];
+
+	// Old nebula
+	ds << (qint32)Nebula_index;
+	ds << (qint32)Mission_palette;
+	ds << (qint32)Nebula_pitch;
+	ds << (qint32)Nebula_bank;
+	ds << (qint32)Nebula_heading;
+
+	// Ambient light (packed int: R | G<<8 | B<<16)
+	ds << (qint32)The_mission.ambient_light_level;
+
+	// Skybox
+	ds << QByteArray(The_mission.skybox_model);
+	for (const auto& row : The_mission.skybox_orientation.a2d)
+		for (const float val : row)
+			ds << val;
+	ds << (qint32)The_mission.skybox_flags;
+
+	// Misc
+	ds << (qint32)Num_stars;
+	ds << QByteArray(The_mission.envmap_name);
+	ds << QByteArray::fromStdString(The_mission.lighting_profile_name);
+
+	return data;
+}
+
+std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteArray& data, Editor* editor)
+{
+	QDataStream ds(data);
+	ds.setVersion(QDataStream::Qt_5_0);
+
+	qint32 i32;
+
+	// Model-internal selection stored in the snapshot; returned to the caller
+	// so an open dialog can re-select the same items (see applyRestoredSelection).
+	int selectedBitmapIndex, selectedSunIndex;
+	ds >> i32; selectedBitmapIndex = i32;
+	ds >> i32; selectedSunIndex    = i32;
+
+	// Backgrounds vector
+	qint32 numBgs;
+	ds >> numBgs;
+	ds >> i32; Cur_background = i32;
+
+	Backgrounds.resize(static_cast<size_t>(numBgs));
+	for (auto& bg : Backgrounds) {
+		bool b;
+		ds >> b;
+		bg.flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file, b);
+
+		qint32 numBm;
+		ds >> numBm;
+		bg.bitmaps.resize(static_cast<size_t>(numBm));
+		for (auto& bm : bg.bitmaps) {
+			QByteArray qs;
+			ds >> qs;
+			std::memset(bm.filename, 0, MAX_FILENAME_LEN);
+			std::strncpy(bm.filename, qs.constData(), MAX_FILENAME_LEN - 1);
+			ds >> bm.scale_x >> bm.scale_y;
+			ds >> i32; bm.div_x = i32;
+			ds >> i32; bm.div_y = i32;
+			ds >> bm.ang.p >> bm.ang.b >> bm.ang.h;
+		}
+
+		qint32 numSun;
+		ds >> numSun;
+		bg.suns.resize(static_cast<size_t>(numSun));
+		for (auto& s : bg.suns) {
+			QByteArray qs;
+			ds >> qs;
+			std::memset(s.filename, 0, MAX_FILENAME_LEN);
+			std::strncpy(s.filename, qs.constData(), MAX_FILENAME_LEN - 1);
+			ds >> s.scale_x >> s.scale_y;
+			ds >> i32; s.div_x = i32;
+			ds >> i32; s.div_y = i32;
+			ds >> s.ang.p >> s.ang.b >> s.ang.h;
+		}
+	}
+
+	// Mission flags
+	bool b;
+	ds >> b; The_mission.flags.set(Mission::Mission_Flags::Fullneb, b);
+	ds >> b; The_mission.flags.set(Mission::Mission_Flags::Toggle_ship_trails, b);
+	ds >> b; The_mission.flags.set(Mission::Mission_Flags::Fullneb_background_bitmaps, b);
+	ds >> b; The_mission.flags.set(Mission::Mission_Flags::Neb2_fog_color_override, b);
+	ds >> b; The_mission.flags.set(Mission::Mission_Flags::Subspace, b);
+
+	// Nebula globals
+	ds >> Neb2_awacs;
+	QByteArray qs;
+	ds >> qs; std::memset(Neb2_texture_name, 0, MAX_FILENAME_LEN); std::strncpy(Neb2_texture_name, qs.constData(), MAX_FILENAME_LEN - 1);
+	ds >> qs; std::memset(Mission_parse_storm_name, 0, sizeof(Mission_parse_storm_name)); std::strncpy(Mission_parse_storm_name, qs.constData(), sizeof(Mission_parse_storm_name) - 1);
+	qint32 numPoofs;
+	ds >> numPoofs;
+	SCP_vector<SCP_string> poofNames;
+	poofNames.reserve(static_cast<size_t>(numPoofs));
+	for (qint32 pi = 0; pi < numPoofs; ++pi) {
+		ds >> qs;
+		poofNames.emplace_back(qs.toStdString());
+	}
+	// Same as setSelectedPoofs(), minus the redundant mid-restore preview refresh.
+	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
+	for (const auto& want : poofNames) {
+		for (size_t i = 0; i < Poof_info.size(); ++i) {
+			if (!stricmp(Poof_info[i].name, want.c_str())) {
+				set_bit(Neb2_poof_flags.get(), i);
+				break;
+			}
+		}
+	}
+	ds >> Neb2_fog_1000m_visibility;
+	ds >> Neb2_fog_near_distance;
+	ds >> Neb2_fog_skybox_clip_distance;
+	ds >> Neb2_fog_clip_distance;
+	ds >> Neb2_fog_save_legacy_values;
+	ds >> i32; Neb2_fog_color[0] = static_cast<ubyte>(i32);
+	ds >> i32; Neb2_fog_color[1] = static_cast<ubyte>(i32);
+	ds >> i32; Neb2_fog_color[2] = static_cast<ubyte>(i32);
+
+	// Old nebula
+	ds >> i32; Nebula_index   = i32;
+	ds >> i32; Mission_palette = i32;
+	ds >> i32; Nebula_pitch   = i32;
+	ds >> i32; Nebula_bank    = i32;
+	ds >> i32; Nebula_heading = i32;
+
+	// Ambient light
+	ds >> i32; The_mission.ambient_light_level = i32;
+	gr_set_ambient_light(The_mission.ambient_light_level & 0xff,
+	                     (The_mission.ambient_light_level >> 8) & 0xff,
+	                     (The_mission.ambient_light_level >> 16) & 0xff);
+
+	// Skybox
+	ds >> qs;
+	std::memset(The_mission.skybox_model, 0, sizeof(The_mission.skybox_model));
+	std::strncpy(The_mission.skybox_model, qs.constData(), sizeof(The_mission.skybox_model) - 1);
+	for (auto& row : The_mission.skybox_orientation.a2d)
+		for (float& val : row)
+			ds >> val;
+	ds >> i32; The_mission.skybox_flags = i32;
+
+	// Misc
+	ds >> i32; Num_stars = i32;
+	ds >> qs;
+	std::memset(The_mission.envmap_name, 0, sizeof(The_mission.envmap_name));
+	std::strncpy(The_mission.envmap_name, qs.constData(), sizeof(The_mission.envmap_name) - 1);
+	ds >> qs; The_mission.lighting_profile_name = qs.toStdString();
+
+	refreshPreview(editor); // rebuilds starfield + skybox, fires missionChanged()
+
+	return { selectedBitmapIndex, selectedSunIndex };
+}
+
+void BackgroundEditorDialogModel::applyRestoredSelection(int bitmapIndex, int sunIndex)
+{
+	_selectedBitmapIndex = bitmapIndex;
+	_selectedSunIndex    = sunIndex;
+	Q_EMIT modelDataChanged();
+}
+
 void BackgroundEditorDialogModel::refreshBackgroundPreview()
+{
+	refreshPreview(_editor);
+}
+
+void BackgroundEditorDialogModel::refreshPreview(Editor* editor)
 {
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
 
@@ -69,7 +290,7 @@ void BackgroundEditorDialogModel::refreshBackgroundPreview()
 
 	stars_set_background_model(skybox_model.c_str(), nullptr, The_mission.skybox_flags); // rebuild skybox
 	stars_set_background_orientation(&The_mission.skybox_orientation);
-	_editor->missionChanged();
+	editor->missionChanged();
 }
 
 background_t& BackgroundEditorDialogModel::getActiveBackground()
@@ -829,7 +1050,7 @@ void BackgroundEditorDialogModel::setFullNebulaEnabled(bool enabled)
 		modify(Neb2_awacs, -1.0f);
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 float BackgroundEditorDialogModel::getFullNebulaRange()
@@ -856,7 +1077,7 @@ void BackgroundEditorDialogModel::setNebulaFullPattern(const SCP_string& name)
 		strcpy_s(Neb2_texture_name, name.c_str());
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 SCP_string BackgroundEditorDialogModel::getLightning()
@@ -904,7 +1125,7 @@ void BackgroundEditorDialogModel::setSelectedPoofs(const SCP_vector<SCP_string>&
 		}
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getShipTrailsToggled()
@@ -926,6 +1147,7 @@ float BackgroundEditorDialogModel::getFog1000mVisibility()
 void BackgroundEditorDialogModel::setFog1000mVisibility(float v)
 {
 	modify(Neb2_fog_1000m_visibility, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 float BackgroundEditorDialogModel::getFogNearDistance()
@@ -936,6 +1158,7 @@ float BackgroundEditorDialogModel::getFogNearDistance()
 void BackgroundEditorDialogModel::setFogNearDistance(float v)
 {
 	modify(Neb2_fog_near_distance, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
@@ -946,6 +1169,7 @@ float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
 void BackgroundEditorDialogModel::setFogSkyboxClipDistance(float v)
 {
 	modify(Neb2_fog_skybox_clip_distance, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 float BackgroundEditorDialogModel::getFogClipDistance()
@@ -956,6 +1180,7 @@ float BackgroundEditorDialogModel::getFogClipDistance()
 void BackgroundEditorDialogModel::setFogClipDistance(float v)
 {
 	modify(Neb2_fog_clip_distance, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 void BackgroundEditorDialogModel::finalizeFogChanges()
@@ -967,6 +1192,11 @@ void BackgroundEditorDialogModel::finalizeFogChanges()
 	{
 		modify(Neb2_fog_save_legacy_values, false);
 	}
+	// Fog back where it started: keep the save format the mission came with.
+	else
+	{
+		modify(Neb2_fog_save_legacy_values, _initial_fog_save_legacy);
+	}
 }
 
 bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps()
@@ -977,7 +1207,7 @@ bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps()
 void BackgroundEditorDialogModel::setDisplayBackgroundBitmaps(bool on)
 {
 	The_mission.flags.set(Mission::Mission_Flags::Fullneb_background_bitmaps, on);
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getFogPaletteOverride()
@@ -988,7 +1218,7 @@ bool BackgroundEditorDialogModel::getFogPaletteOverride()
 void BackgroundEditorDialogModel::setFogPaletteOverride(bool on)
 {
 	The_mission.flags.set(Mission::Mission_Flags::Neb2_fog_color_override, on);
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 int BackgroundEditorDialogModel::getFogR()
@@ -1220,7 +1450,7 @@ void BackgroundEditorDialogModel::setSkyboxNoLighting(bool on)
 		The_mission.skybox_flags &= ~MR_NO_LIGHTING;
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getSkyboxAllTransparent()
@@ -1236,7 +1466,7 @@ void BackgroundEditorDialogModel::setSkyboxAllTransparent(bool on)
 		The_mission.skybox_flags &= ~MR_ALL_XPARENT;
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getSkyboxNoZbuffer()
@@ -1252,7 +1482,7 @@ void BackgroundEditorDialogModel::setSkyboxNoZbuffer(bool on)
 		The_mission.skybox_flags &= ~MR_NO_ZBUFFER;
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getSkyboxNoCull()
@@ -1268,7 +1498,7 @@ void BackgroundEditorDialogModel::setSkyboxNoCull(bool on)
 		The_mission.skybox_flags &= ~MR_NO_CULL;
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getSkyboxNoGlowmaps()
@@ -1284,7 +1514,7 @@ void BackgroundEditorDialogModel::setSkyboxNoGlowmaps(bool on)
 		The_mission.skybox_flags &= ~MR_NO_GLOWMAPS;
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getSkyboxForceClamp()
@@ -1300,7 +1530,7 @@ void BackgroundEditorDialogModel::setSkyboxForceClamp(bool on)
 		The_mission.skybox_flags &= ~MR_FORCE_CLAMP;
 	}
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 float BackgroundEditorDialogModel::getSkyboxPitch()
@@ -1404,7 +1634,7 @@ void BackgroundEditorDialogModel::setTakesPlaceInSubspace(bool on)
 
 	The_mission.flags.set(Mission::Mission_Flags::Subspace, on);
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 SCP_string BackgroundEditorDialogModel::getEnvironmentMapName()
@@ -1419,7 +1649,7 @@ void BackgroundEditorDialogModel::setEnvironmentMapName(const SCP_string& name)
 
 	strcpy_s(The_mission.envmap_name, name.c_str());
 
-	set_modified();
+	refreshBackgroundPreview();
 }
 
 SCP_string BackgroundEditorDialogModel::getLightingProfileName()

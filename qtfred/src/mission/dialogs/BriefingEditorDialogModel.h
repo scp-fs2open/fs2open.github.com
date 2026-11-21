@@ -23,6 +23,18 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Serialize/restore the dialog's WORKING state (_wipBriefings, music,
+	// current team/stage/icon) for the in-dialog undo stack. Unlike
+	// captureState(), which snapshots the live globals for the main stack's
+	// ApplyDialogCommand, these never touch mission data. Line selection, the
+	// change-locally mode, and the camera clipboard are view state and are
+	// not captured.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	int getCurrentTeam() const;
 	void setCurrentTeam(int teamIn);
 	int getCurrentStage() const;
@@ -67,7 +79,19 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	bool getCutFromPrev() const;
 	void setCutFromPrev(bool enabled);
 	bool getDisableGrid() const;
-	void setDisableGrid(bool disabled);	
+	void setDisableGrid(bool disabled);
+
+	// Indexed setters for undo commands: a command captured on one stage must
+	// still restore that stage after the user navigates elsewhere. These only
+	// touch stage-local data (never the propagate-forward icon paths).
+	void setStageTextAt(int team, int stage, const SCP_string& text);
+	void setSpeechFilenameAt(int team, int stage, const SCP_string& speechFilename);
+	void setCameraTransitionTimeAt(int team, int stage, int ms);
+	void setCutToNextAt(int team, int stage, bool enabled);
+	void setCutFromPrevAt(int team, int stage, bool enabled);
+	void setDisableGridAt(int team, int stage, bool disabled);
+	void setStageCameraAt(int team, int stage, const vec3d& pos, const matrix& orient);
+	bool stageExistsAt(int team, int stage) const;
 
 	int getCurrentIconIndex() const;
 	void setCurrentIconIndex(int idx);
