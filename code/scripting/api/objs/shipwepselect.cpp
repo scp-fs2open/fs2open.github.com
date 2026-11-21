@@ -310,7 +310,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 {
 	wss_unit_wep_h current;
 	int bank = -1;
-	int wepIndex;
+	int wepIndex = INT_MAX; // Left out of range if the value fails to parse, so the setter rejects it
 	if (!ade_get_args(L, "oi|i", l_Loadout_Weapon.Get(&current), &bank, &wepIndex))
 		return ADE_RETURN_NIL;
 
@@ -392,7 +392,7 @@ ADE_VIRTVAR(ShipClassIndex,
 	"The index or nil if handle is invalid")
 {
 	int current;
-	int shipIndex;
+	int shipIndex = INT_MAX; // Left out of range if the value fails to parse, so the setter rejects it
 	if (!ade_get_args(L, "o|i", l_Loadout_Ship.Get(&current), &shipIndex)) {
 		return ADE_RETURN_NIL;
 	}
