@@ -1762,13 +1762,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 				temp_lock_info.subsys = nullptr;
 			} // otherwise look it up to store the lock onto the subsystem
 			else {
-				ship_subsys* ml_target_subsysp = GET_FIRST(&Ships[temp_lock_info.obj->instance].subsys_list);
-
-				for (int j = 0; j < subsystem_index; j++) {
-					ml_target_subsysp = GET_NEXT(ml_target_subsysp);
-				}
-
-				temp_lock_info.subsys = ml_target_subsysp;
+				temp_lock_info.subsys = ship_get_indexed_subsys(&Ships[temp_lock_info.obj->instance], subsystem_index);
 			}
 			// store the lock.
 			shipp->missile_locks.push_back(temp_lock_info);

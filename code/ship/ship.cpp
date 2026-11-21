@@ -15571,7 +15571,7 @@ ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 		return nullptr;
 	}
 
-	// might need to refresh the cache; a copied flagset can say the table is built when it is not
+	// might need to refresh the cache; flags copied from the server at an in-game join can say the table is built
 	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
