@@ -309,8 +309,8 @@ ADE_INDEXER(l_Loadout_Weapon,
 	"index into Weapon Classes, 0 if bank is empty, -1 if the ship cannot carry the weapon, or nil if the ship or index is invalid")
 {
 	wss_unit_wep_h current;
-	int bank = -1;
-	int wepIndex = INT_MAX; // Out of range, so a value that fails to parse is rejected
+	int bank = 0;
+	int wepIndex = 0;
 	if (!ade_get_args(L, "oi|i", l_Loadout_Weapon.Get(&current), &bank, &wepIndex))
 		return ADE_RETURN_NIL;
 
@@ -391,8 +391,8 @@ ADE_VIRTVAR(ShipClassIndex,
 	"number",
 	"The index or nil if handle is invalid")
 {
-	int current;
-	int shipIndex = INT_MAX; // Out of range, so a value that fails to parse is rejected
+	int current = 0;
+	int shipIndex = 0;
 	if (!ade_get_args(L, "o|i", l_Loadout_Ship.Get(&current), &shipIndex)) {
 		return ADE_RETURN_NIL;
 	}
