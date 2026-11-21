@@ -369,16 +369,15 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 		if (!fp.empty()) {
 
 			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
-				if (fpi->active == 2) {
+				const bool filled = (fpi->active >= 1);
+
+				if (fpi->active == 2)
 					setGaugeColor(HUD_C_BRIGHT, config);
-					filled = true;
-				} else if (fpi->active == 1) {
+				else if (fpi->active == 1)
 					setGaugeColor(HUD_C_NORMAL, config);
-					filled = true;
-				} else {
+				else
 					setGaugeColor(HUD_C_DIM, config);
-					filled = false;
-				}
+
 				int centerX = x + (bitmap_size_x / 2);
 				int centerY = y + (bitmap_size_y / 2);
 				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, filled, config);
