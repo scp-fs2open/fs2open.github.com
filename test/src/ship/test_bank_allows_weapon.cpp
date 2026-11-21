@@ -1,7 +1,9 @@
 #include "globalincs/systemvars.h"
 
 #include "network/multi.h"
+#include "particle/ParticleManager.h"
 #include "ship/ship.h"
+#include "util/FSTestFixture.h"
 
 #include <gtest/gtest.h>
 
@@ -48,13 +50,21 @@ ship_info make_class(const bank_lists_t& bank_lists, ubyte flag = REGULAR_WEAPON
 	return sip;
 }
 
-class ShipClassBankAllowsWeaponTest : public ::testing::Test {
+class ShipClassBankAllowsWeaponTest : public test::FSTestFixture
+{
+  public:
+	ShipClassBankAllowsWeaponTest() : test::FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
+
   protected:
 	int _saved_game_mode = 0;
 	int _saved_type_flags = 0;
 
 	void SetUp() override
 	{
+		test::FSTestFixture::SetUp();
+		// ship classes create their default particle effects on construction
+		particle::ParticleManager::init();
+
 		_saved_game_mode = Game_mode;
 		_saved_type_flags = Netgame.type_flags;
 		Game_mode = GM_NORMAL;
@@ -65,6 +75,9 @@ class ShipClassBankAllowsWeaponTest : public ::testing::Test {
 	{
 		Game_mode = _saved_game_mode;
 		Netgame.type_flags = _saved_type_flags;
+
+		particle::ParticleManager::shutdown();
+		test::FSTestFixture::TearDown();
 	}
 };
 
