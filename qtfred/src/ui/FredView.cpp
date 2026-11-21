@@ -651,18 +651,18 @@ void FredView::on_actionRevert_triggered(bool) {
 		QMessageBox::information(this, tr("Revert"), tr("Mission has not been saved yet."));
 		return;
 	}
+	// tools close before the question, so a tool's "keep your changes?" answer still counts if the revert is declined
+	SCP_vector<ClosedToolDialog> toolDialogs;
+	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
+	if (!closeMissionToolDialogs(toolDialogs)) {
+		return;
+	}
 	auto result = QMessageBox::question(this,
 		tr("Revert to Last Save"),
 		tr("Discard all changes and reload from disk?"),
 		QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 	if (result != QMessageBox::Yes)
 		return;
-	// tools close before the flag is cleared, or a tool's "keep your changes?" would bring the save prompt back
-	SCP_vector<ClosedToolDialog> toolDialogs;
-	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
-	if (!closeMissionToolDialogs(toolDialogs)) {
-		return;
-	}
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
 	loadMissionFile(saveName);

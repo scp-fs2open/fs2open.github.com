@@ -45,6 +45,7 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 #include "scripting/global_hooks.h"
+#include "utils/finally.h"
 
 extern int Num_objects;
 
@@ -222,7 +223,6 @@ void CFREDDoc::editor_init_mission() {
 	reset_mission();
 	SetModifiedFlag(FALSE);
 	recreate_dialogs();
-	recreate_event_editors();
 }
 
 bool CFREDDoc::load_mission(const char *pathname, int flags) {
@@ -412,9 +412,6 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	Ship_editor_dialog.bypass_all--;
 
 	recreate_dialogs();
-	if (!(flags & MPF_FAST_RELOAD)) {
-		recreate_event_editors();
-	}
 
 	// This hook will allow for scripts to know when a mission has been loaded
 	// which will then allow them to update any LuaEnums that may be related to sexps
@@ -465,7 +462,7 @@ void CFREDDoc::OnFileImportFSM() {
 	// if mission has been modified, offer to save before continuing.
 	if (!SaveModified())
 		return;
-
+	auto reopen_editors = util::finally([this]() { reopen_closed_editors(); });
 
 	// get location to import from
 	CFileDialog dlgFile(TRUE, "fsm", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_ALLOWMULTISELECT, "FreeSpace Missions (*.fsm)|*.fsm|All files (*.*)|*.*||");
@@ -611,10 +608,10 @@ void CFREDDoc::OnFileImportFSM() {
 	}
 
 	recreate_dialogs();
-	recreate_event_editors();
 }
 
 BOOL CFREDDoc::OnNewDocument() {
+	auto reopen_editors = util::finally([this]() { reopen_closed_editors(); });
 	if (!CDocument::OnNewDocument())
 		return FALSE;
 
@@ -626,6 +623,8 @@ BOOL CFREDDoc::OnNewDocument() {
 
 BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 {
+	auto reopen_editors = util::finally([this]() { reopen_closed_editors(); });
+
 	// don't process any objects if the window focus is lost and reacquired
 	clean_up_selections();
 
@@ -806,59 +805,48 @@ void CFREDDoc::Serialize(CArchive& ar) {
 	*/
 }
 
-static void open_event_editor()
-{
-	Event_editor_dlg = new event_editor;
-	Event_editor_dlg->Create(event_editor::IDD);
-	Event_editor_dlg->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-	Event_editor_dlg->ShowWindow(SW_RESTORE);
-}
-
-static void open_message_editor()
-{
-	Message_editor_dlg = new CMessageEditorDlg;
-	Message_editor_dlg->Create(CMessageEditorDlg::IDD);
-	Message_editor_dlg->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-	Message_editor_dlg->ShowWindow(SW_RESTORE);
-}
-
-// Only when the mission is replaced, never on the reload after a save, which keeps the open editors' edits.
+// Undo replaces the mission with no save prompt before it, so the open editor is rebuilt here.
 void CFREDDoc::recreate_event_editors() {
 	if (Event_editor_dlg) {
 		Event_editor_dlg->close_discarding_changes();
-		open_event_editor();
+		Fred_view_wnd->show_event_editor();
 	}
 
 	if (Message_editor_dlg) {
 		Message_editor_dlg->OnCancel();
-		open_message_editor();
+		Fred_view_wnd->show_message_editor();
 	}
 }
 
-// an editor's own close prompt deletes it on Yes and No, so a pointer still set means the user chose Cancel
+// Closes the open editor and remembers it; the caller reopens it once the mission is replaced.
 BOOL CFREDDoc::SaveModified()
 {
-	const bool had_event_editor = Event_editor_dlg != nullptr;
-	const bool had_message_editor = Message_editor_dlg != nullptr;
+	m_reopen_event_editor = Event_editor_dlg != nullptr;
+	m_reopen_message_editor = Message_editor_dlg != nullptr;
 
-	if (had_event_editor) {
+	if (m_reopen_event_editor) {
 		Event_editor_dlg->close_offering_changes();
 	}
-	if (had_message_editor) {
+	if (m_reopen_message_editor) {
 		Message_editor_dlg->close_offering_changes();
 	}
-	if (Event_editor_dlg != nullptr || Message_editor_dlg != nullptr) {
+
+	// an editor's own close prompt deletes it on Yes and No, so a pointer still set means the user chose Cancel
+	if (Event_editor_dlg != nullptr || Message_editor_dlg != nullptr || !CDocument::SaveModified()) {
+		reopen_closed_editors();
 		return FALSE;
 	}
+	return TRUE;
+}
 
-	const BOOL result = CDocument::SaveModified();
-	if (had_event_editor) {
-		open_event_editor();
+void CFREDDoc::reopen_closed_editors()
+{
+	if (std::exchange(m_reopen_event_editor, false)) {
+		Fred_view_wnd->show_event_editor();
 	}
-	if (had_message_editor) {
-		open_message_editor();
+	if (std::exchange(m_reopen_message_editor, false)) {
+		Fred_view_wnd->show_message_editor();
 	}
-	return result;
 }
 
 void CFREDDoc::recreate_dialogs() {

@@ -40,6 +40,7 @@ public:
 	bool autoload();
 	void recreate_event_editors();
 	BOOL SaveModified() override;
+	void reopen_closed_editors();
 
 	/**
 	 * @brief Read in a new mission file from disk
@@ -185,6 +186,9 @@ private:
 	 * @details Recreates the child dialogs that would be affected by a mission load. (Briefing dialog)
 	 */
 	void recreate_dialogs();
+
+	bool m_reopen_event_editor = false;
+	bool m_reopen_message_editor = false;
 };
 
 extern int Local_modified;      //!< Flag. Nonzero if the FREDDoc object is modified

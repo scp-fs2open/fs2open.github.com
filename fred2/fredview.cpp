@@ -2541,6 +2541,11 @@ void CFREDView::OnEditorsEvents()
 		return;
 	}
 
+	show_event_editor();
+}
+
+void CFREDView::show_event_editor()
+{
 	if (!Event_editor_dlg) {
 		Event_editor_dlg = new event_editor;
 		Event_editor_dlg->Create(event_editor::IDD);
@@ -2562,6 +2567,11 @@ void CFREDView::OnEditorsMessage()
 		return;
 	}
 
+	show_message_editor();
+}
+
+void CFREDView::show_message_editor()
+{
 	if (!Message_editor_dlg) {
 		Message_editor_dlg = new CMessageEditorDlg;
 		Message_editor_dlg->Create(CMessageEditorDlg::IDD);
