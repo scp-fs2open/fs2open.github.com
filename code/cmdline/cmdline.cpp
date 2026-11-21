@@ -1642,6 +1642,7 @@ static void write_flags() {
 	}
 
 	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
+	json_object_set_new(root, "bootstrap_supported", json_true());
 
 #ifdef __ANDROID__
 	char* dumped = json_dumps(root, JSON_INDENT(4));
