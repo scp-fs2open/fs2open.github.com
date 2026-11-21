@@ -13,4 +13,7 @@ $Attacks: ( "Friendly" )
 $IFF Name: Missing IFF
 +nocreate
 
+$IFF Name: Militia
+$Color: ( 0, 200, 0 )
+
 #End

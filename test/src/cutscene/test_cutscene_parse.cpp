@@ -29,4 +29,5 @@ TEST_F(CutsceneParseTest, ModularNocreateAppliesOnlyToItsEntry)
 	EXPECT_GE(get_cutscene_index_by_name("Intro Override"), 0);
 	EXPECT_GE(get_cutscene_index_by_name("New Cutscene"), 0);
 	EXPECT_LT(get_cutscene_index_by_name("Missing Cutscene"), 0);
+	EXPECT_GE(get_cutscene_index_by_name("After Skipped Cutscene"), 0);
 }

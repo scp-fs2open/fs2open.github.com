@@ -40,6 +40,7 @@ TEST_F(IffAccessibilityTest, TbmIffsKeepTheirColorsAndBuiltInsUseAccessibilityCo
 	const int pirate = iff_lookup("Pirate");
 	const int friendly = iff_lookup("Friendly");
 	EXPECT_LT(iff_lookup("Missing IFF"), 0);
+	EXPECT_GE(iff_lookup("Militia"), 0);
 	ASSERT_GE(pirate, 0);
 	ASSERT_GE(friendly, 0);
 
