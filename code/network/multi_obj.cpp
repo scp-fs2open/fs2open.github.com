@@ -1205,7 +1205,7 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 				subsystems.push_back(OOC_INDEX_NULLPTR_SUBSYSEM);
 			} // otherwise, just send the subsystem index.
 			else {
-				subsystems.push_back( (ushort)std::distance( GET_FIRST(&Ships[lock.obj->instance].subsys_list), lock.subsys) );
+				subsystems.push_back( static_cast<ushort>(ship_get_subsys_index(lock.subsys)) );
 			}
 				
 			count++;
