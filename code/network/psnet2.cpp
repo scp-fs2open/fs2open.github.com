@@ -1770,33 +1770,19 @@ void psnet_rel_work()
 		}
 
 		if (rcv_buff.type == RNT_DATA) {
+			// sequence numbers wrap at 65536, so take the difference as a signed 16-bit value
+			const int seqdelta = static_cast<short>(static_cast<unsigned short>(rcv_buff.seq - rsocket->oursequence));
+
 			// If the data is out of order by >= MAXNETBUFFERS-1 ignore that packet for now
-			int seqdelta = rcv_buff.seq - rsocket->oursequence;
-
-			if (seqdelta < 0) {
-				seqdelta = -seqdelta;
-			}
-
-			if ( seqdelta >= (MAXNETBUFFERS-1) ) {
+			if ( std::abs(seqdelta) >= (MAXNETBUFFERS-1) ) {
 				ml_string("Received reliable packet out of order!");
 
 				// It's out of order, so we won't ack it, which will mean we will get it again soon.
 				continue;
 			}
 
-			//e lse move data into the proper buffer position
-			int savepacket = 1;
-
-			if ( rsocket->oursequence < (0xffff - (MAXNETBUFFERS-1)) ) {
-				if (rsocket->oursequence > rcv_buff.seq) {
-					savepacket = 0;
-				}
-			} else {
-				// Sequence is high, so prepare for wrap around
-				if ( static_cast<unsigned short>(rcv_buff.seq + rsocket->oursequence) > (MAXNETBUFFERS-1) ) {
-					savepacket = 0;
-				}
-			}
+			// an older packet is one we already have; ack it again but don't keep it
+			int savepacket = (seqdelta >= 0) ? 1 : 0;
 
 			for (i = 0; i < MAXNETBUFFERS; i++) {
 				if ( (rsocket->rbuffers[i] != nullptr) && (rsocket->rsequence[i] == rcv_buff.seq) ) {

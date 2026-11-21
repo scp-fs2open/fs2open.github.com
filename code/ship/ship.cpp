@@ -8602,7 +8602,7 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 	// do standard departure stuff first
 	objp->flags.set(Object::Object_Flags::Should_be_dead);
 	if (objp->type == OBJ_SHIP)
-		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
+		ship_cleanup(objp->instance, infop->parameter_variables.int_value);
 
 	// do the end-mission stuff if it's the player ship
 	if (objp == Player_obj)
@@ -8615,7 +8615,8 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 void ship_actually_depart(int shipnum, int method)
 {
 	dock_function_info dfi;
-	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
+	dfi.parameter_variables.int_value = method;
+
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
 
 	// in a couple of cases we'll need to send a packet to update clients 
@@ -12992,7 +12993,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// This is to circumvent a nine-year-old bug that prevents autoaim from working in multi. In most cases polish_predicted_target_pos needs
 				// the Player object, but in multi it needs the shooting object.  Also, additional conditions would need to be added in the future if you 
 				// want to apply autoaim to AI, for whatever reason.
-				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship]) ? obj : Player_obj;
+				// a player joining a game in progress has no ship yet, so measure from the shooter
+				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship] || Player_obj == nullptr) ? obj : Player_obj;
 
 				vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
 				polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1, object_to_send);
@@ -15560,15 +15562,19 @@ void ship_index_subsystems(ship *shipp)
 }
 
 /**
- * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems.
+ * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems,
+ * or nullptr if there is no such subsystem.
  */
 ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 {
 	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
 	Assertion(index < Ship_info[sp->ship_info_index].n_subsystems, "Subsystem index out of range!");
 
+	if (index < 0 || index >= Ship_info[sp->ship_info_index].n_subsystems)
+		return nullptr;
+
 	// might need to refresh the cache
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	return sp->subsys_list_indexer[index];
@@ -15588,7 +15594,7 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 
 	// might need to refresh the cache
 	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	Assertion(subsys->parent_subsys_index >= 0, "Somehow a subsystem could not be found in its parent ship %s's subsystem list!", sp->ship_name);
@@ -15871,7 +15877,7 @@ static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 	return The_mission.support_ships.rearm_weapon_pool[team].value_or(weapon_class, The_mission.support_ships.rearm_pool_default());
 }
 
-static bool weapon_allowed_for_current_game_type(int weapon_flags)
+bool eval_weapon_flag_for_game_type(int weapon_flags)
 {
 	if (MULTI_DOGFIGHT) {
 		return (weapon_flags & DOGFIGHT_WEAPON) != 0;
@@ -15880,22 +15886,20 @@ static bool weapon_allowed_for_current_game_type(int weapon_flags)
 	return (weapon_flags & REGULAR_WEAPON) != 0;
 }
 
-static bool support_rearm_bank_allows_weapon(const ship_info* sip, int bank_index, int weapon_class)
+bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
 {
-	if (!weapon_allowed_for_current_game_type(sip->allowed_weapons[weapon_class])) {
+	if (weapon_class < 0)
+		return true;
+
+	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
 		return false;
-	}
 
-	if (bank_index >= 0 && !sip->restricted_loadout_flag.empty()) {
-		if (weapon_allowed_for_current_game_type(sip->restricted_loadout_flag[bank_index])) {
-			if (sip->allowed_bank_restricted_weapons.empty() ||
-				!weapon_allowed_for_current_game_type(sip->allowed_bank_restricted_weapons[bank_index][weapon_class])) {
-				return false;
-			}
-		}
-	}
+	// no bank given, or no per-bank lists: the class list decides
+	if (bank < 0 || sip->restricted_loadout_flag.empty() ||
+		!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
+		return true;
 
-	return true;
+	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]);
 }
 
 static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool is_secondary_bank)
@@ -15923,7 +15927,7 @@ static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool 
 			}
 		}
 
-		if (!support_rearm_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
+		if (!ship_class_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
 			continue;
 		}
 

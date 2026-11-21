@@ -341,16 +341,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 			//First we check that this is a valid bank for the ship and that the script is not trying to empty the bank
 			if (wepIndex > -1) {
 				// Next we check that this is a weapon the ship can carry
-				if (!sip->restricted_loadout_flag.empty() &&
-					eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank])) {
-					if (eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][wepIndex])) {
-						valid = true;
-					}
-				} else {
-					if (eval_weapon_flag_for_game_type(sip->allowed_weapons[wepIndex])) {
-						valid = true;
-					}
-				}
+				valid = ship_class_bank_allows_weapon(sip, bank, wepIndex);
 			}
 			if (valid) {
 				//Now we double check that we're putting a primary in a primary slot or secondary in a secondary slot

@@ -1009,23 +1009,14 @@ void opengl_tnl_set_model_material(model_material *material_info)
 				1);
 		}
 
-		if (material_info->get_texture_map(TM_SPECULAR_TYPE) >= 0 ||
-			material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
-			if (material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
-				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE),
-					TCACHE_TYPE_NORMAL,
-					&u_scale,
-					&v_scale,
-					&array_index,
-					2);
-			} else {
-				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE),
-					TCACHE_TYPE_NORMAL,
-					&u_scale,
-					&v_scale,
-					&array_index,
-					2);
-			}
+		const auto specular_map = material_info->get_specular_map();
+		if (specular_map >= 0) {
+			gr_opengl_tcache_set(specular_map,
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				2);
 		}
 
 		if (material_info->get_texture_map(TM_NORMAL_TYPE) >= 0) {

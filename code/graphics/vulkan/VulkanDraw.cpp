@@ -1305,12 +1305,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 	setTexture(mat->get_texture_map(TM_BASE_TYPE), TextureSlot::BaseMap, true);
 	setTexture(mat->get_texture_map(TM_GLOW_TYPE), TextureSlot::GlowMap);
 
-	// Specular - prefer spec_gloss if available
-	int specMap = mat->get_texture_map(TM_SPEC_GLOSS_TYPE);
-	if (specMap < 0) {
-		specMap = mat->get_texture_map(TM_SPECULAR_TYPE);
-	}
-	setTexture(specMap, TextureSlot::SpecMap);
+	setTexture(mat->get_specular_map(), TextureSlot::SpecMap);
 
 	setTexture(mat->get_texture_map(TM_NORMAL_TYPE), TextureSlot::NormalMap);
 	setTexture(mat->get_texture_map(TM_HEIGHT_TYPE), TextureSlot::HeightMap);
@@ -1454,11 +1449,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		MaterialSetInputs matInputs;
 		matInputs.texHandles[0] = mat->get_texture_map(TM_BASE_TYPE);
 		matInputs.texHandles[1] = mat->get_texture_map(TM_GLOW_TYPE);
-		int specMap = mat->get_texture_map(TM_SPEC_GLOSS_TYPE);
-		if (specMap < 0) {
-			specMap = mat->get_texture_map(TM_SPECULAR_TYPE);
-		}
-		matInputs.texHandles[2] = specMap;
+		matInputs.texHandles[2] = mat->get_specular_map();
 		matInputs.texHandles[3] = mat->get_texture_map(TM_NORMAL_TYPE);
 		matInputs.texHandles[4] = mat->get_texture_map(TM_HEIGHT_TYPE);
 		matInputs.texHandles[5] = mat->get_texture_map(TM_AMBIENT_TYPE);
