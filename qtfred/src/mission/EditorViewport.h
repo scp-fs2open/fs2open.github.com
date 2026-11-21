@@ -127,6 +127,8 @@ class EditorViewport {
 
 	vec3d orbitCameraGetPivot();
 
+	vec3d selectionMidpoint(int cur_object_index) const;
+
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 
 	int select_object(int cx, int cy);
@@ -241,6 +243,8 @@ class EditorViewport {
 	ThemeMode Theme_mode = ThemeMode::System;
 
 	DataMenuStyle Data_menu_style = DataMenuStyle::Auto;
+
+	bool Classic_menu_layout = false; // FRED2's Editors and Misc menus instead of the grouped ones
 
 	void saveSettings() const;
 

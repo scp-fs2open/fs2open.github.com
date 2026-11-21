@@ -59,7 +59,7 @@ public:
 	 * @param device Vulkan logical device
 	 * @return true on success
 	 */
-	bool init(vk::Device device);
+	bool init(vk::Device device, bool hwClipDistance);
 
 	/**
 	 * @brief Shutdown and release all shader modules
@@ -86,6 +86,11 @@ public:
 	 * @param progressCallback Called with (current, total) progress
 	 */
 	void recompileAllShaders(const std::function<void(size_t, size_t)>& progressCallback);
+
+	/**
+	 * @brief Drop every variant of a shader type so the next use compiles it again
+	 */
+	void forgetShaderType(shader_type type);
 
 	/**
 	 * @brief Get a shader by handle

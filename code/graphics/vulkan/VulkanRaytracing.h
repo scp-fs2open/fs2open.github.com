@@ -93,8 +93,9 @@ public:
 	/**
 	 * @brief Purge all cached BLASes for a model and free their GPU resources.
 	 * Called from model_unload()/model_free_all() before the model is destroyed.
+	 * @return true if any BLAS was retired (the shadow TLAS binding must then be refreshed)
 	 */
-	void onModelUnloaded(int pm_id);
+	bool onModelUnloaded(int pm_id);
 
 	/**
 	 * @brief Rebuild the top-level acceleration structure for this frame from
@@ -117,6 +118,15 @@ public:
 	 * manager finished initializing successfully (including its fallback TLAS).
 	 */
 	bool isEnabled() const { return m_enabled; }
+
+	/**
+	 * @brief Whether buildTlas() already ran in the current frame. game_render_frame() can run
+	 * more than once in a frame (for example, one time for each OpenXR eye), but one build in
+	 * each frame is sufficient.
+	 */
+	bool isTlasBuiltThisFrame() const {
+		return m_bufferManager != nullptr && m_lastTlasBuildFrame == m_bufferManager->getCurrentFrameNumber();
+	}
 
 	/**
 	 * @brief A permanent, 0-instance TLAS built once at init(). Used as a
@@ -172,6 +182,7 @@ private:
 	const BlasEntry* getOrBuildBlasEntry(int pm_id, int submodel_num);
 
 	void destroyBlasEntry(BlasEntry& entry);
+	void retireBuiltTlases();
 
 	bool createRawBuffer(vk::DeviceSize size,
 		vk::BufferUsageFlags usage,
@@ -272,6 +283,10 @@ private:
 	// queried before init() (m_bufferManager not yet set); real usage is always
 	// gated behind m_enabled/m_initialized so this only matters defensively.
 	uint32_t currentFrameIndex() const { return m_bufferManager != nullptr ? m_bufferManager->getCurrentFrame() : 0; }
+
+	// Monotonic frame number of the last buildTlas() that ran. buildTlas() uses it to build
+	// only one time in each frame. See isTlasBuiltThisFrame().
+	uint64_t m_lastTlasBuildFrame = UINT64_MAX;
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;

@@ -756,7 +756,7 @@ public:
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
 												// as afterburner_fuel_capacity in ship_info).
 	float   afterburner_last_engage_fuel;      // the fuel level when the afterburners were last engaged
-	int   afterburner_last_end_time;         // timestamp when the ship last stopped its afterburner
+	TIMESTAMP afterburner_last_end_time;     // when the ship last stopped its afterburner
 
 	int cmeasure_count;						//	Number of charges of countermeasures this ship can hold.
 	int current_cmeasure;					//	Currently selected countermeasure.
@@ -1262,17 +1262,17 @@ public:
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
 
-	std::unique_ptr<char[]> type_str;							// type string used by tooltips
-	std::unique_ptr<char[]> maneuverability_str;			// string used by tooltips
-	std::unique_ptr<char[]> armor_str;							// string used by tooltips
-	std::unique_ptr<char[]> manufacturer_str;				// string used by tooltips
-	std::unique_ptr<char[]> desc;								// string used by tooltips
-	std::unique_ptr<char[]> tech_desc;							// string used by tech database
+	SCP_string type_str;							// type string used by tooltips
+	SCP_string maneuverability_str;			// string used by tooltips
+	SCP_string armor_str;							// string used by tooltips
+	SCP_string manufacturer_str;				// string used by tooltips
+	SCP_string desc;								// string used by tooltips
+	SCP_string tech_desc;							// string used by tech database
 	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
-	std::unique_ptr<char[]> ship_length;						// string used by multiplayer ship desc
-	std::unique_ptr<char[]> gun_mounts;			         // string used by multiplayer ship desc
-	std::unique_ptr<char[]> missile_banks;					// string used by multiplayer ship desc
+	SCP_string ship_length;						// string used by multiplayer ship desc
+	SCP_string gun_mounts;			         // string used by multiplayer ship desc
+	SCP_string missile_banks;					// string used by multiplayer ship desc
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
@@ -1378,7 +1378,7 @@ public:
 	// (n_subsystems describes the subsystems array; the wrapper keeps it
 	// consistent with the array by resetting it to 0 in a moved-from ship_info)
 	util::reset_on_move<int> n_subsystems;			// this number comes from ships.tbl
-	std::unique_ptr<model_subsystem[]> subsystems;	// see model.h for structure definition
+	SCP_vector<model_subsystem> subsystems;	// see model.h for structure definition
 	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
@@ -1604,7 +1604,7 @@ public:
 
 	int damage_lightning_type;
 
-	SCP_vector<std::unique_ptr<HudGauge>> hud_gauges;
+	SCP_vector<SCP_polymorphic<HudGauge>> hud_gauges;
 	bool hud_enabled;
 	bool hud_retail;
 
@@ -1621,14 +1621,17 @@ public:
 
 	ship_info();
 	~ship_info() = default;
-	void clone(const ship_info& other);
+	void clone(const ship_info& other) { *this = other; }
 
 	ship_info(ship_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
 	ship_info &operator=(ship_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
 
-	// Deleted so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
-	ship_info(const ship_info& other) = delete;
-	ship_info &operator=(const ship_info& other) = delete;
+  private:
+	// Private so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
+	ship_info(const ship_info& other) = default;
+	ship_info &operator=(const ship_info& other) = default;
+
+  public:
 
     //Helper functions
     
@@ -1873,6 +1876,9 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
+
+// switch a subsystem's looping sounds between its alive and dead sets, according to its hitpoints
+extern void ship_update_subsys_sounds(const ship *shipp, ship_subsys *ss);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
@@ -1884,6 +1890,19 @@ extern int get_subsystem_pos(vec3d *pos, const object *objp, const ship_subsys *
 extern int ship_info_lookup(const char *name);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(const char *name);
+
+/**
+ * @brief Whether REGULAR_WEAPON / DOGFIGHT_WEAPON flags allow a weapon in the current game type
+ */
+bool eval_weapon_flag_for_game_type(int weapon_flags);
+
+/**
+ * @brief Whether a ship class can load a weapon in one of its banks, in the current game type
+ * @param[in] bank Index into the class's bank lists, secondaries starting at MAX_SHIP_PRIMARY_BANKS; -1 checks only
+ * the class-wide list
+ * @param[in] weapon_class Weapon_info index; -1 (an empty bank) is always allowed
+ */
+bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class);
 
 inline int ship_info_size()
 {
@@ -1942,7 +1961,7 @@ extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew = true, bool local_pos = false, bool local_orient = false);
 
 extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
-extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
+extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship, or nullptr if there is none
 extern int ship_find_subsys(const ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(const ship_subsys *subsys);
 
@@ -1971,7 +1990,7 @@ extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 extern void wing_maybe_cleanup( wing *wingp, int team = -1 );
 
 extern int ship_find_repair_ship( object *requester_obj, object **ship_we_found = NULL );
-extern void ship_close();	// called in game_shutdown() to free malloced memory
+extern void ship_close();	// frees the ship tables
 
 
 extern void ship_assign_sound_all();

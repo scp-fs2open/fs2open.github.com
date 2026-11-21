@@ -49,8 +49,9 @@ anchor_t target_to_anchor(int target);
 // name arrays via wing_name_lookup.
 void update_custom_wing_indexes();
 
-// The _team variant clears the map first; the two _wing variants accumulate into it
+// The _team variants clear the map first; the _wing variants accumulate into it
 // (so callers that build a total across several wings must clear the map themselves).
+void generate_ship_usage_list_team(int team, SCP_map<int, int>& usage);
 void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
 void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage);
 void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
@@ -75,6 +76,9 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 // Free the engine data that the editors keep for their whole session.  Call at shutdown, while the graphics
 // system is still up, since models own GPU buffers and cursors own bitmaps.
 void editor_free_engine_data();
+
+// Bounding-box midpoint of all (or only marked) objects and the farthest distance from it; false if there are none.
+bool get_object_bounds(bool marked_only, vec3d* center, float* radius);
 
 // Resolve a mission filename to its index in Campaign.missions[], lazy-loading the mission's goal/event name lists from disk if the
 // FRED_LOAD_PENDING flag is still set.  Returns -1 if the mission isn't in the campaign.

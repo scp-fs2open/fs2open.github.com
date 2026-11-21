@@ -313,8 +313,7 @@ ADE_VIRTVAR(Conflicted,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (!current.getControl()->is_axis() &&
-		((current.getConflict()->first >= 0) || (current.getConflict()->second >= 0))) {
+	if ((current.getConflict()->first >= 0) || (current.getConflict()->second >= 0)) {
 		int i = current.getConflict()->first;
 		if (i < 0) {
 			i = current.getConflict()->second;

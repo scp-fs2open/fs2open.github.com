@@ -1803,6 +1803,20 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 	auto target_ship_entry = aigp->target_name == nullptr ? nullptr : ship_registry_get(aigp->target_name);
 
+	// a ship can't guard itself, and the leader of a wing is the ship the rest of the wing guards
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state])
+	{
+		if (aigp->ai_mode == AI_GOAL_GUARD && target_ship_entry && target_ship_entry->has_shipp() && target_ship_entry->shipp() == shipp)
+			return ai_achievability::NOT_ACHIEVABLE;
+
+		if (aigp->ai_mode == AI_GOAL_GUARD_WING)
+		{
+			int wingnum = wing_name_lookup(aigp->target_name);
+			if (wingnum >= 0 && Wings[wingnum].ship_index[0] == objp->instance)
+				return ai_achievability::NOT_ACHIEVABLE;
+		}
+	}
+
 	// warp (depart) only achievable if there's somewhere to depart to
 	if (aigp->ai_mode == AI_GOAL_WARP)
 	{
@@ -2535,8 +2549,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	if ( !(Player_use_ai) && (objp->flags[Object::Object_Flags::Player_ship]) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
 	{
 		return;
-	}	
+	}
 
+	ai_reset_order_state(aip);
 
 	std::unique_ptr<ai_goal> current_goal_backup;
 	auto current_goal_target_ship = current_goal->target_name ? ship_registry_get(current_goal->target_name) : nullptr;

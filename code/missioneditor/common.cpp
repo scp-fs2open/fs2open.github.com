@@ -124,6 +124,24 @@ void update_custom_wing_indexes()
 		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
 }
 
+void generate_ship_usage_list_team(int team, SCP_map<int, int>& usage)
+{
+	usage.clear();
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
+	{
+		Assert(team >= 0 && team < MAX_TVT_TEAMS);
+
+		for (int i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++)
+			generate_ship_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], usage);
+	}
+	else
+	{
+		for (int starting_wing: Starting_wings)
+			generate_ship_usage_list_wing(starting_wing, usage);
+	}
+}
+
 void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage)
 {
 	int i;
@@ -733,4 +751,42 @@ void rotate_jump_nodes(const SCP_vector<int>& slots, int from_pos, int to_pos)
 	for (int j = from_pos; j != to_pos; j += step)
 		Jump_nodes[slots[j]] = std::move(Jump_nodes[slots[j + step]]);
 	Jump_nodes[slots[to_pos]] = std::move(moving);
+}
+
+bool get_object_bounds(bool marked_only, vec3d* center, float* radius)
+{
+	vec3d mins = ZERO_VECTOR, maxs = ZERO_VECTOR;
+	bool found = false;
+
+	for (auto* objp : list_range(&obj_used_list)) {
+		if (marked_only && !objp->flags[Object::Object_Flags::Marked]) {
+			continue;
+		}
+		if (!found) {
+			mins = maxs = objp->pos;
+			found = true;
+			continue;
+		}
+		mins.xyz.x = std::min(mins.xyz.x, objp->pos.xyz.x);
+		mins.xyz.y = std::min(mins.xyz.y, objp->pos.xyz.y);
+		mins.xyz.z = std::min(mins.xyz.z, objp->pos.xyz.z);
+		maxs.xyz.x = std::max(maxs.xyz.x, objp->pos.xyz.x);
+		maxs.xyz.y = std::max(maxs.xyz.y, objp->pos.xyz.y);
+		maxs.xyz.z = std::max(maxs.xyz.z, objp->pos.xyz.z);
+	}
+
+	if (!found) {
+		return false;
+	}
+
+	vm_vec_avg(center, &mins, &maxs);
+	*radius = 0.0f;
+	for (auto* objp : list_range(&obj_used_list)) {
+		if (marked_only && !objp->flags[Object::Object_Flags::Marked]) {
+			continue;
+		}
+		*radius = std::max(*radius, vm_vec_dist(center, &objp->pos));
+	}
+
+	return true;
 }

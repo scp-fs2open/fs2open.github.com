@@ -709,7 +709,10 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
-	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
+	resolve_parse_flags(Iff_info[shipp->team].default_parse_flags, *shipp, (shipp->ship_max_shield_strength == 0.0f));
+	if (Iff_info[shipp->team].default_parse_flags[Mission::Parse_Object_Flags::SF_Guardian]) {
+		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
+	}
 
 	// default shield setting
 	shipp->special_shield = -1;
@@ -1610,19 +1613,9 @@ void Editor::updateStartingWingLoadoutUseCounts() {
 	_loadout_usage.clear();
 	_loadout_usage.resize(MAX_TVT_TEAMS);
 
-	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		for (int i = 0; i<MAX_TVT_TEAMS; i++) {
-			for (int j = 0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
-				generate_ship_usage_list_wing(TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j], _loadout_usage[i].ships);
-			}
-			generate_weaponry_usage_list_team(i, _loadout_usage[i].weapons);
-		}
-	}
-	else {
-		for (int i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_ship_usage_list_wing(Starting_wings[i], _loadout_usage[0].ships);
-		}
-		generate_weaponry_usage_list_team(0, _loadout_usage[0].weapons);
+	for (int i = 0; i < Num_teams; i++) {
+		generate_ship_usage_list_team(i, _loadout_usage[i].ships);
+		generate_weaponry_usage_list_team(i, _loadout_usage[i].weapons);
 	}
 }
 void Editor::delete_marked() {

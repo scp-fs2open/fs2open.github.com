@@ -116,6 +116,10 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 
 	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Gamma correct blit", false },
+
+	// Vulkan-only
+	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
 };
 // clang-format on
 
@@ -132,6 +136,8 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RTAO, "RTAO", {}, "Trace raytraced ambient occlusion in the ambient light pass"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
@@ -161,6 +167,19 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 
 	{SDR_TYPE_SHADOW_MAP_GEN, true, SDR_FLAG_SHADOW_FALLBACK, "GEOMETRY_FALLBACK", {}, "Use a geometry shader to select the cascade layer instead of writing gl_Layer from the vertex shader"}
 };
+
+static_assert(VATTRIB_MODEL_MATRIX + 4 <= 32, "vertex input mask is 32 bits wide");
+
+uint32_t shader_vertex_input_mask(const ShaderTypeInfo& info)
+{
+	uint32_t mask = 0;
+	for (auto attr : info.attributes) {
+		// The Vulkan pipeline drops every location the mask omits, so a mat4 needs all four of its bits.
+		const uint32_t locations = (attr == VATTRIB_MODEL_MATRIX) ? 4u : 1u;
+		mask |= ((1u << locations) - 1u) << attr;
+	}
+	return mask;
+}
 
 const ShaderTypeInfo* shader_get_type_info(shader_type type)
 {
@@ -208,7 +227,7 @@ bool shader_variant_requires_raytracing(shader_type type, unsigned int flags)
 	case SDR_TYPE_MODEL:
 		return (flags & MODEL_SDR_FLAG_RT_SHADOWS) != 0;
 	case SDR_TYPE_DEFERRED_LIGHTING:
-		return (flags & SDR_FLAG_DEFERRED_RT_SHADOWS) != 0;
+		return (flags & (SDR_FLAG_DEFERRED_RT_SHADOWS | SDR_FLAG_DEFERRED_RTAO)) != 0;
 	default:
 		return false;
 	}

@@ -1702,6 +1702,7 @@ void sexp_tree_view::endOperatorQuickSearch(bool confirm)
 					type |= SEXPT_MODIFIER;
 
 				_actions.replace_data(typed.toUtf8().constData(), type);
+				Q_EMIT modified();
 				setFocus(Qt::OtherFocusReason);
 				return; // done
 			}

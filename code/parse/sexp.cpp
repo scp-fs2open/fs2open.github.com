@@ -44,6 +44,7 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
+#include "graphics/post_processing.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "hud/hudescort.h"
@@ -790,6 +791,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "config-debris-field",			OP_CONFIG_DEBRIS_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "config-field-targets",			OP_CONFIG_FIELD_TARGETS,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-lightshafts-override",		OP_SET_LIGHTSHAFTS_OVERRIDE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Dustinspace217
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -2126,7 +2128,8 @@ bool check_container_data_type(int type, ContainerType con_type, int op, int arg
 	}
 }
 
-bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container) {
+bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container)
+{
 	const bool is_string = (var_type & SEXP_VARIABLE_STRING);
 	const bool is_number = (var_type & SEXP_VARIABLE_NUMBER);
 	if (type == OPF_CONTAINER_VALUE) {
@@ -2158,7 +2161,8 @@ static bool is_variable_node_type_mismatched(int node)
 	return (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) != is_number;
 }
 
-bool is_special_sender(const char* name) {
+static bool is_special_sender(const char* name)
+{
 	return name[0] == '#';
 }
 
@@ -4837,7 +4841,9 @@ int get_sexp()
 
 	Mp++;  // skip past the ')'
 
-	
+	if (start == -1)
+		return -1;
+
 	// Goober5000 - backwards compatibility for removed ai-chase-any-except
 	if (get_operator_const(start) == OP_AI_CHASE_ANY && prune_extra_args)
 	{
@@ -15782,13 +15788,7 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		if (ss->submodel_instance_1)
-			ss->submodel_instance_1->blown_off = false;
-		if (ss->submodel_instance_2)
-			ss->submodel_instance_2->blown_off = false;
-
-		// special case for subsystems that don't correspond to a submodel
-		check_subsystem_submodel_link(shipp, ss, false);
+		restore_subsystem_submodels(shipp, ss);
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -16104,14 +16104,16 @@ void multi_sexp_destroy_subsys_instantly()
 	int subsys_index;
 	ship_subsys *ss;
 
-	Current_sexp_network_packet.get_ship(shipp);
+	if (!Current_sexp_network_packet.get_ship(shipp))
+		return;
 
 	// destroy subsystems
 	while (Current_sexp_network_packet.get_int(subsys_index))
 	{
 		// find subsystem
-		Assert(subsys_index >= 0);
-		ss = ship_get_indexed_subsys(shipp, subsys_index);
+		ss = multi_get_indexed_subsys(shipp, subsys_index);
+		if (ss == nullptr)
+			continue;
 
 		// do destruction stuff
 		ss->current_hits = 0;
@@ -21724,6 +21726,16 @@ void ship_copy_damage(const ship_registry_entry *target, const ship_registry_ent
 			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
 		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
 			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
+
+		// special case for subsystems that don't correspond to a submodel;
+		// copy what the source shows if it can show anything, since its hitpoints don't say whether it was blown off
+		bool show_destroyed;
+		if (source_ss->submodel_instance_1 || submodel_find_destroyed_form(Ship_info[source_shipp->ship_info_index].model_num, source_ss->system_info->subobj_name) >= 0)
+			show_destroyed = subsystem_submodels_blown_off(source_shipp, source_ss);
+		else
+			show_destroyed = (source_ss->max_hits > 0.0f) && (source_ss->current_hits <= 0.0f);
+		show_destroyed = show_destroyed && !(target_ss->flags[Ship::Subsystem_Flags::No_disappear]);
+		check_subsystem_submodel_link(target_shipp, target_ss, show_destroyed);
 	}
 }
 
@@ -27940,6 +27952,11 @@ void sexp_set_motion_debris(int node)
 		Motion_debris_override = is_sexp_true(node);
 }
 
+void sexp_set_lightshafts_override(int node)
+{
+	Lightshafts_override = is_sexp_true(node);
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  * NOTE: this can return SUBSYSTEM_ALL which is not in the normal range of subsystem types
@@ -30145,6 +30162,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_motion_debris(node);
 				break;
 
+			case OP_SET_LIGHTSHAFTS_OVERRIDE:
+				sexp_val = SEXP_TRUE;
+				sexp_set_lightshafts_override(node);
+				break;
+
 			case OP_WEAPON_RECHARGE_PCT:
 			case OP_SHIELD_RECHARGE_PCT:
 			case OP_ENGINE_RECHARGE_PCT:
@@ -32082,6 +32104,7 @@ int query_operator_return_type(int op)
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
 		case OP_OVERRIDE_MOTION_DEBRIS:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
 		case OP_TURRET_SET_FORCED_TARGET:
@@ -34980,6 +35003,7 @@ int query_operator_argument_type(int op_index, int argnum)
 				return OPF_SHIP;
 
 		case OP_OVERRIDE_MOTION_DEBRIS:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 			return OPF_BOOL;
 
 		case OP_REPLACE_TEXTURE:
@@ -37285,6 +37309,7 @@ int get_category(int op_id)
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
 		case OP_OVERRIDE_MOTION_DEBRIS:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_SCRIPT_EVAL_STRING:
@@ -37786,6 +37811,7 @@ int get_subcategory(int op_id)
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SKYBOX_ORIENT:
 		case OP_SET_SKYBOX_ALPHA:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 		case OP_MISSION_SET_NEBULA:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_CHANGE_BACKGROUND:
@@ -38133,7 +38159,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe Ship's Name (ship must be in-mission)\r\n" },
 
 	{ OP_NAV_DEL, "del-nav\r\n"
-		"Deletes a nav point. Takes 1 Argument...\r\n"
+		"Deletes a nav point. Deleting the selected nav point clears the selection and ends autopilot if it is engaged.\r\n"
+		"Takes 1 Argument...\r\n"
 		"\t1:\tNavPoint Name" },
 
 	{ OP_NAV_HIDE, "hide-nav\r\n"
@@ -38192,13 +38219,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 boolean argument.\r\n"
 		"\t1:\tSet to true to enable autopilot, set to false to disable autopilot." },
 
-	{ OP_NAV_SELECT, "nav-select (Action operator)\r\n"
-		"\tSelects a nav point.\r\n\r\n"
+	{ OP_NAV_SELECT, "select-nav (Action operator)\r\n"
+		"\tSelects a nav point. Selecting a different nav point ends autopilot if it is engaged.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the nav point." },
 
-	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
-		"\tDeselects any navpoint selected.\r\n\r\n"
+	{ OP_NAV_UNSELECT, "unselect-nav (Action operator)\r\n"
+		"\tLeaves no nav point selected. Ends autopilot if it is engaged.\r\n\r\n"
 		"Takes no arguments..." },
 
 	{ OP_NAV_SET_COLOR, "nav-set-color (Action operator)\r\n"
@@ -42541,6 +42568,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_SKYBOX_ALPHA, "set-skybox-alpha\r\n"
 		"\tSets the current skybox transparency.  Takes 1 argument...\r\n"
 		"\t1:\tAlpha value x1000 (so 1.0 is represented as 1000)\r\n"
+	},
+
+	// Dustinspace217
+	{ OP_SET_LIGHTSHAFTS_OVERRIDE, "set-lightshafts-override\r\n"
+		"\tControls whether or not lightshafts (sun god-rays) are drawn for the rest of the mission, the same way "
+		"set-motion-debris-override works for motion debris.  True hides lightshafts even for players who have them enabled; "
+		"False removes the override and restores the player's own setting.  This cannot turn lightshafts on for a player who "
+		"has them disabled.  The override is cleared when the next mission loads.  Like set-motion-debris-override, this runs "
+		"where mission events are evaluated, so in multiplayer it affects the host only.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tBoolean: True will disable lightshafts, False restores the player's setting.\r\n"
 	},
 
 	// Goober5000

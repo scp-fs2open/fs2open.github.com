@@ -100,6 +100,8 @@ extern const std::shared_ptr<Hook<>>									OnStateAboutToEndHook;
 extern const std::shared_ptr<OverridableHook<>>							OnStateEndHook;
 extern const std::shared_ptr<Hook<>>									OnCameraSetUpHook;
 
+extern const std::shared_ptr<Hook<ShipDamageConditions>>					OnShipDamage;
+
 // FRED Hooks
 extern const std::shared_ptr<Hook<>>                                    FredOnMissionLoad;
 extern const std::shared_ptr<Hook<>>									FredOnMissionSpecsSave;

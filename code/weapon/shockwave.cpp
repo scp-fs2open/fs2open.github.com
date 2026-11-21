@@ -9,7 +9,6 @@
 
 #include "weapon/shockwave.h"
 #include "asteroid/asteroid.h"
-#include "cmdline/cmdline.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
@@ -143,6 +142,7 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	sw->inner_radius = sci->inner_rad;
 	sw->outer_radius = sci->outer_rad;
 	sw->damage = sci->damage;
+	sw->radius_curve_idx = sci->radius_curve_idx;
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
@@ -299,8 +299,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	if (sw->weapon_info_index >= 0)
 		wip = &Weapon_info[sw->weapon_info_index];
 	
-	if (wip && wip->shockwave.radius_curve_idx >= 0) {
-		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
+	if (sw->radius_curve_idx >= 0) {
+		float val = Curves[sw->radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
 		sw->radius = val * sw->outer_radius;
 		if (sw->radius < 0.0f)
 			sw->radius = 0.0f;
@@ -577,17 +577,6 @@ int shockwave_load(const char *s_name, bool shock_3D)
 		if ( si->model_id < 0 ) {
 			Shockwave_info.pop_back();
 			return -1;
-		}
-
-		// glow maps are only loaded when enabled, so only check then
-		if (Cmdline_glow || Fred_running) {
-			auto pm = model_get(si->model_id);
-			bool has_glow = std::any_of(pm->maps, pm->maps + pm->n_textures, [](const texture_map &tmap) {
-				return tmap.textures[TM_GLOW_TYPE].GetTexture() >= 0;
-			});
-
-			if (!has_glow)
-				Warning(LOCATION, "3D shockwave model '%s' has no glow map.  For a 3D shockwave, the glow texture typically carries the animation.", si->filename);
 		}
 	} else {
 		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, nullptr, nullptr, true );

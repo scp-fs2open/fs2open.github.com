@@ -132,6 +132,20 @@ vk::PrimitiveTopology convertPrimitiveType(primitive_type type)
 	}
 }
 
+bool topologySupportsPrimitiveRestart(vk::PrimitiveTopology topology)
+{
+	switch (topology) {
+	case vk::PrimitiveTopology::eLineStrip:
+	case vk::PrimitiveTopology::eTriangleStrip:
+	case vk::PrimitiveTopology::eTriangleFan:
+	case vk::PrimitiveTopology::eLineStripWithAdjacency:
+	case vk::PrimitiveTopology::eTriangleStripWithAdjacency:
+		return true;
+	default:
+		return false;
+	}
+}
+
 vk::CullModeFlags convertCullMode(bool cullEnabled)
 {
 	return cullEnabled ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
@@ -142,7 +156,7 @@ bool isBlendingEnabled(gr_alpha_blend mode)
 	return mode != ALPHA_BLEND_NONE;
 }
 
-vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend mode, const bvec4& colorWriteMask)
+vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend mode, const bvec4& colorWriteMask, bool coverageAlpha)
 {
 	vk::PipelineColorBlendAttachmentState attachment;
 
@@ -155,9 +169,16 @@ vk::PipelineColorBlendAttachmentState createColorBlendAttachment(gr_alpha_blend 
 	attachment.dstColorBlendFactor = dstFactor;
 	attachment.colorBlendOp = vk::BlendOp::eAdd;
 
-	// Alpha blend - same as color for most modes
-	attachment.srcAlphaBlendFactor = srcFactor;
-	attachment.dstAlphaBlendFactor = dstFactor;
+	if (!coverageAlpha) {
+		attachment.srcAlphaBlendFactor = srcFactor;
+		attachment.dstAlphaBlendFactor = dstFactor;
+	} else if (mode == ALPHA_BLEND_ADDITIVE || mode == ALPHA_BLEND_ALPHA_ADDITIVE) {
+		attachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
+		attachment.dstAlphaBlendFactor = vk::BlendFactor::eOne;
+	} else {
+		attachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+		attachment.dstAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+	}
 	attachment.alphaBlendOp = vk::BlendOp::eAdd;
 
 	// Color write mask from material

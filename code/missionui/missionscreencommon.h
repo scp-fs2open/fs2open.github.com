@@ -94,6 +94,7 @@ enum class commit_pressed_status {
 void common_select_init(bool API_Access = false);
 int	common_select_do(float frametime);
 void	common_select_close();
+void	common_select_level_close();
 void	common_draw_buttons();
 void	common_check_buttons();
 void	common_check_keys(int k);
