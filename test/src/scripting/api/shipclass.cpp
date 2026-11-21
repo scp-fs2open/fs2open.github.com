@@ -157,8 +157,22 @@ TEST_F(ScriptingShipclassTest, loadoutWeapon_weaponPastEnd)
 	EXPECT_EQ(-1, Wss_slots[0].wep_count[1]);
 }
 
+TEST_F(ScriptingShipclassTest, loadoutShipClass_lastClass)
+{
+	Wss_slots[0].wep[0] = 0;
+	Wss_slots[0].wep_count[0] = 1;
+
+	this->EvalTestScript();
+
+	EXPECT_EQ(3, Wss_slots[0].ship_class);
+	EXPECT_EQ(-1, Wss_slots[0].wep_count[0]);
+}
+
 TEST_F(ScriptingShipclassTest, loadoutShipClass_shipPastEnd)
 {
+	Wss_slots[0].wep[0] = 0;
+	Wss_slots[0].wep_count[0] = 1;
+
 	try {
 		this->EvalTestScript();
 		FAIL() << "Expected a Lua error for a ship class index one past the end";
@@ -167,5 +181,7 @@ TEST_F(ScriptingShipclassTest, loadoutShipClass_shipPastEnd)
 			<< e.what();
 	}
 
-	EXPECT_EQ(3, Wss_slots[0].ship_class);
+	EXPECT_EQ(0, Wss_slots[0].ship_class);
+	EXPECT_EQ(0, Wss_slots[0].wep[0]);
+	EXPECT_EQ(1, Wss_slots[0].wep_count[0]);
 }
