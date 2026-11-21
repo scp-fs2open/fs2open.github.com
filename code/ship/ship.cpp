@@ -12974,7 +12974,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// This is to circumvent a nine-year-old bug that prevents autoaim from working in multi. In most cases polish_predicted_target_pos needs
 				// the Player object, but in multi it needs the shooting object.  Also, additional conditions would need to be added in the future if you 
 				// want to apply autoaim to AI, for whatever reason.
-				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship]) ? obj : Player_obj;
+				// a player joining a game in progress has no ship yet, so measure from the shooter
+				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship] || Player_obj == nullptr) ? obj : Player_obj;
 
 				vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
 				polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1, object_to_send);
@@ -15542,15 +15543,19 @@ void ship_index_subsystems(ship *shipp)
 }
 
 /**
- * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems.
+ * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems,
+ * or nullptr if there is no such subsystem.
  */
 ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 {
 	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
 	Assertion(index < Ship_info[sp->ship_info_index].n_subsystems, "Subsystem index out of range!");
 
+	if (index < 0 || index >= Ship_info[sp->ship_info_index].n_subsystems)
+		return nullptr;
+
 	// might need to refresh the cache
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	return sp->subsys_list_indexer[index];
@@ -15570,7 +15575,7 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 
 	// might need to refresh the cache
 	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	Assertion(subsys->parent_subsys_index >= 0, "Somehow a subsystem could not be found in its parent ship %s's subsystem list!", sp->ship_name);

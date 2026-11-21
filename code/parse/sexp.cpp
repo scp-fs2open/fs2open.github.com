@@ -16104,14 +16104,16 @@ void multi_sexp_destroy_subsys_instantly()
 	int subsys_index;
 	ship_subsys *ss;
 
-	Current_sexp_network_packet.get_ship(shipp);
+	if (!Current_sexp_network_packet.get_ship(shipp))
+		return;
 
 	// destroy subsystems
 	while (Current_sexp_network_packet.get_int(subsys_index))
 	{
 		// find subsystem
-		Assert(subsys_index >= 0);
-		ss = ship_get_indexed_subsys(shipp, subsys_index);
+		ss = multi_get_indexed_subsys(shipp, subsys_index);
+		if (ss == nullptr)
+			continue;
 
 		// do destruction stuff
 		ss->current_hits = 0;
