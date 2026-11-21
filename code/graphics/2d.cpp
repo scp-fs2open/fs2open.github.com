@@ -1216,16 +1216,16 @@ static const SCP_vector<std::pair<int, std::pair<const char*, int>>> UpscaleFilt
                                                                                            {1, {"Nearest", -1}}};
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto UpscaleFilterOption __UNUSED = options::OptionBuilder<int>("Graphics.UpscaleFilter",
+static auto UpscaleFilterOption = options::OptionBuilder<int>("Graphics.UpscaleFilter",
                      std::pair<const char*, int>{"Upscale Filter", -1},
-                     std::pair<const char*, int>{"OpenGL only. How the frame is scaled to the window when the window size differs from the render resolution. Nearest keeps sharp pixels, square at whole-number scales. Vulkan always uses nearest, after FSR when FSR is on. VR output does not change.", -1})
+                     std::pair<const char*, int>{"How the frame is scaled to the window when the window size differs from the render resolution. Nearest keeps sharp pixels, square at whole-number scales. VR output does not change.", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .values(UpscaleFilterValues)
                      .default_val(0)
                      .bind_to(&Upscale_filter)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .importance(0)
+                     .importance(100)
                      .finish();
 
 bool gr_upscale_nearest()
@@ -1236,14 +1236,14 @@ bool gr_upscale_nearest()
 static bool Keep_aspect_ratio = false;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto KeepAspectRatioOption __UNUSED = options::OptionBuilder<bool>("Graphics.KeepAspectRatio",
+static auto KeepAspectRatioOption = options::OptionBuilder<bool>("Graphics.KeepAspectRatio",
                      std::pair<const char*, int>{"Keep Aspect Ratio", -1},
-                     std::pair<const char*, int>{"OpenGL only. When the render resolution has a different shape than the window, show it at its own aspect ratio with black bars instead of stretching it.", -1})
+                     std::pair<const char*, int>{"When the render resolution has a different shape than the window, show it at its own aspect ratio with black bars instead of stretching it.", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .default_val(false)
                      .bind_to(&Keep_aspect_ratio)
-                     .importance(0)
+                     .importance(100)
                      .finish();
 
 void gr_present_rect(int& x, int& y, int& w, int& h)
@@ -2874,6 +2874,18 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		options_mgr->removeOption(HDRPeakOption);
 	}
 	shadows_remove_unsupported_options();
+
+	// Only the OpenGL present uses these two; the Vulkan output always scales with a nearest sampler.
+	// VR shows its own output, so the bars would only reach the desktop window.
+	// Removed, not greyed out: upstream has no option requirement yet. Move to one when it exists.
+	// Vulkan only, not every non-OpenGL mode: the unit tests run gr_init() with the stub renderer and then look these
+	// options up.
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
+		options::OptionsManager::instance()->removeOption(UpscaleFilterOption);
+	}
+	if (gr_screen.mode == GraphicsAPI::Vulkan || Cmdline_enable_vr) {
+		options::OptionsManager::instance()->removeOption(KeepAspectRatioOption);
+	}
 
 	if(Cmdline_enable_vr)
 		openxr_init();
