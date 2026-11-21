@@ -6616,7 +6616,6 @@ void ship::clear()
 	orders_allowed_against.clear();
 
 	subsys_list_indexer.reset();
-	subsys_index_warned = false;
 	subsys_list.clear();
 	// since these aren't cleared by clear()
 	subsys_list.next = NULL;
@@ -7508,7 +7507,6 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	// for each subsystem, get a new ship_subsys instance and set up the pointers and other values
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
 	shipp->subsys_list_indexer.reset();
-	shipp->subsys_index_warned = false;
 	shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 
 	// make sure to have allocated the number of subsystems we require
@@ -15546,32 +15544,17 @@ void ship_index_subsystems(ship *shipp)
 
 /**
  * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems,
- * or nullptr if the index is out of range.
+ * or nullptr if there is no such subsystem.
  */
 ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 {
-	Assertion(index >= 0,
-		"Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
+	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
 
 	// multiplayer packets carry these indexes, and the two machines can hold different classes for one ship
-	const auto& sip = Ship_info[sp->ship_info_index];
-	const int n_subsystems = sip.n_subsystems;
-	if (index < 0 || index >= n_subsystems) {
-		// once per ship, because a packet that names a missing subsystem is usually followed by many more
-		if (!sp->subsys_index_warned) {
-			sp->subsys_index_warned = true;
-			ReleaseWarning(LOCATION,
-				"Ship %s (%s) has %d subsystems, but subsystem %d was requested. In multiplayer the number comes "
-				"from another machine, which may hold a different class for this ship.",
-				sp->ship_name,
-				sip.name,
-				n_subsystems,
-				index);
-		}
+	if (index < 0 || index >= Ship_info[sp->ship_info_index].n_subsystems)
 		return nullptr;
-	}
 
-	// might need to refresh the cache; flags copied from the server at an in-game join can say the table is built
+	// might need to refresh the cache
 	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 

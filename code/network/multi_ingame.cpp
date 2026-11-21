@@ -1186,7 +1186,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
 		
-		// this flag describes a lookup table in our own memory; older joining clients trust it and crash
+		// this flag describes a lookup table in our own memory; it should not be passed to other clients
 		auto flags_to_send = shipp->flags;
 		flags_to_send.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 

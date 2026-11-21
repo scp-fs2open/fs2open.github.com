@@ -739,7 +739,6 @@ public:
 	// describing the state of all engines combined) -- MWA 4/1/97
 	ship_subsys_sentinel	subsys_list;						//	linked list of subsystems for this ship.
 	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
-	bool	subsys_index_warned = false;			// an out-of-range subsystem index has been reported for this ship
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
@@ -1949,7 +1948,7 @@ extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew = true, bool local_pos = false, bool local_orient = false);
 
 extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
-extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship, or nullptr if out of range
+extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship, or nullptr if there is none
 extern int ship_find_subsys(const ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(const ship_subsys *subsys);
 

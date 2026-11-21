@@ -4527,7 +4527,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	}
 
 	targeted_subsys = NULL;
-	if ( (t_subsys >= 0) && (target_objp != NULL) && (target_objp->type == OBJ_SHIP) ) {
+	if ( (t_subsys >= 0) && (target_objp->type == OBJ_SHIP) ) {
 		targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 	}
 
