@@ -561,7 +561,7 @@ json_t* chatPost(ResourceContext *context) {
             }
         }
         SCP_string text(message, len);
-        send_game_chat_packet(Net_player, text.c_str(), MULTI_MSG_ALL, NULL);
+        send_game_chat_packet(Net_player, text.c_str(), MULTI_MSG_ALL, nullptr);
         std_add_chat_text(text.c_str(), 0 /*MY_NET_PLAYER_NUM*/, 1);
     }
 
