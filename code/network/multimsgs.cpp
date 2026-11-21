@@ -3248,8 +3248,8 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 	if ( target_objp != NULL ) {
 		aip->target_objnum = OBJ_INDEX(target_objp);
 
-		if ( (t_subsys >= 0) && (target_objp->type == OBJ_SHIP) ) {
-			aip->targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
+		if ( (t_subsys != -1) && (target_objp->type == OBJ_SHIP) ) {
+			aip->targeted_subsys = multi_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 		}
 	}
 
@@ -3445,7 +3445,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index );
+	ssp = multi_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -4527,8 +4527,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	}
 
 	targeted_subsys = NULL;
-	if ( (t_subsys >= 0) && (target_objp->type == OBJ_SHIP) ) {
-		targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
+	if ( (t_subsys != -1) && (target_objp->type == OBJ_SHIP) ) {
+		targeted_subsys = multi_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 	}
 
 	// save and restore the target objnum and targeted subsystem so that we don't mess up other things
@@ -4680,7 +4680,7 @@ void process_subsystem_destroyed_packet( ubyte *data, header *hinfo )
 		shipp = &Ships[objp->instance];
 
 		// call to get the pointer to the subsystem we should be working on
-		subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+		subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 		if (subsysp == NULL) {
 			nprintf(("Network", "Could not find subsys %d for ship %s to process as being destroyed\n", (int)uindex, shipp->ship_name ));
 			PACKET_SET_SIZE();
@@ -4757,7 +4757,7 @@ void process_subsystem_cargo_revealed_packet( ubyte *data, header *hinfo )
 	shipp = &Ships[objp->instance];
 
 	// call to get the pointer to the subsystem we should be working on
-	subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+	subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 	if (subsysp == NULL) {
 		nprintf(("Network", "Could not find subsys for ship %s for cargo revealed\n", Ships[objp->instance].ship_name ));
 		return;
@@ -4826,7 +4826,7 @@ void process_subsystem_cargo_hidden_packet( ubyte *data, header *hinfo )
 	shipp = &Ships[objp->instance];
 
 	// call to get the pointer to the subsystem we should be working on
-	subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+	subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 	if (subsysp == NULL) {
 		nprintf(("Network", "Could not find subsys for ship %s for cargo hidden\n", Ships[objp->instance].ship_name ));
 		return;
@@ -5291,7 +5291,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			// special case for destroy subsystem -- get the ai_info pointer to our target ship
 			// so that we can properly set up what subsystem this ship is attacking.
 			if ( (mode == AI_GOAL_DESTROY_SUBSYSTEM ) && (submode >= 0) )
-				aip->targeted_subsys = ship_get_indexed_subsys( &Ships[other_objp->instance], submode);
+				aip->targeted_subsys = multi_get_indexed_subsys( &Ships[other_objp->instance], submode);
 		}
 
 		break;
@@ -7631,8 +7631,8 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	wp->target_sig = homing_object->signature;
 	wp->homing_pos = homing_goal;
 
-	if ( (h_subsys >= 0) && (homing_object->type == OBJ_SHIP) ) {
-		wp->homing_subsys = ship_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
+	if ( (h_subsys != -1) && (homing_object->type == OBJ_SHIP) ) {
+		wp->homing_subsys = multi_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
 	}
 
 	if (flags & HWIF_BIG_UPDATE) {
@@ -8386,9 +8386,9 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
-	if ( fire_info.target && (target_subsys_index >= 0) ) {
+	if ( fire_info.target && (target_subsys_index >= 0) && (fire_info.target->type == OBJ_SHIP) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
-		fire_info.target_subsys = ship_get_indexed_subsys(targetp, target_subsys_index);
+		fire_info.target_subsys = multi_get_indexed_subsys(targetp, target_subsys_index);
 	}
 
 	if ( fire_info.shooter && (fire_info.shooter->type == OBJ_SHIP) ) {
@@ -8429,7 +8429,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			fire_info.bank = bank;
 			fire_info.point = point;
 		} else if (shooter_subsys_index >= 0) {
-			fire_info.turret = ship_get_indexed_subsys(shipp, shooter_subsys_index);
+			fire_info.turret = multi_get_indexed_subsys(shipp, shooter_subsys_index);
 		}
 	}
 
@@ -8760,7 +8760,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index );
+	ssp = multi_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}

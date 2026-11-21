@@ -4115,3 +4115,11 @@ void multi_send_anti_timeout_ping()
 #ifdef _MSC_VER
 #pragma optimize("", on)
 #endif
+
+ship_subsys* multi_get_indexed_subsys(ship* shipp, int index)
+{
+	if (index < 0 || index >= ship_get_num_subsys(shipp))
+		return nullptr;
+
+	return ship_get_indexed_subsys(shipp, index);
+}

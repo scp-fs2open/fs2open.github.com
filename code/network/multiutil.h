@@ -214,6 +214,9 @@ int multi_unpack_turret_angles(ubyte* data, std::pair<bool, float>& angle1, std:
 // Cyborg17 - Compresses the list of subsystems, so that we don't have to mark each one with a ubyte
 int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data);
 
+// returns the index'th subsystem of a ship, or nullptr if the index read from a packet is not in its list
+ship_subsys* multi_get_indexed_subsys(ship* shipp, int index);
+
 char multi_unit_to_char(float unit);
 float multi_char_to_unit(float val);
 

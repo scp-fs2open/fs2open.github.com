@@ -15549,8 +15549,8 @@ void ship_index_subsystems(ship *shipp)
 ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 {
 	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
+	Assertion(index < Ship_info[sp->ship_info_index].n_subsystems, "Subsystem index out of range!");
 
-	// multiplayer packets carry these indexes, and the two machines can hold different classes for one ship
 	if (index < 0 || index >= Ship_info[sp->ship_info_index].n_subsystems)
 		return nullptr;
 

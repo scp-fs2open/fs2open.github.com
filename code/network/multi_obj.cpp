@@ -1711,7 +1711,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 				aip->targeted_subsys = nullptr;
 
 				if ((t_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-					aip->targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
+					aip->targeted_subsys = multi_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
 				}
 			}
 
@@ -1719,7 +1719,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 			if (shipp != nullptr) {
 				if ((l_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-					pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
+					pl->m_player->locking_subsys = multi_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
 				}
 			}
 		}
@@ -1762,7 +1762,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 				temp_lock_info.subsys = nullptr;
 			} // otherwise look it up to store the lock onto the subsystem
 			else {
-				temp_lock_info.subsys = ship_get_indexed_subsys(&Ships[temp_lock_info.obj->instance], subsystem_index);
+				temp_lock_info.subsys = multi_get_indexed_subsys(&Ships[temp_lock_info.obj->instance], subsystem_index);
 			}
 			// store the lock.
 			shipp->missile_locks.push_back(temp_lock_info);
