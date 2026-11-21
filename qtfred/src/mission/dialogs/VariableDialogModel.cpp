@@ -97,6 +97,9 @@ bool VariableDialogModel::apply()
 
 	update_sexp_containers(new_containers, renamed_containers);
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

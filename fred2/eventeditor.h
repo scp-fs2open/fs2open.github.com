@@ -71,6 +71,8 @@ public:
 	void save_event(int e);
 	void move_handler(int node1, int node2, bool insert_before);
 	void insert_handler(int old, int node);
+	void close_discarding_changes();
+	void close_offering_changes() { OnButtonCancel(); }
 	int query_modified();
 	void OnOK();		// default MFC OK behavior
 	void OnCancel();	// default MFC Cancel behavior

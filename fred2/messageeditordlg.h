@@ -21,6 +21,7 @@ public:
 	int find_event();
 	int query_modified();
 	void OnCancel();
+	void close_offering_changes() { OnClose(); }
 	int update(int num);
 	void update_cur_message();
 	void OnOK();

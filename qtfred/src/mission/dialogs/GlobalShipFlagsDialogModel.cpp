@@ -20,32 +20,47 @@ void GlobalShipFlagsDialogModel::reject() {
 
 void GlobalShipFlagsDialogModel::setNoShieldsAll()
 {
+	bool changed = false;
 	for (auto& ship : Ships) {
 		if (ship.objnum >= 0) {
+			changed |= !Objects[ship.objnum].flags[Object::Object_Flags::No_shields];
 			Objects[ship.objnum].flags.set(Object::Object_Flags::No_shields);
 		}
+	}
+	if (changed) {
+		_editor->missionChanged();
 	}
 }
 
 void GlobalShipFlagsDialogModel::setNoSubspaceDriveOnFightersBombers()
 {
+	bool changed = false;
 	for (auto& ship : Ships) {
 		if (ship.objnum >= 0) {
 			// only for fighters and bombers
-			ship.flags.set(Ship::Ship_Flags::No_subspace_drive,
-				Ship_info[ship.ship_info_index].is_fighter_bomber());
+			const bool value = Ship_info[ship.ship_info_index].is_fighter_bomber();
+			changed |= ship.flags[Ship::Ship_Flags::No_subspace_drive] != value;
+			ship.flags.set(Ship::Ship_Flags::No_subspace_drive, value);
 		}
+	}
+	if (changed) {
+		_editor->missionChanged();
 	}
 }
 
 void GlobalShipFlagsDialogModel::setPrimitiveSensorsOnFightersBombers()
 {
+	bool changed = false;
 	for (auto& ship : Ships) {
 		if (ship.objnum >= 0) {
 			// only for fighters and bombers
-			ship.flags.set(Ship::Ship_Flags::Primitive_sensors,
-				Ship_info[ship.ship_info_index].is_fighter_bomber());
+			const bool value = Ship_info[ship.ship_info_index].is_fighter_bomber();
+			changed |= ship.flags[Ship::Ship_Flags::Primitive_sensors] != value;
+			ship.flags.set(Ship::Ship_Flags::Primitive_sensors, value);
 		}
+	}
+	if (changed) {
+		_editor->missionChanged();
 	}
 }
 
@@ -53,12 +68,17 @@ void GlobalShipFlagsDialogModel::setAffectedByGravityOnFightersBombers()
 {
 	// FRED only affects fighters and bombers.. that seems really strange for this one
 	
+	bool changed = false;
 	for (auto& ship : Ships) {
 		if (ship.objnum >= 0) {
 			// only for fighters and bombers
-			ship.flags.set(Ship::Ship_Flags::Affected_by_gravity,
-				Ship_info[ship.ship_info_index].is_fighter_bomber());
+			const bool value = Ship_info[ship.ship_info_index].is_fighter_bomber();
+			changed |= ship.flags[Ship::Ship_Flags::Affected_by_gravity] != value;
+			ship.flags.set(Ship::Ship_Flags::Affected_by_gravity, value);
 		}
+	}
+	if (changed) {
+		_editor->missionChanged();
 	}
 }
 

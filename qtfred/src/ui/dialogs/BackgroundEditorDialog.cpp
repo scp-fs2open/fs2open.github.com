@@ -30,10 +30,14 @@ BackgroundEditorDialog::BackgroundEditorDialog(FredView* parent, EditorViewport*
 
 BackgroundEditorDialog::~BackgroundEditorDialog() = default;
 
-void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
+// every close reaches reject() (QDialog::closeEvent calls it; so does Esc); edits here are live and there is no OK
+void BackgroundEditorDialog::reject()
 {
 	_model->finalizeFogChanges();
-	QDialog::closeEvent(e);
+	if (_model->query_modified()) {
+		_viewport->editor->missionChanged();
+	}
+	QDialog::reject();
 }
 
 void BackgroundEditorDialog::initializeUi()

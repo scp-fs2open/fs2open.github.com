@@ -38,6 +38,8 @@ public:
 	 * @returns The file index of the loaded Undo item
 	 */
 	bool autoload();
+	void recreate_event_editors();
+	BOOL SaveModified() override;
 
 	/**
 	 * @brief Read in a new mission file from disk

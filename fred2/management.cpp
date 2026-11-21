@@ -908,6 +908,7 @@ void create_new_mission()
 {
 	reset_mission();
 	*Mission_filename = 0;
+	FREDDoc_ptr->recreate_event_editors();
 	FREDDoc_ptr->autosave("nothing");
 	Undo_count = 0;
 }

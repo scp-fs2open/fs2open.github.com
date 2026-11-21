@@ -227,6 +227,9 @@ bool MissionSpecDialogModel::apply() {
 		scripting::hooks::FredOnMissionSpecsSave->run();
 	}
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

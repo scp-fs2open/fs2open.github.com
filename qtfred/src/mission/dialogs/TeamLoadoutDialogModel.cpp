@@ -124,6 +124,9 @@ bool TeamLoadoutDialogModel::apply()
 		out.do_not_validate = in.skipValidation;
 	}
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

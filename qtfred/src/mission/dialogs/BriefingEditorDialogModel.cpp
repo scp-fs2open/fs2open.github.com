@@ -106,6 +106,9 @@ bool BriefingEditorDialogModel::apply()
 	Mission_music[SCORE_BRIEFING] = _briefingMusicIndex - 1;
 	strcpy_s(The_mission.substitute_briefing_music_name, _subBriefingMusic.c_str());
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

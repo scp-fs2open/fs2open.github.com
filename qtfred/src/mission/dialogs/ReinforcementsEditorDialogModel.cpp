@@ -93,6 +93,9 @@ bool ReinforcementsDialogModel::apply()
 	_shipWingPool.clear();
 	_selectedReinforcementIndices.clear();
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 
