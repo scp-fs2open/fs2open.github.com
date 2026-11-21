@@ -4682,7 +4682,7 @@ void process_subsystem_destroyed_packet( ubyte *data, header *hinfo )
 		// call to get the pointer to the subsystem we should be working on
 		subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 		if (subsysp == NULL) {
-			nprintf(("Network", "Could not find subsys %d for ship %s to process as being destroyed\n", (int)uindex, shipp->ship_name ));
+			nprintf(("Network", "Could not find subsystem %d of %d on ship %s (%s) to destroy\n", (int)uindex, ship_get_num_subsys(shipp), shipp->ship_name, Ship_info[shipp->ship_info_index].name));
 			PACKET_SET_SIZE();
 			return;
 		}
@@ -4759,7 +4759,7 @@ void process_subsystem_cargo_revealed_packet( ubyte *data, header *hinfo )
 	// call to get the pointer to the subsystem we should be working on
 	subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 	if (subsysp == NULL) {
-		nprintf(("Network", "Could not find subsys for ship %s for cargo revealed\n", Ships[objp->instance].ship_name ));
+		nprintf(("Network", "Could not find subsystem %d of %d on ship %s (%s) to reveal cargo\n", (int)uindex, ship_get_num_subsys(shipp), shipp->ship_name, Ship_info[shipp->ship_info_index].name));
 		return;
 	}
 
@@ -4828,7 +4828,7 @@ void process_subsystem_cargo_hidden_packet( ubyte *data, header *hinfo )
 	// call to get the pointer to the subsystem we should be working on
 	subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 	if (subsysp == NULL) {
-		nprintf(("Network", "Could not find subsys for ship %s for cargo hidden\n", Ships[objp->instance].ship_name ));
+		nprintf(("Network", "Could not find subsystem %d of %d on ship %s (%s) to hide cargo\n", (int)uindex, ship_get_num_subsys(shipp), shipp->ship_name, Ship_info[shipp->ship_info_index].name));
 		return;
 	}
 

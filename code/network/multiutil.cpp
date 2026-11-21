@@ -4118,8 +4118,15 @@ void multi_send_anti_timeout_ping()
 
 ship_subsys* multi_get_indexed_subsys(ship* shipp, int index)
 {
-	if (index < 0 || index >= ship_get_num_subsys(shipp))
+	if (index < 0 || index >= ship_get_num_subsys(shipp)) {
+		// turret and targeting packets can repeat this many times a second
+		static UI_TIMESTAMP next_log;
+		if (!next_log.isValid() || ui_timestamp_elapsed(next_log)) {
+			next_log = ui_timestamp(1000);
+			nprintf(("Network", "Ship %s (%s) has %d subsystems, but a packet named subsystem %d\n", shipp->ship_name, Ship_info[shipp->ship_info_index].name, ship_get_num_subsys(shipp), index));
+		}
 		return nullptr;
+	}
 
 	return ship_get_indexed_subsys(shipp, index);
 }
