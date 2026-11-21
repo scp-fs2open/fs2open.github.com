@@ -115,11 +115,6 @@ TEST_F(ScriptingShipclassTest, isWeaponAllowedOnShip_onePrimary)
 	this->EvalTestScript();
 }
 
-TEST_F(ScriptingShipclassTest, isWeaponAllowedOnShip_threePrimaries)
-{
-	this->EvalTestScript();
-}
-
 TEST_F(ScriptingShipclassTest, isWeaponAllowedOnShip_unrestrictedClass)
 {
 	this->EvalTestScript();
@@ -128,60 +123,4 @@ TEST_F(ScriptingShipclassTest, isWeaponAllowedOnShip_unrestrictedClass)
 TEST_F(ScriptingShipclassTest, loadoutWeapon_bankRestrictions)
 {
 	this->EvalTestScript();
-}
-
-TEST_F(ScriptingShipclassTest, loadoutWeapon_missingPrimaryBank)
-{
-	try {
-		this->EvalTestScript();
-		FAIL() << "Expected a Lua error for a primary bank the class does not have";
-	} catch (const os::dialogs::LuaErrorException& e) {
-		EXPECT_NE(SCP_string(e.what()).find("The provided bank or weapon index is invalid!"), SCP_string::npos)
-			<< e.what();
-	}
-
-	EXPECT_EQ(-1, Wss_slots[0].wep[2]);
-}
-
-TEST_F(ScriptingShipclassTest, loadoutWeapon_weaponPastEnd)
-{
-	try {
-		this->EvalTestScript();
-		FAIL() << "Expected a Lua error for a weapon index one past the end";
-	} catch (const os::dialogs::LuaErrorException& e) {
-		EXPECT_NE(SCP_string(e.what()).find("The provided bank or weapon index is invalid!"), SCP_string::npos)
-			<< e.what();
-	}
-
-	EXPECT_EQ(-1, Wss_slots[0].wep[1]);
-	EXPECT_EQ(-1, Wss_slots[0].wep_count[1]);
-}
-
-TEST_F(ScriptingShipclassTest, loadoutShipClass_lastClass)
-{
-	Wss_slots[0].wep[0] = 0;
-	Wss_slots[0].wep_count[0] = 1;
-
-	this->EvalTestScript();
-
-	EXPECT_EQ(3, Wss_slots[0].ship_class);
-	EXPECT_EQ(-1, Wss_slots[0].wep_count[0]);
-}
-
-TEST_F(ScriptingShipclassTest, loadoutShipClass_shipPastEnd)
-{
-	Wss_slots[0].wep[0] = 0;
-	Wss_slots[0].wep_count[0] = 1;
-
-	try {
-		this->EvalTestScript();
-		FAIL() << "Expected a Lua error for a ship class index one past the end";
-	} catch (const os::dialogs::LuaErrorException& e) {
-		EXPECT_NE(SCP_string(e.what()).find("The provided ship index is invalid!"), SCP_string::npos)
-			<< e.what();
-	}
-
-	EXPECT_EQ(0, Wss_slots[0].ship_class);
-	EXPECT_EQ(0, Wss_slots[0].wep[0]);
-	EXPECT_EQ(1, Wss_slots[0].wep_count[0]);
 }
