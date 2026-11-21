@@ -1,0 +1,6 @@
+#ControlConfigOverride
+$Name: Classic
+$Bind Name: Toggle Auto Pilot
+$Key Default: KEY_Q
+$Key Mod Alt: 1
+#End

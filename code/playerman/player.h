@@ -55,6 +55,8 @@
 #define PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5		(1<<19)		// loaded PLR file's plr_ver is a pre-controls5 version
 #define PLAYER_FLAGS_PLR_VER_IS_LOWER			(1<<20)		// loaded PLR file's plr_ver is lower than PLR_VERSION
 #define PLAYER_FLAGS_PLR_VER_IS_HIGHER			(1<<21)		// loaded PLR file's plr_ver is higher than PLR_VERSION
+#define PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE		(1<<22)		// is auto shield equalization on?
+#define PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED	(1<<23)		// a manual shield transfer paused it; Equalize or the toggle resumes it
 
 #define PLAYER_KILLED_SELF						( PLAYER_FLAGS_KILLED_SELF_UNKNOWN | PLAYER_FLAGS_KILLED_SELF_MISSILES | PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE )
 

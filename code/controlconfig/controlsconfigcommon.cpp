@@ -21,6 +21,7 @@
 #include "globalincs/systemvars.h"
 #include "io/joy.h"
 #include "io/key.h"
+#include "io/keycontrol.h"
 #include "io/mouse.h"
 #include "localization/localize.h"
 #include "options/Option.h"
@@ -274,6 +275,8 @@ void control_config_common_init_bindings() {
 	(PHOTO_MODE_PARAM_DECREASE,                                 KEY_LEFT, -1, COMPUTER_TAB, 1912, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 	(PHOTO_MODE_PARAM_INCREASE,                                KEY_RIGHT, -1, COMPUTER_TAB, 1913, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 
+	(TOGGLE_AUTO_SHIELD_EQUALIZE,                        KEY_ALTED | KEY_Q, -1, COMPUTER_TAB, 1954, "Toggle Auto Shield Equalization",        CC_TYPE_TRIGGER)
+
 	// VR
 	(VR_RECENTER,                       -1, -1, COMPUTER_TAB, 1942, "Recenter VR View",                  CC_TYPE_TRIGGER)
 
@@ -447,6 +450,7 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Photo Mode Reset Parameters",               PHOTO_MODE_FILTER_RESET},
 	{"Photo Mode Decrease Selected Parameter",    PHOTO_MODE_PARAM_DECREASE},
 	{"Photo Mode Increase Selected Parameter",    PHOTO_MODE_PARAM_INCREASE},
+	{"Toggle Auto Shield Equalization",           TOGGLE_AUTO_SHIELD_EQUALIZE},
 	{"Top-Down View",                           VIEW_TOPDOWN},
 	{"Target Padlock View",                     VIEW_TRACK_TARGET},
 
@@ -801,6 +805,7 @@ void control_config_common_init()
 	// preset we're currently using for .plr and .csg
 	// Load controlconfigdefaults.tbl overrides and mod presets
 	control_config_common_load_overrides();
+	auto_shield_equalize_init_control();
 
 	// load player presets
 	load_preset_files();
@@ -1173,6 +1178,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_DECREASE)
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_INCREASE)
 	ADD_ENUM_TO_ACTION_MAP(VR_RECENTER)
+	ADD_ENUM_TO_ACTION_MAP(TOGGLE_AUTO_SHIELD_EQUALIZE)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TOPDOWN)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TRACK_TARGET)
 
@@ -1350,6 +1356,20 @@ public:
 
 void control_reset_lua_cache() {
 	Controls_lua_override_cache.reset();
+}
+
+bool control_has_lua_override(IoActionId id)
+{
+	auto hook_it = Lua_hooks.find(id);
+
+	return hook_it != Lua_hooks.end() && hook_it->second.enabled && hook_it->second.override.isValid();
+}
+
+bool control_config_is_hidden(const CCI& item)
+{
+	// the auto shield toggle is listed only while its in-game option is on
+	return item.disabled ||
+		((&item == &Control_config[TOGGLE_AUTO_SHIELD_EQUALIZE]) && !auto_shield_equalize_allowed());
 }
 
 bool control_run_lua(IoActionId id, int value) {
@@ -2068,6 +2088,7 @@ DCF(save_ccd, "Save the current Control Configuration Defaults to .tbl") {
 
 DCF(load_ccd, "Reloads Control Configuration Defaults and Presets from .tbl") {
 	control_config_common_read_tbl();
+	auto_shield_equalize_init_control();
 	dc_printf("Default bindings and presets loaded.\n");
 }
 
