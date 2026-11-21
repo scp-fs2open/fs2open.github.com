@@ -127,7 +127,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	int _afterburnerLocked;
 	SCP_string _teamColorSetting;
 	int _shipHasScannableSubsystems;
-	int _numDockPoints;
+	int _numDockPoints = 0;
 	std::unique_ptr<dockpoint_information[]> _dockpointArray;
 	bool _multiEdit;
 	bool _useTeams = false;

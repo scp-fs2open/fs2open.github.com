@@ -79,6 +79,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setArrivalDistance(int distance);
 	int getArrivalDistance() const;
+	// True if the marked ships have different arrival distances. Then getArrivalDistance() is not a real value.
+	bool getArrivalDistanceMixed() const;
 
 	void setArrivalDelay(int delay);
 	int getArrivalDelay() const;
@@ -166,7 +168,11 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void shipAltNameClose(int baseShip);
 	void shipCallsignClose(int baseShip);
 	static int makeShipList(int* arr);
-	int computeArrivalMinDist() const;
+	// Writes the arrival distance to the dialog and to each marked ship that is not in a wing.
+	void writeArrivalDistance(int value);
+	// For each marked ship that is not in a wing, raises the arrival distance to the minimum for the arrival
+	// location and target of that ship. A ship with a sufficient distance keeps it.
+	void enforceArrivalMinDist();
 
 	int _noDepartureWarp;
 	int _noArrivalWarp;
@@ -195,6 +201,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _score;
 	int _assistScore;
 	int _arrivalDist;
+	bool _arrivalDistMixed = false;
 	int _arrivalTarget;
 	int _departureTarget;
 	int _persona;

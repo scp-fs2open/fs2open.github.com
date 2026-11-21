@@ -728,27 +728,22 @@ void wing_editor::update_data_safe()
 	if (m_arrival_target >= 0) {
 		i = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 		MODIFY(Wings[cur_wing].arrival_anchor, target_to_anchor(i));
+	}
 
-		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
-		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & ANCHOR_SPECIAL_ARRIVAL)) {
-			d = int(std::min(MIN_TARGET_ARRIVAL_DISTANCE, MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[i].objnum].radius));
-			if ((Wings[cur_wing].arrival_distance < d) && (Wings[cur_wing].arrival_distance > -d)) {
-				if (!bypass_errors) {
-					sprintf(buf, "Ship must arrive at least %d meters away from target.\n"
-						"Value has been reset to this.  Use with caution!\r\n"
-						"Recommended distance is %d meters.\r\n", d, (int)(MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[i].objnum].radius) );
+	// Force the arrival distance to be at least the minimum for the arrival location and target.
+	// This is the same rule as the ship editor and QtFRED. A wing with no target also gets the minimum.
+	d = arrival_min_distance(Wings[cur_wing].arrival_location, Wings[cur_wing].arrival_anchor);
+	if (Wings[cur_wing].arrival_distance < d) {
+		// A minimum of 1 only prevents an invalid distance, so it needs no warning.
+		if (!bypass_errors && (d > 1)) {
+			sprintf(buf, "Ship must arrive at least %d meters away from target.\n"
+				"Value has been reset to this.  Use with caution!\r\n", d);
 
-					MessageBox(buf);
-				}
-
-				if (Wings[cur_wing].arrival_distance < 0)
-					Wings[cur_wing].arrival_distance = -d;
-				else
-					Wings[cur_wing].arrival_distance = d;
-
-				m_arrival_dist = Wings[cur_wing].arrival_distance;
-			}
+			MessageBox(buf);
 		}
+
+		Wings[cur_wing].arrival_distance = d;
+		m_arrival_dist = Wings[cur_wing].arrival_distance;
 	}
 	if (m_departure_target >= 0) {
 		i = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);

@@ -2454,10 +2454,21 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 			cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
 #endif
 			cf_delete(backup_name, CF_TYPE_MISSIONS);
+			// This rename fails if the mission file does not exist yet. That is correct for a new file.
 			cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
-			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
-		} else {
-			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		}
+#ifdef _WIN32
+		else {
+			// A replace fails on a read-only file.
+			cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
+		}
+#endif
+
+		// Replace the old mission file in one step. If the rename fails, the old file stays and the new content is
+		// only in the temporary file. Report an error.
+		if (cf_rename(savepath, pathname, CF_TYPE_MISSIONS, true) != CF_RENAME_SUCCESS) {
+			mprintf(("Could not rename '%s' to '%s'. The mission is not saved.\n", savepath, pathname));
+			err = -19;
 		}
 	}
 

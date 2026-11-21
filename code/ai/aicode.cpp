@@ -978,6 +978,8 @@ LOCAL int ai_inited = 0;
 void ai_init()
 {
 	if ( !ai_inited )	{
+		ai_lua_init();
+
 		// Do the first time initialization stuff here
 		Ai_classes.clear();
 		Ai_class_names.clear();

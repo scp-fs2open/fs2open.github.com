@@ -3,6 +3,8 @@
 #include "mission/missionmessage.h"
 #include "ship/anchor_t.h"
 
+enum class ArrivalLocation;
+
 // Default AWACS range applied when the nebula intensity is unset or invalid
 constexpr float DEFAULT_NEBULA_RANGE = 3000.0f;
 
@@ -45,6 +47,17 @@ int anchor_to_target(anchor_t anchor);
 
 anchor_t target_to_anchor(int target);
 
+// The smallest arrival distance that the editors accept for an arrival location and anchor.
+// It is 0 for a location that uses no distance. Near a ship it is min(500, 2 * radius of the target ship).
+// For a special anchor (for example "<any friendly>") it is 1, because the distance must be greater than 0.
+int arrival_min_distance(ArrivalLocation location, anchor_t anchor);
+
+// ship::group holds the editor selection groups, one bit for each group. The value -1 means "in no group":
+// a mission without +Group gives -1, and the mission save writes +Group only for a value of 0 or more.
+class ship;
+bool ship_in_editor_group(const ship& shipp, int group_bit);
+void ship_set_editor_group(ship& shipp, int group_bit, bool in_group);
+
 // Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
 // name arrays via wing_name_lookup.
 void update_custom_wing_indexes();
@@ -73,9 +86,11 @@ bool set_single_player_start(int objnum);
 // against the entity currently being renamed.
 SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship = -1, int exclude_wing = -1, int exclude_waypoint_list = -1, int exclude_jump_node = -1);
 
-// Free the engine data that the editors keep for their whole session.  Call at shutdown, while the graphics
-// system is still up, since models own GPU buffers and cursors own bitmaps.
-void editor_free_engine_data();
+
+// The shutdown of the engine systems, for FRED2 and QtFRED. The order is the same as in game_shutdown():
+// first the engine data, the SEXP data, and the Lua state, then sound, then graphics.
+// Call it after you close the editor windows, because they can use mission and SEXP data.
+void editor_shutdown();
 
 // Bounding-box midpoint of all (or only marked) objects and the farthest distance from it; false if there are none.
 bool get_object_bounds(bool marked_only, vec3d* center, float* radius);

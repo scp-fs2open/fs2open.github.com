@@ -67,6 +67,9 @@ void ShipInitialStatusDialog::closeEvent(QCloseEvent* e)
 }
 void ShipInitialStatusDialog::on_velocitySpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->velocitySpinBox->isBlank())
+		return;
 	_model->setVelocity(value);
 }
 void ShipInitialStatusDialog::on_dockpointList_currentItemChanged(QListWidgetItem* current)
@@ -95,6 +98,9 @@ void ShipInitialStatusDialog::on_dockeePointComboBox_currentIndexChanged(int ind
 }
 void ShipInitialStatusDialog::on_hullSpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->hullSpinBox->isBlank())
+		return;
 	_model->setHull(value);
 }
 void ShipInitialStatusDialog::on_hasShieldCheckBox_stateChanged(int state)
@@ -103,6 +109,9 @@ void ShipInitialStatusDialog::on_hasShieldCheckBox_stateChanged(int state)
 }
 void ShipInitialStatusDialog::on_shieldHullSpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->shieldHullSpinBox->isBlank())
+		return;
 	_model->setShieldHull(value);
 }
 void ShipInitialStatusDialog::on_forceShieldsCheckBox_stateChanged(int state)
@@ -165,41 +174,38 @@ void ShipInitialStatusDialog::on_cancelPushButton_clicked() {
 }
 void ShipInitialStatusDialog::on_guardianSpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->guardianSpinBox->isBlank())
+		return;
 	_model->setGuardian(value);
 }
 void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)
 {
 	_model->setMoveShipsWhenUndocking(value);
 }
+// Shows the value, or "-" when the model value is BLANKFIELD (the marked ships have different values).
+void ShipInitialStatusDialog::setSpinBoxValueOrBlank(MixedValueSpinBox* spinBox, int value)
+{
+	if (value == BLANKFIELD) {
+		spinBox->setMixed();
+	} else {
+		spinBox->setSingleValue(value);
+	}
+}
 void ShipInitialStatusDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
-	auto value = _model->getVelocity();
-	if (value != BLANKFIELD) {
-		ui->velocitySpinBox->setValue(value);
-	} else {
-		ui->velocitySpinBox->setSpecialValueText("-");
-	}
-	value = _model->getHull();
-	if (value != BLANKFIELD) {
-		ui->hullSpinBox->setValue(value);
-	} else {
-		ui->hullSpinBox->setSpecialValueText("-");
-	}
-	value = _model->getHasShield();
+	setSpinBoxValueOrBlank(ui->velocitySpinBox, _model->getVelocity());
+	setSpinBoxValueOrBlank(ui->hullSpinBox, _model->getHull());
+	auto value = _model->getHasShield();
 	ui->hasShieldCheckBox->setCheckState(Qt::CheckState(value));
 	if (_model->getHasShield()) {
 		ui->shieldHullSpinBox->setEnabled(true);
 	} else {
 		ui->shieldHullSpinBox->setEnabled(false);
 	}
-	value = _model->getShieldHull();
-	if (value != BLANKFIELD) {
-		ui->shieldHullSpinBox->setValue(value);
-	} else {
-		ui->shieldHullSpinBox->setSpecialValueText("-");
-	}
-	ui->guardianSpinBox->setValue(_model->getGuardian());
+	setSpinBoxValueOrBlank(ui->shieldHullSpinBox, _model->getShieldHull());
+	setSpinBoxValueOrBlank(ui->guardianSpinBox, _model->getGuardian());
 	updateFlags();
 	updateDocks();
 	updateDockee();
