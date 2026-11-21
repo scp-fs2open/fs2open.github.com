@@ -677,6 +677,12 @@ void iff_close()
 	strcpy_s(traitor_name, "Traitor");
 	Iff_traitor = 0;
 	AccessiblitySupported = false;
+
+	// the table's built-in colors are created before it sets the brightness, so they use this initial value
+	iff_bright_delta = 0;
+
+	// the table only adds flags to this
+	radar_target_id_flags = 0;
 }
 
 /**
