@@ -1975,13 +1975,7 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
-	// Keep the old MaxFPS setting as the default when no Graphics.FramerateCap value is saved.
-	const auto max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0);
-	if (max_fps >= MIN_FRAMERATE_CAP && max_fps <= MAX_FRAMERATE_CAP) {
-		Framerate_cap = static_cast<int>(max_fps);
-	}
-
-	static auto FramerateCapOption __UNUSED = options::OptionBuilder<int>("Graphics.FramerateCap",
+	static auto FramerateCapOption = options::OptionBuilder<int>("Graphics.FramerateCap",
 					 std::pair<const char*, int>{"Frame Rate Limit", 1936},
 					 std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1937})
 					 .category(std::make_pair("Graphics", 1825))
@@ -2008,12 +2002,21 @@ void game_init()
 					 .flags({options::OptionFlags::RangeTypeInteger})
 					 .finish();
 
-	// Must be run after mod table is parsed so we know the value of Using_in_game_options
-	// Must be run before everything else inits so we can init those with the correct
-	// default values or user preferences
- 	if (Using_in_game_options) {
+	auto* options_manager = options::OptionsManager::instance();
+	// Load mod defaults and player preferences before initializing the rest of the game.
+	if (Using_in_game_options) {
 		default_settings_init(); // load in current preferred default options values, if any
-		options::OptionsManager::instance()->loadInitialValues();
+	}
+
+	// Apply the legacy player preference after mod defaults and before saved in-game options.
+	const auto max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0);
+	if (max_fps >= MIN_FRAMERATE_CAP && max_fps <= MAX_FRAMERATE_CAP &&
+		(!Using_in_game_options || !options_manager->isOptionEnforced(FramerateCapOption->getConfigKey()))) {
+		Framerate_cap = static_cast<int>(max_fps);
+	}
+
+	if (Using_in_game_options) {
+		options_manager->loadInitialValues();
 	}
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
