@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <type_traits>
 
 using namespace options;
 
@@ -615,6 +616,18 @@ TEST_F(TextureFilterSetting, OverrideBeatsAnEnforcedModValue)
 	ASSERT_EQ(filter, 1);
 }
 
+// valueChanged() writes the bound variable, which clearOverrides() does not touch; put back the configured value.
+// getValue(), not getCurrentValueDescription(): the display functions call XSTR(), which this fixture never initializes.
+template <typename T>
+static void restore_bound_value(const char* key)
+{
+	auto* opt = static_cast<const Option<T>*>(OptionsManager::instance()->getOptionByKey(key));
+	ASSERT_NE(opt, nullptr) << key;
+	const T configured = opt->getValue();
+	std::unique_ptr<json_t> value(std::is_same<T, bool>::value ? json_boolean(configured) : json_integer(configured));
+	EXPECT_TRUE(opt->valueChanged(value.get())) << key << " was not restored";
+}
+
 TEST_F(OptionsManagerOverride, UpscaleFilterAppliesWithoutARestart)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.UpscaleFilter");
@@ -632,6 +645,7 @@ TEST_F(OptionsManagerOverride, UpscaleFilterAppliesWithoutARestart)
 	const bool applied_linear = opt->valueChanged(linear.get());
 	const bool is_linear = !gr_upscale_nearest();
 	Using_in_game_options = saved;
+	restore_bound_value<int>("Graphics.UpscaleFilter");
 
 	EXPECT_TRUE(applied_nearest);
 	EXPECT_TRUE(is_nearest);
@@ -664,7 +678,7 @@ class KeepAspectRatio : public OptionsManagerOverride {
 
 	void TearDown() override
 	{
-		setKeep(false);
+		restore_bound_value<bool>("Graphics.KeepAspectRatio");
 		Cmdline_window_res = saved_window_res;
 		gr_screen.mode = saved_mode;
 		gr_screen.max_w = saved_w;
@@ -678,8 +692,10 @@ class KeepAspectRatio : public OptionsManagerOverride {
 
 	static void setKeep(bool keep)
 	{
+		auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.KeepAspectRatio");
+		ASSERT_NE(opt, nullptr);
 		std::unique_ptr<json_t> value(keep ? json_true() : json_false());
-		OptionsManager::instance()->getOptionByKey("Graphics.KeepAspectRatio")->valueChanged(value.get());
+		opt->valueChanged(value.get());
 	}
 
 	static std::array<int, 4> rect()
