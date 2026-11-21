@@ -555,6 +555,7 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 			bufferObj.frameAllocOffset = offset;
 			bufferObj.dataSize = size;
 			bufferObj.frameAllocFrame = m_currentFrame;
+			bufferObj.orphanPending = false;
 		} else {
 			// Pattern B: pre-alloc for offset writes (null data)
 			if (bufferObj.frameAllocFrame != m_currentFrame || size > bufferObj.dataSize) {
@@ -564,8 +565,14 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 				bufferObj.frameAllocOffset = offset;
 				bufferObj.dataSize = size;
 				bufferObj.frameAllocFrame = m_currentFrame;
+				bufferObj.orphanPending = false;
+			} else {
+				// Same frame and size fits. This still orphans, like glBufferData(NULL): draws already recorded
+				// this frame must keep their data until submission, e.g. eye 0 of a VR frame while eye 1 records
+				// into the same command buffer. Deferred to the next write, which usually comes in the next frame
+				// and allocates anyway.
+				bufferObj.orphanPending = true;
 			}
-			// Otherwise: same frame and size fits — keep current allocation
 		}
 	} else {
 		// Static / PersistentMapping path.
@@ -620,7 +627,7 @@ void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t
 		// Auto-allocate if not yet allocated this frame.  This happens when
 		// the caller skips updateBufferData (e.g. gr_add_to_immediate_buffer
 		// when the data fits the existing buffer size).
-		if (bufferObj.frameAllocFrame != m_currentFrame) {
+		if (bufferObj.frameAllocFrame != m_currentFrame || bufferObj.orphanPending) {
 			size_t allocSize = std::max(bufferObj.dataSize, offset + size);
 			Assert(allocSize > 0);
 			auto& fa = m_frameAllocs[m_currentFrame];
@@ -629,6 +636,7 @@ void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t
 			bufferObj.frameAllocOffset = allocOffset;
 			bufferObj.dataSize = allocSize;
 			bufferObj.frameAllocFrame = m_currentFrame;
+			bufferObj.orphanPending = false;
 		}
 
 		Assert(offset + size <= bufferObj.dataSize);

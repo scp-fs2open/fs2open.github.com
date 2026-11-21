@@ -91,26 +91,37 @@ void OptionsManager::setConfigValue(const SCP_string& key,std::unique_ptr<json_t
 	_changed_values[key] = std::move(value);
 }
 
+bool OptionsManager::hasPendingEdit(const SCP_string& key) const
+{
+	return _changed_values.count(key) > 0;
+}
+
 //Provides a method for overriding a built-in option setting
 //Generally used for commandline settings
-void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason)
+void OptionsManager::setOverride(const SCP_string& key,
+	const SCP_string& json,
+	const SCP_string& reason,
+	OverrideSource source)
 {
 	json_error_t err;
 	auto el = json_loads(json.c_str(), JSON_DECODE_ANY, &err);
 	if (el == nullptr) {
 		return;
 	}
-	setOverride(key, std::unique_ptr<json_t>(el), reason);
+	setOverride(key, std::unique_ptr<json_t>(el), reason, source);
 }
 
-void OptionsManager::setOverride(const SCP_string& key, std::unique_ptr<json_t>&& value, const SCP_string& reason)
+void OptionsManager::setOverride(const SCP_string& key,
+	std::unique_ptr<json_t>&& value,
+	const SCP_string& reason,
+	OverrideSource source)
 {
 	if (value == nullptr) {
 		return;
 	}
 	// insert_or_assign (rather than emplace) so a later override for the same key, e.g. from a second cmdline
 	// flag targeting the same option, replaces the earlier one instead of being silently ignored.
-	_config_overrides.insert_or_assign(key, OverrideEntry{std::move(value), reason});
+	_config_overrides.insert_or_assign(key, OverrideEntry{std::move(value), reason, source});
 
 	// An override wins over a pending edit, so drop any edit that is already pending for this key.
 	_changed_values.erase(key);
@@ -130,6 +141,15 @@ std::optional<SCP_string> OptionsManager::getOverrideReason(const SCP_string& ke
 		return std::nullopt;
 	}
 	return iter->second.reason;
+}
+
+std::optional<OverrideSource> OptionsManager::getOverrideSource(const SCP_string& key) const
+{
+	auto iter = _config_overrides.find(key);
+	if (iter == _config_overrides.end()) {
+		return std::nullopt;
+	}
+	return iter->second.source;
 }
 
 //Adds an option to the options vector
@@ -222,6 +242,17 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 	// Always erase even if it wasn't actually changed so later persistChanges() calls don't try to save the value again
 	_changed_values.erase(iter);
 
+	// This call can only report on its own option, so anything else the hooks could not apply only reaches the log
+	for (const auto* unapplied : runPostPersistHooks({option})) {
+		if (unapplied == option) {
+			changed = false;
+		} else {
+			mprintf(("%s did not take effect after %s was persisted\n",
+				unapplied->getConfigKey().c_str(),
+				option->getConfigKey().c_str()));
+		}
+	}
+
 	return changed;
 }
 
@@ -240,11 +271,13 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 	}
 	SCP_vector<const options::OptionBase*> unchanged;
+	SCP_vector<const options::OptionBase*> notified;
 
 	// Only notify options once all values have been written to config
 	for (auto& entry : _changed_values) {
 		auto iter = _optionsMapping.find(entry.first);
 		if (iter != _optionsMapping.end()) {
+			notified.push_back(iter->second);
 			if (!iter->second->valueChanged(entry.second.get())) {
 				unchanged.push_back(iter->second);
 			}
@@ -252,7 +285,33 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 	}
 	_changed_values.clear();
 
+	const auto unapplied = runPostPersistHooks(notified);
+	unchanged.insert(unchanged.end(), unapplied.begin(), unapplied.end());
+
 	return unchanged;
+}
+
+int OptionsManager::addPostPersistHook(PostPersistHook hook)
+{
+	const int id = _next_post_persist_hook++;
+	_post_persist_hooks.emplace(id, std::move(hook));
+	return id;
+}
+
+void OptionsManager::removePostPersistHook(int id)
+{
+	_post_persist_hooks.erase(id);
+}
+
+SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks(
+	const SCP_vector<const options::OptionBase*>& changed) const
+{
+	SCP_vector<const options::OptionBase*> unapplied;
+	for (const auto& hook : _post_persist_hooks) {
+		auto result = hook.second(changed);
+		unapplied.insert(unapplied.end(), result.begin(), result.end());
+	}
+	return unapplied;
 }
 
 //Discard changes and restore the option to initial value

@@ -240,6 +240,8 @@ class opengl_state
 		GLenum frontface_Value;
 		GLenum cullface_Value;
 		std::pair<GLenum, GLenum> blendfunc_Value;
+		std::pair<GLenum, GLenum> blendfunc_alpha_Value;
+		bool coverage_alpha = false;
 		std::array<std::pair<GLenum, GLenum>, material::NUM_BUFFER_BLENDS> buffer_blendfunc_Value;
 		GLenum depthfunc_Value;
 
@@ -284,6 +286,9 @@ class opengl_state
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetAlphaBlendModei(int buffer, gr_alpha_blend ab);
+		// For targets that get composited as premultiplied alpha later: blending then accumulates alpha as coverage
+		// instead of applying the color factors to it, and additive draws leave it alone.
+		void SetCoverageAlpha(bool enable);
 		void SetZbufferType(gr_zbuffer_type zt);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
@@ -309,6 +314,7 @@ class opengl_state
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		void BlendFunc(GLenum s_val, GLenum d_val);
+		void BlendFuncSeparate(GLenum s_val, GLenum d_val, GLenum s_alpha, GLenum d_alpha);
 		void BlendFunci(int buffer, GLenum s_val, GLenum d_val);
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
 		inline void InvalidateColor();

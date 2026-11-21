@@ -96,6 +96,8 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);
 GLuint opengl_get_rtt_framebuffer();
+// The framebuffer drawing into a render target bitmap, without making it the current target. 0 if there is none.
+GLuint opengl_get_render_target_framebuffer(int handle);
 void gr_opengl_bm_generate_mip_maps(int slot);
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale);
 

@@ -506,7 +506,7 @@ const char *wl_tooltip_handler(const char *str)
 		const char *str2;
 		int x, y, w, h;
 
-		str2 = coalesce(Weapon_info[Selected_wl_class].desc.get(), "");
+		str2 = Weapon_info[Selected_wl_class].desc.c_str();
 		gr_get_string_size(&w, &h, str2);
 		x = Wl_weapon_desc_coords[gr_screen.res][0] - w / 2;
 		y = Wl_weapon_desc_coords[gr_screen.res][1] - h / 2;
@@ -1229,26 +1229,6 @@ int wl_get_ship_class(int wl_slot)
 }
 
 /**
- * Return true if weapon_flags indicates a weapon that is legal for use in current game type.
- * Function added by MK on 9/6/99 to support separate legal loadouts for dogfight missions.
- * name changed by Goober5000 to better reflect what it actually does
- */
-int eval_weapon_flag_for_game_type(int weapon_flags)
-{
-	int	rval = 0;
-
-	if (MULTI_DOGFIGHT) {
-		if (weapon_flags & DOGFIGHT_WEAPON)
-			rval = 1;
-	}
-	else
-		if (weapon_flags & REGULAR_WEAPON)
-			rval  = 1;
-
-	return rval;
-}
-
-/**
  * Return the weapon class shown at the given on-screen row of a scrolling icon list,
  * or -1 if that row is past the end of the list.
  */
@@ -1297,7 +1277,7 @@ void wl_set_disabled_weapons(int ship_class, int bank_index)
 			icon.can_use_for_bank = TriStateBool::UNKNOWN_;
 		else if ( (wi.is_primary() && bank_index >= MAX_SHIP_PRIMARY_BANKS) || (wi.is_secondary() && bank_index < MAX_SHIP_PRIMARY_BANKS) )
 			icon.can_use_for_bank = TriStateBool::UNKNOWN_;
-		else if ( !eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank_index]) || eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank_index][weapon_class]) )
+		else if ( ship_class_bank_allows_weapon(sip, bank_index, weapon_class) )
 			icon.can_use_for_bank = TriStateBool::TRUE_;
 		else
 			icon.can_use_for_bank = TriStateBool::FALSE_;
@@ -1790,23 +1770,9 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 	if (sip->allowed_weapons.weapon_and_flags.empty())
 		return;
 
-	int i, check_flag;
-	for ( i=0; i < MAX_SHIP_WEAPONS; i++ )
+	for ( int i=0; i < MAX_SHIP_WEAPONS; i++ )
 	{
-		if ( wep[i] < 0 ) {
-			continue;
-		}
-
-		check_flag = sip->allowed_weapons[wep[i]];
-
-		// possibly change flag if it's restricted
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[i]))
-		{
-			check_flag = sip->allowed_bank_restricted_weapons[i][wep[i]];
-		}
-
-
-		if ( !eval_weapon_flag_for_game_type(check_flag) ) {
+		if ( !ship_class_bank_allows_weapon(sip, i, wep[i]) ) {
 //			wep[i] = -1;
 			wep_count[i] = 0;
 		}
@@ -1909,16 +1875,8 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 								continue;
 							}
 
-							// check whether the weapon is allowed in general for this ship
-							if ( !eval_weapon_flag_for_game_type(si.allowed_weapons[new_index]) ) {
+							if ( !ship_class_bank_allows_weapon(&si, bank, new_index) ) {
 								continue;
-							}
-
-							// check whether the weapon is allowed for this bank
-							if (eval_weapon_flag_for_game_type(si.restricted_loadout_flag[bank])) {
-								if (!eval_weapon_flag_for_game_type(si.allowed_bank_restricted_weapons[bank][new_index])) {
-									continue;
-								}
 							}
 
 							wep[bank] = new_index;
@@ -2541,8 +2499,8 @@ void wl_weapon_desc_start_wipe()
 	
 	// break current description into lines (break at the /n's)
 	currchar_src = 0;
-	if (Weapon_info[Selected_wl_class].desc) {
-		auto desc = Weapon_info[Selected_wl_class].desc.get();
+	if (!Weapon_info[Selected_wl_class].desc.empty()) {
+		auto desc = Weapon_info[Selected_wl_class].desc.c_str();
 		while (desc[currchar_src] != '\0') {
 			if (desc[currchar_src] == '\n') {
 				// break here
@@ -3684,34 +3642,30 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		ship_info *sip = &Ship_info[slot->ship_class];
 
 		// check the to-bank first
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
-				SCP_string txt;
-				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
+		if (!ship_class_bank_allows_weapon(sip, to_bank, slot->wep[from_bank])) {
+			SCP_string txt;
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
 
-				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
-				} else if (pl != NULL) {
-					send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
-				}
-
-				return forced_update;
+			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
+			} else if (pl != nullptr) {
+				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 			}
+
+			return forced_update;
 		}
 
 		// check the from-bank
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[from_bank])) {
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[from_bank][slot->wep[to_bank]])) {
-				// going from "from" to "to" is valid (from previous if), but going the other way isn't...
-				// so return the "to" to the list and just move the "from"
+		if (!ship_class_bank_allows_weapon(sip, from_bank, slot->wep[to_bank])) {
+			// going from "from" to "to" is valid (from previous if), but going the other way isn't...
+			// so return the "to" to the list and just move the "from"
 
-				// put to_bank back into list
-				(*Wl_pool)[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
-				slot->wep[to_bank] = -1;											// remove from slot
-				slot->wep_count[to_bank] = 0;
-				*sound=InterfaceSounds::ICON_DROP;				// unless it changes later
-				forced_update = 1;					// because we can't return right away
-			}
+			// put to_bank back into list
+			(*Wl_pool)[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
+			slot->wep[to_bank] = -1;											// remove from slot
+			slot->wep_count[to_bank] = 0;
+			*sound=InterfaceSounds::ICON_DROP;				// unless it changes later
+			forced_update = 1;					// because we can't return right away
 		}
 	}
 
@@ -3839,19 +3793,17 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon...
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
-			SCP_string txt;
-			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
+	if (!ship_class_bank_allows_weapon(sip, to_bank, from_list)) {
+		SCP_string txt;
+		sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
-			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
-			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
-			}
-
-			return 0;
+		if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
+		} else if (pl != nullptr) {
+			send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 		}
+
+		return 0;
 	}
 
 	// we will have some sort of success from this point
@@ -3917,19 +3869,17 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
-			SCP_string txt;
-			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
+	if (!ship_class_bank_allows_weapon(sip, to_bank, from_list)) {
+		SCP_string txt;
+		sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
-			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
-			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
-			}
-
-			return 0;
+		if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
+		} else if (pl != nullptr) {
+			send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 		}
+
+		return 0;
 	}
 
 	// dump slot weapon back into list
@@ -4164,20 +4114,17 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 
 			// make sure this bank can accept this weapon
-			if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[cur_bank]))
+			if (!ship_class_bank_allows_weapon(sip, cur_bank, weapon_type_to_add))
 			{
-				if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[cur_bank][weapon_type_to_add]))
-				{
-					SCP_string temp;
-					if (cur_bank < MAX_SHIP_PRIMARY_BANKS)
-						sprintf(temp, XSTR("%s is unable to carry %s weaponry in primary bank %d", 1630), ship_name, wep_display_name, cur_bank+1);
-					else
-						sprintf(temp, XSTR("%s is unable to carry %s weaponry in secondary bank %d", 1631), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
-					error_messages.push_back(std::move(temp));
+				SCP_string temp;
+				if (cur_bank < MAX_SHIP_PRIMARY_BANKS)
+					sprintf(temp, XSTR("%s is unable to carry %s weaponry in primary bank %d", 1630), ship_name, wep_display_name, cur_bank+1);
+				else
+					sprintf(temp, XSTR("%s is unable to carry %s weaponry in secondary bank %d", 1631), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
+				error_messages.push_back(std::move(temp));
 
-					error_flag = true;
-					continue;
-				}
+				error_flag = true;
+				continue;
 			}
 
 			// add from the weapon pool

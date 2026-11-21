@@ -42,7 +42,7 @@ void ship_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_ent
 	GET_USHORT(net_signature);
 	GET_INT(subsys);
 	object* obj = multi_get_network_object(net_signature);
-	new(data_ptr) ship_subsys_h(obj, obj == nullptr || obj->type != OBJ_SHIP || subsys == -1 ? nullptr : ship_get_indexed_subsys(&Ships[obj->instance], subsys));
+	new(data_ptr) ship_subsys_h(obj, obj == nullptr || obj->type != OBJ_SHIP || subsys == -1 ? nullptr : multi_get_indexed_subsys(&Ships[obj->instance], subsys));
 }
 
 //**********HANDLE: Subsystem
@@ -186,8 +186,10 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 		auto pm = model_get(sso->ss->system_info->model_num);
 		auto sm = &pm->submodel[sso->ss->system_info->subobj_num];
 
-		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+		// the per-frame snapshot skips submodels that can't move
+		if (!sm->flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_orient = smi->canonical_orient;
 
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&smi->canonical_orient, &sm->rotation_axis, &angle);
@@ -215,8 +217,12 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 
 	if(ADE_SETTING_VAR && mh)
 	{
-		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+
+		// the per-frame snapshot skips submodels that can't move
+		auto pm = model_get(sso->ss->system_info->model_num);
+		if (!pm->submodel[sso->ss->system_info->turret_gun_sobj].flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_orient = smi->canonical_orient;
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
@@ -243,8 +249,12 @@ ADE_VIRTVAR(TranslationOffset,
 
 	if (ADE_SETTING_VAR && vec != nullptr)
 	{
-		smi->canonical_prev_offset = smi->canonical_offset;
 		smi->canonical_offset = *vec;
+
+		// the per-frame snapshot skips submodels that can't move
+		auto pm = model_get(sso->ss->system_info->model_num);
+		if (!pm->submodel[sso->ss->system_info->subobj_num].flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_offset = smi->canonical_offset;
 
 		smi->cur_offset = vm_vec_mag(vec);
 	}

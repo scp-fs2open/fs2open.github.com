@@ -98,7 +98,19 @@ uniform modelData {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
+
+#ifdef VULKAN
+	mat4 prevModelMatrix;
+	mat4 velocityViewProj;
+	mat4 velocityPrevViewProj;
+	vec2 velocityUvScale;
+	int prev_transform_stride;
+#endif
 };
+
+#ifdef VULKAN
+#include "motion-vectors.sdr"
+#endif
 
 #include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
@@ -132,6 +144,8 @@ layout(location = 0) in VertexOutput {
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
+	vec4 velocityCurClip;
+	vec4 velocityPrevClip;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
@@ -143,6 +157,7 @@ layout(location = 0) in VertexOutput {
 #endif
 } vertIn;
 
+layout(location = 6) out vec4 fragOut6;
 #else
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
 uniform sampler2DArray sBasemap;
@@ -525,6 +540,16 @@ void main()
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 
 	fragOut0 = baseColor;
+
+#ifdef VULKAN
+	// Alpha selects whether this replaces the motion already there: faint transparent surfaces keep what's behind them.
+	vec2 velocity = motion_uv(vertIn.velocityCurClip, vertIn.velocityPrevClip, velocityUvScale);
+	float velocityAlpha = baseColor.a >= 0.5 ? 1.0 : 0.0;
+	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
+		velocityAlpha = 1.0;
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
+	fragOut6 = vec4(velocity, motion_depth(vertIn.velocityCurClip), velocityAlpha);
+#endif
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		fragOut1 = vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);
