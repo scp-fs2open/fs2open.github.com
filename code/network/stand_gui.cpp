@@ -441,7 +441,7 @@ int std_connect_lindex_to_npindex(int index)
 	HWND ctrl;			
 	// a line on this list holds an IPv6 address of up to 45 characters and a ping
 	char list_text[100];
-	char addr_text[50];
+	char addr_text[INET6_ADDRSTRLEN];
 	int ret,idx;
 
 	// get the control handle
