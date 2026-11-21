@@ -494,7 +494,7 @@ void multi_pinfo_blit_pilot_image()
 
 		// get width and heigh
 		int bm_w, bm_h;
-		bm_get_info(Mp_pilot.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
+		bm_get_original_size(Mp_pilot.bitmap, &bm_w, &bm_h);
 
 		gr_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - bm_w)/2), 
 					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2),
@@ -542,7 +542,7 @@ void multi_pinfo_blit_squadron_logo()
 
 		// get width and heigh
 		int bm_w, bm_h;
-		bm_get_info(Mp_squad.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
+		bm_get_original_size(Mp_squad.bitmap, &bm_w, &bm_h);
 
 		gr_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - bm_w)/2), 
 					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2),

@@ -1063,7 +1063,7 @@ void HudGauge::renderBitmapColor(int frame, int x, int y, float scale, bool conf
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderBitmap(int x, int y, float scale, bool config) const
+void HudGauge::renderBitmap(int x, int y, float scale, bool config, bool use_original_size) const
 {
 	int nx = 0, ny = 0;
 
@@ -1094,7 +1094,7 @@ void HudGauge::renderBitmap(int x, int y, float scale, bool config) const
 		resize = HC_resize_mode;
 	}
 	
-	gr_aabitmap(x + nx, y + ny, resize, false, scale);
+	gr_aabitmap(x + nx, y + ny, resize, false, scale, use_original_size);
 
 	gr_reset_screen_scale();
 }

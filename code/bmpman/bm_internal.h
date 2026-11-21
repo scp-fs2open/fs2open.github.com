@@ -73,6 +73,10 @@ struct bitmap_entry {
 	uint  used_flags;       //!< What flags it was accessed thru
 	int   load_count;
 
+	// File dimensions before texture conversion; zero uses the current bitmap dimensions.
+	int original_width;
+	int original_height;
+
 	bitmap bm;              //!< Bitmap info
 
 	bm_extra_info info;     //!< Data for animations and user bitmaps

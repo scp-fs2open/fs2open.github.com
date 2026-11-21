@@ -734,7 +734,7 @@ void cmd_brief_do_frame(float frametime)
 	} 
 
 	if(Cur_Anim.num_frames > 0) {
-		bm_get_info((Cur_Anim.streaming) ? Cur_Anim.bitmap_id : Cur_Anim.first_frame, &x, &y, NULL, NULL, NULL);
+		bm_get_original_size(Cur_Anim.streaming ? Cur_Anim.bitmap_id : Cur_Anim.first_frame, &x, &y);
 		x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - x / 2;
 		y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - y / 2;
 		generic_anim_render(&Cur_Anim, (Cmd_brief_paused) ? 0 : frametime, x, y, true);

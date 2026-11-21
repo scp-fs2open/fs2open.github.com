@@ -41,7 +41,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 	set_bmaps(_bitmapSliderControl, 3, 0);
 	
 	// determine possible positions
-	bm_get_info(bmap_ids[S2_NORMAL],&buttonWidth, &buttonHeight, NULL, NULL, NULL);
+	bm_get_original_size(bmap_ids[S2_NORMAL], &buttonWidth, &buttonHeight);
 	slider_w = buttonWidth;
 	slider_h = buttonHeight;
 	Assert(buttonHeight > 5);

@@ -838,7 +838,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		//Get image size
 		if(image_id != -1)
 		{
-			bm_get_info(image_id, &w, &h);
+			bm_get_original_size(image_id, &w, &h);
 			if (in_width > 0)
 				w = in_width;
 			if (in_height > 0)
@@ -870,7 +870,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	image_pos.h = in_height;
 
 	if(image_id != -1)
-		text_pos.x = image_pos.x + w;	//Still set from bm_get_info call
+		text_pos.x = image_pos.x + w;
 	else
 		text_pos.x = image_pos.x;
 	text_pos.y = image_pos.y;
@@ -954,7 +954,7 @@ void subtitle::do_frame(float frametime)
 			int orig_w, orig_h;
 			vec3d scale;
 
-			bm_get_info(image_id, &orig_w, &orig_h);
+			bm_get_original_size(image_id, &orig_w, &orig_h);
 			scale.xyz.x = (image_pos.w > 0) ? (image_pos.w / (float) orig_w) : 1.0f;
 			scale.xyz.y = (image_pos.h > 0) ? (image_pos.h / (float) orig_h) : 1.0f;
 			scale.xyz.z = 1.0f;
