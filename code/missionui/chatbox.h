@@ -17,8 +17,9 @@
 // prototype
 struct net_player;
 
-#define CHATBOX_MAX_LEN						125			// max length of the actual text string
+#define CHATBOX_MAX_LEN						251			// max length of the actual text string, including the terminator
 #define CHATBOX_STRING_LEN (CALLSIGN_LEN + CHATBOX_MAX_LEN + 32)
+#define CHATBOX_LINE_LEN (CHATBOX_MAX_LEN - 2) // one wrapped line, plus a joining space, has to fit brief_chat::text
 #define MAX_BRIEF_CHAT_LINES 60 // how many lines we can store in the scrollback buffer
 
 // chatbox flags for creation/switching between modes
