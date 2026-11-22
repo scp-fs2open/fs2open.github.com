@@ -91,11 +91,22 @@ void CFREDDoc::AssertValid() const {
 }
 #endif //_DEBUG
 
+// an editor showing a question of its own is mid-close; closing or rebuilding it from outside crashes
+static bool event_editor_is_asking()
+{
+	return (Event_editor_dlg != nullptr && !Event_editor_dlg->IsWindowEnabled())
+		|| (Message_editor_dlg != nullptr && !Message_editor_dlg->IsWindowEnabled());
+}
+
 bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
 	int i;
 	bool r;
 	FILE *fp;
+
+	if (event_editor_is_asking()) {
+		return 0;
+	}
 
 	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
 		return 0;
@@ -818,9 +829,13 @@ void CFREDDoc::recreate_event_editors() {
 	}
 }
 
-// Closes the open editor and remembers it; the caller reopens it once the mission is replaced.
+// on TRUE the open editor stays closed until the caller's reopen_closed_editors(); FRED's exit never calls it
 BOOL CFREDDoc::SaveModified()
 {
+	if (event_editor_is_asking()) {
+		return FALSE;
+	}
+
 	m_reopen_event_editor = Event_editor_dlg != nullptr;
 	m_reopen_message_editor = Message_editor_dlg != nullptr;
 
