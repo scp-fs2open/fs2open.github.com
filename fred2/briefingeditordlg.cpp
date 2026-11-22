@@ -354,7 +354,9 @@ void briefing_editor_dlg::update_data(int update)
 	// save off current data before we update over it with new briefing stage/team stuff
 	Briefing = save_briefing;
 
-	Mission_music[SCORE_BRIEFING] = m_briefing_music - 1;
+	MODIFY(Mission_music[SCORE_BRIEFING], m_briefing_music - 1);
+	if (strcmp(The_mission.substitute_briefing_music_name, m_substitute_briefing_music) != 0)
+		set_modified();
 	strcpy_s(The_mission.substitute_briefing_music_name, m_substitute_briefing_music);
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
@@ -365,6 +367,8 @@ void briefing_editor_dlg::update_data(int update)
 
 		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
+		if (stricmp(ptr->voice, m_voice) != 0)
+			set_modified();
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1, 1);
 		i = ptr->flags;
 		if (m_cut_prev)
@@ -377,12 +381,12 @@ void briefing_editor_dlg::update_data(int update)
 		else
 			i &= ~BS_FORWARD_CUT;
 
-		if (m_no_grid)
-			ptr->draw_grid = false;
-		else
-			ptr->draw_grid = true;
+		MODIFY(ptr->draw_grid, !m_no_grid);
 
 		MODIFY(ptr->flags, i);
+		if (modified)
+			set_modified();
+		modified = 0;
 		ptr->formula = m_tree._model.save_tree();
 		switch (m_lines.GetCheck()) {
 			case 1:

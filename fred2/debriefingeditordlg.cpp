@@ -458,9 +458,9 @@ void debriefing_editor_dlg::OnClose()
 	m_cur_stage = -1;
 	update_data(1);
 
-	Mission_music[SCORE_DEBRIEFING_SUCCESS] = m_debriefPass_music - 1;
-	Mission_music[SCORE_DEBRIEFING_AVERAGE] = m_debriefAvg_music - 1;
-	Mission_music[SCORE_DEBRIEFING_FAILURE] = m_debriefFail_music - 1;
+	MODIFY(Mission_music[SCORE_DEBRIEFING_SUCCESS], m_debriefPass_music - 1);
+	MODIFY(Mission_music[SCORE_DEBRIEFING_AVERAGE], m_debriefAvg_music - 1);
+	MODIFY(Mission_music[SCORE_DEBRIEFING_FAILURE], m_debriefFail_music - 1);
 
 	theApp.record_window_data(&Debriefing_wnd_data, this);
 	debriefing_editor_dlg *ptr = Debriefing_dialog;
