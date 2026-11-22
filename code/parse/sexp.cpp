@@ -5875,7 +5875,13 @@ const prop *eval_prop(int node)
 		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
 			return nullptr;
 
-		return prop_id_lookup(Sexp_nodes[node].cache->ship_registry_index);
+		// a removed prop empties its slot and a later prop may take it, so the slot must still hold this name
+		int cached_idx = Sexp_nodes[node].cache->ship_registry_index;
+		if (SCP_vector_inbounds(Props, cached_idx) && Props[cached_idx].has_value() &&
+			!stricmp(Props[cached_idx]->prop_name, CTEXT(node)))
+			return prop_id_lookup(cached_idx);
+
+		Sexp_nodes[node].cache.reset();
 	}
 
 	// maybe forward to a special-arg node
