@@ -819,7 +819,7 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsSayWhichNeedARestart)
 	ASSERT_TRUE(json_is_true(json_object_get(custom, "restart_needed")));
 	ASSERT_TRUE(json_is_true(json_object_get(once, "restart_needed")));
 	// bind_to_once, and bind_to followed by a listener of its own (3D shockwaves)
-	for (const char* key : {"HUD.TargetInfo", "Graphics.3DShockwaves"}) {
+	for (const char* key : {"HUD.DualScanLines", "Graphics.3DShockwaves"}) {
 		const json_t* entry = described(list.get(), key);
 		ASSERT_NE(entry, nullptr) << key;
 		ASSERT_TRUE(json_is_true(json_object_get(entry, "restart_needed"))) << key;
