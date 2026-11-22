@@ -147,7 +147,7 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
 	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 },
-	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 },
+	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
 };
 
 int Ai_goal_list_size = sizeof(Ai_goal_list) / sizeof(ai_goal_list);

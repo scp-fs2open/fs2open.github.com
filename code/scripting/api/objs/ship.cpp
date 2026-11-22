@@ -1758,7 +1758,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 	int wip_index = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
-  int docker_index = -1;
+	int docker_index = -1;
 	int dockee_index = -1;
 	int n_args = ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype));
 	if (!lua_isnoneornil(L, 10)) {
