@@ -106,14 +106,14 @@ int Fred_mission_save::autosave_mission_file(char* pathname)
 	return err;
 }
 
-void Fred_mission_save::bypass_comment(const char* comment, const char* end)
+bool Fred_mission_save::bypass_comment(const char* comment, const char* end)
 {
 	char* ch = strstr(raw_ptr, comment);
 	if (ch != nullptr) {
 		if (end != nullptr) {
 			char* ep = strstr(raw_ptr, end);
 			if (ep != nullptr && ep < ch)
-				return;
+				return false;
 		}
 		char* writep = ch;
 		char* readp = strchr(writep, '\n');
@@ -127,7 +127,10 @@ void Fred_mission_save::bypass_comment(const char* comment, const char* end)
 		}
 
 		*writep = '\0';
+		return true;
 	}
+
+	return false;
 }
 
 void Fred_mission_save::convert_special_tags_to_retail(char* text, int max_len)
@@ -5399,6 +5402,12 @@ int Fred_mission_save::save_props()
 {
 	auto num_props = count_items_with_value(Props);
 
+	// each pass deletes one line of the mission text, so the loop ends
+	auto bypass_all = [this](const char* comment, const char* end) {
+		while (bypass_comment(comment, end)) {
+		}
+	};
+
 	if ((save_config.save_format != MissionFormat::RETAIL) && (num_props > 0)) {
 		fred_parse_flag = 0;
 		size_t count = 0;
@@ -5452,9 +5461,46 @@ int Fred_mission_save::save_props()
 					fout(" %s", p->fred_layer.c_str());
 				}
 
+				// see also check_for_26_3_data()
+				if (!p->replacement_textures.empty()) {
+					fso_comment_push(";;FSO 26.3.0;;");
+
+					if (optional_string_fred("$Texture Replace:", "$Name:"))
+						parse_comments();
+					else
+						fout_version("\n$Texture Replace:");
+
+					for (const auto& tr : p->replacement_textures) {
+						if (optional_string_fred("+old:", "$Name:"))
+							parse_comments();
+						else
+							fout_version("\n+old:");
+						fout(" %s", tr.old_texture);
+
+						if (optional_string_fred("+new:", "$Name:"))
+							parse_comments();
+						else
+							fout_version("\n+new:");
+						fout(" %s", tr.new_texture);
+					}
+
+					fso_comment_pop();
+				} else {
+					bypass_comment(";;FSO 26.3.0;; $Texture Replace:", "$Name:");
+				}
+
+				// a tagged line left behind by a removed entry would pass its version tag on to the next key
+				bypass_all(";;FSO 26.3.0;; +old:", "$Name:");
+				bypass_all(";;FSO 26.3.0;; +new:", "$Name:");
+
 				fso_comment_pop();
 			}
 		}
+	}
+
+	// lines of props not written above (deleted, or skipped by this format) are left here
+	for (const char* comment : {";;FSO 26.3.0;; $Texture Replace:", ";;FSO 26.3.0;; +old:", ";;FSO 26.3.0;; +new:"}) {
+		bypass_all(comment, "#Events");
 	}
 
 	fso_comment_pop(true);

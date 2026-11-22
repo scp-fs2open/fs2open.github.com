@@ -23,6 +23,7 @@ typedef struct prop_info {
 	flagset<Prop::Info_Flags> flags;                            // Info flags
 	SCP_map<SCP_string, SCP_string> custom_data;                // Custom data for this prop
 	SCP_vector<custom_string> custom_strings;                   // Custom strings for this prop
+	SCP_vector<texture_replace> replacement_textures;           // Texture replacements for every prop of this class
 } prop_info;
 
 typedef struct prop {
@@ -37,6 +38,7 @@ typedef struct prop {
 	// glow points
 	SCP_deque<bool> glow_point_bank_active;
 	flagset<Prop::Prop_Flags> flags;
+	SCP_vector<texture_replace> replacement_textures;
 } prop;
 
 typedef struct prop_category {
@@ -51,6 +53,7 @@ typedef struct parsed_prop {
 	vec3d position;
 	flagset<Mission::Parse_Object_Flags> flags;
 	SCP_string fred_layer = "Default";
+	SCP_vector<texture_replace> replacement_textures;
 } parsed_prop;
 
 extern bool Props_inited;
@@ -88,6 +91,14 @@ int prop_name_lookup(const char* name);
 prop* prop_id_lookup(int id);
 
 void change_prop_type(int n, int prop_type);
+
+/**
+ * @brief Rebuilds a prop's replacement textures from its class's list, then its own
+ *
+ * @note Call this after changing prop::replacement_textures. It discards replacements set any other way
+ *       (for example through the scripting API).
+ */
+void prop_apply_replacement_textures(prop* propp);
 
 prop_category* prop_get_category(int index);
 

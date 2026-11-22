@@ -139,8 +139,10 @@ class Fred_mission_save {
 	 *
 	 * @details Searches for the comment to bypass. If found, and is before the end marker, this function will delete
 	 *  the comment from the internal buffer
+	 *
+	 * @return true if a comment was deleted
 	 */
-	void bypass_comment(const char* comment, const char* end = NULL);
+	bool bypass_comment(const char* comment, const char* end = nullptr);
 
 	/**
 	 * @brief Pops a comment off of the fso_ver_comment stack, deleting it
