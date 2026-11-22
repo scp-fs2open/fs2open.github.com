@@ -172,6 +172,18 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 	return joystickMatchesGuid(testStick, GUID);
 }
 
+// The ini reader ends a value at ';' or '#' and jansson needs UTF-8, so the serial is saved as hex
+SCP_string serialHex(const Joystick* stick)
+{
+	static const char digits[] = "0123456789ABCDEF";
+	SCP_string out;
+	for (unsigned char c : stick->getSerial()) {
+		out += digits[c >> 4];
+		out += digits[c & 0x0F];
+	}
+	return out;
+}
+
 // Identical sticks share a GUID; their serial, or failing that their axis, button and hat counts, tells them apart.
 // The counts separate virtual sticks (vJoy) set up differently; a count below zero means the setting has none.
 Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int axes, int buttons, int hats)
@@ -184,9 +196,9 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 		if (!stick->isAttached() || stick->getGUID() != guid) {
 			continue;
 		}
-		// A saved serial rules out sticks with another one; when no stick has it, that device is away
+		// A saved serial rules out sticks with another one; the GUID fallback after this still takes a lone stick
 		if (!serial.empty()) {
-			if (stick->getSerial() != serial) {
+			if (serialHex(stick.get()) != serial) {
 				continue;
 			}
 			by_serial = stick.get();
@@ -266,7 +278,7 @@ json_t* joystick_serializer(Joystick* joystick)
 		"id",
 		-1,
 		"serial",
-		joystick->getSerial().c_str(),
+		serialHex(joystick).c_str(),
 		"axes",
 		joystick->numAxes(),
 		"buttons",
@@ -619,24 +631,41 @@ bool device_event_handler(const SDL_Event &evt)
 			
 			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 			{
-				// Plugging in one of several identical sticks can change which one another slot's setting means
-				if (value[i] != nullptr && value[i] != pJoystick[i] && value[i]->isAttached())
+				// A returning stick retakes its slot; an identical stick arriving can change what a setting means
+				if (value[i] != nullptr && value[i]->isAttached() &&
+					(value[i] == addedStick ||
+						(value[i] != pJoystick[i] && value[i]->getGUID() == addedStick->getGUID())))
 				{
 					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(value[i], i);
+				}
+				else if (pJoystick[i] == addedStick)
+				{
+					// the slot still holds the reused object, whose old handles close below; force feedback must reopen
+					setPlayerJoystick(addedStick, i);
 				}
 			}
 		}
 		else
 		{
 			// Legacy system requires setting joysticks in the launcher
+			short bound = -1;
 			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 			{
 				if (isPlayerJoystick(addedStick, i))
 				{
 					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
+					bound = i;
 					break;
+				}
+			}
+			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
+			{
+				// as above: a slot still holding the reused object must reopen force feedback
+				if (i != bound && pJoystick[i] == addedStick)
+				{
+					setPlayerJoystick(addedStick, i);
 				}
 			}
 		}
@@ -659,7 +688,6 @@ bool device_event_handler(const SDL_Event &evt)
 				// We just lost our joystick, reset the data
 				mprintf(("Joystick %i disconnected\n", i));
 				setPlayerJoystick(nullptr, i);
-				break;
 			}
 		}
 	}
