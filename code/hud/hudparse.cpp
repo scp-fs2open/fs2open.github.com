@@ -7,6 +7,7 @@
  
 
 #include <cstddef>
+#include <optional>
 
 #include "cmdline/cmdline.h"
 #include "graphics/font.h" //for gr_force_fit_string
@@ -68,6 +69,8 @@ struct GaugeSettingTally {
 static GaugeSettingTally Scan_lines_tally;
 static GaugeSettingTally Rearm_timer_tally;
 static GaugeSettingTally Radar_tally;
+static std::optional<bool> Target_info_from_table;
+static bool Disco_scan_lines_seen = false;
 
 static void tally_gauge_setting(GaugeSettingTally& tally, bool set_by_mod, bool value)
 {
@@ -108,12 +111,7 @@ static auto OrbRadarOption __UNUSED = options::OptionBuilder<bool>("HUD.OrbRadar
 	.category(std::make_pair("Game", 1824))
 	.default_func([]() { return orb_radar_default; })
 	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
-	.change_listener([](bool val, bool initial) {
-		if (initial) {
-			Cmdline_orb_radar = val ? 1 : 0;
-		}
-		return initial;
-	})
+	.bind_to_once(&Cmdline_orb_radar)
 	.importance(59)
 	.parser(parse_orb_radar_func)
 	.finish();
@@ -133,12 +131,7 @@ static auto DualScanLinesOption __UNUSED = options::OptionBuilder<bool>("HUD.Dua
 	.category(std::make_pair("Game", 1824))
 	.default_func([]() { return dual_scan_lines_default; })
 	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
-	.change_listener([](bool val, bool initial) {
-		if (initial) {
-			Cmdline_dualscanlines = val ? 1 : 0;
-		}
-		return initial;
-	})
+	.bind_to_once(&Cmdline_dualscanlines)
 	.importance(58)
 	.parser(parse_dual_scan_lines_func)
 	.finish();
@@ -158,12 +151,7 @@ static auto RearmTimerOption __UNUSED = options::OptionBuilder<bool>("HUD.RearmT
 	.category(std::make_pair("Game", 1824))
 	.default_func([]() { return rearm_timer_default; })
 	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
-	.change_listener([](bool val, bool initial) {
-		if (initial) {
-			Cmdline_rearm_timer = val ? 1 : 0;
-		}
-		return initial;
-	})
+	.bind_to_once(&Cmdline_rearm_timer)
 	.importance(57)
 	.parser(parse_rearm_timer_func)
 	.finish();
@@ -874,6 +862,8 @@ void hud_positions_init()
 	Scan_lines_tally = GaugeSettingTally();
 	Rearm_timer_tally = GaugeSettingTally();
 	Radar_tally = GaugeSettingTally();
+	Target_info_from_table.reset();
+	Disco_scan_lines_seen = false;
 
 	if (cf_exists_full("hud_gauges.tbl", CF_TYPE_TABLES))
 		parse_hud_gauges_tbl("hud_gauges.tbl");
@@ -884,8 +874,16 @@ void hud_positions_init()
 	load_missing_retail_gauges();
 
 	lock_option_if_mod_set_everywhere("HUD.DualScanLines", Scan_lines_tally);
+	// With every target monitor on the disco style no gauge reads the option
+	if (Disco_scan_lines_seen && (Scan_lines_tally.gauges == 0)) {
+		options::OptionsManager::instance()->removeOption(DualScanLinesOption);
+	}
 	lock_option_if_mod_set_everywhere("HUD.RearmTimer", Rearm_timer_tally);
 	lock_option_if_mod_set_everywhere("HUD.OrbRadar", Radar_tally);
+	// One setting for every ship, so even a ship-specific HUD replaces the player's choice
+	if (Target_info_from_table.has_value()) {
+		set_option_by_mod("HUD.TargetInfo", *Target_info_from_table);
+	}
 }
 
 void load_missing_retail_gauges()
@@ -3735,7 +3733,12 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	hud_gauge->initHiRes(fname_monitor);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
-	tally_gauge_setting(Scan_lines_tally, scan_type_from_table, Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES);
+	// The option only chooses between the default and dual styles, so a disco gauge has no say in the lock
+	if (Cargo_scan_type == CargoScanType::DISCO_SCAN_LINES) {
+		Disco_scan_lines_seen = true;
+	} else {
+		tally_gauge_setting(Scan_lines_tally, scan_type_from_table, Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES);
+	}
 }
 
 void load_gauge_squad_message(gauge_settings* settings)
@@ -5189,8 +5192,7 @@ void load_gauge_brackets(gauge_settings* settings)
 	}
 	if (optional_string("Enable Target Info:")) {
 		stuff_boolean(&Extra_target_info);
-		// One setting for every ship, so even a ship-specific HUD replaces the player's choice
-		set_option_by_mod("HUD.TargetInfo", Extra_target_info);
+		Target_info_from_table = Extra_target_info;
 	}
 
 	hud_gauge->initBitmaps(fname);

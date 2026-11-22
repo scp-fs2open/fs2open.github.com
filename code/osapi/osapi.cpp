@@ -850,15 +850,16 @@ static void handle_sdl_event(const SDL_Event& event) {
 		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
 		ImGui_ImplSDL3_ProcessEvent(&imgui_event);
 
-		// In other states, the game also needs mouse motion while the pointer is over the overlay.
-		// If the overlay consumed the motion, mouse flight would stop there.
+		// In other states, the game still needs mouse motion and the wheel while the pointer is over
+		// the overlay: mouse flight would stop there, and the wheel can be bound to controls.
 		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
 									(event.type == SDL_EventType::SDL_EVENT_KEY_UP ||
 									 event.type == SDL_EventType::SDL_EVENT_KEY_DOWN)) ||
 							   (ImGui::GetIO().WantCaptureMouse &&
 									(event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_UP ||
 				 					 event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_DOWN||
-									 (imgui_state && event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION)));
+									 (imgui_state && (event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION ||
+													  event.type == SDL_EventType::SDL_EVENT_MOUSE_WHEEL))));
 	}
 
 	if (!imgui_processed_this) {
