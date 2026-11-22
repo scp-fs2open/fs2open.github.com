@@ -33,6 +33,8 @@ class WeaponsParseTest : public test::FSTestFixture {
 	void TearDown() override {
 		weapon_close();
 		Weapon_info.clear();
+		// a test that sets it may throw before it can reset it
+		Lcl_gr = 0;
 
 		test::FSTestFixture::TearDown();
 	}
@@ -237,7 +239,6 @@ TEST_F(WeaponsParseTest, template_hashed_name_not_inherited) {
 TEST_F(WeaponsParseTest, template_german_display_name_not_inherited) {
 	Lcl_gr = 1;
 	weapon_init();
-	Lcl_gr = 0;
 
 	int d = weapon_info_lookup("Derived Laser");
 	ASSERT_GE(d, 0);
