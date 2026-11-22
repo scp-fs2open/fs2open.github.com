@@ -151,6 +151,22 @@ static bool refuse_undo_over_unapplied_edits()
 	return true;
 }
 
+static void set_backup_save_options(Fred_mission_save& save)
+{
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+	save.set_always_save_display_names(Always_save_display_names);
+	save.set_view_pos(view_pos);
+	save.set_view_orient(view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
+}
+
 bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
 	int i;
@@ -195,6 +211,16 @@ bool CFREDDoc::autoload() {
 		undo_desc[i] = undo_desc[i + 1];
 	}
 
+	// a loaded mission saves with slightly different rounding, which would make the next unchanged step look new
+	if (r) {
+		Fred_mission_save save;
+		set_backup_save_options(save);
+		bool unchanged = false;
+		if (save.autosave_mission_file(MISSION_BACKUP_NAME, unchanged, true)) {
+			mprintf(("Undo: could not rewrite the newest undo step\n"));
+		}
+	}
+
 	// Reduce the undo count and check if we can do another undo op.
 	Undo_count--;
 	check_undo();
@@ -204,18 +230,7 @@ bool CFREDDoc::autoload() {
 int CFREDDoc::autosave(char *desc) {
 	int i;
 	Fred_mission_save save;
-	if (Mission_save_format == FSO_FORMAT_RETAIL) {
-		save.set_save_format(MissionFormat::RETAIL);
-	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
-		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
-	} else {
-		save.set_save_format(MissionFormat::STANDARD);
-	}
-	save.set_always_save_display_names(Always_save_display_names);
-	save.set_view_pos(view_pos);
-	save.set_view_orient(view_orient);
-	save.set_fred_alt_names(Fred_alt_names);
-	save.set_fred_callsigns(Fred_callsigns);
+	set_backup_save_options(save);
 
 	CWaitCursor wait;
 

@@ -83,7 +83,7 @@
 	} while (false)
 
 
-// The $Modified line holds the save time, which differs between any two saves
+// The $Modified line holds the save time
 static SCP_string mission_text_without_save_time(const char* filename)
 {
 	SCP_string text;
@@ -105,7 +105,7 @@ static SCP_string mission_text_without_save_time(const char* filename)
 	return text;
 }
 
-int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged)
+int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged, bool replace_newest)
 {
 	char backup_name[256], name2[256];
 	int i;
@@ -115,7 +115,7 @@ int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged)
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
 
-	sprintf(name2 + len, ".new");
+	strcpy(name2 + len, ".new");
 	save_mission_internal(name2);
 	if (err) {
 		cf_delete(name2, CF_TYPE_MISSIONS);
@@ -124,22 +124,25 @@ int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged)
 
 	strcpy(backup_name + len, ".001");
 	auto new_text = mission_text_without_save_time(name2);
-	if (!new_text.empty() && new_text == mission_text_without_save_time(backup_name)) {
+	if (!replace_newest && !new_text.empty() && new_text == mission_text_without_save_time(backup_name)) {
 		cf_delete(name2, CF_TYPE_MISSIONS);
 		unchanged = true;
 		return 0;
 	}
 
-	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
-	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
-		sprintf(backup_name + len, ".%.3d", i - 1);
-		sprintf(name2 + len, ".%.3d", i);
-		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
+	if (!replace_newest) {
+		sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
+		cf_delete(backup_name, CF_TYPE_MISSIONS);
+		for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
+			sprintf(backup_name + len, ".%.3d", i - 1);
+			sprintf(name2 + len, ".%.3d", i);
+			cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
+		}
 	}
 
 	strcpy(backup_name + len, ".001");
 	strcpy(name2 + len, ".new");
+	cf_delete(backup_name, CF_TYPE_MISSIONS);
 	if (cf_rename(name2, backup_name, CF_TYPE_MISSIONS) != CF_RENAME_SUCCESS) {
 		err = -1;
 	}
