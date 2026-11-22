@@ -1897,11 +1897,15 @@ bool SetCmdlineParams()
 
 	if(dualscanlines_arg.found() ) {
 		Cmdline_dualscanlines = 1;
+		options::OptionsManager::instance()->setOverride("HUD.DualScanLines",
+			std::unique_ptr<json_t>(json_true()), "-dualscanlines");
 	}
 
 	if(targetinfo_arg.found())
 	{
 		Extra_target_info = true;
+		options::OptionsManager::instance()->setOverride("HUD.TargetInfo",
+			std::unique_ptr<json_t>(json_true()), "-targetinfo");
 	}
 
 	if(nomovies_arg.found() ) {
@@ -1959,6 +1963,8 @@ bool SetCmdlineParams()
 	if (fps_arg.found())
 	{
 		Show_framerate = 1;
+		options::OptionsManager::instance()->setOverride("HUD.ShowFPS",
+			std::unique_ptr<json_t>(json_true()), "-fps");
 	}
 
 	if (bmpmanusage_arg.found())
@@ -2036,6 +2042,8 @@ bool SetCmdlineParams()
 	if (orb_radar.found())
 	{
 		Cmdline_orb_radar = 1;
+		options::OptionsManager::instance()->setOverride("HUD.OrbRadar",
+			std::unique_ptr<json_t>(json_true()), "-orbradar");
 	}
 
 	if ( allow_autpilot_interrupt.found() )	{
@@ -2253,6 +2261,8 @@ bool SetCmdlineParams()
 
 	if ( ballistic_gauge.found() ) {
 		Cmdline_ballistic_gauge = 1;
+		options::OptionsManager::instance()->setOverride("HUD.BallisticGauge",
+			std::unique_ptr<json_t>(json_true()), "-ballistic_gauge");
 	}
 
 	if(dis_collisions.found())
@@ -2265,8 +2275,11 @@ bool SetCmdlineParams()
 		Cmdline_no_fbo = 1;
 	}
 
-	if ( rearm_timer_arg.found() )
+	if ( rearm_timer_arg.found() ) {
 		Cmdline_rearm_timer = 1;
+		options::OptionsManager::instance()->setOverride("HUD.RearmTimer",
+			std::unique_ptr<json_t>(json_true()), "-rearm_timer");
+	}
 
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
