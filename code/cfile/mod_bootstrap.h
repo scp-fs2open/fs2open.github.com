@@ -2,6 +2,8 @@
 
 #include "globalincs/pstypes.h"
 
+inline constexpr int MOD_BOOTSTRAP_VERSION = 1;
+
 struct ModBootstrap {
 	int version = 0;
 	SCP_string filename;

@@ -60,8 +60,11 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 		throw std::runtime_error("the top-level value must be a JSON object");
 	}
 	const auto format_version = json_integer_value(json_object_get(document.get(), "version"));
-	if (format_version != 1) {
-		throw std::runtime_error("expected bootstrap version 1");
+	if (format_version > MOD_BOOTSTRAP_VERSION) {
+		throw std::runtime_error("expected bootstrap version up to " + std::to_string(MOD_BOOTSTRAP_VERSION));
+	}
+	if (format_version < 1) {
+		throw std::runtime_error("invalid bootstrap version: " + std::to_string(format_version));
 	}
 	const auto roots = json_object_get(document.get(), "roots");
 	if (!roots || json_typeof(roots) != JSON_ARRAY) {
