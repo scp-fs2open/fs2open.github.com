@@ -212,7 +212,7 @@ bool CFREDDoc::autoload() {
 	}
 
 	// a loaded mission saves with slightly different rounding, which would make the next unchanged step look new
-	if (r) {
+	if (r && !Autosave_disabled) {
 		Fred_mission_save save;
 		set_backup_save_options(save);
 		bool unchanged = false;
@@ -895,11 +895,6 @@ void CFREDDoc::recreate_event_editors() {
 	if (Event_editor_dlg) {
 		Event_editor_dlg->close_discarding_changes();
 		Fred_view_wnd->show_event_editor();
-	}
-
-	if (Message_editor_dlg) {
-		Message_editor_dlg->OnCancel();
-		Fred_view_wnd->show_message_editor();
 	}
 }
 

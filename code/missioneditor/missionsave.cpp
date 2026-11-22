@@ -123,11 +123,13 @@ int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged, bo
 	}
 
 	strcpy(backup_name + len, ".001");
-	auto new_text = mission_text_without_save_time(name2);
-	if (!replace_newest && !new_text.empty() && new_text == mission_text_without_save_time(backup_name)) {
-		cf_delete(name2, CF_TYPE_MISSIONS);
-		unchanged = true;
-		return 0;
+	if (!replace_newest) {
+		auto new_text = mission_text_without_save_time(name2);
+		if (!new_text.empty() && new_text == mission_text_without_save_time(backup_name)) {
+			cf_delete(name2, CF_TYPE_MISSIONS);
+			unchanged = true;
+			return 0;
+		}
 	}
 
 	if (!replace_newest) {
