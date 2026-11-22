@@ -371,9 +371,6 @@ fix FrametimeOverall = 0;
 	int	Show_framerate = 0;
 #endif
 
-static constexpr int MIN_FRAMERATE_CAP = 15;
-static constexpr int MAX_FRAMERATE_CAP = 120;
-int	Framerate_cap = 120; // Default value
 static bool show_fps_default = (Show_framerate != 0);
 
 static void parse_show_fps_func()
@@ -396,6 +393,38 @@ static auto ShowFpsOption __UNUSED = options::OptionBuilder<bool>("HUD.ShowFPS",
                      .level(options::ExpertLevel::Beginner)
                      .importance(46)
                      .parser(parse_show_fps_func)
+                     .finish();
+
+static constexpr int MIN_FRAMERATE_CAP = 15;
+static constexpr int MAX_FRAMERATE_CAP = 120;
+int	Framerate_cap = 120;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto FramerateCapOption = options::OptionBuilder<int>("Graphics.FramerateCap",
+                     std::pair<const char*, int>{"Frame Rate Limit", 1952},
+                     std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1953})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .range(MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP)
+                     .default_func([]() { return Framerate_cap; })
+                     .deserializer([](const json_t* value) {
+                         int saved;
+                         json_error_t err;
+                         if (json_unpack_ex(const_cast<json_t*>(value), &err, 0, "i", &saved) != 0) {
+                             throw json_exception(err);
+                         }
+                         // Clamp saved out-of-range values
+                         return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+                     })
+                     .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1954)) : std::to_string(value); })
+                     .parser([]() {
+                         int value;
+                         stuff_int(&value);
+                         Framerate_cap = std::clamp(value, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+                     })
+                     .bind_to(&Framerate_cap)
+                     .importance(72)
+                     .flags({options::OptionFlags::RangeTypeInteger})
                      .finish();
 
 // for the model page in system
@@ -1975,35 +2004,10 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
-	static auto FramerateCapOption = options::OptionBuilder<int>("Graphics.FramerateCap",
-					 std::pair<const char*, int>{"Frame Rate Limit", 1952},
-					 std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1953})
-					 .category(std::make_pair("Graphics", 1825))
-					 .level(options::ExpertLevel::Advanced)
-					 .range(MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP)
-					 .default_func([]() { return Framerate_cap; })
-					 .deserializer([](const json_t* value) {
-						int saved;
-						json_error_t err;
-						if (json_unpack_ex(const_cast<json_t*>(value), &err, 0, "i", &saved) != 0) {
-							throw json_exception(err);
-						}
-						// Clamp saved out-of-range values
-						return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
-					 })
-					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1954)) : std::to_string(value); })
-					 .parser([]() {
-						int value;
-						stuff_int(&value);
-						Framerate_cap = std::clamp(value, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
-					 })
-					 .bind_to(&Framerate_cap)
-					 .importance(71)
-					 .flags({options::OptionFlags::RangeTypeInteger})
-					 .finish();
-
 	auto* options_manager = options::OptionsManager::instance();
-	// Load mod defaults and player preferences before initializing the rest of the game.
+	// Must be run after mod table is parsed so we know the value of Using_in_game_options
+	// Must be run before everything else inits so we can init those with the correct
+	// default values or user preferences
 	if (Using_in_game_options) {
 		default_settings_init(); // load in current preferred default options values, if any
 	}
