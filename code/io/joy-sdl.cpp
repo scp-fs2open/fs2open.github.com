@@ -184,7 +184,11 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 		if (!stick->isAttached() || stick->getGUID() != guid) {
 			continue;
 		}
-		if (!serial.empty() && stick->getSerial() == serial) {
+		// A saved serial rules out sticks with another one; when no stick has it, that device is away
+		if (!serial.empty()) {
+			if (stick->getSerial() != serial) {
+				continue;
+			}
 			by_serial = stick.get();
 			++serial_hits;
 		}
@@ -197,8 +201,7 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 	if (serial_hits == 1) {
 		return by_serial;
 	}
-	// A saved serial that no plugged-in stick has means that device is away, not that the counts should decide
-	if ((serial.empty() || serial_hits > 1) && count_hits == 1) {
+	if (count_hits == 1) {
 		return by_counts;
 	}
 	return nullptr;
