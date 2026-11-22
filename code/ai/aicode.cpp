@@ -2438,7 +2438,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 
 	//	If no wing member can be pursued, hold one anyway rather than leave the wing, as an explicit order to attack an unpursued ship does
 	if ((eno.nearest_objnum == -1) && (enemy_wing != -1) && for_pursuit && The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery]) {
-		int held_objnum = get_nearest_objnum(objnum, enemy_team_mask, enemy_wing, range, max_attackers, false, ship_info_index, class_type);
+		int held_objnum = get_nearest_objnum(objnum, enemy_team_mask, enemy_wing, range, max_attackers, false, ship_info_index, class_type, turret_wip_index);
 		if (held_objnum >= 0 && Objects[held_objnum].type == OBJ_SHIP && Ships[Objects[held_objnum].instance].wingnum == enemy_wing)
 			return held_objnum;
 	}
@@ -2446,7 +2446,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	//	If only looking for target in certain wing and couldn't find anything in
 	//	that wing, look for any object.
 	if ((eno.nearest_objnum == -1) && (enemy_wing != -1)) {
-		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, for_pursuit, ship_info_index, class_type);
+		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, for_pursuit, ship_info_index, class_type, turret_wip_index);
 	}
 
 	return eno.nearest_objnum;
@@ -15665,6 +15665,9 @@ void ai_frame(int objnum)
 					// AL 12-16-97: no more subsystems to attack... reset targeting info
 					aip->target_objnum = -1;
 					set_targeted_subsys(aip, NULL, -1);
+					if (aip->goals[0].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
+						aip->active_goal = -1;
+					}
 				}
 			} else {
 				set_targeted_subsys(aip, NULL, -1);

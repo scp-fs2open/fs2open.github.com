@@ -1097,7 +1097,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP;
 		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDDR(node)), &aigp->target_name_index );
-		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
+		aigp->priority = eval_num(CDDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_WARP_OUT:

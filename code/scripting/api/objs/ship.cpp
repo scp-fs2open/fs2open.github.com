@@ -1760,7 +1760,10 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 	ship_subsys_h *tgsh = NULL;
   int docker_index = -1;
 	int dockee_index = -1;
-	int n_args = ade_get_args(L, "oo|oofooo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype), l_Weaponclass.Get(&wip_index));
+	int n_args = ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype));
+	if (!lua_isnoneornil(L, 10)) {
+		ade_get_args(L, "*********o", l_Weaponclass.Get(&wip_index));
+	}
 	if (n_args < 2)
 		return ADE_RETURN_NIL;
 	bool omitted_priority = (n_args < 5);
