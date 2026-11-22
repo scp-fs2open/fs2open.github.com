@@ -326,7 +326,7 @@ void std_connect_kick_player()
 // update the ping for this particular player
 void std_connect_update_ping(net_player *p)
 {
-	char str[100],ping[10],sml_ping[10],lookup[50];
+	char str[100],ping[10],lookup[50];
 
 	// as long as his ping is not -1, do an update
 	if(p->s_info.ping.ping_avg > -1){	
@@ -340,13 +340,11 @@ void std_connect_update_ping(net_player *p)
 		// chop it off at pings greater than 1 second
 		if(p->s_info.ping.ping_avg > 1000){
 			strcat_s(str,XSTR("> 1 sec",914));
-			strcpy_s(sml_ping,XSTR("> 1 sec",914));
 		}
 		else {
-			sprintf(ping,"%d",p->s_info.ping.ping_avg); 
+			sprintf(ping,"%d",p->s_info.ping.ping_avg);
 			strcat_s(str,ping);
 			strcat_s(str,XSTR(" ms",915));
-			strcpy_s(sml_ping,ping); strcat_s(sml_ping,XSTR(" ms",915));
 		}
 
 		// set the string
