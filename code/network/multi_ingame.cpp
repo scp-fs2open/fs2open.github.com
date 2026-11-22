@@ -1233,7 +1233,8 @@ void send_ingame_ships_packet(net_player *player)
 
 	// sent first so the joiner builds arrived ships from the same data; later waves use these too, so all are sent
 	for (const auto& p_obj : Parse_objects) {
-		if (!p_obj.flags[Mission::Parse_Object_Flags::Class_swapped] || p_obj.subsys_index < 0 || p_obj.subsys_count < 1) {
+		if (!p_obj.flags[Mission::Parse_Object_Flags::Class_swapped] || p_obj.subsys_index < 0 ||
+			p_obj.subsys_count < 1) {
 			continue;
 		}
 		const subsys_status* sssp = &Subsys_status[p_obj.subsys_index];
