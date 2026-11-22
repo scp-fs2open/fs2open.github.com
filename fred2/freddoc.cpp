@@ -116,13 +116,48 @@ static bool refuse_while_an_editor_is_busy()
 	return true;
 }
 
+// Undo restores the previous step, so edits an editor has not applied yet would be lost or written over the result
+static bool refuse_undo_over_unapplied_edits()
+{
+	const char* editor = nullptr;
+	const char* advice = "has changes that are not applied yet. Press OK or Cancel in it first, then Undo.";
+	if (Event_editor_dlg != nullptr) {
+		// the fields on screen reach the editor's own lists only through save(), as in its Cancel
+		Event_editor_dlg->save();
+	}
+	if (Event_editor_dlg != nullptr && Event_editor_dlg->query_modified()) {
+		editor = "Event Editor";
+	} else if (Message_editor_dlg != nullptr) {
+		// it writes each message into the mission when another is selected, and only its OK records an undo step
+		editor = "Message Editor";
+		advice = "writes its changes into the mission as you edit. Press OK in it first, then Undo.";
+	} else {
+		// these editors write everything they show back into the mission when they close, which would revert the Undo
+		advice = "applies its changes when it closes. Close it first, then Undo.";
+		if (Debriefing_dialog != nullptr) {
+			editor = "Debriefing Editor";
+		} else if (Briefing_dialog != nullptr) {
+			editor = "Briefing Editor";
+		} else if (Bg_bitmap_dialog != nullptr) {
+			editor = "Background Editor";
+		}
+	}
+	if (editor == nullptr) {
+		return false;
+	}
+
+	SCP_string msg = SCP_string("The ") + editor + " " + advice;
+	Fred_main_wnd->MessageBox(msg.c_str(), "FRED", MB_OK | MB_ICONINFORMATION);
+	return true;
+}
+
 bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
 	int i;
 	bool r;
 	FILE *fp;
 
-	if (refuse_while_an_editor_is_busy()) {
+	if (refuse_while_an_editor_is_busy() || refuse_undo_over_unapplied_edits()) {
 		return 0;
 	}
 
