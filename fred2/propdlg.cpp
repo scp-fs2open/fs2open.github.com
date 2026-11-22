@@ -1,8 +1,10 @@
 #include "stdafx.h"
 #include "FRED.h"
+#include "FREDView.h"
 #include "propdlg.h"
 #include "Management.h"
 #include "MainFrm.h"
+#include "ShipTexturesDlg.h"
 #include "object/object.h"
 #include "prop/prop.h"
 
@@ -31,6 +33,7 @@ ON_WM_CLOSE()
 ON_WM_SIZE()
 ON_BN_CLICKED(IDC_PROP_NEXT, OnPropNext)
 ON_BN_CLICKED(IDC_PROP_PREV, OnPropPrev)
+ON_BN_CLICKED(IDC_TEXTURES, OnTextures)
 END_MESSAGE_MAP()
 
 void prop_dlg::OnClose()
@@ -125,6 +128,7 @@ void prop_dlg::initialize_data(int full_update)
 		UpdateData(FALSE);
 
 	GetDlgItem(IDC_PROP_NAME)->EnableWindow(enable);
+	GetDlgItem(IDC_TEXTURES)->EnableWindow(enable && Marked == 1);
 	m_flags_list.EnableWindow(enable);
 }
 
@@ -237,6 +241,18 @@ void prop_dlg::OnPropPrev()
 		return; // Only abort if user cancelled (e.g. name conflict they didn't resolve)
 
 	select_prop_from_object_list(GET_PREV(&Objects[cur_object_index]), false);
+}
+
+void prop_dlg::OnTextures()
+{
+	if (!query_valid_object() || Objects[cur_object_index].type != OBJ_PROP || Marked != 1)
+		return;
+
+	CShipTexturesDlg dlg_textures;
+	dlg_textures.self_prop = Objects[cur_object_index].instance;
+	dlg_textures.DoModal();
+
+	update_map_window();
 }
 
 void prop_dlg::OnOK() {}

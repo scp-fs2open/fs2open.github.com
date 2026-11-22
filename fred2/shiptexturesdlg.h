@@ -19,6 +19,7 @@ public:
 	CShipTexturesDlg(CWnd* pParent = NULL);   // standard constructor
 
 	int self_ship;
+	int self_prop;
 	int active_texture_index;
 	int modified;
 	int texture_count;

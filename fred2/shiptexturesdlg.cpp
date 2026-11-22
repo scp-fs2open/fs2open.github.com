@@ -3,9 +3,11 @@
 
 #include "stdafx.h"
 #include "fred.h"
+#include "FREDDoc.h"
 #include "ShipTexturesDlg.h"
 #include "model/model.h"
 #include "bmpman/bmpman.h"
+#include "prop/prop.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -25,6 +27,7 @@ CShipTexturesDlg::CShipTexturesDlg(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 
 	self_ship = -1;
+	self_prop = -1;
 	active_texture_index = -1;
 	modified = 0;
 	texture_count = 0;
@@ -119,24 +122,41 @@ void CShipTexturesDlg::OnOK()
 		// re-sort according to old
 		sort_textures();
 
-		// overwrite all the old entries that refer to this ship
-		SCP_vector<texture_replace>::iterator ii, end;
-		end = Fred_texture_replacements.end();
-		for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
+		prop* propp = (self_prop >= 0) ? prop_id_lookup(self_prop) : nullptr;
+		if (self_prop >= 0 && propp == nullptr)
 		{
-			if (!stricmp(ii->ship_name, Ships[self_ship].ship_name))
-			{
-				do {
-					end--;
-				} while (end != ii && !stricmp(end->ship_name, Ships[self_ship].ship_name));
-				if (end == ii)
-					break;
-				texture_set(&(*ii), &(*end));
-			}
+			CDialog::OnCancel();
+			return;
 		}
 
-		if (end != Fred_texture_replacements.end())
-			Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+		const char* self_name = (propp != nullptr) ? "" : Ships[self_ship].ship_name;
+		SCP_vector<texture_replace>& replacements = (propp != nullptr) ? propp->replacement_textures : Fred_texture_replacements;
+
+		if (propp != nullptr)
+		{
+			propp->replacement_textures.clear();
+		}
+		else
+		{
+			// overwrite all the old entries that refer to this ship
+			SCP_vector<texture_replace>::iterator ii, end;
+			end = Fred_texture_replacements.end();
+			for (ii = Fred_texture_replacements.begin(); ii != end; ++ii)
+			{
+				if (!stricmp(ii->ship_name, Ships[self_ship].ship_name))
+				{
+					do {
+						end--;
+					} while (end != ii && !stricmp(end->ship_name, Ships[self_ship].ship_name));
+					if (end == ii)
+						break;
+					texture_set(&(*ii), &(*end));
+				}
+			}
+
+			if (end != Fred_texture_replacements.end())
+				Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+		}
 
 		// now put the new entries on the end of the list
 		for (i=0; i<texture_count; i++)
@@ -148,13 +168,18 @@ void CShipTexturesDlg::OnOK()
 
 				strcpy_s(tr.old_texture, old_texture_name[i]);
 				strcpy_s(tr.new_texture, new_texture_name[i]);
-				strcpy_s(tr.ship_name, Ships[self_ship].ship_name);
+				strcpy_s(tr.ship_name, self_name);
 				tr.new_texture_id = -1;
 				tr.from_table = false;
 
-				// assign to global FRED array
-				Fred_texture_replacements.push_back(tr);
+				replacements.push_back(tr);
 			}
+		}
+
+		if (propp != nullptr)
+		{
+			prop_apply_replacement_textures(propp);
+			set_modified();
 		}
 	}	// skipped here if nothing modified
 
@@ -169,7 +194,17 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	CComboBox *box;
 
 	// get our model
-	polymodel *pm = model_get(Ship_info[Ships[self_ship].ship_info_index].model_num);
+	prop* propp = (self_prop >= 0) ? prop_id_lookup(self_prop) : nullptr;
+	if (self_prop >= 0 && propp == nullptr)
+	{
+		EndDialog(IDCANCEL);
+		return TRUE;
+	}
+
+	polymodel *pm = model_get((propp != nullptr) ? Prop_info[propp->prop_info_index].model_num : Ship_info[Ships[self_ship].ship_info_index].model_num);
+
+	if (propp != nullptr)
+		SetWindowText("Prop Texture Replace");
 
 	// empty old and new fields
 	texture_count = 0;
@@ -237,9 +272,10 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	}
 
 	// now look for new textures
-	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
+	SCP_vector<texture_replace>& replacements = (propp != nullptr) ? propp->replacement_textures : Fred_texture_replacements;
+	for (SCP_vector<texture_replace>::iterator ii = replacements.begin(); ii != replacements.end(); ++ii)
 	{
-		if (!stricmp(Ships[self_ship].ship_name, ii->ship_name) && !(ii->from_table))
+		if ((propp != nullptr || !stricmp(Ships[self_ship].ship_name, ii->ship_name)) && !(ii->from_table))
 		{
 			// look for corresponding old texture
 			for (i=0; i<texture_count; i++)
