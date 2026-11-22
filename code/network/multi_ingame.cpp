@@ -1065,13 +1065,31 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		GET_INT( team );		
 		GET_SHORT( wing_data );
+		short pobj_index = -1;
 		if(wing_data >= 0){
 			GET_INT(Wings[wing_data].current_wave);			
+			GET_SHORT(pobj_index);
 		}
 
 		// lookup ship in the registry
 		auto entry = ship_registry_get(ship_name);
 		p_objp = entry ? entry->p_objp_or_null() : nullptr;
+
+		// a later wave's ship reuses a parse object picked by the wing's history, so the server names which one
+		if (p_objp == nullptr && Parse_objects.in_bounds(pobj_index) &&
+			Parse_objects[pobj_index].wingnum == wing_data) {
+			const char* number = strrchr(ship_name, ' ');
+			int ordinal = (number != nullptr) ? atoi(number + 1) : 0;
+			if (ordinal > 0) {
+				wing_bash_ship_name(&Parse_objects[pobj_index], &Wings[wing_data], ordinal);
+				if (!stricmp(Parse_objects[pobj_index].name, ship_name)) {
+					p_objp = &Parse_objects[pobj_index];
+					parse_object_register_wave_ship(p_objp);
+					nprintf(("Network", "Ingame join: %s uses parse object %d\n", ship_name, pobj_index));
+				}
+			}
+		}
+
 		if (p_objp == nullptr) {
 			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
@@ -1216,6 +1234,9 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_SHORT(wing_data);
 		if(wing_data >= 0){
 			ADD_INT(Wings[wing_data].current_wave);
+			auto entry = ship_registry_get(shipp->ship_name);
+			short pobj_index = (entry != nullptr) ? static_cast<short>(entry->pobj_num) : -1;
+			ADD_SHORT(pobj_index);
 		}
 
 		// don't send anymore data if we are getting close to the maximum size of this packet.  Send it off and

@@ -4446,6 +4446,19 @@ int find_wing_name(char *name)
 	return -1;
 }
 
+void parse_object_register_wave_ship(p_object* p_objp)
+{
+	if (ship_registry_exists(p_objp->name))
+		return;
+
+	ship_registry_entry entry(p_objp->name);
+	entry.status = ShipStatus::NOT_YET_PRESENT;
+	entry.pobj_num = POBJ_INDEX(p_objp);
+
+	Ship_registry.push_back(entry);
+	Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
+}
+
 /**
 * @brief						Tries to create a wing of ships
 * @param[inout]	wingp			Pointer to the wing structure of the wing to be created
@@ -4684,15 +4697,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
-			if (!ship_registry_exists(p_objp->name))
-			{
-				ship_registry_entry entry(p_objp->name);
-				entry.status = ShipStatus::NOT_YET_PRESENT;
-				entry.pobj_num = POBJ_INDEX(p_objp);
-
-				Ship_registry.push_back(entry);
-				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
-			}
+			parse_object_register_wave_ship(p_objp);
 		}
 		// make sure we still handle wing display names in a single-wave wing
 		else if (wingp->has_display_name())
