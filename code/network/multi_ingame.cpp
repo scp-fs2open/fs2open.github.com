@@ -1111,14 +1111,15 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			The_mission.support_ships.tally++;
 		}
 
-		// ships made by ship-create or a script never reach the other players either, so the joiner goes on without them
-		if (p_objp == nullptr && pobj_index < 0 && !runtime_support) {
-			nprintf(("Network", "Ingame join: skipping %s, which has no parse object\n", ship_name));
+		// ship-create gives its ships a network signature; ships a script makes have none and reach no other player
+		bool runtime_ship = p_objp == nullptr && pobj_index < 0 && !runtime_support;
+		if (runtime_ship && (net_signature == 0 || !runtime_class_ok)) {
+			nprintf(("Network", "Ingame join: skipping %s, which no other player has either\n", ship_name));
 			GET_DATA( p_type );
 			continue;
 		}
 
-		if (p_objp == nullptr) {
+		if (p_objp == nullptr && !runtime_ship) {
 			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
@@ -1129,7 +1130,19 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// multi_set_network_signature uncommented by Kazan on 11-04-2004
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
-		objnum = parse_create_object( p_objp );
+		if (runtime_ship) {
+			matrix orient = vmd_identity_matrix;
+			vec3d pos = vmd_zero_vector;
+			objnum = ship_create(&orient, &pos, runtime_class, ship_name);
+			if (objnum < 0) {
+				mprintf(("ABORTING in-game join since FSO couldn't create ship %s!\n", ship_name));
+				multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+				return;
+			}
+			ship_finish_runtime_create(objnum);
+		} else {
+			objnum = parse_create_object( p_objp );
+		}
 		if (support_ship) {
 			mission_parse_support_arrived(objnum);
 		}
