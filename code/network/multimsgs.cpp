@@ -22,6 +22,7 @@
 #include "hud/hudets.h"
 #include "hud/hudmessage.h"
 #include "hud/hudsquadmsg.h"
+#include "iff_defs/iff_defs.h"
 #include "freespace.h"
 #include "io/timer.h"
 #include "mission/missiongoals.h"
@@ -2809,13 +2810,15 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 		}
 	} else {
 		// a player who joined after the support ship was called never set one up
-		if (Arriving_support_ship == nullptr && support_class >= 0 && support_class < ship_info_size()) {
+		bool team_ok = support_team >= 0 && support_team < static_cast<int>(Iff_info.size());
+		if (Arriving_support_ship == nullptr && support_class >= 0 && support_class < ship_info_size() && team_ok) {
 			support_ship_pobj_init(&Support_ship_pobj, support_class);
 			Support_ship_pobj.team = support_team;
 			Arriving_support_ship = &Support_ship_pobj;
 			The_mission.support_ships.tally++;
 		}
 		if(Arriving_support_ship == NULL){
+			nprintf(("Network", "Support ship create for %s ignored: its class or team is not valid here\n", support_name));
 			return;
 		}
 
