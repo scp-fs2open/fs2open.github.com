@@ -604,19 +604,43 @@ bool device_event_handler(const SDL_Event &evt)
 			// Add the new device to our list
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
 
+			// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID.
+			// prefer the one with the same serial, then the same counts: it was this stick, so its label stays
+			auto reuse = joysticks.end();
+			int reuse_rank = 0;
+			const auto added_serial = added->getSerial();
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID
-				if (!(*iter)->isAttached() && (*iter)->getGUID() == added->getGUID())
+				const auto& old = *iter;
+				if (old->isAttached() || old->getGUID() != added->getGUID())
 				{
-					// Already have this stick
-					*(*iter) = std::move(*added);
-					oldHandles = std::move(added);
-					addedStick = iter->get();
-					mprintf(("A joystick has been reconnected:\n"));
-					addedStick->printInfo();
-					break;
+					continue;
 				}
+				int rank = 1;
+				if (!added_serial.empty() && old->getSerial() == added_serial)
+				{
+					rank = 3;
+				}
+				else if (old->numAxes() == added->numAxes() && old->numButtons() == added->numButtons() &&
+						 old->numHats() == added->numHats())
+				{
+					rank = 2;
+				}
+				if (rank > reuse_rank)
+				{
+					reuse = iter;
+					reuse_rank = rank;
+				}
+			}
+
+			if (reuse != joysticks.end())
+			{
+				// Already have this stick
+				*(*reuse) = std::move(*added);
+				oldHandles = std::move(added);
+				addedStick = reuse->get();
+				mprintf(("A joystick has been reconnected:\n"));
+				addedStick->printInfo();
 			}
 
 			if (addedStick == nullptr)
