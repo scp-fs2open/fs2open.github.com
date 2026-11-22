@@ -184,12 +184,29 @@ SCP_string serialHex(const Joystick* stick)
 	return out;
 }
 
-// Identical sticks share a GUID; their serial, or failing that their axis, button and hat counts, tells them apart.
-// The counts separate virtual sticks (vJoy) set up differently; a count below zero means the setting has none.
-Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int axes, int buttons, int hats)
+// identical sticks have nothing else to tell them apart; the place can change if they are listed in another order
+int twinNumber(const Joystick* stick)
+{
+	int number = 0;
+	for (auto& other : joysticks) {
+		if (other->getGUID() == stick->getGUID() && other->numAxes() == stick->numAxes() &&
+			other->numButtons() == stick->numButtons() && other->numHats() == stick->numHats()) {
+			++number;
+			if (other.get() == stick) {
+				return number;
+			}
+		}
+	}
+	return 0;
+}
+
+// Identical sticks share a GUID; their serial, or failing that their axis, button and hat counts, tells them apart,
+// and sticks alike in both go by their place in the list. A count below zero means the setting has none.
+Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int axes, int buttons, int hats, int number)
 {
 	Joystick* by_serial = nullptr;
 	Joystick* by_counts = nullptr;
+	Joystick* by_number = nullptr;
 	int serial_hits = 0;
 	int count_hits = 0;
 	for (auto& stick : joysticks) {
@@ -207,6 +224,9 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 		if (axes >= 0 && stick->numAxes() == axes && stick->numButtons() == buttons && stick->numHats() == hats) {
 			by_counts = stick.get();
 			++count_hits;
+			if (twinNumber(stick.get()) == number) {
+				by_number = stick.get();
+			}
 		}
 	}
 
@@ -216,7 +236,7 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 	if (count_hits == 1) {
 		return by_counts;
 	}
-	return nullptr;
+	return by_number;
 }
 
 /**
@@ -242,6 +262,7 @@ Joystick* joystick_deserialize(const json_t* value)
 	auto axes_json = json_object_get(value, "axes");
 	auto buttons_json = json_object_get(value, "buttons");
 	auto hats_json = json_object_get(value, "hats");
+	auto number_json = json_object_get(value, "number");
 	bool has_counts = json_is_integer(axes_json) && json_is_integer(buttons_json) && json_is_integer(hats_json);
 	SCP_string guid_str(guid);
 	SCP_toupper(guid_str);
@@ -249,7 +270,8 @@ Joystick* joystick_deserialize(const json_t* value)
 		json_is_string(serial_json) ? json_string_value(serial_json) : "",
 		has_counts ? static_cast<int>(json_integer_value(axes_json)) : -1,
 		has_counts ? static_cast<int>(json_integer_value(buttons_json)) : -1,
-		has_counts ? static_cast<int>(json_integer_value(hats_json)) : -1);
+		has_counts ? static_cast<int>(json_integer_value(hats_json)) : -1,
+		json_is_integer(number_json) ? static_cast<int>(json_integer_value(number_json)) : 0);
 	if (saved != nullptr) {
 		return saved;
 	}
@@ -272,7 +294,7 @@ json_t* joystick_serializer(Joystick* joystick)
 		return json_null();
 	}
 
-	return json_pack("{sssisssisisi}",
+	return json_pack("{sssisssisisisi}",
 		"guid",
 		joystick->getGUID().c_str(),
 		"id",
@@ -284,7 +306,9 @@ json_t* joystick_serializer(Joystick* joystick)
 		"buttons",
 		joystick->numButtons(),
 		"hats",
-		joystick->numHats());
+		joystick->numHats(),
+		"number",
+		twinNumber(joystick));
 }
 
 /**
