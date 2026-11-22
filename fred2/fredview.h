@@ -60,6 +60,7 @@ public:
 	void cycle_constraint();
 	void show_event_editor();
 	void show_message_editor();
+	void show_debriefing_editor();
 	CFREDDoc *GetDocument();
 
 	static CFREDView *GetView();

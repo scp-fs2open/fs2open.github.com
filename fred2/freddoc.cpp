@@ -91,11 +91,25 @@ void CFREDDoc::AssertValid() const {
 }
 #endif //_DEBUG
 
-// an editor showing a question of its own is mid-close; closing or rebuilding it from outside crashes
-static bool event_editor_is_asking()
+// an editor showing a question or a window of its own is mid-close; closing or rebuilding it from outside crashes
+static bool refuse_while_an_editor_is_busy()
 {
-	return (Event_editor_dlg != nullptr && !Event_editor_dlg->IsWindowEnabled())
-		|| (Message_editor_dlg != nullptr && !Message_editor_dlg->IsWindowEnabled());
+	const char* busy = nullptr;
+	if (Event_editor_dlg != nullptr && !Event_editor_dlg->IsWindowEnabled()) {
+		busy = "Event Editor";
+	} else if (Message_editor_dlg != nullptr && !Message_editor_dlg->IsWindowEnabled()) {
+		busy = "Message Editor";
+	} else if (Debriefing_dialog != nullptr && !Debriefing_dialog->IsWindowEnabled()) {
+		busy = "Debriefing Editor";
+	}
+	if (busy == nullptr) {
+		return false;
+	}
+
+	// a refusal with no word looks like FRED ignoring the command
+	SCP_string msg = SCP_string("The ") + busy + " has a question or window open. Answer or close it first.";
+	Fred_main_wnd->MessageBox(msg.c_str(), "FRED", MB_OK | MB_ICONINFORMATION);
+	return true;
 }
 
 bool CFREDDoc::autoload() {
@@ -104,7 +118,7 @@ bool CFREDDoc::autoload() {
 	bool r;
 	FILE *fp;
 
-	if (event_editor_is_asking()) {
+	if (refuse_while_an_editor_is_busy()) {
 		return 0;
 	}
 
@@ -832,18 +846,23 @@ void CFREDDoc::recreate_event_editors() {
 // on TRUE the open editor stays closed until the caller's reopen_closed_editors(); FRED's exit never calls it
 BOOL CFREDDoc::SaveModified()
 {
-	if (event_editor_is_asking()) {
+	if (refuse_while_an_editor_is_busy()) {
 		return FALSE;
 	}
 
 	m_reopen_event_editor = Event_editor_dlg != nullptr;
 	m_reopen_message_editor = Message_editor_dlg != nullptr;
+	m_reopen_debriefing_editor = Debriefing_dialog != nullptr;
 
 	if (m_reopen_event_editor) {
 		Event_editor_dlg->close_offering_changes();
 	}
 	if (m_reopen_message_editor) {
 		Message_editor_dlg->close_offering_changes();
+	}
+	// the Debriefing editor has no Cancel; its normal close writes its edits into the mission before the save question
+	if (m_reopen_debriefing_editor) {
+		Debriefing_dialog->SendMessage(WM_CLOSE);
 	}
 
 	// an editor's own close prompt deletes it on Yes and No, so a pointer still set means the user chose Cancel
@@ -861,6 +880,9 @@ void CFREDDoc::reopen_closed_editors()
 	}
 	if (std::exchange(m_reopen_message_editor, false)) {
 		Fred_view_wnd->show_message_editor();
+	}
+	if (std::exchange(m_reopen_debriefing_editor, false)) {
+		Fred_view_wnd->show_debriefing_editor();
 	}
 }
 

@@ -189,6 +189,7 @@ private:
 
 	bool m_reopen_event_editor = false;
 	bool m_reopen_message_editor = false;
+	bool m_reopen_debriefing_editor = false;
 };
 
 extern int Local_modified;      //!< Flag. Nonzero if the FREDDoc object is modified

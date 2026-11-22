@@ -4434,6 +4434,11 @@ void CFREDView::OnEditorsBriefing()
 
 void CFREDView::OnEditorsDebriefing() 
 {
+	show_debriefing_editor();
+}
+
+void CFREDView::show_debriefing_editor()
+{
 	if (!Debriefing_dialog) {
 		Debriefing_dialog = new debriefing_editor_dlg;
 		Debriefing_dialog->create();
