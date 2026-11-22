@@ -3830,6 +3830,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 				break;
 
+			case OPF_PROP_CLASS_NAME:
+				if ( node_subtype != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (prop_info_lookup(CTEXT(node)) < 0)
+					return SEXP_CHECK_INVALID_PROP_CLASS_NAME;
+
+				break;
+
 			case OPF_SKYBOX_MODEL_NAME:
 				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -35588,6 +35597,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
+
+		case SEXP_CHECK_INVALID_PROP_CLASS_NAME:
+			return "Invalid prop class name";
 
 		case SEXP_CHECK_INVALID_SKYBOX_NAME:
 			return "Invalid skybox name";
