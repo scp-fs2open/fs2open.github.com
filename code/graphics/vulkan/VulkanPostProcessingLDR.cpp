@@ -508,7 +508,7 @@ bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
 	return true;
 }
 
-void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
+void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitDepth)
 {
 	if (!m_initialized || !graphics::Post_processing_manager) {
 		return;
@@ -595,13 +595,15 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 	lsData.cp_intensity = Sun_spot * ls_params.cpweight * ls_params.intensity;
 	lsData.pad[0] = 0.0f;
 
-	// Additive blend lightshafts onto Scene_ldr
-	m_ctx->drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
+	// Additive blend lightshafts onto Scene_ldr. With no cockpit, the cockpit slot keeps the
+	// white fallback, which ls-f.sdr reads as nothing to mask.
+	const vk::ImageView views[] = {m_sceneDepth->view, cockpitDepth};
+	m_ctx->drawFullscreenTriangleMulti(cmd, m_ldrLoadRenderPass,
 		m_sceneLdrFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_LIGHTSHAFTS,
-		m_sceneDepth->view, m_ctx->linearSampler,
+		views, cockpitDepth ? 2 : 1,
 		&lsData, sizeof(lsData),
-		ALPHA_BLEND_ADDITIVE);
+		m_ctx->linearSampler, 1, ALPHA_BLEND_ADDITIVE);
 }
 
 } // namespace graphics::vulkan

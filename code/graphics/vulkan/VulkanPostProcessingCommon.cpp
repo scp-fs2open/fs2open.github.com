@@ -221,7 +221,8 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
                                                        int shaderType,
                                                        const vk::ImageView* views, uint32_t viewCount,
                                                        const void* uboData, size_t uboSize,
-                                                       vk::Sampler sampler, uint32_t colorAttachmentCount)
+                                                       vk::Sampler sampler, uint32_t colorAttachmentCount,
+                                                       int blendMode)
 {
 	GR_DEBUG_SCOPE("Draw full screen triangle (multi-view)");
 
@@ -239,7 +240,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	config.vertexLayoutHash = 0;
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;
-	config.blendMode = ALPHA_BLEND_NONE;
+	config.blendMode = static_cast<gr_alpha_blend>(blendMode);
 	config.cullEnabled = false;
 	config.depthWriteEnabled = false;
 	config.renderPass = renderPass;
