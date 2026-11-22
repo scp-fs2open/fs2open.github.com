@@ -35,6 +35,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
+#include <windows.h>
 #elif defined(APPLE_APP)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -45,6 +46,7 @@
 #include <sys/stat.h>
 #endif
 
+#include <algorithm>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -1633,26 +1635,62 @@ static flag_output_type get_flags_output_type() {
 	}
 }
 
-static void write_flags() {
-	auto type = get_flags_output_type();
-
-	if (type == flag_output_type::Binary) {
-		write_flags_file();
-		return;
-	}
-
+static bool write_flags_json(flag_output_type type)
+{
 	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
 	json_object_set_new(root, "bootstrap_version", json_integer(MOD_BOOTSTRAP_VERSION));
 
 #ifdef __ANDROID__
 	char* dumped = json_dumps(root, JSON_INDENT(4));
 	os_android_set_flags_string(dumped ? dumped : "");
+	const bool written = dumped != nullptr;
 	free(dumped);
 #else
-	json_dumpf(root, stdout, JSON_INDENT(4));
+	const bool written = json_dumpf(root, stdout, JSON_INDENT(4)) == 0 && fflush(stdout) == 0;
 #endif
 
 	json_decref(root);
+	return written;
+}
+
+static void write_flags()
+{
+	const auto type = get_flags_output_type();
+	if (type == flag_output_type::Binary) {
+		write_flags_file();
+		return;
+	}
+
+	write_flags_json(type);
+}
+
+std::optional<int> cmdline_handle_get_flags_json_v2(int argc, char* argv[])
+{
+	if (argc < 3 || std::none_of(argv + 1, argv + argc, [](const char* arg) {
+			return stricmp(arg, GET_FLAGS_STRING) == 0;
+		})) {
+		return std::nullopt;
+	}
+
+	// Parse just the supplied arguments. The query can run without game or editor settings.
+	os_parse_parms(argc, argv);
+	if (!get_flags_arg.has_param() || strcmp(get_flags_arg.str(), "json_v2") != 0) {
+		reset_cmdline_parms();
+		return std::nullopt;
+	}
+
+	if (portable_mode.found()) {
+		Cmdline_portable_mode = true;
+	}
+	Cmdline_noninteractive = true;
+
+#ifdef _WIN32
+	// Keep inherited stdout (including a launcher's pipe). A GUI executable may have no stdout of its own.
+	if (_fileno(stdout) < 0 && AttachConsole(ATTACH_PARENT_PROCESS)) {
+		freopen("CONOUT$", "w", stdout);
+	}
+#endif
+	return write_flags_json(flag_output_type::Json_V2) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 bool SetCmdlineParams()

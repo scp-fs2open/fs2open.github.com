@@ -24,6 +24,7 @@
 
 #include "cfile/cfilesystem.h"
 #include "cfile/mod_bootstrap.h"
+#include "cmdline/cmdline.h"
 #include "globalincs/mspdb_callstack.h"
 #include "graphics/2d.h"
 #include "io/key.h"
@@ -31,6 +32,8 @@
 #include "object/object.h"
 
 #include "AFXADV.H"
+
+#include <cstdlib>
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -172,10 +175,6 @@ CFREDApp::CFREDApp() {
 	app_init = 0;
 
 	SCP_mspdbcs_Initialise();
-
-	if (LoggingEnabled) {
-		outwnd_init();
-	}
 }
 
 CFREDApp::~CFREDApp() {
@@ -187,6 +186,14 @@ int CFREDApp::ExitInstance() {
 }
 
 BOOL CFREDApp::InitInstance() {
+	if (const auto result = cmdline_handle_get_flags_json_v2(__argc, __argv)) {
+		std::exit(*result);
+	}
+
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
+
 	static char *c;
 	static char *tok = "whee";
 
