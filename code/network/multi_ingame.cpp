@@ -39,6 +39,7 @@
 #include "network/multi_endgame.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
+#include "iff_defs/iff_defs.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
@@ -1064,6 +1065,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		}
 
 		GET_INT( team );		
+		// every ship's team indexes the IFF list, so a team outside it is as unusable as an unknown ship
+		if (team < 0 || team >= static_cast<int>(Iff_info.size())) {
+			mprintf(("ABORTING in-game join since ship %s has team %d, outside the IFF list!\n", ship_name, team));
+			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			return;
+		}
 		GET_SHORT( wing_data );
 		if(wing_data >= 0){
 			GET_INT(Wings[wing_data].current_wave);			
