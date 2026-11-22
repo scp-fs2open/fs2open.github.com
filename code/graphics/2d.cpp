@@ -1353,6 +1353,17 @@ void gr_present_rect(int& x, int& y, int& w, int& h)
 	}
 }
 
+bool gr_pointer_confine_rect(os::ViewportState state, int& x, int& y, int& w, int& h)
+{
+	// A click in a bar would reach the controls at the edge of the frame. A window is not confined, so that the
+	// pointer can still leave it.
+	if (!Cmdline_window_res || state != os::ViewportState::Fullscreen) {
+		return false;
+	}
+	gr_present_rect(x, y, w, h);
+	return w != Cmdline_window_res->first || h != Cmdline_window_res->second;
+}
+
 // trilinear, which the launcher setting has always defaulted to
 static int Texture_filter = 1;
 
@@ -4016,6 +4027,7 @@ void gr_flip(bool execute_scripting)
 	gr_reset_clip();
 
 	mouse_reset_deltas();
+	mouse_confine_to_frame();
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();

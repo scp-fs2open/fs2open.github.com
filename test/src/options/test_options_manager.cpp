@@ -746,6 +746,18 @@ TEST_F(KeepAspectRatio, StretchesWithoutTheInGameOptions)
 	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
 }
 
+TEST_F(KeepAspectRatio, ConfinesThePointerOnlyInFullscreenWithBars)
+{
+	setKeep(true);
+	std::array<int, 4> r{};
+	EXPECT_TRUE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
+	EXPECT_EQ(r, (std::array<int, 4>{240, 0, 1440, 1080}));
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Windowed, r[0], r[1], r[2], r[3]));
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Borderless, r[0], r[1], r[2], r[3]));
+	setKeep(false);
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
+}
+
 TEST_F(KeepAspectRatio, PillarboxesAndMapsTheMouse)
 {
 	setKeep(true);

@@ -110,6 +110,10 @@ bool gr_upscale_nearest();
 // window only for Graphics.KeepAspectRatio in OpenGL without Gr_native_res_hud; then the rest is black.
 void gr_present_rect(int& x, int& y, int& w, int& h);
 
+// The rectangle that the pointer must stay in, for a window in the given state: the frame while black bars show in
+// exclusive fullscreen. Returns false when the pointer is free.
+bool gr_pointer_confine_rect(os::ViewportState state, int& x, int& y, int& w, int& h);
+
 // The bottom edge of a gr_present_rect() rectangle in a window of height window_h, with y from the bottom as
 // glBlitFramebuffer counts it. This is the height of the bottom bar.
 inline int gr_present_rect_bottom(int y, int h, int window_h)
