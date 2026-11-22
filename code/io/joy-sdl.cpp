@@ -233,7 +233,8 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 	if (serial_hits == 1) {
 		return by_serial;
 	}
-	if (count_hits == 1) {
+	// a numbered setting names one of the sticks alike in counts, so it waits for that one instead of taking another
+	if (count_hits == 1 && number == 0) {
 		return by_counts;
 	}
 	return by_number;
@@ -263,6 +264,7 @@ Joystick* joystick_deserialize(const json_t* value)
 	auto buttons_json = json_object_get(value, "buttons");
 	auto hats_json = json_object_get(value, "hats");
 	auto number_json = json_object_get(value, "number");
+	int number = json_is_integer(number_json) ? static_cast<int>(json_integer_value(number_json)) : 0;
 	bool has_counts = json_is_integer(axes_json) && json_is_integer(buttons_json) && json_is_integer(hats_json);
 	SCP_string guid_str(guid);
 	SCP_toupper(guid_str);
@@ -271,8 +273,8 @@ Joystick* joystick_deserialize(const json_t* value)
 		has_counts ? static_cast<int>(json_integer_value(axes_json)) : -1,
 		has_counts ? static_cast<int>(json_integer_value(buttons_json)) : -1,
 		has_counts ? static_cast<int>(json_integer_value(hats_json)) : -1,
-		json_is_integer(number_json) ? static_cast<int>(json_integer_value(number_json)) : 0);
-	if (saved != nullptr) {
+		number);
+	if (saved != nullptr || number > 0) {
 		return saved;
 	}
 
