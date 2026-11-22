@@ -617,12 +617,13 @@ bool device_event_handler(const SDL_Event &evt)
 					continue;
 				}
 				int rank = 1;
-				if (!added_serial.empty() && old->getSerial() == added_serial)
+				const auto old_serial = old->getSerial();
+				if (!added_serial.empty() && old_serial == added_serial)
 				{
 					rank = 3;
 				}
-				else if (old->numAxes() == added->numAxes() && old->numButtons() == added->numButtons() &&
-						 old->numHats() == added->numHats())
+				else if ((added_serial.empty() || old_serial.empty()) && old->numAxes() == added->numAxes() &&
+						 old->numButtons() == added->numButtons() && old->numHats() == added->numHats())
 				{
 					rank = 2;
 				}
