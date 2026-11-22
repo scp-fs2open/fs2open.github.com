@@ -116,64 +116,13 @@ static bool refuse_while_an_editor_is_busy()
 	return true;
 }
 
-// Undo restores the previous step, so edits an editor has not applied yet would be lost or written over the result
-static bool refuse_undo_over_unapplied_edits()
-{
-	const char* editor = nullptr;
-	const char* advice = "has changes that are not applied yet. Press OK or Cancel in it first, then Undo.";
-	if (Event_editor_dlg != nullptr) {
-		// the fields on screen reach the editor's own lists only through save(), as in its Cancel
-		Event_editor_dlg->save();
-	}
-	if (Event_editor_dlg != nullptr && Event_editor_dlg->query_modified()) {
-		editor = "Event Editor";
-	} else if (Message_editor_dlg != nullptr) {
-		// it writes each message into the mission when another is selected, and only its OK records an undo step
-		editor = "Message Editor";
-		advice = "writes its changes into the mission as you edit. Press OK in it first, then Undo.";
-	} else {
-		// these editors write everything they show back into the mission when they close, which would revert the Undo
-		advice = "applies its changes when it closes. Close it first, then Undo.";
-		if (Debriefing_dialog != nullptr) {
-			editor = "Debriefing Editor";
-		} else if (Briefing_dialog != nullptr) {
-			editor = "Briefing Editor";
-		} else if (Bg_bitmap_dialog != nullptr) {
-			editor = "Background Editor";
-		}
-	}
-	if (editor == nullptr) {
-		return false;
-	}
-
-	SCP_string msg = SCP_string("The ") + editor + " " + advice;
-	Fred_main_wnd->MessageBox(msg.c_str(), "FRED", MB_OK | MB_ICONINFORMATION);
-	return true;
-}
-
-static void set_backup_save_options(Fred_mission_save& save)
-{
-	if (Mission_save_format == FSO_FORMAT_RETAIL) {
-		save.set_save_format(MissionFormat::RETAIL);
-	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
-		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
-	} else {
-		save.set_save_format(MissionFormat::STANDARD);
-	}
-	save.set_always_save_display_names(Always_save_display_names);
-	save.set_view_pos(view_pos);
-	save.set_view_orient(view_orient);
-	save.set_fred_alt_names(Fred_alt_names);
-	save.set_fred_callsigns(Fred_callsigns);
-}
-
 bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
 	int i;
 	bool r;
 	FILE *fp;
 
-	if (refuse_while_an_editor_is_busy() || refuse_undo_over_unapplied_edits()) {
+	if (refuse_while_an_editor_is_busy()) {
 		return 0;
 	}
 
@@ -211,16 +160,6 @@ bool CFREDDoc::autoload() {
 		undo_desc[i] = undo_desc[i + 1];
 	}
 
-	// a loaded mission saves with slightly different rounding, which would make the next unchanged step look new
-	if (r && !Autosave_disabled) {
-		Fred_mission_save save;
-		set_backup_save_options(save);
-		bool unchanged = false;
-		if (save.autosave_mission_file(MISSION_BACKUP_NAME, unchanged, true)) {
-			mprintf(("Undo: could not rewrite the newest undo step\n"));
-		}
-	}
-
 	// Reduce the undo count and check if we can do another undo op.
 	Undo_count--;
 	check_undo();
@@ -230,7 +169,18 @@ bool CFREDDoc::autoload() {
 int CFREDDoc::autosave(char *desc) {
 	int i;
 	Fred_mission_save save;
-	set_backup_save_options(save);
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+	save.set_always_save_display_names(Always_save_display_names);
+	save.set_view_pos(view_pos);
+	save.set_view_orient(view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
 
 	CWaitCursor wait;
 
@@ -242,15 +192,9 @@ int CFREDDoc::autosave(char *desc) {
 		Briefing_dialog->update_data(1);
 	}
 
-	bool unchanged = false;
-	if (save.autosave_mission_file(MISSION_BACKUP_NAME, unchanged)) {
+	if (save.autosave_mission_file(MISSION_BACKUP_NAME)) {
 		Undo_count = Undo_available = 0;
 		return -1;
-	}
-
-	// a second step holding the same mission would make the next Undo do nothing
-	if (unchanged) {
-		return 0;
 	}
 
 	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
@@ -895,6 +839,11 @@ void CFREDDoc::recreate_event_editors() {
 	if (Event_editor_dlg) {
 		Event_editor_dlg->close_discarding_changes();
 		Fred_view_wnd->show_event_editor();
+	}
+
+	if (Message_editor_dlg) {
+		Message_editor_dlg->OnCancel();
+		Fred_view_wnd->show_message_editor();
 	}
 }
 

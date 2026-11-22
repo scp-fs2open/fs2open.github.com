@@ -663,12 +663,11 @@ void event_editor::OnButtonOk()
 
 	m_annotation_model.saveToGlobal(m_event_tree._model.tree_nodes, m_events, m_sig);
 
-	// before the close, so the main window's focus step is the duplicate that gets skipped and this label stays
-	FREDDoc_ptr->autosave("event editor");
-
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
+
+	FREDDoc_ptr->autosave("event editor");
 }
 
 // load controls with structure data

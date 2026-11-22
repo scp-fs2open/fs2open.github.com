@@ -70,9 +70,6 @@ class Fred_mission_save {
 	 * @brief Saves the mission onto the backup stack
 	 *
 	 * @param[in] pathname The full pathname
-	 * @param[out] unchanged Set when the mission matches the newest backup apart from its save time; no backup is
-	 * added then
-	 * @param[in] replace_newest Overwrite the newest backup instead of adding one
 	 *
 	 * @details Returns the value of CFred_mission_save::err, which is:
 	 *
@@ -83,7 +80,7 @@ class Fred_mission_save {
 	 *
 	 * @note Used by legacy FRED2 only; QtFRED uses save_autosave_file() instead.
 	 */
-	int autosave_mission_file(char* pathname, bool& unchanged, bool replace_newest = false);
+	int autosave_mission_file(char* pathname);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname
