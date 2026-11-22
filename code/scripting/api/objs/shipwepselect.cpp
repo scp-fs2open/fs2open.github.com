@@ -403,7 +403,7 @@ ADE_VIRTVAR(ShipClassIndex,
 		return ADE_RETURN_NIL;
 	}
 
-	if (Wss_slots == nullptr) {
+	if (Wss_slots == nullptr || current < 0 || current >= MAX_WSS_SLOTS) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -485,7 +485,7 @@ ADE_INDEXER(l_Loadout_Wing,
 	int idx;
 	if (!ade_get_args(L, "oi", l_Loadout_Wing.Get(&current), &idx))
 		return ade_set_error(L, "s", "");
-	if (!current.isValid())
+	if (!current.isValid() || idx < 1 || idx > MAX_WING_SLOTS)
 		return ade_set_error(L, "o", l_Loadout_Wing_Slot.Set(ss_slot_info_h()));
 	idx--; // Convert to Lua's 1 based index system
 	return ade_set_args(L, "o", l_Loadout_Wing_Slot.Set(ss_slot_info_h(current.getWing()->ss_slots, idx, current.getWingIndex())));

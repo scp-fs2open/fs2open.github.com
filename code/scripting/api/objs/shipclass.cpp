@@ -1434,7 +1434,7 @@ ADE_FUNC(renderOverheadModel,
 		// Convert this from the Lua index
 		selectedSlot--;
 
-		if (selectedSlot < 0)
+		if (selectedSlot < 0 || Wss_slots == nullptr)
 			return ADE_RETURN_FALSE;
 
 		for (int i = 0; i < (MAX_SHIP_WEAPONS); i++) {
