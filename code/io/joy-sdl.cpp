@@ -184,13 +184,18 @@ SCP_string serialHex(const Joystick* stick)
 	return out;
 }
 
+bool sameModel(const Joystick* a, const Joystick* b)
+{
+	return a->getGUID() == b->getGUID() && a->numAxes() == b->numAxes() && a->numButtons() == b->numButtons() &&
+		   a->numHats() == b->numHats();
+}
+
 // identical sticks have nothing else to tell them apart; the place can change if they are listed in another order
 int twinNumber(const Joystick* stick)
 {
 	int number = 0;
 	for (auto& other : joysticks) {
-		if (other->getGUID() == stick->getGUID() && other->numAxes() == stick->numAxes() &&
-			other->numButtons() == stick->numButtons() && other->numHats() == stick->numHats()) {
+		if (sameModel(other.get(), stick)) {
 			++number;
 			if (other.get() == stick) {
 				return number;
@@ -213,7 +218,7 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 		if (!stick->isAttached() || stick->getGUID() != guid) {
 			continue;
 		}
-		// A saved serial rules out sticks with another one; the GUID fallback after this still takes a lone stick
+		// A saved serial rules out sticks with another one; an unnumbered setting can still take a lone stick by GUID
 		if (!serial.empty()) {
 			if (serialHex(stick.get()) != serial) {
 				continue;
@@ -238,6 +243,17 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 		return by_counts;
 	}
 	return by_number;
+}
+
+// a stick saved while it had no twin plugged in can match a lone stick of its model, as before twins were numbered
+int savedNumber(const Joystick* stick)
+{
+	for (auto& other : joysticks) {
+		if (other.get() != stick && other->isAttached() && sameModel(other.get(), stick)) {
+			return twinNumber(stick);
+		}
+	}
+	return 0;
 }
 
 /**
@@ -310,7 +326,7 @@ json_t* joystick_serializer(Joystick* joystick)
 		"hats",
 		joystick->numHats(),
 		"number",
-		twinNumber(joystick));
+		savedNumber(joystick));
 }
 
 /**
