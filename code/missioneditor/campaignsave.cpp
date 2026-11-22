@@ -105,7 +105,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 	fout(" )");
 
 	fred_parse_flag = 0;
-	for (int i = 0; i < Campaign.num_missions; i++) {
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		// Expect to get Campaign.missions ordered from FRED
 		cmission& cm = Campaign.missions[i];
 
