@@ -87,6 +87,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_voice_id = -1;
 	m_cur_stage = 0;
 	m_last_stage = m_cur_icon = m_last_icon = -1;
+	modified = 0;
 	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	// copy view initialization
@@ -367,8 +368,6 @@ void briefing_editor_dlg::update_data(int update)
 
 		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
-		if (stricmp(ptr->voice, m_voice) != 0)
-			set_modified();
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1, 1);
 		i = ptr->flags;
 		if (m_cut_prev)
