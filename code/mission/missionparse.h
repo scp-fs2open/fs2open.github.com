@@ -643,6 +643,8 @@ void mission_parse_eval_stuff();
 
 // code to bring in a repair ship.
 void mission_bring_in_support_ship( object *requester_objp );
+// a joining player builds a support ship already in the mission from its class alone
+void support_ship_pobj_init(p_object* pobj, int ship_class);
 int mission_is_support_ship_arriving( void );
 void mission_add_to_arriving_support( object *requester_objp );
 int mission_is_repair_scheduled( object *objp );

@@ -2764,6 +2764,10 @@ void send_ship_create_packet( object *objp, bool is_support )
 	ADD_DATA(val);
 	if ( is_support ){
 		ADD_VECTOR( objp->pos );
+		ship* shipp = &Ships[objp->instance];
+		ADD_STRING( shipp->ship_name );
+		ADD_SHORT( static_cast<short>(shipp->ship_info_index) );
+		ADD_INT( shipp->team );
 	}
 
 	// broadcast the packet	
@@ -2778,6 +2782,9 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	p_object *objp;
 	vec3d pos = ZERO_VECTOR;
 	ubyte is_support;
+	char support_name[NAME_LENGTH] = "";
+	short support_class = -1;
+	int support_team = 0;
 
 	Assert ( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 	offset = HEADER_LENGTH;
@@ -2785,6 +2792,9 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	GET_DATA(is_support);
 	if ( is_support ){
 		GET_VECTOR( pos );
+		GET_STRING( support_name );
+		GET_SHORT( support_class );
+		GET_INT( support_team );
 	}
 
 	PACKET_SET_SIZE();
@@ -2798,9 +2808,24 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 			nprintf(("Network", "Ship with sig %d not found on ship arrival list -- not creating!!\n", signature));
 		}
 	} else {
-		Assert( Arriving_support_ship );
+		// a player who joined after the support ship was called never set one up
+		if (Arriving_support_ship == nullptr && support_class >= 0 && support_class < ship_info_size()) {
+			support_ship_pobj_init(&Support_ship_pobj, support_class);
+			Support_ship_pobj.team = support_team;
+			Arriving_support_ship = &Support_ship_pobj;
+			The_mission.support_ships.tally++;
+		}
 		if(Arriving_support_ship == NULL){
 			return;
+		}
+
+		// a player who joined late counts support ships from 1 again, so the server's name wins
+		if (*support_name != '\0' && stricmp(Arriving_support_ship->name, support_name) != 0) {
+			int entry_index = ship_registry_get_index(Arriving_support_ship->name);
+			strcpy_s(Arriving_support_ship->name, support_name);
+			if (entry_index >= 0) {
+				ship_registry_rename(entry_index, support_name, true);
+			}
 		}
 		Arriving_support_ship->pos = pos;
 		Arriving_support_ship->net_signature = signature;
