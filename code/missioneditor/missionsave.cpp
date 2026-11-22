@@ -93,7 +93,7 @@ static SCP_string mission_text_without_save_time(const char* filename)
 	}
 
 	text.resize(cfilelength(fp));
-	if (!text.empty() && cfread(&text[0], 1, static_cast<int>(text.size()), fp) != static_cast<int>(text.size())) {
+	if (!text.empty() && cfread(text.data(), 1, static_cast<int>(text.size()), fp) != static_cast<int>(text.size())) {
 		text.clear();
 	}
 	cfclose(fp);
@@ -107,45 +107,43 @@ static SCP_string mission_text_without_save_time(const char* filename)
 
 int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged, bool replace_newest)
 {
-	char backup_name[256], name2[256];
-	int i;
+	char from[256], to[256];
 
 	unchanged = false;
 	auto len = strlen(pathname);
-	strcpy_s(backup_name, pathname);
-	strcpy_s(name2, pathname);
+	strcpy_s(from, pathname);
+	strcpy_s(to, pathname);
 
-	strcpy(name2 + len, ".new");
-	save_mission_internal(name2);
+	strcpy(from + len, ".new");
+	save_mission_internal(from);
 	if (err) {
-		cf_delete(name2, CF_TYPE_MISSIONS);
+		cf_delete(from, CF_TYPE_MISSIONS);
 		return err;
 	}
 
-	strcpy(backup_name + len, ".001");
+	strcpy(to + len, ".001");
 	if (!replace_newest) {
-		auto new_text = mission_text_without_save_time(name2);
-		if (!new_text.empty() && new_text == mission_text_without_save_time(backup_name)) {
-			cf_delete(name2, CF_TYPE_MISSIONS);
+		auto new_text = mission_text_without_save_time(from);
+		if (!new_text.empty() && new_text == mission_text_without_save_time(to)) {
+			cf_delete(from, CF_TYPE_MISSIONS);
 			unchanged = true;
 			return 0;
 		}
-	}
 
-	if (!replace_newest) {
-		sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
-		cf_delete(backup_name, CF_TYPE_MISSIONS);
-		for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
-			sprintf(backup_name + len, ".%.3d", i - 1);
-			sprintf(name2 + len, ".%.3d", i);
-			cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
+		char shift_from[256], shift_to[256];
+		strcpy_s(shift_to, pathname);
+		strcpy_s(shift_from, pathname);
+		sprintf(shift_to + len, ".%.3d", MISSION_BACKUP_DEPTH);
+		cf_delete(shift_to, CF_TYPE_MISSIONS);
+		for (int i = MISSION_BACKUP_DEPTH; i > 1; i--) {
+			sprintf(shift_from + len, ".%.3d", i - 1);
+			sprintf(shift_to + len, ".%.3d", i);
+			cf_rename(shift_from, shift_to, CF_TYPE_MISSIONS);
 		}
 	}
 
-	strcpy(backup_name + len, ".001");
-	strcpy(name2 + len, ".new");
-	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	if (cf_rename(name2, backup_name, CF_TYPE_MISSIONS) != CF_RENAME_SUCCESS) {
+	cf_delete(to, CF_TYPE_MISSIONS);
+	if (cf_rename(from, to, CF_TYPE_MISSIONS) != CF_RENAME_SUCCESS) {
 		err = -1;
 	}
 
