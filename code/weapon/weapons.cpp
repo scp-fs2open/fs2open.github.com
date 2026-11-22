@@ -5404,6 +5404,9 @@ void weapon_close()
 	}
 
 	Spawn_names.clear();
+	// ship_init() resolves these without a weapon_init() first, so a load cut short must not leave them behind
+	Pending_proximity_type_names.clear();
+	Pending_proximity_class_names.clear();
 
 	Weapons_inited = false;
 }
