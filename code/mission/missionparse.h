@@ -512,6 +512,9 @@ public:
 	float ship_max_shield_strength = 0.0f;
 	float max_shield_recharge = 0.0f;
 
+	// an in-game joiner builds this object from its own mission file, so the server sends what a class swap changed
+	bool class_swapped = false;
+
 	// Goober5000
 	SCP_vector<texture_replace> replacement_textures;
 

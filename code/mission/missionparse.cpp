@@ -4342,6 +4342,7 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Class
 	// First things first. Change the class of the p_object
 	p_obj->ship_class = new_ship_class;
+	p_obj->class_swapped = true;
 
 	if (p_obj->wingnum > -1 && p_obj->pos_in_wing == 0) {
 		Wings[p_obj->wingnum].special_ship_ship_info_index = new_ship_class;
