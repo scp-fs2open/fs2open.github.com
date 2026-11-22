@@ -1,4 +1,5 @@
 #include "missionui/missionscreencommon.h"
+#include "particle/ParticleManager.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
@@ -31,7 +32,7 @@ static void restrict_bank(ship_info& sip, int bank, int weapon_class)
 
 class ScriptingShipclassTest : public test::scripting::ScriptingTestFixture {
   public:
-	ScriptingShipclassTest() : test::scripting::ScriptingTestFixture(INIT_CFILE)
+	ScriptingShipclassTest() : test::scripting::ScriptingTestFixture(INIT_CFILE | INIT_GRAPHICS)
 	{
 		pushModDir("shipclass");
 	}
@@ -42,6 +43,8 @@ class ScriptingShipclassTest : public test::scripting::ScriptingTestFixture {
 	void SetUp() override
 	{
 		test::scripting::ScriptingTestFixture::SetUp();
+		// ship classes create their default particle effects on construction
+		particle::ParticleManager::init();
 
 		Ship_info.clear();
 		Weapon_info.clear();
@@ -102,6 +105,7 @@ class ScriptingShipclassTest : public test::scripting::ScriptingTestFixture {
 		Ship_info.clear();
 		Weapon_info.clear();
 
+		particle::ParticleManager::shutdown();
 		test::scripting::ScriptingTestFixture::TearDown();
 	}
 };
