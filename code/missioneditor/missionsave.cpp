@@ -83,14 +83,53 @@
 	} while (false)
 
 
-int Fred_mission_save::autosave_mission_file(char* pathname)
+// The $Modified line holds the save time, which differs between any two saves
+static SCP_string mission_text_without_save_time(const char* filename)
+{
+	SCP_string text;
+	CFILE* fp = cfopen(filename, "rb", CF_TYPE_MISSIONS);
+	if (fp == nullptr) {
+		return text;
+	}
+
+	text.resize(cfilelength(fp));
+	if (!text.empty() && cfread(&text[0], 1, static_cast<int>(text.size()), fp) != static_cast<int>(text.size())) {
+		text.clear();
+	}
+	cfclose(fp);
+
+	auto start = text.find("$Modified:");
+	if (start != SCP_string::npos) {
+		text.erase(start, text.find('\n', start) - start);
+	}
+	return text;
+}
+
+int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged)
 {
 	char backup_name[256], name2[256];
 	int i;
 
+	unchanged = false;
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
+
+	sprintf(name2 + len, ".new");
+	save_mission_internal(name2);
+	if (err) {
+		cf_delete(name2, CF_TYPE_MISSIONS);
+		return err;
+	}
+
+	strcpy(backup_name + len, ".001");
+	auto new_text = mission_text_without_save_time(name2);
+	if (!new_text.empty() && new_text == mission_text_without_save_time(backup_name)) {
+		cf_delete(name2, CF_TYPE_MISSIONS);
+		unchanged = true;
+		return 0;
+	}
+
 	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
@@ -100,8 +139,10 @@ int Fred_mission_save::autosave_mission_file(char* pathname)
 	}
 
 	strcpy(backup_name + len, ".001");
-
-	save_mission_internal(backup_name);
+	strcpy(name2 + len, ".new");
+	if (cf_rename(name2, backup_name, CF_TYPE_MISSIONS) != CF_RENAME_SUCCESS) {
+		err = -1;
+	}
 
 	return err;
 }

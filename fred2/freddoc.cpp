@@ -227,9 +227,15 @@ int CFREDDoc::autosave(char *desc) {
 		Briefing_dialog->update_data(1);
 	}
 
-	if (save.autosave_mission_file(MISSION_BACKUP_NAME)) {
+	bool unchanged = false;
+	if (save.autosave_mission_file(MISSION_BACKUP_NAME, unchanged)) {
 		Undo_count = Undo_available = 0;
 		return -1;
+	}
+
+	// a second step holding the same mission would make the next Undo do nothing
+	if (unchanged) {
+		return 0;
 	}
 
 	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
