@@ -6,6 +6,7 @@
 #include <globalincs/linklist.h>
 #include <object/object.h>
 #include <prop/prop.h>
+#include <ui/dialogs/ShipEditor/ShipTextureReplacementDialog.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/util/menu.h>
 #include <ui/widgets/FlagList.h>
@@ -111,6 +112,7 @@ void PropEditorDialog::initializeUi() {
 	ui->nextButton->setEnabled(has_props);
 	ui->prevButton->setEnabled(has_props);
 	ui->layerCombo->setEnabled(enable);
+	ui->textureReplacementButton->setEnabled(_model->getSingleSelectedPropObject() >= 0);
 }
 
 void PropEditorDialog::updateUi() {
@@ -138,6 +140,12 @@ void PropEditorDialog::on_layerCombo_currentIndexChanged(int index) {
 	if (index < 0)
 		return;
 	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
+}
+
+void PropEditorDialog::on_textureReplacementButton_clicked() {
+	// modal, so the selected prop cannot change or be deleted while its textures are edited
+	ShipTextureReplacementDialog dialog(this, _viewport, false, _model->getSingleSelectedPropObject());
+	dialog.exec();
 }
 
 } // namespace fso::fred::dialogs

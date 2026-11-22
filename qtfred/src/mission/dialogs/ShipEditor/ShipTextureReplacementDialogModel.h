@@ -1,13 +1,17 @@
 #pragma once
 
 #include "../AbstractDialogModel.h"
+#include "prop/prop.h"
 
 namespace fso::fred::dialogs {
 
 class ShipTextureReplacementDialogModel : public AbstractDialogModel {
 	Q_OBJECT
   public:
-	ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
+	/**
+	 * @param propObjnum Object number of the prop to edit, or -1 to edit the editor's current ship(s)
+	 */
+	ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int propObjnum = -1);
 
 	bool apply() override;
 	void reject() override;
@@ -28,9 +32,13 @@ class ShipTextureReplacementDialogModel : public AbstractDialogModel {
 	void initializeData(bool multi);
 	void initSubTypes(polymodel* model, int mapNum);
 	void saveSubMap(size_t index, const SCP_string& type);
+	void addReplacement(const SCP_string& oldTexture, const SCP_string& newTexture);
+	prop* getProp() const;
 	static bool testTexture(const SCP_string& name);
 
 	bool _multi;
+	int _propObjnum;
+	SCP_vector<texture_replace> _propReplacements; // a prop's new list, given to the prop only if apply() succeeds
 	SCP_vector<SCP_map<SCP_string, bool>> _subTypesAvailable;
 	SCP_vector<SCP_map<SCP_string, bool>> _replaceMap;
 	SCP_vector<SCP_map<SCP_string, bool>> _inheritMap;

@@ -702,6 +702,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		model_render_params render_info;
 		render_info.set_debug_flags(0);
+		render_info.set_replacement_textures(model_get_instance(propp->model_instance_num)->texture_replace);
 
 		if (Fred_outline) {
 			// use a different LOD for the wireframe to reduce visual clutter on high-poly models
