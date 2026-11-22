@@ -2594,6 +2594,11 @@ void CFREDView::place_background_bitmap(vec3d v)
 
 void CFREDView::OnEditorsBgBitmaps()
 {
+	show_background_editor();
+}
+
+void CFREDView::show_background_editor()
+{
 	if (!Bg_bitmap_dialog) {
 		Bg_bitmap_dialog = new bg_bitmap_dlg;
 		Bg_bitmap_dialog->create();
@@ -4421,6 +4426,11 @@ void CFREDView::OnUpdateEditUndo(CCmdUI* pCmdUI)
 }
 
 void CFREDView::OnEditorsBriefing() 
+{
+	show_briefing_editor();
+}
+
+void CFREDView::show_briefing_editor()
 {
 	if (!Briefing_dialog) {
 		Briefing_dialog = new briefing_editor_dlg;

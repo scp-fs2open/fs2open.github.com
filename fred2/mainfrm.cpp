@@ -200,7 +200,7 @@ void CMainFrame::OnClose()
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
 
-	// any changes still pending in these editors are discarded
+	// SaveModified has already closed these editors; this only matters if one is ever left open
 	destroy_modeless_editor(Event_editor_dlg);
 	destroy_modeless_editor(Message_editor_dlg);
 	destroy_modeless_editor(Briefing_dialog);

@@ -101,6 +101,10 @@ static bool refuse_while_an_editor_is_busy()
 		busy = "Message Editor";
 	} else if (Debriefing_dialog != nullptr && !Debriefing_dialog->IsWindowEnabled()) {
 		busy = "Debriefing Editor";
+	} else if (Briefing_dialog != nullptr && !Briefing_dialog->IsWindowEnabled()) {
+		busy = "Briefing Editor";
+	} else if (Bg_bitmap_dialog != nullptr && !Bg_bitmap_dialog->IsWindowEnabled()) {
+		busy = "Background Editor";
 	}
 	if (busy == nullptr) {
 		return false;
@@ -180,7 +184,7 @@ int CFREDDoc::autosave(char *desc) {
 
 	CWaitCursor wait;
 
-	if (Autosave_disabled) {
+	if (Autosave_disabled || m_autosave_suppressed) {
 		return 0;
 	}
 
@@ -852,7 +856,6 @@ BOOL CFREDDoc::SaveModified()
 
 	m_reopen_event_editor = Event_editor_dlg != nullptr;
 	m_reopen_message_editor = Message_editor_dlg != nullptr;
-	m_reopen_debriefing_editor = Debriefing_dialog != nullptr;
 
 	if (m_reopen_event_editor) {
 		Event_editor_dlg->close_offering_changes();
@@ -860,17 +863,43 @@ BOOL CFREDDoc::SaveModified()
 	if (m_reopen_message_editor) {
 		Message_editor_dlg->close_offering_changes();
 	}
-	// the Debriefing editor has no Cancel; its normal close writes its edits into the mission before the save question
-	if (m_reopen_debriefing_editor) {
-		Debriefing_dialog->SendMessage(WM_CLOSE);
-	}
 
 	// an editor's own close prompt deletes it on Yes and No, so a pointer still set means the user chose Cancel
-	if (Event_editor_dlg != nullptr || Message_editor_dlg != nullptr || !CDocument::SaveModified()) {
+	if (Event_editor_dlg != nullptr || Message_editor_dlg != nullptr) {
+		reopen_closed_editors();
+		return FALSE;
+	}
+
+	close_write_back_editors();
+
+	if (!CDocument::SaveModified()) {
 		reopen_closed_editors();
 		return FALSE;
 	}
 	return TRUE;
+}
+
+// These editors have no Cancel: their close writes their fields into the mission, so it must happen before the
+// mission is replaced, or the fields land in the next mission.
+void CFREDDoc::close_write_back_editors()
+{
+	m_reopen_debriefing_editor = Debriefing_dialog != nullptr;
+	m_reopen_briefing_editor = Briefing_dialog != nullptr;
+	m_reopen_background_editor = Bg_bitmap_dialog != nullptr;
+
+	// each close takes an undo snapshot; one taken here would make FRED offer it as a crash recovery on the next open
+	m_autosave_suppressed = true;
+	auto restore_autosave = util::finally([this]() { m_autosave_suppressed = false; });
+
+	if (m_reopen_debriefing_editor) {
+		Debriefing_dialog->SendMessage(WM_CLOSE);
+	}
+	if (m_reopen_briefing_editor) {
+		Briefing_dialog->OnCancel();
+	}
+	if (m_reopen_background_editor) {
+		Bg_bitmap_dialog->OnClose();
+	}
 }
 
 void CFREDDoc::reopen_closed_editors()
@@ -884,25 +913,23 @@ void CFREDDoc::reopen_closed_editors()
 	if (std::exchange(m_reopen_debriefing_editor, false)) {
 		Fred_view_wnd->show_debriefing_editor();
 	}
+	if (std::exchange(m_reopen_briefing_editor, false)) {
+		Fred_view_wnd->show_briefing_editor();
+	}
+	if (std::exchange(m_reopen_background_editor, false)) {
+		Fred_view_wnd->show_background_editor();
+	}
 }
 
 void CFREDDoc::recreate_dialogs() {
 	if (Briefing_dialog) {
 		Briefing_dialog->OnCancel();
-		Briefing_dialog = new briefing_editor_dlg;
-		Briefing_dialog->create();
-		Briefing_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
-									  SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Briefing_dialog->ShowWindow(SW_RESTORE);
+		Fred_view_wnd->show_briefing_editor();
 	}
 
 	if (Bg_bitmap_dialog) {
 		Bg_bitmap_dialog->OnClose();
-		Bg_bitmap_dialog = new bg_bitmap_dlg;
-		Bg_bitmap_dialog->create();
-		Bg_bitmap_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
-									   SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
+		Fred_view_wnd->show_background_editor();
 	}
 }
 

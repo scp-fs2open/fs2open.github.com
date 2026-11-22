@@ -61,6 +61,8 @@ public:
 	void show_event_editor();
 	void show_message_editor();
 	void show_debriefing_editor();
+	void show_briefing_editor();
+	void show_background_editor();
 	CFREDDoc *GetDocument();
 
 	static CFREDView *GetView();
