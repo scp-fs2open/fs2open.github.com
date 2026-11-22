@@ -333,21 +333,33 @@ SCP_string joystick_display(Joystick* stick)
 		return XSTR("None", 1673);
 	}
 
-	// Sticks with the same name can't be told apart in the list, so it numbers them
+	// Sticks with the same name can't be told apart in the list. Their counts tell them apart and stay the same when
+	// they are plugged in again; only sticks whose counts match too get numbered by their place in the list.
+	int same_name = 0;
 	int number = 0;
-	int count = 0;
+	int same_counts = 0;
 	for (auto& other : joysticks) {
-		if (other->getName() == stick->getName()) {
-			++count;
+		if (other->getName() != stick->getName()) {
+			continue;
+		}
+		++same_name;
+		if (other->numAxes() == stick->numAxes() && other->numButtons() == stick->numButtons() &&
+			other->numHats() == stick->numHats()) {
+			++same_counts;
 			if (other.get() == stick) {
-				number = count;
+				number = same_counts;
 			}
 		}
 	}
-	if (count > 1) {
-		return stick->getName() + " (" + std::to_string(number) + ")";
+	if (same_name < 2) {
+		return stick->getName();
 	}
-	return stick->getName();
+	SCP_string counts = "a:" + std::to_string(stick->numAxes()) + ", b:" + std::to_string(stick->numButtons()) +
+						", h:" + std::to_string(stick->numHats());
+	if (same_counts < 2) {
+		return stick->getName() + " (" + counts + ")";
+	}
+	return stick->getName() + " (" + counts + ", " + std::to_string(number) + ")";
 }
 
 /**
