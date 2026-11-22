@@ -27,6 +27,12 @@ struct opengl_texture_unit {
 
 	GLenum texture_target;
 	GLuint texture_id;
+
+	// Sampler object bound to this unit, overriding the texture object's own filter/compare
+	// state for as long as it stays bound (0 = none, texture-level state applies as usual).
+	// Tracked here for the same reason texture_id is: so BindSampler() can skip a redundant
+	// glBindSampler call, exactly like Enable() already does for glBindTexture.
+	GLuint bound_sampler;
 };
 
 class opengl_texture_state
@@ -59,13 +65,33 @@ class opengl_texture_state
 		 * @warning This may not actually set the active texture unit to the specified value! If you require that then
 		 * you need to call SetActiveUnit!
 		 *
+		 * The sampler object is part of the unit binding: each call also sets it. So a later bind of
+		 * a different texture on this unit removes a sampler that an earlier bind set.
+		 *
 		 * @param unit The texture unit to use
 		 * @param tex_target The texture target of the texture id
 		 * @param tex_id The ID of the texture to enable
+		 * @param sampler The sampler object for this unit, or 0 for the texture's own sampling state
 		 */
-		void Enable(GLuint unit, GLenum tex_target, GLuint tex_id);
+		void Enable(GLuint unit, GLenum tex_target, GLuint tex_id, GLuint sampler = 0);
 		void Delete(GLuint tex_id);
-		
+
+		/**
+		 * @brief Binds a sampler object to the specified unit, or unbinds one if sampler is 0
+		 *
+		 * Prefer the sampler argument of Enable(). Use this function directly only to clear a
+		 * sampler before it is deleted.
+		 *
+		 * Sampler objects override the bound texture's own filter/compare-mode state for
+		 * that unit only, which is otherwise impossible to vary per-unit in this codebase
+		 * (texture parameters like GL_TEXTURE_COMPARE_MODE live on the texture object, not
+		 * a sampler). No-ops if the unit already has this sampler bound, mirroring Enable().
+		 *
+		 * @param unit The texture unit to bind the sampler to
+		 * @param sampler The sampler object to bind, or 0 to unbind
+		 */
+		void BindSampler(GLuint unit, GLuint sampler);
+
 		inline GLenum GetTarget();
 		inline void SetShaderMode(GLboolean mode);
 };
@@ -214,6 +240,8 @@ class opengl_state
 		GLenum frontface_Value;
 		GLenum cullface_Value;
 		std::pair<GLenum, GLenum> blendfunc_Value;
+		std::pair<GLenum, GLenum> blendfunc_alpha_Value;
+		bool coverage_alpha = false;
 		std::array<std::pair<GLenum, GLenum>, material::NUM_BUFFER_BLENDS> buffer_blendfunc_Value;
 		GLenum depthfunc_Value;
 
@@ -258,6 +286,9 @@ class opengl_state
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetAlphaBlendModei(int buffer, gr_alpha_blend ab);
+		// For targets that get composited as premultiplied alpha later: blending then accumulates alpha as coverage
+		// instead of applying the color factors to it, and additive draws leave it alone.
+		void SetCoverageAlpha(bool enable);
 		void SetZbufferType(gr_zbuffer_type zt);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
@@ -283,6 +314,7 @@ class opengl_state
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		void BlendFunc(GLenum s_val, GLenum d_val);
+		void BlendFuncSeparate(GLenum s_val, GLenum d_val, GLenum s_alpha, GLenum d_alpha);
 		void BlendFunci(int buffer, GLenum s_val, GLenum d_val);
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
 		inline void InvalidateColor();

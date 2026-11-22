@@ -42,7 +42,7 @@ void ship_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_ent
 	GET_USHORT(net_signature);
 	GET_INT(subsys);
 	object* obj = multi_get_network_object(net_signature);
-	new(data_ptr) ship_subsys_h(obj, obj == nullptr || obj->type != OBJ_SHIP || subsys == -1 ? nullptr : ship_get_indexed_subsys(&Ships[obj->instance], subsys));
+	new(data_ptr) ship_subsys_h(obj, obj == nullptr || obj->type != OBJ_SHIP || subsys == -1 ? nullptr : multi_get_indexed_subsys(&Ships[obj->instance], subsys));
 }
 
 //**********HANDLE: Subsystem
@@ -59,6 +59,18 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
+}
+
+ADE_FUNC(__eq, l_Subsystem, "subsystem, subsystem", "Checks if the two subsystem handles refer to the same subsystem", "boolean", "true if equal, false otherwise")
+{
+	ship_subsys_h *sso1, *sso2;
+	if (!ade_get_args(L, "oo", l_Subsystem.GetPtr(&sso1), l_Subsystem.GetPtr(&sso2)))
+		return ade_set_error(L, "b", false);
+
+	if (!sso1->isValid() || !sso2->isValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", sso1->objh.objp() == sso2->objh.objp() && sso1->ss == sso2->ss);
 }
 
 ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
@@ -174,8 +186,10 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 		auto pm = model_get(sso->ss->system_info->model_num);
 		auto sm = &pm->submodel[sso->ss->system_info->subobj_num];
 
-		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+		// the per-frame snapshot skips submodels that can't move
+		if (!sm->flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_orient = smi->canonical_orient;
 
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&smi->canonical_orient, &sm->rotation_axis, &angle);
@@ -203,8 +217,12 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 
 	if(ADE_SETTING_VAR && mh)
 	{
-		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+
+		// the per-frame snapshot skips submodels that can't move
+		auto pm = model_get(sso->ss->system_info->model_num);
+		if (!pm->submodel[sso->ss->system_info->turret_gun_sobj].flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_orient = smi->canonical_orient;
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
@@ -231,8 +249,12 @@ ADE_VIRTVAR(TranslationOffset,
 
 	if (ADE_SETTING_VAR && vec != nullptr)
 	{
-		smi->canonical_prev_offset = smi->canonical_offset;
 		smi->canonical_offset = *vec;
+
+		// the per-frame snapshot skips submodels that can't move
+		auto pm = model_get(sso->ss->system_info->model_num);
+		if (!pm->submodel[sso->ss->system_info->subobj_num].flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_offset = smi->canonical_offset;
 
 		smi->cur_offset = vm_vec_mag(vec);
 	}
@@ -252,12 +274,16 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 
 	if(ADE_SETTING_VAR)
 	{
+		bool was_destroyed = (sso->ss->current_hits <= 0.0f);
+
 		//Only go down to 0 hits
 		sso->ss->current_hits = MAX(0.0f, f);
 
 		ship *shipp = &Ships[sso->objh.objp()->instance];
 		if (f <= -1.0f && sso->ss->current_hits <= 0.0f) {
 			do_subobj_destroyed_stuff(shipp, sso->ss, NULL);
+		} else if (was_destroyed && sso->ss->current_hits > 0.0f && sso->ss->max_hits > 0.0f) {
+			restore_subsystem_submodels(shipp, sso->ss);
 		}
 		ship_recalc_subsys_strength(shipp);
 	}

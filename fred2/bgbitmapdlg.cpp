@@ -63,6 +63,8 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	s_bank = 0.f;
 	s_heading = 0.f;
 	s_scale = 1.0f;	
+	s_angular_size_override = FALSE;
+	s_angular_size = SUN_ANGULAR_SIZE_SOL;
 	s_index = -1;
 	b_pitch = 0.f;
 	b_bank = 0.f;
@@ -116,6 +118,9 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxFloat(pDX, s_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_SCALE, s_scale);
 	DDV_MinMaxFloat(pDX, s_scale, 0.1f, 50.0f);
+	DDX_Check(pDX, IDC_SUN1_ANGULAR_SIZE_OVERRIDE, s_angular_size_override);
+	DDX_Text(pDX, IDC_SUN1_ANGULAR_SIZE, s_angular_size);
+	DDV_MinMaxFloat(pDX, s_angular_size, 0.0f, SUN_ANGULAR_SIZE_MAX);
 	DDX_Text(pDX, IDC_SBITMAP, b_name);
 	DDX_Text(pDX, IDC_SBITMAP_P, b_pitch);
 	DDV_MinMaxFloat(pDX, b_pitch, 0.f, DEGREE_UB);
@@ -169,6 +174,7 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_CBN_SELCHANGE(IDC_NEB2_TEXTURE, OnSelchangeNeb2Texture)
 	ON_WM_HSCROLL()
 	ON_LBN_SELCHANGE(IDC_SUN1_LIST, OnSunChange)
+	ON_BN_CLICKED(IDC_SUN1_ANGULAR_SIZE_OVERRIDE, OnSunAngularSizeOverride)
 	ON_BN_CLICKED(IDC_ADD_SUN, OnAddSun)
 	ON_BN_CLICKED(IDC_DEL_SUN, OnDelSun)
 	ON_CBN_SELCHANGE(IDC_SUN1, OnSunDropdownChange)
@@ -193,6 +199,7 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_EN_KILLFOCUS(IDC_SUN1_H, OnKillfocusSun1H)
 	ON_EN_KILLFOCUS(IDC_SUN1_B, OnKillfocusSun1B)
 	ON_EN_KILLFOCUS(IDC_SUN1_SCALE, OnKillfocusSun1Scale)
+	ON_EN_KILLFOCUS(IDC_SUN1_ANGULAR_SIZE, OnKillfocusSun1AngularSize)
 	ON_BN_CLICKED(IDC_ADD_BACKGROUND, OnAddBackground)
 	ON_BN_CLICKED(IDC_REMOVE_BACKGROUND, OnRemoveBackground)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
@@ -221,20 +228,18 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	//create tool tip controls
-	m_CorrectedAnglesToolTip = new CToolTipCtrl();
-	m_CorrectedAnglesToolTip->Create(this);
+	m_CorrectedAnglesToolTip.Create(this);
 
 	CWnd* pWnd = GetDlgItem(IDC_CORRECTED_ANGLES_IN_MISSION_FILE);
-	m_CorrectedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
-	m_CorrectedAnglesToolTip->Activate(TRUE);
+	m_CorrectedAnglesToolTip.AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
+	m_CorrectedAnglesToolTip.Activate(TRUE);
 
-	m_FogParamsToolTip = new CToolTipCtrl();
-	m_FogParamsToolTip->Create(this);
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_1000M_VIS), "Fraction of light that survives 1000 meters of fog (smaller = thicker fog).");
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_NEAR_DIST), "Distance from the camera where fog starts (in meters).");
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP), "Maximum render distance for the skybox in fog (in meters).  0 disables skybox fog.");
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_CLIP), "Maximum render distance for the scene in fog (in meters).  0 disables scene fog.");
-	m_FogParamsToolTip->Activate(TRUE);
+	m_FogParamsToolTip.Create(this);
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_1000M_VIS), "Fraction of light that survives 1000 meters of fog (smaller = thicker fog).");
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_NEAR_DIST), "Distance from the camera where fog starts (in meters).");
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP), "Maximum render distance for the skybox in fog (in meters).  0 disables skybox fog.");
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_CLIP), "Maximum render distance for the scene in fog (in meters).  0 disables scene fog.");
+	m_FogParamsToolTip.Activate(TRUE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -242,10 +247,10 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 
 BOOL bg_bitmap_dlg::PreTranslateMessage(MSG* pMsg)
 {
-	if (m_CorrectedAnglesToolTip != nullptr)
-		m_CorrectedAnglesToolTip->RelayEvent(pMsg);
-	if (m_FogParamsToolTip != nullptr)
-		m_FogParamsToolTip->RelayEvent(pMsg);
+	if (m_CorrectedAnglesToolTip.GetSafeHwnd() != nullptr)
+		m_CorrectedAnglesToolTip.RelayEvent(pMsg);
+	if (m_FogParamsToolTip.GetSafeHwnd() != nullptr)
+		m_FogParamsToolTip.RelayEvent(pMsg);
 	return CDialog::PreTranslateMessage(pMsg);
 }
 
@@ -796,6 +801,10 @@ void bg_bitmap_dlg::sun_data_init()
 		clb->SetCurSel(0);
 		OnSunChange();
 	}
+	else
+	{
+		update_sun_angular_size_enabled();
+	}
 }
 
 void bg_bitmap_dlg::sun_data_close()
@@ -824,6 +833,7 @@ void bg_bitmap_dlg::sun_data_save_current()
 		sle->scale_y = 1.0f;
 		sle->div_x = 1;
 		sle->div_y = 1;
+		sle->angular_size = s_angular_size_override ? s_angular_size : SUN_ANGULAR_SIZE_UNSPECIFIED;
 	}
 }
 
@@ -848,6 +858,11 @@ void bg_bitmap_dlg::OnSunChange()
 		s_heading = fl_degrees_100ths(sle->ang.h);
 		s_scale = sle->scale_x;
 
+		// an unset angular size leaves the edit box showing Sol's, so that ticking the
+		// checkbox starts somewhere sensible rather than at whatever was last selected
+		s_angular_size_override = (sle->angular_size >= 0.0f) ? TRUE : FALSE;
+		s_angular_size = (sle->angular_size >= 0.0f) ? sle->angular_size : SUN_ANGULAR_SIZE_SOL;
+
 		// make sure angles are in the 0-359 degree range;
 		// an angle of 6.28318310, which is less than 6.28318548,
 		// is converted to 359.999847, which (if converted to int) is rounded to 360
@@ -863,6 +878,8 @@ void bg_bitmap_dlg::OnSunChange()
 		if(drop_index != CB_ERR)
 			((CComboBox*) GetDlgItem(IDC_SUN1))->SetCurSel(drop_index);
 	}
+
+	update_sun_angular_size_enabled();
 
 	// refresh the background
 	stars_load_background(get_active_background());
@@ -1342,6 +1359,32 @@ void bg_bitmap_dlg::OnKillfocusSun1Scale()
 	if (s_index < 0) return;
 	get_data_float(IDC_SUN1_SCALE, &s_scale, 0.1f, 50.0f, 3);
 	OnSunChange();
+}
+
+void bg_bitmap_dlg::OnKillfocusSun1AngularSize()
+{
+	if (s_index < 0) return;
+	get_data_float(IDC_SUN1_ANGULAR_SIZE, &s_angular_size, 0.0f, SUN_ANGULAR_SIZE_MAX, 3);
+	OnSunChange();
+}
+
+void bg_bitmap_dlg::OnSunAngularSizeOverride()
+{
+	UpdateData(TRUE);
+	update_sun_angular_size_enabled();
+	sun_data_save_current();
+}
+
+// the size only means anything when the mission is actually setting one
+void bg_bitmap_dlg::update_sun_angular_size_enabled()
+{
+	CWnd *size_edit = GetDlgItem(IDC_SUN1_ANGULAR_SIZE);
+	if (size_edit != nullptr)
+		size_edit->EnableWindow((s_index >= 0) && s_angular_size_override);
+
+	CWnd *size_check = GetDlgItem(IDC_SUN1_ANGULAR_SIZE_OVERRIDE);
+	if (size_check != nullptr)
+		size_check->EnableWindow(s_index >= 0);
 }
 
 void bg_bitmap_dlg::OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult) 

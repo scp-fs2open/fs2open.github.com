@@ -134,9 +134,6 @@ void LabManager::onFrame(float frametime) {
 		lmb_pressed = false;
 	}
 
-	if (dz != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
-		dz = 0;
-	}
 	auto& current_camera = Renderer->getCurrentCamera();
 	current_camera->handleInput(
 		dx, dy, dz, lmb_down, lmb_pressed, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status(), mouse_x, mouse_y);
@@ -412,12 +409,11 @@ void LabManager::onFrame(float frametime) {
 	
 	if (Cmdline_show_imgui_debug)
 		ImGui::ShowDemoWindow();
-	ImGui::Render();
-	gr_imgui_render_draw_data();
 
 	if (CloseThis)
 		close();
 
+	// gr_flip() renders and submits the ImGui frame opened above.
 	gr_flip();
 }
 

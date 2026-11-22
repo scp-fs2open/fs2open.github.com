@@ -242,19 +242,18 @@ BOOL campaign_editor::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWOR
 	}
 
 	//create tool tip controls
-	m_SubstituteMainHallToolTip = new CToolTipCtrl();
-	m_SubstituteMainHallToolTip->Create(this);
+	m_SubstituteMainHallToolTip.Create(this);
 
 	CWnd* pWnd = GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL);
-	m_SubstituteMainHallToolTip->AddTool(pWnd, "Main hall to be used if optional main hall pack is present");
-	m_SubstituteMainHallToolTip->Activate(TRUE);
+	m_SubstituteMainHallToolTip.AddTool(pWnd, "Main hall to be used if optional main hall pack is present");
+	m_SubstituteMainHallToolTip.Activate(TRUE);
 
 	return r;
 }
 
 BOOL campaign_editor::PreTranslateMessage(MSG* pMsg)
 {
-	m_SubstituteMainHallToolTip->RelayEvent(pMsg);
+	m_SubstituteMainHallToolTip.RelayEvent(pMsg);
 	return CFormView::PreTranslateMessage(pMsg);
 }
 

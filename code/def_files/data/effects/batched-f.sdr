@@ -1,23 +1,35 @@
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2DArray;
+#endif
 
 #include "gamma.sdr"
+
+layout(location=0) out vec4 fragOut0;
 
 #ifdef VULKAN
 layout (location = 0) in vec4 fragTexCoord;
 layout (location = 1) in vec4 fragColor;
+layout (location = 2) in vec4 fragVelocityCurClip;
+layout (location = 3) in vec4 fragVelocityPrevClip;
+layout (location = 4) in float fragHasMotion;
 
-layout (location = 0) out vec4 fragOut0;
+layout (location = 6) out vec4 fragOut6;
 
 layout (set = 1, binding = 1) uniform sampler2DArray baseMap;
 
 layout (set = 2, binding = 0, std140) uniform genericData {
 	vec4 color;
 	float intensity;
+	mat4 velocityViewProj;
+	mat4 velocityPrevViewProj;
+	vec2 velocityUvScale;
 };
+
+#include "motion-vectors.sdr"
 #else
 in vec4 fragTexCoord;
 in vec4 fragColor;
-
-out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
 
@@ -36,4 +48,7 @@ void main()
 	vec4 blendColor = vec4(srgb_to_linear(fragColor.rgb), fragColor.a);
 
 	fragOut0 = baseColor * blendColor * intensity;
+#ifdef VULKAN
+	fragOut6 = effect_motion(fragVelocityCurClip, fragVelocityPrevClip, fragHasMotion, velocityUvScale, fragOut0);
+#endif
 }

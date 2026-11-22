@@ -35,7 +35,9 @@ void convert_model_material(model_uniform_data* data_out,
 							const model_material& material,
 							const matrix4& model_transform,
 							const vec3d& scale,
-							size_t transform_buffer_offset) {
+							size_t transform_buffer_offset,
+							const matrix4& prev_model_transform,
+							int prev_transform_stride) {
 	auto shader_flags = material.get_shader_flags();
 
 	Assertion(gr_model_matrix_stack.depth() == 1, "Uniform conversion does not respect previous transforms! "
@@ -45,6 +47,10 @@ void convert_model_material(model_uniform_data* data_out,
 	scale_matrix(scaled_matrix, scale);
 
 	data_out->modelMatrix = scaled_matrix;
+	data_out->prevModelMatrix = prev_model_transform;
+	scale_matrix(data_out->prevModelMatrix, scale);
+	data_out->prev_transform_stride = prev_transform_stride;
+	gr_get_velocity_uniforms(&data_out->velocity);
 	data_out->viewMatrix = gr_view_matrix;
 	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &gr_view_matrix, &scaled_matrix);
 	data_out->projMatrix = gr_projection_matrix;
@@ -139,19 +145,12 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 
-	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
-		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
-
-		data_out->gammaSpec = 1;
-		data_out->alphaGloss = 1;
-
-	} 
-
-	if (material.get_texture_map(TM_SPECULAR_TYPE) >= 0) {
-		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
-
-		data_out->gammaSpec = 0;
-		data_out->alphaGloss = 0;
+	bool is_spec_gloss;
+	const auto specular_map = material.get_specular_map(&is_spec_gloss);
+	if (specular_map >= 0) {
+		data_out->sSpecmapIndex = bm_get_array_index(specular_map);
+		data_out->gammaSpec = is_spec_gloss ? 1 : 0;
+		data_out->alphaGloss = is_spec_gloss ? 1 : 0;
 	}
 	
 	if (material.get_texture_map(TM_NORMAL_TYPE) >= 0) {

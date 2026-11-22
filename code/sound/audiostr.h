@@ -47,6 +47,7 @@ int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type );
 void audiostream_close_file(int i, bool fade = true);
 
 void audiostream_close_all(bool fade);
+void audiostream_resume_after_device_loss();	// restart streams stopped by a lost playback device
 
 // Plays the currently opened wave file
 void audiostream_play(int i, float volume = -1.0f, int looping = 1);

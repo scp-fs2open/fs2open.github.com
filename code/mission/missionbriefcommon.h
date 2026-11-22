@@ -274,6 +274,11 @@ void mission_brief_common_init();
 void mission_brief_common_reset();
 void mission_debrief_common_reset();
 
+//--------------------------------------------------------------------------------------
+// Frees the briefing icon and line buffers that the mission editors allocate for their
+// whole session.  Called at editor shutdown.
+void mission_brief_common_close();
+
 
 // --------------------------------------------------------------------------------------
 // briefing screen

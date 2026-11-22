@@ -111,6 +111,18 @@ MACRO(COPY_FILES_TO_TARGET _target)
 	FOREACH(file IN LISTS TARGET_COPY_FILES)
 		COPY_FILE_TO_TARGET("${_target}" "${file}")
 	ENDFOREACH(file)
+
+	# Third party licenses that have to accompany the copied binaries
+	get_property(_ffx_license GLOBAL PROPERTY FSO_FFX_LICENSE_FILE)
+	if (_ffx_license)
+		ADD_CUSTOM_COMMAND(
+			TARGET ${_target} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${_target}>/license"
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_ffx_license}" "$<TARGET_FILE_DIR:${_target}>/license/amd_ffx.txt"
+			COMMENT "copying AMD FidelityFX license..."
+			VERBATIM
+		)
+	endif()
 ENDMACRO(COPY_FILES_TO_TARGET)
 
 macro(_clear_old_libraries_state)
@@ -241,6 +253,17 @@ function(suppress_file_warnings)
 	endif()
 endfunction(suppress_file_warnings)
 
+# Suppress no symbols warnings in static libraries (on Xcode)
+function(suppress_no_symbol_warnings _target)
+	if(XCODE)
+		get_target_property(target_type ${_target} TYPE)
+		if(target_type STREQUAL "STATIC_LIBRARY")
+			set_property(TARGET ${_target} APPEND PROPERTY
+				STATIC_LIBRARY_OPTIONS "-no_warning_for_no_symbols"
+			)
+		endif()
+	endif()
+endfunction(suppress_no_symbol_warnings)
 
 function(list_target_dependencies _target _out_var)
 	set(out_list)
