@@ -205,7 +205,7 @@ void campaign_tree_wnd::OnCpgnFileSave()
 
 	auto full_path = (LPCSTR)Campaign_tree_formp->GetCurrentCampaignPath();
 
-	Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
+	Campaign_tree_formp->save_tree(0); // flush all changes so they get saved.
 	Campaign_tree_viewp->sort_elements();
 
 	SCP_vector<campaign_link> links;
@@ -274,7 +274,7 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 
 		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
 
-		Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
+		Campaign_tree_formp->save_tree(0); // flush all changes so they get saved.
 		Campaign_tree_viewp->sort_elements();
 
 		SCP_vector<campaign_link> links;
