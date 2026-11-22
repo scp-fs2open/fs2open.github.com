@@ -5,7 +5,6 @@
 #include "VulkanRenderer.h"
 #include "VulkanTexture.h"
 #include "graphics/matrix.h"
-#include "graphics/openxr.h"
 
 namespace graphics::vulkan {
 
@@ -24,8 +23,8 @@ struct MotionVectorData {
 
 bool VulkanMotionVectors::wanted()
 {
-	// The attachment needs blend state of its own, and VR isn't supported yet.
-	if (!getRendererInstance()->supportsIndependentBlend() || openxr_requested()) {
+	// The attachment needs blend state of its own
+	if (!getRendererInstance()->supportsIndependentBlend()) {
 		return false;
 	}
 	return Gr_fsr_mode != FsrMode::Off && gr_is_capable(gr_capability::CAPABILITY_FSR);

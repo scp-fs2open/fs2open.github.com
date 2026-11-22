@@ -91,14 +91,14 @@ ubyte g3_transfer_vertex(vertex *dest, const vec3d *src)
 	return 0;
 }
 
+// x and y arrive already scaled by Matrix_scale (see scale_matrix()), so all that is left of an off-center frustum is
+// shifting its center back to the middle of the canvas, which is exactly what the projection matrix does.
 static void g3_compensate_asymmetric_fov(float& x, float& y, float z) {
 	if (std::holds_alternative<asymmetric_fov>(Proj_fov)) {
 		const auto& afov = std::get<asymmetric_fov>(Proj_fov);
-		float angle = atan2_safe(z, x) + (afov.left + afov.right);
-		x = angle == PI_2 ? 0.0f : z / tanf(angle);
-
-		angle = atan2_safe(z, y) + (afov.up + afov.down);
-		y = angle == PI_2 ? 0.0f : z / tanf(angle);
+		const float tl = tanf(afov.left), tr = tanf(afov.right), tu = tanf(afov.up), td = tanf(afov.down);
+		x -= z * (tr + tl) / (tr - tl);
+		y -= z * (tu + td) / (tu - td);
 	}
 }
 

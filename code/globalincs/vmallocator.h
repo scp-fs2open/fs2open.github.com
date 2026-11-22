@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+#include "utils/strings.h"	// stricmp, for SCP_vector_contains_lcase
+
 template <typename T>
 class SCP_vector : public std::vector<T, std::allocator<T>>
 {
@@ -58,16 +60,6 @@ template<typename T> SCP_vector(std::initializer_list<T>) -> SCP_vector<T>;
 template <typename T>
 bool SCP_vector_contains(const SCP_vector<T>& vector, const T& item) {
 	return std::find(vector.begin(), vector.end(), item) != vector.end();
-}
-
-template <typename T>
-bool SCP_vector_contains_lcase(const SCP_vector<T>& vector, const T& item) {
-	return std::find_if(vector.begin(), vector.end(), [&item](const T& iterator_item) { return lcase_equal(iterator_item, item); }) != vector.end();
-}
-
-template <typename T>
-bool SCP_vector_contains_lcase(const SCP_vector<T>& vector, const char* item) {
-	return std::find_if(vector.begin(), vector.end(), [&item](const T& iterator_item) { return !stricmp(iterator_item.c_str(), item); }) != vector.end();
 }
 
 template <typename T>
@@ -117,6 +109,18 @@ extern bool SCP_trim(SCP_string& str);
 
 extern bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right);
 extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
+
+template <typename T>
+bool SCP_vector_contains_lcase(const SCP_vector<T>& vector, const T& item)
+{
+	return std::find_if(vector.begin(), vector.end(), [&item](const T& iterator_item) { return lcase_equal(iterator_item, item); }) != vector.end();
+}
+
+template <typename T>
+bool SCP_vector_contains_lcase(const SCP_vector<T>& vector, const char* item)
+{
+	return std::find_if(vector.begin(), vector.end(), [&item](const T& iterator_item) { return !stricmp(iterator_item.c_str(), item); }) != vector.end();
+}
 
 
 template <typename T, typename U, typename Less = std::less<T>>

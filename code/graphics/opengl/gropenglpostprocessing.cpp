@@ -624,6 +624,7 @@ void gr_opengl_post_process_end()
 
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
+	opengl_maybe_set_full_screen_viewport();
 
 	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
