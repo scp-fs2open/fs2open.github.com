@@ -639,7 +639,7 @@ void debrief_unpause()
 	if (!Debriefing_paused)
 		return;
 
-	Debriefing_paused = 1;
+	Debriefing_paused = 0;
 
 	if (Briefing_music_handle >= 0) {
 		audiostream_unpause(Briefing_music_handle);
