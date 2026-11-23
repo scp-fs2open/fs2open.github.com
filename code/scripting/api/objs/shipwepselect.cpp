@@ -266,7 +266,6 @@ ADE_INDEXER(l_Loadout_Amount,
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
 		}
-		ship_info* sip = &Ship_info[current.getBank()->ship_class];
 		int widx = current.getBank()->wep[idx];
 		if (widx >= 0 && widx < (int)Weapon_info.size()) {
 			weapon_info* wip = &Weapon_info[widx];
@@ -275,7 +274,12 @@ ADE_INDEXER(l_Loadout_Amount,
 			if (wip->subtype == WP_LASER) {
 				capacity = 1;
 			} else {
-				capacity = wl_calc_missile_fit(widx, sip->secondary_bank_ammo_capacity[idx - MAX_SHIP_PRIMARY_BANKS]);
+				int ship_class = current.getBank()->ship_class;
+				if (!Ship_info.in_bounds(ship_class)) {
+					LuaError(L, "Cannot set a missile amount in a slot with no ship class!");
+					return ADE_RETURN_NIL;
+				}
+				capacity = wl_calc_missile_fit(widx, Ship_info[ship_class].secondary_bank_ammo_capacity[idx - MAX_SHIP_PRIMARY_BANKS]);
 			}
 			if (amount > capacity) {
 				amount = capacity;
@@ -324,13 +328,16 @@ ADE_INDEXER(l_Loadout_Weapon,
 		return ADE_RETURN_NIL;
 	};
 
-	ship_info* sip = &Ship_info[current.getBank()->ship_class];
+	int ship_class = current.getBank()->ship_class;
+	ship_info* sip = Ship_info.in_bounds(ship_class) ? &Ship_info[ship_class] : nullptr;
 	int bankType = -1;
 	// Decide if we're setting a valid primary or secondary bank on the current ship class
-	if (bank <= sip->num_primary_banks) {
-		bankType = WP_LASER;
-	} else if (bank > MAX_SHIP_PRIMARY_BANKS && bank <= (sip->num_secondary_banks + MAX_SHIP_PRIMARY_BANKS)) {
-		bankType = WP_MISSILE;
+	if (sip != nullptr) {
+		if (bank <= sip->num_primary_banks) {
+			bankType = WP_LASER;
+		} else if (bank > MAX_SHIP_PRIMARY_BANKS && bank <= (sip->num_secondary_banks + MAX_SHIP_PRIMARY_BANKS)) {
+			bankType = WP_MISSILE;
+		}
 	}
 
 	wepIndex--; // Convert from Lua
