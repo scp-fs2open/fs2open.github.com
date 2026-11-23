@@ -1421,7 +1421,10 @@ void scoring_eval_hit(const object *hit_obj, const object *other_obj, int from_b
 		}
 
 		// set the flag indicating that we've already applied a "stats" hit for this weapon
-		// Weapons[other_obj->instance].weapon_flags |= WF_ALREADY_APPLIED_STATS;
+		// including so a single primary shot can't be counted as multiple hits/aoe damage
+		if (sub_type == WP_LASER) {
+			Weapons[other_obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Already_applied_stats);
+		}
 
 		// in multiplayer -- only the server records the stats
 		if( Game_mode & GM_MULTIPLAYER ) {
