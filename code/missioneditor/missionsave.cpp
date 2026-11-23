@@ -5396,6 +5396,40 @@ int Fred_mission_save::save_wings()
 //   parse_prop() in missionparse.cpp
 //   clone_prop_instance_data() in missioneditor/objectduplication.cpp
 // When you add a new editable prop field, touch all three.
+void Fred_mission_save::save_prop_cue(const char* key, int cue, int default_cue)
+{
+	if (cue == default_cue) {
+		bypass_comment((SCP_string(";;FSO 26.3.0;; ") + key).c_str(), "$Name:");
+		return;
+	}
+
+	if (optional_string_fred(key, "$Name:")) {
+		parse_comments();
+	} else {
+		fout_version("\n%s", key);
+	}
+
+	SCP_string sexp_out;
+	convert_sexp_to_string(sexp_out, cue, SEXP_SAVE_MODE);
+	fout_version(" %s", sexp_out.c_str());
+}
+
+void Fred_mission_save::save_prop_delay(const char* key, int delay)
+{
+	if (delay == 0) {
+		bypass_comment((SCP_string(";;FSO 26.3.0;; ") + key).c_str(), "$Name:");
+		return;
+	}
+
+	if (optional_string_fred(key, "$Name:")) {
+		parse_comments();
+	} else {
+		fout_version("\n%s", key);
+	}
+
+	fout(" %d", delay);
+}
+
 int Fred_mission_save::save_props()
 {
 	auto num_props = count_items_with_value(Props);
@@ -5452,6 +5486,14 @@ int Fred_mission_save::save_props()
 
 					fout(" %s", p->fred_layer.c_str());
 				}
+
+				// see check_for_26_3_data()
+				fso_comment_push(";;FSO 26.3.0;;");
+				save_prop_cue("+Spawn Cue:", p->spawn_cue, Locked_sexp_true);
+				save_prop_delay("+Spawn Delay:", p->spawn_delay);
+				save_prop_cue("+Despawn Cue:", p->despawn_cue, Locked_sexp_false);
+				save_prop_delay("+Despawn Delay:", p->despawn_delay);
+				fso_comment_pop();
 
 				fso_comment_pop();
 			}
