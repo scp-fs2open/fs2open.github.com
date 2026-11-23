@@ -18,6 +18,7 @@ FLAG_LIST(Prop_Flags){
 	Render_without_specmap,                 // Render without spec for this weapon instance
 	Render_without_reflectmap,              // Render without reflect for this weapon instance
 	Render_with_alpha_mult,                 // Render with an alpha multiplier
+	Made_by_sexp,                           // Made during the mission by prop-create
 
 	NUM_VALUES};
 

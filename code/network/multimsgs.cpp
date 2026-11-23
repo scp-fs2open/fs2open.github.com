@@ -80,6 +80,7 @@
 #include "mission/missiongoals.h"
 #include "network/multi_interpolate.h"
 #include "network/multi_turret_manager.h"
+#include "prop/prop.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -9303,4 +9304,218 @@ void process_turret_tracking_packet(ubyte *data, header *hinfo)
 	}
 
 	PACKET_SET_SIZE();
+}
+
+static void send_prop_info_data(const ubyte* data, int packet_size, net_player* pl)
+{
+	if (pl != nullptr) {
+		multi_io_send_reliable(pl, data, packet_size);
+	} else {
+		multi_io_send_to_all_reliable(data, packet_size);
+	}
+}
+
+void send_prop_spawn_packet(int parsed_index, ushort signature, net_player* pl)
+{
+	int packet_size;
+	ubyte data[MAX_PACKET_SIZE];
+	ubyte packet_type = PROP_INFO_SPAWN;
+
+	BUILD_HEADER(PROP_INFO);
+	ADD_DATA(packet_type);
+	ADD_INT(parsed_index);
+	ADD_USHORT(signature);
+
+	send_prop_info_data(data, packet_size, pl);
+}
+
+void send_prop_create_packet(const object* objp, net_player* pl)
+{
+	int packet_size;
+	ubyte data[MAX_PACKET_SIZE];
+	ubyte packet_type = PROP_INFO_CREATE;
+	const prop* propp = prop_id_lookup(objp->instance);
+
+	BUILD_HEADER(PROP_INFO);
+	ADD_DATA(packet_type);
+	ADD_USHORT(objp->net_signature);
+	ADD_STRING(propp->prop_name);
+	ADD_INT(propp->prop_info_index);
+	ADD_VECTOR(objp->pos);
+	// props never get position updates, so the orientation is sent in full
+	ADD_VECTOR(objp->orient.vec.rvec);
+	ADD_VECTOR(objp->orient.vec.uvec);
+	ADD_VECTOR(objp->orient.vec.fvec);
+
+	send_prop_info_data(data, packet_size, pl);
+}
+
+void send_prop_remove_packet(ushort signature, net_player* pl)
+{
+	int packet_size;
+	ubyte data[MAX_PACKET_SIZE];
+	ubyte packet_type = PROP_INFO_REMOVE;
+
+	BUILD_HEADER(PROP_INFO);
+	ADD_DATA(packet_type);
+	ADD_USHORT(signature);
+
+	send_prop_info_data(data, packet_size, pl);
+}
+
+void send_prop_state(net_player* pl)
+{
+	for (const auto& propp : Parse_props) {
+		bool present = parsed_prop_is_present(propp);
+
+		// the joiner made the load-time props itself and has none of the others
+		if (parsed_prop_made_at_load(propp)) {
+			if (!present && propp.net_signature != 0) {
+				send_prop_remove_packet(propp.net_signature, pl);
+			}
+		} else if (present) {
+			send_prop_spawn_packet(static_cast<int>(&propp - Parse_props.data()), propp.net_signature, pl);
+		}
+	}
+
+	for (const auto& propp : Props) {
+		if (propp.has_value() && propp->flags[Prop::Prop_Flags::Made_by_sexp] && propp->objnum >= 0 &&
+			!Objects[propp->objnum].flags[Object::Object_Flags::Should_be_dead]) {
+			send_prop_create_packet(&Objects[propp->objnum], pl);
+		}
+	}
+}
+
+static void prop_packet_step_signature_counter(ushort signature)
+{
+	// a join-state packet can carry an older signature, and moving the counter back would hand it out again
+	const int pool_size = ASTEROID_SIG_MAX - ASTEROID_SIG_MIN;
+	int ahead = (signature - multi_get_next_network_signature(MULTI_SIG_ASTEROID) + pool_size) % pool_size;
+	if (ahead < pool_size / 2) {
+		multi_set_network_signature(signature, MULTI_SIG_ASTEROID);
+		// clients number the asteroids they throw themselves, so the next one must not take this prop's signature
+		multi_assign_network_signature(MULTI_SIG_ASTEROID);
+	}
+}
+
+static void prop_packet_dropped(const char* name, ushort signature, const char* reason)
+{
+	mprintf(("Prop packet: %s (network signature %d) is missing here: %s\n", name, signature, reason));
+}
+
+void process_prop_info_packet(ubyte* data, header* hinfo)
+{
+	int offset = HEADER_LENGTH;
+	ubyte packet_type;
+	ushort signature = 0;
+	int parsed_index = -1;
+	int prop_class = -1;
+	char name[NAME_LENGTH] = "";
+	vec3d pos = ZERO_VECTOR;
+	matrix orient = IDENTITY_MATRIX;
+
+	GET_DATA(packet_type);
+
+	switch (packet_type) {
+	case PROP_INFO_SPAWN:
+		GET_INT(parsed_index);
+		GET_USHORT(signature);
+		break;
+
+	case PROP_INFO_CREATE:
+		GET_USHORT(signature);
+		GET_STRING(name);
+		GET_INT(prop_class);
+		GET_VECTOR(pos);
+		GET_VECTOR(orient.vec.rvec);
+		GET_VECTOR(orient.vec.uvec);
+		GET_VECTOR(orient.vec.fvec);
+		break;
+
+	case PROP_INFO_REMOVE:
+		GET_USHORT(signature);
+		break;
+
+	default:
+		break;
+	}
+
+	PACKET_SET_SIZE();
+
+	// Parse_props belongs to another mission until this one is loaded, and props only get signatures from this pool
+	if (MULTIPLAYER_MASTER || !Multi_mission_loaded || signature < ASTEROID_SIG_MIN || signature >= ASTEROID_SIG_MAX) {
+		return;
+	}
+
+	if (packet_type == PROP_INFO_REMOVE) {
+		object* objp = multi_get_network_object(signature);
+		if (objp != nullptr && objp->type == OBJ_PROP) {
+			objp->flags.set(Object::Object_Flags::Should_be_dead);
+			mprintf(("Prop packet: removed the prop with network signature %d\n", signature));
+		}
+		return;
+	}
+
+	const char* prop_name = name;
+	if (packet_type == PROP_INFO_SPAWN) {
+		if (!SCP_vector_inbounds(Parse_props, parsed_index)) {
+			prop_packet_dropped("(unknown mission prop)", signature, "this mission file has no such prop");
+			return;
+		}
+		prop_name = Parse_props[parsed_index].name;
+	}
+
+	prop_packet_step_signature_counter(signature);
+
+	// clients number the asteroids they throw themselves, so that number means nothing to the server and can move;
+	// the numbering can already repeat, so every holder moves, not only the first
+	for (auto* list : {&obj_used_list, &obj_create_list}) {
+		for (auto* objp : list_range(list)) {
+			if (objp->net_signature == signature && objp->type == OBJ_ASTEROID) {
+				objp->net_signature = multi_assign_network_signature(MULTI_SIG_ASTEROID);
+				mprintf(("Prop packet: moved the object holding network signature %d to %d\n", signature, objp->net_signature));
+			}
+		}
+	}
+
+	const object* in_use = multi_get_network_object(signature);
+	if (in_use != nullptr) {
+		// the same packet twice is harmless; with any other object a later removal would hit the wrong one
+		const prop* holder = (in_use->type == OBJ_PROP) ? prop_id_lookup(in_use->instance) : nullptr;
+		if (holder == nullptr || stricmp(holder->prop_name, prop_name) != 0) {
+			prop_packet_dropped(prop_name, signature, "another object has its network signature");
+		}
+		return;
+	}
+
+	if (packet_type == PROP_INFO_SPAWN) {
+		if (Parse_props[parsed_index].status != PropStatus::NOT_YET_PRESENT) {
+			prop_packet_dropped(prop_name, signature, "it is not waiting for its spawn cue");
+			return;
+		}
+
+		int objnum = mission_create_parsed_prop(Parse_props[parsed_index]);
+		if (objnum < 0) {
+			prop_packet_dropped(prop_name, signature, "the object table is full");
+			return;
+		}
+
+		Objects[objnum].net_signature = Parse_props[parsed_index].net_signature = signature;
+		mprintf(("Prop packet: %s spawned (network signature %d)\n", prop_name, signature));
+	} else if (packet_type == PROP_INFO_CREATE) {
+		if (prop_class < 0 || prop_class >= prop_info_size()) {
+			prop_packet_dropped(prop_name, signature, "its prop class does not exist");
+			return;
+		}
+
+		int objnum = prop_create(&orient, &pos, prop_class, name);
+		if (objnum < 0) {
+			prop_packet_dropped(prop_name, signature, "the object table is full");
+			return;
+		}
+
+		Objects[objnum].net_signature = signature;
+		prop_id_lookup(Objects[objnum].instance)->flags.set(Prop::Prop_Flags::Made_by_sexp);
+		mprintf(("Prop packet: created %s (network signature %d)\n", name, signature));
+	}
 }

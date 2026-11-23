@@ -5217,6 +5217,17 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
+static int parse_prop_delay(const char* which, const char* prop_name)
+{
+	int delay;
+	stuff_int(&delay);
+	if (delay < 0) {
+		parse_warning_or_record("%s delay on prop %s cannot be negative; corrected to 0.", which, prop_name);
+		delay = 0;
+	}
+	return delay;
+}
+
 // Per-prop field handling here MUST stay in sync with:
 //   Fred_mission_save::save_props() in missionsave.cpp
 //   clone_prop_instance_data() in missioneditor/objectduplication.cpp
@@ -5279,6 +5290,35 @@ void parse_prop(mission* /*pm*/)
 				The_mission.fred_layers.push_back(p.fred_layer);
 			}
 		}
+	}
+
+	// files from other builds may write these keys in another order
+	int key;
+	bool seen[4] = {};
+	char* key_start = Mp;
+	while ((key = optional_string_one_of(4, "+Spawn Cue:", "+Spawn Delay:", "+Despawn Cue:", "+Despawn Delay:")) >= 0) {
+		// a repeated key would overwrite (and leak) the first one; left unread, it gets the usual parse error
+		if (seen[key]) {
+			Mp = key_start;
+			break;
+		}
+		seen[key] = true;
+
+		switch (key) {
+		case 0:
+			p.spawn_cue = get_sexp_main();
+			break;
+		case 1:
+			p.spawn_delay = parse_prop_delay("Spawn", p.name);
+			break;
+		case 2:
+			p.despawn_cue = get_sexp_main();
+			break;
+		default:
+			p.despawn_delay = parse_prop_delay("Despawn", p.name);
+			break;
+		}
+		key_start = Mp;
 	}
 
 	// if idx is still -1 then we have an empty props.tbl so we parse
@@ -5441,22 +5481,119 @@ void post_process_path_stuff()
 	}
 }
 
+int mission_create_parsed_prop(parsed_prop& propp)
+{
+	int objnum = prop_create(&propp.orientation, &propp.position, propp.prop_info_index, propp.name);
+
+	if (objnum < 0) {
+		return -1;
+	}
+
+	auto& obj = Objects[objnum];
+
+	if (propp.flags[Mission::Parse_Object_Flags::OF_No_collide]) {
+		obj.flags.remove(Object::Object_Flags::Collides);
+	}
+
+	auto createdProp = prop_id_lookup(obj.instance);
+	if (createdProp != nullptr) {
+		createdProp->fred_layer = propp.fred_layer;
+		createdProp->spawn_cue = propp.spawn_cue;
+		createdProp->spawn_delay = propp.spawn_delay;
+		createdProp->despawn_cue = propp.despawn_cue;
+		createdProp->despawn_delay = propp.despawn_delay;
+	}
+
+	propp.status = PropStatus::PRESENT;
+	propp.objh = object_h(objnum);
+	propp.net_signature = obj.net_signature;
+
+	return objnum;
+}
+
+bool parsed_prop_made_at_load(const parsed_prop& propp)
+{
+	return propp.spawn_cue == Locked_sexp_true && propp.spawn_delay == 0;
+}
+
+bool parsed_prop_is_present(const parsed_prop& propp)
+{
+	return propp.status == PropStatus::PRESENT && propp.objh.isValid() &&
+		   !propp.objh.objp()->flags[Object::Object_Flags::Should_be_dead];
+}
+
+bool mission_parse_prop_not_yet_present(const char* name)
+{
+	if (Fred_running) {
+		return false;
+	}
+
+	return std::any_of(Parse_props.begin(), Parse_props.end(), [name](const parsed_prop& propp) {
+		return propp.status == PropStatus::NOT_YET_PRESENT && !stricmp(propp.name, name);
+	});
+}
+
 // MjnMixael
 void post_process_mission_props()
 {
-	for (const auto& propp : Parse_props) {
-		int objnum = prop_create(&propp.orientation, &propp.position, propp.prop_info_index, propp.name);
+	for (auto& propp : Parse_props) {
+		// a cue is not evaluated here: the ship registry it may read does not exist yet, and every player
+		// in a multiplayer game has to make the same props at load to give them the same network signatures
+		if (Fred_running || parsed_prop_made_at_load(propp)) {
+			mission_create_parsed_prop(propp);
+			continue;
+		}
 
-		if (objnum >= 0) {
-			auto& obj = Objects[objnum];
+		auto& pip = Prop_info[propp.prop_info_index];
+		pip.model_num = model_load(pip.pof_file.c_str());
+		if (pip.model_num >= 0) {
+			model_page_in_textures(pip.model_num);
+		}
+	}
+}
 
-			if (propp.flags[Mission::Parse_Object_Flags::OF_No_collide]) {
-				obj.flags.remove(Object::Object_Flags::Collides);
+void mission_eval_prop_cues()
+{
+	for (auto& propp : Parse_props) {
+		if (propp.status == PropStatus::NOT_YET_PRESENT) {
+			if (!eval_sexp(propp.spawn_cue)) {
+				continue;
+			}
+			if (!propp.spawn_timestamp.isValid()) {
+				propp.spawn_timestamp = _timestamp(propp.spawn_delay * MILLISECONDS_PER_SECOND);
+			}
+			if (!timestamp_elapsed(propp.spawn_timestamp)) {
+				continue;
 			}
 
-			auto createdProp = prop_id_lookup(obj.instance);
-			if (createdProp != nullptr) {
-				createdProp->fred_layer = propp.fred_layer;
+			// a full object table can clear up, so the prop keeps waiting; the failed try logs once, not each frame
+			if (propp.object_table_was_full && Num_objects >= MAX_OBJECTS) {
+				continue;
+			}
+			if (mission_create_parsed_prop(propp) < 0) {
+				propp.object_table_was_full = true;
+				continue;
+			}
+			mprintf(("Prop %s spawned on its cue (network signature %d)\n", propp.name, propp.net_signature));
+			if (MULTIPLAYER_MASTER) {
+				send_prop_spawn_packet(static_cast<int>(&propp - Parse_props.data()), propp.net_signature);
+			}
+		} else if (parsed_prop_is_present(propp)) {
+			if (!eval_sexp(propp.despawn_cue)) {
+				continue;
+			}
+			if (!propp.despawn_timestamp.isValid()) {
+				propp.despawn_timestamp = _timestamp(propp.despawn_delay * MILLISECONDS_PER_SECOND);
+			}
+			if (!timestamp_elapsed(propp.despawn_timestamp)) {
+				continue;
+			}
+
+			propp.objh.objp()->flags.set(Object::Object_Flags::Should_be_dead);
+			propp.status = PropStatus::EXITED;
+			mprintf(("Prop %s despawned on its cue (network signature %d)\n", propp.name, propp.net_signature));
+			if (MULTIPLAYER_MASTER) {
+				send_prop_remove_packet(propp.net_signature);
 			}
 		}
 	}
@@ -8837,6 +8974,7 @@ void mission_parse_eval_stuff()
 {
 	mission_eval_arrivals();
 	mission_eval_departures();
+	mission_eval_prop_cues();
 }
 
 int allocate_subsys_status()
@@ -9757,5 +9895,9 @@ bool check_for_26_3_data()
 		}
 	}
 
-	return false;
+	// an older build stops at a prop's spawn and despawn keys
+	return std::any_of(Props.begin(), Props.end(), [](const std::optional<prop>& propp) {
+		return propp.has_value() && (propp->spawn_cue != Locked_sexp_true || propp->spawn_delay != 0 ||
+									 propp->despawn_cue != Locked_sexp_false || propp->despawn_delay != 0);
+	});
 }

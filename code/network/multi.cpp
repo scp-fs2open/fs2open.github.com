@@ -944,6 +944,10 @@ void process_packet_normal(ubyte* data, header *header_info, bool reliable)
 			process_lua_packet(data, header_info, reliable);
 			break;
 
+		case PROP_INFO:
+			process_prop_info_packet(data, header_info);
+			break;
+
 		default:
 			mprintf(("Received packet with unknown type %d\n", data[0] ));
 			header_info->bytes_processed = 10000;

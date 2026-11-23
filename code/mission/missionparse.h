@@ -541,6 +541,30 @@ public:
 extern SCP_vector<p_object> Parse_objects;
 #define POBJ_INDEX(pobjp) (static_cast<int>((pobjp)-Parse_objects.data()))
 
+struct parsed_prop;
+extern SCP_vector<parsed_prop> Parse_props;
+
+/**
+ * @brief Creates the prop a parsed prop describes and records it in the parsed prop.
+ * @return The new object's index, or -1 if the prop could not be created.
+ */
+int mission_create_parsed_prop(parsed_prop& propp);
+
+/**
+ * @brief Whether every player creates this prop when the mission loads, which only the mission file decides.
+ */
+bool parsed_prop_made_at_load(const parsed_prop& propp);
+
+/**
+ * @brief Whether the prop a parsed prop created is in the mission now.
+ */
+bool parsed_prop_is_present(const parsed_prop& propp);
+
+/**
+ * @brief Whether a name belongs to a mission prop that is still waiting for its spawn cue.
+ */
+bool mission_parse_prop_not_yet_present(const char* name);
+
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 

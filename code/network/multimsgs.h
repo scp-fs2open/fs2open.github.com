@@ -558,6 +558,36 @@ void process_self_destruct_packet(ubyte *data, header *hinfo);
 void send_sexp_packet(ubyte *sexp_packet, int num_ubytes);
 void process_sexp_packet(ubyte *data, header *hinfo);
 
+/**
+ * @brief Tells clients that a prop from the mission file has spawned.
+ * @param[in] parsed_index The prop's index in Parse_props, which is the same for every player.
+ * @param[in] signature The network signature the server gave the prop.
+ * @param[in] pl The one player to tell, or nullptr for every player.
+ */
+void send_prop_spawn_packet(int parsed_index, ushort signature, net_player* pl = nullptr);
+
+/**
+ * @brief Tells clients to create a prop that is not in the mission file.
+ * @param[in] objp The prop the server created.
+ * @param[in] pl The one player to tell, or nullptr for every player.
+ */
+void send_prop_create_packet(const object* objp, net_player* pl = nullptr);
+
+/**
+ * @brief Tells clients to remove a prop.
+ * @param[in] signature The prop's network signature.
+ * @param[in] pl The one player to tell, or nullptr for every player.
+ */
+void send_prop_remove_packet(ushort signature, net_player* pl = nullptr);
+
+/**
+ * @brief Sends one player every prop change since the mission loaded.
+ * @note Call it when the server starts including an in-game joiner in its broadcasts, so no change is missed.
+ */
+void send_prop_state(net_player* pl);
+
+void process_prop_info_packet(ubyte* data, header* hinfo);
+
 // Turret is tracking new object.
 void send_turret_tracking_packet(int ship_objnum, int subsys_index);
 void process_turret_tracking_packet(ubyte *data, header *hinfo);
