@@ -113,7 +113,7 @@ ADE_FUNC(get3DValues,
 
 ADE_FUNC(tryLoad, l_SoundEntry, nullptr, "Detects whether handle references a sound that can be loaded", "boolean", "true if a load succeeded, false if not, nil if a syntax/type error occurs")
 {
-	sound_entry_h *seh;
+	sound_entry_h *seh = nullptr;
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ADE_RETURN_NIL;
 
@@ -151,7 +151,7 @@ ADE_OBJ(l_Sound, sound_h, "sound", "sound instance handle");
 
 ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "number", "Pitch, or 0 if handle is invalid")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	int newpitch = 100;
 	if(!ade_get_args(L, "o|i", l_Sound.GetPtr(&sh), &newpitch))
 		return ade_set_error(L, "f", 0.0f);
@@ -174,7 +174,7 @@ ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "num
 
 ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound handle", "number", "Remaining time, or -1 on error")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "f", -1.0f);
 
@@ -194,7 +194,7 @@ ADE_FUNC(setVolume,
 	"boolean",
 	"true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float newVol = -1.0f;
 	bool voice = false;
 	if (!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &newVol, &voice))
@@ -212,7 +212,7 @@ ADE_FUNC(setVolume,
 
 ADE_FUNC(setPanning, l_Sound, "number", "Sets the panning of this sound. Argument ranges from -1.0 for left to 1.0 for right", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float newPan = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &newPan))
 		return ADE_RETURN_FALSE;
@@ -233,7 +233,7 @@ ADE_FUNC(setPosition, l_Sound, "number value, boolean percent = true",
 			 "This operation fails if there is no backing soundentry!",
 		 "boolean", "true if successful, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float val = -1.0f;
 	bool percent = true;
 	if(!ade_get_args(L, "of|b", l_Sound.GetPtr(&sh), &val, &percent))
@@ -253,7 +253,7 @@ ADE_FUNC(setPosition, l_Sound, "number value, boolean percent = true",
 ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of seconds<br>"
 	"This operation fails if there is no backing soundentry!", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float val = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
 		return ADE_RETURN_FALSE;
@@ -272,7 +272,7 @@ ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of se
 ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the sound<br>"
 	"This operation fails if there is no backing soundentry!", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	float val = -1.0f;
 	if(!ade_get_args(L, "of", l_Sound.GetPtr(&sh), &val))
 		return ADE_RETURN_FALSE;
@@ -290,7 +290,7 @@ ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the soun
 
 ADE_FUNC(isPlaying, l_Sound, NULL, "Checks if this handle is currently playing", "boolean", "true if playing, false if otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "b", false);
 
@@ -302,7 +302,7 @@ ADE_FUNC(isPlaying, l_Sound, NULL, "Checks if this handle is currently playing",
 
 ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "b", false);
 
@@ -316,7 +316,7 @@ ADE_FUNC(stop, l_Sound, NULL, "Stops the sound of this handle", "boolean", "true
 
 ADE_FUNC(pause, l_Sound, NULL, "Pauses the sound of this handle", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if (!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "b", false);
 
@@ -333,7 +333,7 @@ ADE_FUNC(pause, l_Sound, NULL, "Pauses the sound of this handle", "boolean", "tr
 
 ADE_FUNC(resume, l_Sound, NULL, "Resumes the sound of this handle", "boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if (!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ade_set_error(L, "b", false);
 
@@ -354,7 +354,7 @@ ADE_FUNC(isValid, l_Sound, nullptr,
          "directly loaded sound file. Use isSoundValid() in that case instead.",
          "boolean", "true if sound and entry are both valid, false if not, nil if a syntax/type error occurs")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ADE_RETURN_NIL;
 
@@ -364,7 +364,7 @@ ADE_FUNC(isValid, l_Sound, nullptr,
 ADE_FUNC(isSoundValid, l_Sound, NULL, "Checks if the sound is valid without regard for whether the entry is valid. Should be used for non soundentry sounds.",
 		 "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	if(!ade_get_args(L, "o", l_Sound.GetPtr(&sh)))
 		return ADE_RETURN_NIL;
 
@@ -379,7 +379,7 @@ ADE_FUNC(updatePosition, l_Sound3D,
 		"This operation fails if there is no backing soundentry!",
 	"boolean", "true if succeeded, false otherwise")
 {
-	sound_h *sh;
+	sound_h *sh = nullptr;
 	vec3d *newPos = NULL;
 	float radius = 0.0f;
 

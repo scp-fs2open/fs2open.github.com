@@ -42,7 +42,7 @@ ADE_INDEXER(l_Tables_ShipClasses, "number/string IndexOrName", "Array of ship cl
 	if(!Ships_inited)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
@@ -80,7 +80,7 @@ ADE_INDEXER(l_Tables_ShipTypes, "number/string IndexOrName", "Array of ship type
 	if (!Ships_inited)
 		return ade_set_error(L, "o", l_Shiptype.Set(-1));
 
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Shiptype.Set(-1));
 
@@ -119,7 +119,7 @@ ADE_INDEXER(l_Tables_PropClasses, "number/string IndexOrName", "Array of prop cl
 	if(!Props_inited)
 		return ade_set_error(L, "o", l_Propclass.Set(-1));
 
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Propclass.Set(-1));
 
@@ -158,7 +158,7 @@ ADE_INDEXER(l_Tables_WeaponClasses, "number/string IndexOrWeaponName", "Array of
 	if(!Weapons_inited)
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return 0;
 
@@ -196,7 +196,7 @@ ADE_INDEXER(l_Tables_IntelEntries, "number/string IndexOrName", "Array of intel 
 	if(!Intel_inited)
 		return ade_set_error(L, "o", l_Intelentry.Set(-1));
 
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Intelentry.Set(-1));
 
@@ -235,7 +235,7 @@ ADE_INDEXER(l_Tables_FireballClasses, "number/string IndexOrFireballUniqueID", "
 	if (!fireballs_inited)
 		return ade_set_error(L, "o", l_Fireballclass.Set(-1));
 
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return 0;
 
@@ -293,7 +293,7 @@ ADE_LIB_DERIV(l_Tables_DecalDefinitions, "DecalDefinitions", nullptr, nullptr, l
 
 ADE_INDEXER(l_Tables_DecalDefinitions, "number/string IndexOrDecalName", "Array of decal definitions", "decaldefinition", "Decal definition handle, or invalid handle if name is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return 0;
 
@@ -343,7 +343,7 @@ ADE_LIB_DERIV(l_Tables_WingFormations, "WingFormations", nullptr, nullptr, l_Tab
 
 ADE_INDEXER(l_Tables_WingFormations, "number/string IndexOrName", "Array of wing formations", "wingformation", "Wing formation handle, or invalid handle if name is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return 0;
 
@@ -388,7 +388,7 @@ ADE_LIB_DERIV(l_Tables_TeamColors, "TeamColors", nullptr, nullptr, l_Tables);
 
 ADE_INDEXER(l_Tables_TeamColors, "number/string IndexOrName", "Array of team colors", "teamcolor", "Team color handle, or invalid handle if name is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_TeamColor.Set(-1));
 
@@ -419,7 +419,7 @@ ADE_FUNC(__len, l_Tables_TeamColors, nullptr, "Number of  team colors", "number"
 ADE_LIB_DERIV(l_Tables_ParticleEffects, "ParticleEffects", nullptr, nullptr, l_Tables);
 ADE_INDEXER(l_Tables_ParticleEffects, "string Name", "Array of particle effects", "particle_effect", "Particle Effect handle, or invalid handle if name is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_ParticleEffect.Set(particle::ParticleEffectHandle::invalid()));
 

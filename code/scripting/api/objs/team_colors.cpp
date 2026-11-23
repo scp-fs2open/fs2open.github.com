@@ -13,7 +13,7 @@ ADE_OBJ_VALIDATOR(l_TeamColor, idx, Team_Names.in_bounds(idx) && Team_Colors.fin
 
 ADE_FUNC(__tostring, l_TeamColor, nullptr, "Team color name", "string", "Team color name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_TeamColor.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -25,7 +25,7 @@ ADE_FUNC(__tostring, l_TeamColor, nullptr, "Team color name", "string", "Team co
 
 ADE_FUNC(__eq, l_TeamColor, "teamcolor, teamcolor", "Checks if the two team colors are equal", "boolean", "true if equal, false otherwise")
 {
-	int idx1, idx2;
+	int idx1 = 0, idx2 = 0;
 	if (!ade_get_args(L, "oo", l_TeamColor.Get(&idx1), l_TeamColor.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -40,7 +40,7 @@ ADE_FUNC(__eq, l_TeamColor, "teamcolor, teamcolor", "Checks if the two team colo
 
 ADE_VIRTVAR(Name, l_TeamColor, nullptr, "The team color name", "string", "Team color name, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_TeamColor.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -61,7 +61,7 @@ ADE_VIRTVAR(Name, l_TeamColor, nullptr, "The team color name", "string", "Team c
 
 ADE_VIRTVAR(BaseColor, l_TeamColor, nullptr, "Team color base color", "color", "Team color base color, or nil if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_TeamColor.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -88,7 +88,7 @@ ADE_VIRTVAR(BaseColor, l_TeamColor, nullptr, "Team color base color", "color", "
 
 ADE_VIRTVAR(StripeColor, l_TeamColor, nullptr, "Team color stripe color", "color", "Team color stripe color, or nil if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_TeamColor.Get(&idx)))
 		return ADE_RETURN_NIL;
 

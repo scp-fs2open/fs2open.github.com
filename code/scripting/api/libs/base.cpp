@@ -99,7 +99,7 @@ ADE_FUNC(rand32,
 	"number",
 	"A random integer")
 {
-	int a, b;
+	int a = 0, b = 0;
 	int numargs = ade_get_args(L, "|ii", &a, &b);
 
 	int result;
@@ -131,7 +131,7 @@ ADE_FUNC(rand32f,
 	"number",
 	"A random float")
 {
-	float _max;
+	float _max = 0.0f;
 	int numargs = ade_get_args(L, "|f", &_max);
 
 	// see also frand()
@@ -157,7 +157,7 @@ ADE_FUNC(createOrientation,
 	"orientation",
 	"New orientation object, or the identity orientation on failure")
 {
-	matrix m;
+	matrix m = vmd_identity_matrix;
 	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
 	if(!numargs)
 	{
@@ -367,7 +367,7 @@ ADE_FUNC(getCurrentPlayer, l_Base, NULL, "Gets a handle of the currently used pl
 ADE_FUNC(loadPlayer, l_Base, "string callsign", "Loads the player with the specified callsign.", "player",
          "Player handle or invalid handle on load failure")
 {
-	const char* callsign;
+	const char* callsign = nullptr;
 	if (!ade_get_args(L, "s", &callsign)) {
 		return ade_set_error(L, "o", l_Player.Set(player_h()));
 	}
@@ -385,7 +385,7 @@ ADE_FUNC(loadPlayer, l_Base, "string callsign", "Loads the player with the speci
 ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boolean",
          "true of successful, false otherwise")
 {
-	player_h* plh;
+	player_h* plh = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
 		return ADE_RETURN_FALSE;
 	}
@@ -556,7 +556,7 @@ ADE_FUNC(replaceTokens,
 	"string",
 	"Updated string or nil if invalid")
 {
-	const char* untranslated_str;
+	const char* untranslated_str = nullptr;
 	if (!ade_get_args(L, "s", &untranslated_str)) {
 		return ADE_RETURN_NIL;
 	}
@@ -573,7 +573,7 @@ ADE_FUNC(replaceVariables,
 	"string",
 	"Updated string or nil if invalid")
 {
-	const char* untranslated_str;
+	const char* untranslated_str = nullptr;
 	if (!ade_get_args(L, "s", &untranslated_str)) {
 		return ADE_RETURN_NIL;
 	}
@@ -591,7 +591,7 @@ ADE_FUNC(replaceContainers,
 	"string",
 	"Updated string or nil if invalid")
 {
-	const char* untranslated_str;
+	const char* untranslated_str = nullptr;
 	if (!ade_get_args(L, "s", &untranslated_str)) {
 		return ADE_RETURN_NIL;
 	}
@@ -731,7 +731,7 @@ ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is curre
             "true if in multiplayer mode, false if in singleplayer. If neither is the case (e.g. on game init) nil "
             "will be returned")
 {
-	bool b;
+	bool b = false;
 	if (!ade_get_args(L, "*|b", &b)) {
 		return ADE_RETURN_NIL;
 	}
@@ -812,7 +812,7 @@ ADE_FUNC(setDiscordPresence,
 	nullptr,
 	"nothing")
 {
-	const char* text;
+	const char* text = nullptr;
 	bool gp = false;
 	if (!ade_get_args(L, "s|b", &text, &gp)) {
 		return ADE_RETURN_NIL;
@@ -840,7 +840,7 @@ ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Ba
 
 ADE_INDEXER(l_Base_Events, "number/string IndexOrName", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_GameEvent.Set(gameevent_h()));
 
@@ -870,7 +870,7 @@ ADE_LIB_DERIV(l_Base_States, "GameStates", NULL, "Freespace 2 states", l_Base);
 
 ADE_INDEXER(l_Base_States, "number/string IndexOrName", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_GameState.Set(gamestate_h()));
 

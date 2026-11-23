@@ -307,7 +307,7 @@ ADE_VIRTVAR(Name, l_NetPlayer, nullptr, "The player's callsign", "string", "The 
 ADE_VIRTVAR(Team, l_NetPlayer, "number Team", "The player's team as an integer", "number", "The team")
 {
 	net_player_h current;
-	int team;
+	int team = 0;
 	if (!ade_get_args(L, "o|i", l_NetPlayer.Get(&current), &team)) {
 		return ADE_RETURN_NIL;
 	}
@@ -876,7 +876,7 @@ ADE_VIRTVAR(Password, l_NetGame, nullptr, "The current password for the game", "
 ADE_VIRTVAR(Closed, l_NetGame, "boolean Closed", "Whether or not the game is closed", "boolean", "true for closed, false otherwise")
 {
 	net_game_h current;
-	bool closed;
+	bool closed = false;
 	if (!ade_get_args(L, "o|b", l_NetGame.Get(&current), &closed))
 		return ADE_RETURN_NIL;
 
@@ -909,7 +909,7 @@ ADE_VIRTVAR(Closed, l_NetGame, "boolean Closed", "Whether or not the game is clo
 ADE_VIRTVAR(HostModifiesShips, l_NetGame, "boolean HostModifies", "Whether or not the only the host can modify ships", "boolean", "true if enabled, false otherwise")
 {
 	net_game_h current;
-	bool enabled;
+	bool enabled = false;
 	if (!ade_get_args(L, "o|b", l_NetGame.Get(&current), &enabled))
 		return ADE_RETURN_NIL;
 

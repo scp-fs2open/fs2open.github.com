@@ -134,8 +134,8 @@ ADE_FUNC(isPlayer, l_ParseObject, nullptr, "Checks whether the parsed ship is a 
 ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
 {
 	parse_object_h *poh = nullptr;
-	bool set_it;
-	const char *flag_name;
+	bool set_it = false;
+	const char *flag_name = nullptr;
 
 	if (!ade_get_args(L, "obs", l_ParseObject.GetPtr(&poh), &set_it, &flag_name))
 		return ADE_RETURN_NIL;
@@ -173,7 +173,7 @@ ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or cl
 ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the parsed ship is not valid")
 {
 	parse_object_h *poh = nullptr;
-	const char *flag_name;
+	const char *flag_name = nullptr;
 
 	if (!ade_get_args(L, "os", l_ParseObject.GetPtr(&poh), &flag_name))
 		return ADE_RETURN_NIL;
@@ -221,8 +221,8 @@ ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more
 
 static int parse_object_getset_helper(lua_State* L, int p_object::* field, bool canSet = false, bool canBeNegative = false)
 {
-	parse_object_h* poh;
-	int value;
+	parse_object_h* poh = nullptr;
+	int value = 0;
 	if (!ade_get_args(L, "o|i", l_ParseObject.GetPtr(&poh), &value))
 		return ADE_RETURN_NIL;
 
@@ -460,7 +460,7 @@ ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of t
 template <typename LOC>
 static int parse_object_getset_location_helper(lua_State* L, LOC p_object::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
-	parse_object_h* poh;
+	parse_object_h* poh = nullptr;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_ParseObject.GetPtr(&poh), &s))
 		return ADE_RETURN_NIL;
@@ -494,7 +494,7 @@ ADE_VIRTVAR(DepartureLocation, l_ParseObject, "string", "The ship's departure lo
 
 static int parse_object_getset_anchor_helper(lua_State* L, anchor_t p_object::* field)
 {
-	parse_object_h* poh;
+	parse_object_h* poh = nullptr;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_ParseObject.GetPtr(&poh), &s))
 		return ADE_RETURN_NIL;
@@ -629,7 +629,7 @@ ADE_VIRTVAR(CollisionGroups, l_ParseObject, "number", "Collision group data", "n
 ADE_FUNC(addToCollisionGroup, l_ParseObject, "number group", "Adds this parsed ship to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
 {
 	parse_object_h* poh = nullptr;
-	int group;
+	int group = 0;
 
 	if (!ade_get_args(L, "oi", l_ParseObject.GetPtr(&poh), &group))
 		return ADE_RETURN_NIL;
@@ -648,7 +648,7 @@ ADE_FUNC(addToCollisionGroup, l_ParseObject, "number group", "Adds this parsed s
 ADE_FUNC(removeFromCollisionGroup, l_ParseObject, "number group", "Removes this parsed ship from the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
 {
 	parse_object_h* poh = nullptr;
-	int group;
+	int group = 0;
 
 	if (!ade_get_args(L, "oi", l_ParseObject.GetPtr(&poh), &group))
 		return ADE_RETURN_NIL;

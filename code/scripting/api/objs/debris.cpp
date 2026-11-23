@@ -17,7 +17,7 @@ ADE_OBJ_DERIV(l_Debris, object_h, "debris", "Debris handle", l_Object);
 
 ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hull", "boolean", "Whether debris is a hull fragment, or false if handle is invalid")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	bool b=false;
 	if(!ade_get_args(L, "o|b", l_Debris.GetPtr(&oh), &b))
 		return ade_set_error(L, "b", false);
@@ -37,7 +37,7 @@ ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hu
 
 ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this debris originates from", "shipclass", "The shipclass of the ship that created this debris")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	int shipIdx = -1;
 	if(!ade_get_args(L, "o|o", l_Debris.GetPtr(&oh), &shipIdx))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
@@ -110,7 +110,7 @@ ADE_VIRTVAR(LifeLeft, l_Debris, "number", "The time this debris piece will last.
 
 ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "number", "The radius of this debris piece or -1 if invalid")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ade_set_error(L, "f", -1.0f);
 
@@ -132,7 +132,7 @@ ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "nu
 
 ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic debris model, not a model subobject", "boolean", "true if Debris_model")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
@@ -146,7 +146,7 @@ ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic deb
 
 ADE_FUNC(isVaporized, l_Debris, nullptr, "Return if this debris is the vaporized debris model, not a model subobject", "boolean", "true if Debris_vaporize_model")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 

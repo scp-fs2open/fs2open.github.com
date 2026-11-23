@@ -11,7 +11,7 @@ ADE_LIB(l_BitOps, "BitOps", "bit", "Bitwise Operations library");
 
 ADE_FUNC(AND, l_BitOps, "number, number, [number, number, number, number, number, number, number, number]", "Values for which bitwise boolean AND operation is performed", "number", "Result of the AND operation")
 {
-	int a[10], c;
+	int a[10] = {}, c;
 	int n = ade_get_args(L, "ii|iiiiiiii", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5], &a[6], &a[7], &a[8], &a[9]);
 	if (n < 2)
 		return ade_set_error(L, "i", 0);
@@ -25,7 +25,7 @@ ADE_FUNC(AND, l_BitOps, "number, number, [number, number, number, number, number
 
 ADE_FUNC(OR, l_BitOps, "number, number, [number, number, number, number, number, number, number, number]", "Values for which bitwise boolean OR operation is performed", "number", "Result of the OR operation")
 {
-	int a[10], c;
+	int a[10] = {}, c;
 	int n = ade_get_args(L, "ii|iiiiiiii", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5], &a[6], &a[7], &a[8], &a[9]);
 	if (n < 2)
 		return ade_set_error(L, "i", 0);
@@ -69,7 +69,7 @@ ADE_FUNC(EnumOR, l_BitOps, "enumeration, enumeration, [enumeration, enumeration,
 
 ADE_FUNC(XOR, l_BitOps, "number, number", "Values for which bitwise boolean XOR operation is performed", "number", "Result of the XOR operation")
 {
-	int a, b, c;
+	int a = 0, b = 0, c;
 	if(!ade_get_args(L, "ii", &a,&b))
 		return ade_set_error(L, "i", 0);
 
@@ -80,7 +80,7 @@ ADE_FUNC(XOR, l_BitOps, "number, number", "Values for which bitwise boolean XOR 
 
 ADE_FUNC(toggleBit, l_BitOps, "number baseNumber, number bit", "Toggles the value of the set bit in the given number for 32 bit integer", "number", "Result of the operation")
 {
-	int a, b, c;
+	int a = 0, b = 0, c;
 	if(!ade_get_args(L, "ii", &a,&b))
 		return ade_set_error(L, "i", 0);
 
@@ -94,7 +94,7 @@ ADE_FUNC(toggleBit, l_BitOps, "number baseNumber, number bit", "Toggles the valu
 
 ADE_FUNC(checkBit, l_BitOps, "number baseNumber, number bit", "Checks the value of the set bit in the given number for 32 bit integer", "boolean", "Was the bit true of false")
 {
-	int a, b;
+	int a = 0, b = 0;
 	if(!ade_get_args(L, "ii", &a,&b))
 		return ade_set_error(L, "i", 0);
 
@@ -116,7 +116,7 @@ ADE_FUNC_DEPRECATED(addBit,
 	gameversion::version(21, 4),
 	"BitOps.addBit has been replaced by BitOps.setBit")
 {
-	int a, b, c;
+	int a = 0, b = 0, c;
 	if(!ade_get_args(L, "ii", &a,&b))
 		return ade_set_error(L, "i", 0);
 
@@ -130,7 +130,7 @@ ADE_FUNC_DEPRECATED(addBit,
 
 ADE_FUNC(setBit, l_BitOps, "number baseNumber, number bit", "Turns on the specified bit of baseNumber (sets it to 1)", "number", "Result of the operation")
 {
-	int a, b, c;
+	int a = 0, b = 0, c;
 	if (!ade_get_args(L, "ii", &a, &b))
 		return ade_set_error(L, "i", 0);
 
@@ -144,7 +144,7 @@ ADE_FUNC(setBit, l_BitOps, "number baseNumber, number bit", "Turns on the specif
 
 ADE_FUNC(unsetBit, l_BitOps, "number baseNumber, number bit", "Turns off the specified bit of baseNumber (sets it to 0)", "number", "Result of the operation")
 {
-	int a, b, c;
+	int a = 0, b = 0, c;
 	if (!ade_get_args(L, "ii", &a, &b))
 		return ade_set_error(L, "i", 0);
 

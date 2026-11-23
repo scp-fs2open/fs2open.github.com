@@ -23,7 +23,7 @@ ADE_INDEXER(l_SupportRearmPoolTeam,
 {
 	int team_idx = -1;
 	int idx = -1;
-	int amount;
+	int amount = 0;
 	if (lua_isnumber(L, 2)) {
 		if (!ade_get_args(L, "oi|i", l_SupportRearmPoolTeam.Get(&team_idx), &idx, &amount)) {
 			return ADE_RETURN_NIL;

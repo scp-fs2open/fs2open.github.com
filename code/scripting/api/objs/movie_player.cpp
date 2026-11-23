@@ -125,8 +125,8 @@ ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1, [number x2, number y2]
          "Draws the current frame of the movie at the specified coordinates.", nullptr, "Returns nothing")
 {
 	movie_player_h* ph = nullptr;
-	float x1;
-	float y1;
+	float x1 = 0.0f;
+	float y1 = 0.0f;
 	float x2 = -1.f;
 	float y2 = -1.f;
 	float alpha = 1.f;

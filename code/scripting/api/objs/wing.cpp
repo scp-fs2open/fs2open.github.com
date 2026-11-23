@@ -19,8 +19,8 @@ ADE_OBJ_VALIDATOR_RANGE(l_Wing, Num_wings);
 
 ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship handle, or invalid ship handle if index is invalid or wing handle is invalid")
 {
-	int wdx;
-	int sdx;
+	int wdx = 0;
+	int sdx = 0;
 	object_h *ndx=NULL;
 	if(!ade_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
@@ -41,7 +41,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 
 ADE_FUNC(__len, l_Wing, NULL, "Gets the number of ships in the wing", "number", "Number of ships in wing, or 0 if invalid handle")
 {
-	int wdx;
+	int wdx = 0;
 	if(!ade_get_args(L, "o", l_Wing.Get(&wdx)) || wdx < 0 || wdx >= Num_wings)
 		return ade_set_error(L, "i", 0);
 
@@ -50,7 +50,7 @@ ADE_FUNC(__len, l_Wing, NULL, "Gets the number of ships in the wing", "number", 
 
 ADE_VIRTVAR(Name, l_Wing, "string", "Wing name. This is the actual name of the wing. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Wing name, or empty string if handle is invalid")
 {
-	int wdx;
+	int wdx = 0;
 	const char* s = nullptr;
 	if ( !ade_get_args(L, "o|s", l_Wing.Get(&wdx), &s) || wdx < 0 || wdx >= Num_wings )
 		return ade_set_error(L, "s", "");
@@ -89,7 +89,7 @@ ADE_VIRTVAR(DisplayName, l_Wing, "string", "Wing display name", "string", "The d
 
 ADE_FUNC(getBreedName, l_Wing, nullptr, "Gets the FreeSpace type name", "string", "'Wing', or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Wing.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -101,9 +101,9 @@ ADE_FUNC(getBreedName, l_Wing, nullptr, "Gets the FreeSpace type name", "string"
 
 ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", nullptr, "Returns nothing")
 {
-	int wingnum;
-	bool set_it;
-	const char *flag_name;
+	int wingnum = 0;
+	bool set_it = false;
+	const char *flag_name = nullptr;
 
 	if (!ade_get_args(L, "obs", l_Wing.Get(&wingnum), &set_it, &flag_name))
 		return ADE_RETURN_NIL;
@@ -136,8 +136,8 @@ ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears on
 
 ADE_FUNC(getFlag, l_Wing, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", "boolean", "Returns whether all flags are set, or nil if the wing is not valid")
 {
-	int wingnum;
-	const char *flag_name;
+	int wingnum = 0;
+	const char *flag_name = nullptr;
 
 	if (!ade_get_args(L, "os", l_Wing.Get(&wingnum), &flag_name))
 		return ADE_RETURN_NIL;
@@ -185,7 +185,7 @@ ADE_FUNC(makeWingArrive, l_Wing, nullptr, "Causes this wing to arrive as if its 
 
 static int wing_getset_helper(lua_State* L, int wing::* field, bool canSet = false, bool canBeNegative = false)
 {
-	int wingnum, value;
+	int wingnum = 0, value = 0;
 	if (!ade_get_args(L, "o|i", l_Wing.Get(&wingnum), &value))
 		return ADE_RETURN_NIL;
 
@@ -208,7 +208,7 @@ static int wing_getset_helper(lua_State* L, int wing::* field, bool canSet = fal
 
 ADE_VIRTVAR(Formation, l_Wing, "wingformation", "Gets or sets the formation of the wing.", "wingformation", "Wing formation, or nil if wing is invalid")
 {
-	int wingnum, formation_id = -1;
+	int wingnum = 0, formation_id = -1;
 
 	if (!ade_get_args(L, "o|o", l_Wing.Get(&wingnum), l_WingFormation.Get(&formation_id)))
 		return ADE_RETURN_NIL;
@@ -228,7 +228,7 @@ ADE_VIRTVAR(Formation, l_Wing, "wingformation", "Gets or sets the formation of t
 
 ADE_VIRTVAR(FormationScale, l_Wing, "number", "Gets or sets the scale (i.e. distance multiplier) of the current wing formation.", "number", "scale of wing formation, nil if wing or formation invalid")
 {
-	int wingnum;
+	int wingnum = 0;
 	float formation_scale = 0.0f;
 
 	if (!ade_get_args(L, "o|f", l_Wing.Get(&wingnum), &formation_scale))
@@ -290,7 +290,7 @@ ADE_VIRTVAR(TotalVanished, l_Wing, nullptr, "Gets the number of ships that have 
 template <typename LOC>
 static int wing_getset_location_helper(lua_State* L, LOC wing::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
-	int wingnum;
+	int wingnum = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Wing.Get(&wingnum), &s))
 		return ADE_RETURN_NIL;
@@ -324,7 +324,7 @@ ADE_VIRTVAR(DepartureLocation, l_Wing, "string", "The wing's departure location"
 
 static int wing_getset_anchor_helper(lua_State* L, anchor_t wing::* field)
 {
-	int wingnum;
+	int wingnum = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Wing.Get(&wingnum), &s))
 		return ADE_RETURN_NIL;

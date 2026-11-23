@@ -132,7 +132,7 @@ ADE_FUNC(addHotkey,
 	SCP_UNUSED(L);
 
 	hotkey_h current;
-	int key;
+	int key = 0;
 	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
 		return ADE_RETURN_NIL;
 	}
@@ -156,7 +156,7 @@ ADE_FUNC(removeHotkey,
 	SCP_UNUSED(L);
 
 	hotkey_h current;
-	int key;
+	int key = 0;
 	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
 		return ADE_RETURN_NIL;
 	}

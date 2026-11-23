@@ -13,7 +13,7 @@ ADE_OBJ(l_ValueDescription, options::ValueDescription, "ValueDescription",
 ADE_FUNC(__tostring, l_ValueDescription, nullptr, "Value display string", "string",
          "The display string or nil on error")
 {
-	options::ValueDescription* desc;
+	options::ValueDescription* desc = nullptr;
 	if (!ade_get_args(L, "o", l_ValueDescription.GetPtr(&desc))) {
 		return ADE_RETURN_NIL;
 	}
@@ -22,8 +22,8 @@ ADE_FUNC(__tostring, l_ValueDescription, nullptr, "Value display string", "strin
 ADE_FUNC(__eq, l_ValueDescription, "ValueDescription other", "Compares two value descriptions", "string",
          "True if equal, false otherwise")
 {
-	options::ValueDescription* desc;
-	options::ValueDescription* other;
+	options::ValueDescription* desc = nullptr;
+	options::ValueDescription* other = nullptr;
 	if (!ade_get_args(L, "oo", l_ValueDescription.GetPtr(&desc), l_ValueDescription.GetPtr(&other))) {
 		return ADE_RETURN_NIL;
 	}
@@ -32,7 +32,7 @@ ADE_FUNC(__eq, l_ValueDescription, "ValueDescription other", "Compares two value
 ADE_VIRTVAR(Display, l_ValueDescription, nullptr, "Value display string", "string",
             "The display string or nil on error")
 {
-	options::ValueDescription* desc;
+	options::ValueDescription* desc = nullptr;
 	if (!ade_get_args(L, "o", l_ValueDescription.GetPtr(&desc))) {
 		return ADE_RETURN_NIL;
 	}
@@ -41,7 +41,7 @@ ADE_VIRTVAR(Display, l_ValueDescription, nullptr, "Value display string", "strin
 ADE_VIRTVAR(Serialized, l_ValueDescription, nullptr, "Serialized string value of the contained value", "string",
             "The serialized string or nil on error")
 {
-	options::ValueDescription* desc;
+	options::ValueDescription* desc = nullptr;
 	if (!ade_get_args(L, "o", l_ValueDescription.GetPtr(&desc))) {
 		return ADE_RETURN_NIL;
 	}
@@ -57,7 +57,7 @@ ADE_OBJ(l_Option, option_h, "option", "Option handle");
 
 ADE_VIRTVAR(Title, l_Option, nullptr, "The title of this option (read-only)", "string", "The title or nil on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -71,7 +71,7 @@ ADE_VIRTVAR(Title, l_Option, nullptr, "The title of this option (read-only)", "s
 ADE_VIRTVAR(Description, l_Option, nullptr, "The description of this option (read-only)", "string",
             "The description or nil on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -85,7 +85,7 @@ ADE_VIRTVAR(Description, l_Option, nullptr, "The description of this option (rea
 ADE_VIRTVAR(Key, l_Option, nullptr, "The configuration key of this option. This will be a unique string. (read-only)",
             "string", "The key or nil on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -99,7 +99,7 @@ ADE_VIRTVAR(Key, l_Option, nullptr, "The configuration key of this option. This 
 ADE_VIRTVAR(Category, l_Option, nullptr, "The category of this option. (read-only)", "string",
             "The category or nil on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -113,7 +113,7 @@ ADE_VIRTVAR(Category, l_Option, nullptr, "The category of this option. (read-onl
 ADE_VIRTVAR(Type, l_Option, nullptr, "The type of this option. One of the OPTION_TYPE_* values. (read-only)",
             "enumeration", "An OPTION_TYPE_* enumeration, or nil on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -137,7 +137,7 @@ ADE_VIRTVAR(Type, l_Option, nullptr, "The type of this option. One of the OPTION
 ADE_VIRTVAR(Value, l_Option, "ValueDescription", "The current value of this option.", "ValueDescription",
             "The current value or nil on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	options::ValueDescription* new_val = nullptr;
 	if (!ade_get_args(L, "o|o", l_Option.GetPtr(&opt), l_ValueDescription.GetPtr(&new_val))) {
 		return ADE_RETURN_NIL;
@@ -163,7 +163,7 @@ ADE_VIRTVAR(Flags,
 	"{ string => boolean ... }",
 	"The table of flags values.")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	options::ValueDescription* new_val = nullptr;
 	if (!ade_get_args(L, "o|o", l_Option.GetPtr(&opt), l_ValueDescription.GetPtr(&new_val))) {
 		return ADE_RETURN_NIL;
@@ -184,8 +184,8 @@ ADE_FUNC(getValueFromRange, l_Option, "number interpolant",
          "Gets a value from an option range. The specified value must be between 0 and 1.", "ValueDescription",
          "The value at the specifiedposition")
 {
-	option_h* opt;
-	float f;
+	option_h* opt = nullptr;
+	float f = 0.0f;
 	if (!ade_get_args(L, "of", l_Option.GetPtr(&opt), &f)) {
 		return ADE_RETURN_NIL;
 	}
@@ -206,7 +206,7 @@ ADE_FUNC(getInterpolantFromValue, l_Option, "ValueDescription value",
          "From a value description of this option, determines the range value.", "number",
          "The range value or 0 on error.")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	options::ValueDescription* value = nullptr;
 	if (!ade_get_args(L, "oo", l_Option.GetPtr(&opt), l_ValueDescription.GetPtr(&value))) {
 		return ADE_RETURN_NIL;
@@ -228,7 +228,7 @@ ADE_FUNC(getValidValues,
 	"ValueDescription[]",
 	"A table containing the possible values or nil on error.")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -259,7 +259,7 @@ ADE_VIRTVAR(OverrideReason,
 	"string",
 	"The override reason, or nil if not overridden or on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -281,7 +281,7 @@ ADE_VIRTVAR(OverrideSource,
 	"string",
 	"The override source, or nil if not overridden or on error")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}
@@ -299,7 +299,7 @@ ADE_FUNC(persistChanges, l_Option, nullptr,
          "Immediately persists any changes made to this specific option.", "boolean",
          "true if the change was applied successfully, false otherwise. nil on error.")
 {
-	option_h* opt;
+	option_h* opt = nullptr;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
 		return ADE_RETURN_NIL;
 	}

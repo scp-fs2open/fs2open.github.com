@@ -22,7 +22,7 @@ ADE_VIRTVAR(Name,
 	"string",
 	"Prop name, or empty string if handle is invalid")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Prop.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
@@ -48,7 +48,7 @@ ADE_VIRTVAR(Class,
 	"propclass",
 	"Prop class, or invalid propclass handle if prop handle is invalid")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	int idx = -1;
 	if (!ade_get_args(L, "o|o", l_Prop.GetPtr(&objh), l_Propclass.Get(&idx)))
 		return ade_set_error(L, "o", l_Propclass.Set(-1));
@@ -76,7 +76,7 @@ ADE_VIRTVAR(Textures,
 	"Prop textures, or invalid proptextures handle if prop handle is invalid")
 {
 	object_h* sh = nullptr;
-	object_h* dh;
+	object_h* dh = nullptr;
 	if (!ade_get_args(L, "o|o", l_Prop.GetPtr(&dh), l_Prop.GetPtr(&sh)))
 		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
 

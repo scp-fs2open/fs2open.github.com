@@ -94,8 +94,8 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
          "Sets the offset from the top left corner at which <b>all</b> rocket contexts will be rendered", "boolean",
          "true if the operation was successful, false otherwise")
 {
-	float x;
-	float y;
+	float x = 0.0f;
+	float y = 0.0f;
 
 	if (!ade_get_args(L, "ff", &x, &y)) {
 		return ADE_RETURN_FALSE;
@@ -174,7 +174,7 @@ ADE_FUNC(DefaultTextColorTag,
 	"string",
 	"The default color tag")
 {
-	int UiScreen;
+	int UiScreen = 0;
 
 	if (!ade_get_args(L, "i", &UiScreen)) {
 		UiScreen = 1;
@@ -223,7 +223,7 @@ ADE_FUNC(playElementSound,
 	"true if a sound was played, false otherwise")
 {
 	using namespace Rocket::Core;
-	const char* event;
+	const char* event = nullptr;
 	const char* state = "";
 	if (!ade_get_args(L, "*s|s", &event, &state)) {
 		return ADE_RETURN_FALSE;
@@ -259,7 +259,7 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType /* MOVIE_* *
 
 ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, number ScoreIndex", "Plays a cutscene.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
 {
-	const char* filename;
+	const char* filename = nullptr;
 	bool restart_music = false;
 	int score_index = 0;
 
@@ -277,7 +277,7 @@ ADE_FUNC(isCutscenePlaying, l_UserInterface, nullptr, "Checks if a cutscene is p
 
 ADE_FUNC(launchURL, l_UserInterface, "string url", "Launches the given URL in a web browser", nullptr, nullptr)
 {
-	const char* url;
+	const char* url = nullptr;
 	if (!ade_get_args(L, "s", &url))
 		return ADE_RETURN_NIL;
 
@@ -288,7 +288,7 @@ ADE_FUNC(launchURL, l_UserInterface, "string url", "Launches the given URL in a 
 
 ADE_FUNC(linkTexture, l_UserInterface, "texture texture", "Links a texture directly to librocket.", "string", "The url string for librocket, or an empty string if invalid.")
 {
-	texture_h* tex;
+	texture_h* tex = nullptr;
 
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&tex)))
 		return ade_set_error(L, "s", "");
@@ -357,7 +357,7 @@ ADE_FUNC(checkPilotLanguage, l_UserInterface_PilotSelect, "string callsign",
          "Checks if the pilot with the specified callsign has the right language.", "boolean",
          "true if pilot is valid, false otherwise")
 {
-	const char* callsign;
+	const char* callsign = nullptr;
 	if (!ade_get_args(L, "s", &callsign)) {
 		return ADE_RETURN_FALSE;
 	}
@@ -368,8 +368,8 @@ ADE_FUNC(checkPilotLanguage, l_UserInterface_PilotSelect, "string callsign",
 ADE_FUNC(selectPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi",
          "Selects the pilot with the specified callsign and advances the game to the main menu.", nullptr, "nothing")
 {
-	const char* callsign;
-	bool is_multi;
+	const char* callsign = nullptr;
+	bool is_multi = false;
 	if (!ade_get_args(L, "sb", &callsign, &is_multi)) {
 		return ADE_RETURN_NIL;
 	}
@@ -383,7 +383,7 @@ ADE_FUNC(deletePilot, l_UserInterface_PilotSelect, "string callsign",
          "Deletes the pilot with the specified callsign. This is not reversible!", "boolean",
          "true on success, false otherwise")
 {
-	const char* callsign;
+	const char* callsign = nullptr;
 	if (!ade_get_args(L, "s", &callsign)) {
 		return ADE_RETURN_NIL;
 	}
@@ -396,8 +396,8 @@ ADE_FUNC(
     "Creates a new pilot in either single or multiplayer mode and optionally copies settings from an existing pilot.",
     "boolean", "true on success, false otherwise")
 {
-	const char* callsign;
-	bool is_multi;
+	const char* callsign = nullptr;
+	bool is_multi = false;
 	const char* copy_from = nullptr;
 	if (!ade_get_args(L, "sb|s", &callsign, &is_multi, &copy_from)) {
 		return ADE_RETURN_NIL;
@@ -482,7 +482,7 @@ ADE_FUNC(toggleHelp,
 	nullptr,
 	"nothing")
 {
-	bool toggle;
+	bool toggle = false;
 	if (!ade_get_args(L, "b", &toggle))
 		return ADE_RETURN_NIL;
 
@@ -554,7 +554,7 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection, [boolean changeState]", "Accept the given player as the current player. Set second argument to false to prevent returning to the mainhall",
          "boolean", "true on success, false otherwise")
 {
-	player_h* plh;
+	player_h* plh = nullptr;
 	bool changeState = true;
 	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plh), &changeState)) {
 		return ADE_RETURN_FALSE;
@@ -941,11 +941,11 @@ ADE_FUNC(renderBriefingModel,
 	"boolean",
 	"Whether pof was rendered")
 {
-	int x1, y1, x2, y2;
+	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
-	const char* pof;
-	float closeup_zoom;
-	vec3d closeup_pos;
+	const char* pof = nullptr;
+	float closeup_zoom = 0.0f;
+	vec3d closeup_pos = vmd_zero_vector;
 	float zoom = 1.3f;
 	bool lighting = true;
 	bool jumpNode = false;
@@ -1002,8 +1002,8 @@ ADE_FUNC(drawBriefingMap,
 	nullptr)
 {
 
-	int x1;
-	int y1;
+	int x1 = 0;
+	int y1 = 0;
 	int x2 = 888;
 	int y2 = 371;
 
@@ -1035,8 +1035,8 @@ ADE_FUNC(checkStageIcons,
 	"If an icon is highlighted then this will return the ship name for ships or the pof to render for asteroid, jumpnode, or unknown icons. "
 	"also returns the closeup zoom, the closeup position, the closeup label, and the icon id. Otherwise it returns nil")
 {
-	int x;
-	int y;
+	int x = 0;
+	int y = 0;
 
 	if (!ade_get_args(L, "ii", &x, &y)) {
 		LuaError(L, "X and Y coordinates not provided!");
@@ -1107,7 +1107,7 @@ ADE_INDEXER(l_Briefing_Goals,
 	"mission_goal",
 	"goal handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -1693,8 +1693,8 @@ ADE_INDEXER(l_Ship_Pool,
 	"number",
 	"Amount of the ship that's available")
 {
-	int idx;
-	int amount;
+	int idx = 0;
+	int amount = 0;
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
@@ -1735,8 +1735,8 @@ ADE_INDEXER(l_Weapon_Pool,
 	"number",
 	"Amount of the weapon that's available")
 {
-	int idx;
-	int amount;
+	int idx = 0;
+	int amount = 0;
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
@@ -1806,7 +1806,7 @@ ADE_INDEXER(l_Loadout_Wings,
 	"loadout_wing",
 	"loadout handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Loadout_Wing.Set(ss_wing_info_h()));
 	idx--; //Convert to Lua's 1 based index system
@@ -1836,7 +1836,7 @@ ADE_INDEXER(l_Loadout_Ships,
 	"loadout_ship",
 	"loadout handle, or nil if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ADE_RETURN_NIL;
 	idx--; // Convert to Lua's 1 based index system
@@ -1855,11 +1855,11 @@ ADE_FUNC(sendShipRequestPacket,
 	nullptr,
 	nullptr)
 {
-	int fromType; //2 for pool, 1 for player, 0 for slot
-	int toType;  // 2 for pool, 1 for player, 0 for slot
-	int fromSlot;
-	int toSlot;
-	int shipClassIdx;
+	int fromType = 0; //2 for pool, 1 for player, 0 for slot
+	int toType = 0;  // 2 for pool, 1 for player, 0 for slot
+	int fromSlot = 0;
+	int toSlot = 0;
+	int shipClassIdx = 0;
 	if (!ade_get_args(L, "iiiii", &fromType, &toType, &fromSlot, &toSlot, &shipClassIdx))
 		return ADE_RETURN_NIL;
 
@@ -1879,11 +1879,11 @@ ADE_FUNC(sendWeaponRequestPacket,
 	nullptr,
 	nullptr)
 {
-	int fromBank;
-	int toBank;
-	int fromList;
-	int toList;
-	int shipSlot;
+	int fromBank = 0;
+	int toBank = 0;
+	int fromList = 0;
+	int toList = 0;
+	int shipSlot = 0;
 	if (!ade_get_args(L, "iiiii", &fromBank, &toBank, &fromList, &toList, &shipSlot))
 		return ADE_RETURN_NIL;
 
@@ -2005,7 +2005,7 @@ ADE_FUNC(buildCredits,
 ADE_LIB_DERIV(l_UserInterface_SingleMissions, "SingleMissions", nullptr, nullptr, l_UserInterface_TechRoom);
 ADE_INDEXER(l_UserInterface_SingleMissions, "number Index", "Array of simulator missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 	
@@ -2020,7 +2020,7 @@ ADE_FUNC(__len, l_UserInterface_SingleMissions, nullptr, "The number of single m
 ADE_LIB_DERIV(l_UserInterface_CampaignMissions, "CampaignMissions", nullptr, nullptr, l_UserInterface_TechRoom);
 ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 	
@@ -2039,7 +2039,7 @@ ADE_INDEXER(l_UserInterface_Cutscenes,
 	"cutscene_info",
 	"Cutscene handle, or invalid handle if index is invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
 
@@ -2161,7 +2161,7 @@ ADE_INDEXER(l_Medals,
 	"medal",
 	"medal handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Medal.Set(medal_h()));
 	idx--; // Convert to Lua's 1 based index system
@@ -2180,7 +2180,7 @@ ADE_FUNC(__len, l_Medals, nullptr, "The number of valid medals", "number", "The 
 ADE_LIB_DERIV(l_Ranks, "Ranks_List", nullptr, nullptr, l_UserInterface_Medals);
 ADE_INDEXER(l_Ranks, "number Index", "Array of Ranks", "rank", "rank handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
 	idx--; // Convert to Lua's 1 based index system
@@ -2284,7 +2284,7 @@ ADE_INDEXER(l_Hotkeys,
 	"hotkey_ship",
 	"hotkey ship handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
 	idx--; // Convert to Lua's 1 based index system
@@ -2343,7 +2343,7 @@ ADE_INDEXER(l_Help_Sections,
 	"help_section",
 	"help section handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
 	idx--; //Convert to Lua's 1 based index system
@@ -2395,7 +2395,7 @@ ADE_INDEXER(l_Log_Entries,
 	"log_entry",
 	"log entry handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 	idx--; //Convert to Lua's 1 based index system
@@ -2418,7 +2418,7 @@ ADE_INDEXER(l_Log_Messages,
 	"message_entry",
 	"message entry handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
 	idx--; //Convert to Lua's 1 based index system
@@ -2517,7 +2517,7 @@ ADE_FUNC(createPreset,
 	"boolean",
 	"The return status")
 {
-	const char* preset;
+	const char* preset = nullptr;
 	bool overwrite = false;
 	ade_get_args(L, "s|b", &preset, &overwrite);
 
@@ -2606,7 +2606,7 @@ ADE_INDEXER(l_Presets,
 	"preset",
 	"control preset handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
 	idx--; // Convert to Lua's 1 based index system
@@ -2629,7 +2629,7 @@ ADE_INDEXER(l_Controls,
 	"control",
 	"control handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Control.Set(control_h()));
 	idx--; // Convert from Lua's 1 based index system
@@ -2795,7 +2795,7 @@ ADE_FUNC(saveToPreset,
 	nullptr,
 	nullptr)
 {
-	const char* filename;
+	const char* filename = nullptr;
 	ade_get_args(L, "s", &filename);
 
 	SCP_string name = filename;
@@ -2823,7 +2823,7 @@ ADE_FUNC(usePresetFile,
 	nullptr,
 	nullptr)
 {
-	const char* filename;
+	const char* filename = nullptr;
 	ade_get_args(L, "s", &filename);
 
 	hud_config_color_load(filename);
@@ -2839,7 +2839,7 @@ ADE_INDEXER(l_HUD_Gauges,
 	"gauge_config",
 	"gauge_config handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 	idx--; // Convert from Lua's 1 based index system
@@ -2862,7 +2862,7 @@ ADE_INDEXER(l_HUD_Presets,
 	"hud_preset",
 	"hud_preset handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
 	idx--; // Convert from Lua's 1 based index system
@@ -2885,7 +2885,7 @@ ADE_INDEXER(l_HUD_Color_Presets,
 	"hud_color_preset",
 	"hud_color_preset handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
 	idx--; // Convert from Lua's 1 based index system
@@ -3080,7 +3080,7 @@ ADE_FUNC(getChat,
 
 ADE_FUNC(sendChat, l_UserInterface_MultiPXO, "string", "Sends a string to the current channel's IRC chat", nullptr, nullptr)
 {
-	const char* msg;
+	const char* msg = nullptr;
 	if (!ade_get_args(L, "s", &msg))
 		return ADE_RETURN_NIL;
 
@@ -3112,7 +3112,7 @@ ADE_FUNC(getPlayerChannel,
 	"string, string",
 	"The response string and the player's channel")
 {
-	const char* plr_name;
+	const char* plr_name = nullptr;
 	if (!ade_get_args(L, "s", &plr_name))
 		return ADE_RETURN_NIL;
 
@@ -3159,7 +3159,7 @@ ADE_FUNC(getPlayerChannel,
 
 ADE_FUNC(getPlayerStats, l_UserInterface_MultiPXO, "string", "Gets a handle of the player stats by player name or invalid handle if the name is invalid", "scoring_stats", "Player stats handle")
 {
-	const char* plr_name;
+	const char* plr_name = nullptr;
 	if (!ade_get_args(L, "s", &plr_name))
 		return ade_set_error(L, "o", l_ScoringStats.Set(scoring_stats_h()));
 	
@@ -3214,7 +3214,7 @@ ADE_INDEXER(l_PXO_Channels,
 	"pxo_channel",
 	"channel handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -3234,7 +3234,7 @@ ADE_FUNC(__len, l_PXO_Channels, nullptr, "The number of channels available", "nu
 
 ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, "string channel", "Joins the specified private channel", nullptr, nullptr)
 {
-	const char* channel;
+	const char* channel = nullptr;
 	if (!ade_get_args(L, "s", &channel))
 		return ADE_RETURN_NIL;
 
@@ -3317,7 +3317,7 @@ ADE_INDEXER(l_Net_Players,
 	"net_player",
 	"net player handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -3408,7 +3408,7 @@ ADE_FUNC(sendChat,
 	nullptr,
 	nullptr)
 {
-	const char* msg;
+	const char* msg = nullptr;
 	if (!ade_get_args(L, "s", &msg))
 		return ADE_RETURN_NIL;
 
@@ -3600,7 +3600,7 @@ ADE_INDEXER(l_Active_Games,
 	"active_game",
 	"active game handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -3685,7 +3685,7 @@ ADE_FUNC(setName,
 	"boolean",
 	"True if successful, false otherwise")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "s", &name))
 		return ADE_RETURN_FALSE;
 
@@ -3829,7 +3829,7 @@ ADE_INDEXER(l_Net_Missions,
 	"net_mission",
 	"net player handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -3854,7 +3854,7 @@ ADE_INDEXER(l_Net_Campaigns,
 	"net_campaign",
 	"net player handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -4027,7 +4027,7 @@ ADE_INDEXER(l_Join_Ship_Choices,
 	"net_join_choice",
 	"net choice handle, or invalid handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 

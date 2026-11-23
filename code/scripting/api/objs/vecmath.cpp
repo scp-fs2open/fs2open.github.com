@@ -48,6 +48,7 @@ void matrix_h::ValidateMatrix() {
 }
 matrix_h::matrix_h() {
 	mtx = vmd_identity_matrix;
+	ang = vmd_zero_angles;
 	status = MatrixState::AnglesOutOfDate;
 }
 matrix_h::matrix_h(const matrix* in) {
@@ -100,7 +101,7 @@ ADE_INDEXER(l_Matrix,
 	"number",
 	"Number at the specified index, or 0 if index is invalid.")
 {
-	matrix_h* mh;
+	matrix_h* mh = nullptr;
 	const char* s = nullptr;
 	float newval = 0.0f;
 	int numargs = ade_get_args(L, "os|f", l_Matrix.GetPtr(&mh), &s, &newval);
@@ -186,7 +187,7 @@ ADE_FUNC(__tostring,
 		 "Converts a matrix to a string with format \"[r1c1 r2c1 r3c1 | r1c2 r2c2 r3c2| r1c3 r2c3 r3c3]\"",
 		 "string",
 		 "Formatted string or \"<NULL\"") {
-	matrix_h* mh;
+	matrix_h* mh = nullptr;
 	if (!ade_get_args(L, "o", l_Matrix.GetPtr(&mh))) {
 		return ade_set_error(L, "s", "<NULL>");
 	}
@@ -248,8 +249,8 @@ ADE_FUNC(rotationalInterpolate,
 	"orientation",
 	"The interpolated orientation, or NIL if any handle is invalid")
 {
-	matrix_h *initial_h, *final_h;
-	float t;
+	matrix_h *initial_h = nullptr, *final_h = nullptr;
+	float t = 0.0f;
 	if (!ade_get_args(L, "oof", l_Matrix.GetPtr(&initial_h), l_Matrix.GetPtr(&final_h), &t))
 		return ADE_RETURN_NIL;
 
@@ -283,8 +284,8 @@ ADE_FUNC(rotateVector,
 		 "Returns rotated version of given vector",
 		 "vector",
 		 "Rotated vector, or empty vector on error") {
-	matrix_h* mh;
-	vec3d* v3;
+	matrix_h* mh = nullptr;
+	vec3d* v3 = nullptr;
 	if (!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3))) {
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	}
@@ -301,8 +302,8 @@ ADE_FUNC(unrotateVector,
 		 "Returns unrotated version of given vector",
 		 "vector",
 		 "Unrotated vector, or empty vector on error") {
-	matrix_h* mh;
-	vec3d* v3;
+	matrix_h* mh = nullptr;
+	vec3d* v3 = nullptr;
 	if (!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3))) {
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	}
@@ -361,7 +362,7 @@ ADE_INDEXER(l_Vector,
 	"number",
 	"Value at index, or 0 if vector handle is invalid")
 {
-	vec3d* v3;
+	vec3d* v3 = nullptr;
 	const char* s = nullptr;
 	float newval = 0.0f;
 	int numargs = ade_get_args(L, "os|f", l_Vector.GetPtr(&v3), &s, &newval);
@@ -398,7 +399,7 @@ ADE_FUNC(__add,
 		 "Final vector, or null vector if error occurs") {
 	vec3d v3 = vmd_zero_vector;
 	if (lua_isnumber(L, 1) || lua_isnumber(L, 2)) {
-		float f;
+		float f = 0.0f;
 		if ((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
 			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))) {
 			v3.xyz.x += f;
@@ -406,7 +407,7 @@ ADE_FUNC(__add,
 			v3.xyz.z += f;
 		}
 	} else {
-		vec3d v3b;
+		vec3d v3b = vmd_zero_vector;
 		//WMC - doesn't really matter which is which
 		if (ade_get_args(L, "oo", l_Vector.Get(&v3), l_Vector.Get(&v3b))) {
 			vm_vec_add2(&v3, &v3b);
@@ -423,7 +424,7 @@ ADE_FUNC(__sub,
 		 "Final vector, or null vector if error occurs") {
 	vec3d v3 = vmd_zero_vector;
 	if (lua_isnumber(L, 1) || lua_isnumber(L, 2)) {
-		float f;
+		float f = 0.0f;
 		if ((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
 			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))) {
 			v3.xyz.x += f;
@@ -431,7 +432,7 @@ ADE_FUNC(__sub,
 			v3.xyz.z += f;
 		}
 	} else {
-		vec3d v3b;
+		vec3d v3b = vmd_zero_vector;
 		//WMC - doesn't really matter which is which
 		if (ade_get_args(L, "oo", l_Vector.Get(&v3), l_Vector.Get(&v3b))) {
 			vm_vec_sub2(&v3, &v3b);
@@ -449,7 +450,7 @@ ADE_FUNC(__mul,
 		 "Final vector, or null vector if error occurs") {
 	vec3d v3 = vmd_zero_vector;
 	if (lua_isnumber(L, 1) || lua_isnumber(L, 2)) {
-		float f;
+		float f = 0.0f;
 		if ((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
 			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))) {
 			vm_vec_scale(&v3, f);
@@ -477,7 +478,7 @@ ADE_FUNC(__div,
 		 "Final vector, or null vector if error occurs") {
 	vec3d v3 = vmd_zero_vector;
 	if (lua_isnumber(L, 1) || lua_isnumber(L, 2)) {
-		float f;
+		float f = 0.0f;
 		if ((lua_isnumber(L, 1) && ade_get_args(L, "fo", &f, l_Vector.Get(&v3)))
 			|| (lua_isnumber(L, 2) && ade_get_args(L, "of", l_Vector.Get(&v3), &f))) {
 			vm_vec_scale(&v3, 1.0f / f);
@@ -504,7 +505,7 @@ ADE_FUNC(__tostring,
 		 "Converts a vector to string with format \"(x,y,z)\"",
 		 "string",
 		 "Vector as string, or empty string if handle is invalid") {
-	vec3d* v3;
+	vec3d* v3 = nullptr;
 	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v3))) {
 		return ade_set_error(L, "s", "");
 	}
@@ -559,8 +560,8 @@ ADE_FUNC(rotationalInterpolate,
 	"vector",
 	"The interpolated vector, or NIL if any handle is invalid")
 {
-	vec3d *initial, *final;
-	float t;
+	vec3d *initial = nullptr, *final = nullptr;
+	float t = 0.0f;
 	if (!ade_get_args(L, "oof", l_Vector.GetPtr(&initial), l_Vector.GetPtr(&final), &t))
 		return ADE_RETURN_NIL;
 
@@ -594,7 +595,7 @@ ADE_FUNC(getMagnitude,
 		 "Returns the magnitude of a vector (Length regardless of direction)",
 		 "number",
 		 "Magnitude of vector, or 0 if handle is invalid") {
-	vec3d* v3;
+	vec3d* v3 = nullptr;
 	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v3))) {
 		return ade_set_error(L, "f", 0.0f);
 	}
@@ -608,7 +609,7 @@ ADE_FUNC(getMagnitudeSquared,
 		 "Returns the magnitude squared of a vector",
 		 "number",
 		 "Magnitude squared of vector, or 0 if handle is invalid") {
-	vec3d* v3;
+	vec3d* v3 = nullptr;
 	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v3))) {
 		return ade_set_error(L, "f", 0.0f);
 	}
@@ -617,7 +618,7 @@ ADE_FUNC(getMagnitudeSquared,
 }
 
 ADE_FUNC(getDistance, l_Vector, "vector otherPos", "Distance", "number", "Returns distance from another vector") {
-	vec3d* v3a, * v3b;
+	vec3d* v3a = nullptr, * v3b = nullptr;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b))) {
 		return ade_set_error(L, "f", 0.0f);
 	}
@@ -626,7 +627,7 @@ ADE_FUNC(getDistance, l_Vector, "vector otherPos", "Distance", "number", "Return
 }
 
 ADE_FUNC(getDistanceSquared, l_Vector, "vector otherPos", "Distance squared", "number", "Returns distance squared from another vector") {
-	vec3d* v3a, * v3b;
+	vec3d* v3a = nullptr, * v3b = nullptr;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b))) {
 		return ade_set_error(L, "f", 0.0f);
 	}
@@ -640,7 +641,7 @@ ADE_FUNC(getDotProduct,
 		 "Returns dot product of vector object with vector argument",
 		 "number",
 		 "Dot product, or 0 if a handle is invalid") {
-	vec3d* v3a, * v3b;
+	vec3d* v3a = nullptr, * v3b = nullptr;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b))) {
 		return ade_set_error(L, "f", 0.0f);
 	}
@@ -654,7 +655,7 @@ ADE_FUNC(getCrossProduct,
 		 "Returns cross product of vector object with vector argument",
 		 "vector",
 		 "Cross product, or null vector if a handle is invalid") {
-	vec3d* v3a, * v3b;
+	vec3d* v3a = nullptr, * v3b = nullptr;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b))) {
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	}
@@ -672,7 +673,7 @@ ADE_FUNC(getScreenCoords,
 	"number, number",
 	"X (number), Y (number), or false if off-screen")
 {
-	vec3d v3;
+	vec3d v3 = vmd_zero_vector;
 	if (!ade_get_args(L, "o", l_Vector.Get(&v3))) {
 		return ADE_RETURN_NIL;
 	}
@@ -701,7 +702,7 @@ ADE_FUNC(getNormalized,
 		 "Returns a normalized version of the vector",
 		 "vector",
 		 "Normalized Vector, or NIL if invalid") {
-	vec3d v3;
+	vec3d v3 = vmd_zero_vector;
 	if (!ade_get_args(L, "o", l_Vector.Get(&v3))) {
 		return ADE_RETURN_NIL;
 	}
@@ -718,7 +719,7 @@ ADE_FUNC(projectParallel,
 	"vector",
 	"The projected vector, or NIL if a handle is invalid")
 {
-	vec3d *src, *unit;
+	vec3d *src = nullptr, *unit = nullptr;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&unit)))
 		return ADE_RETURN_NIL;
 
@@ -740,7 +741,7 @@ ADE_FUNC(projectOntoPlane,
 	"vector",
 	"The projected vector, or NIL if a handle is invalid")
 {
-	vec3d *src, *normal;
+	vec3d *src = nullptr, *normal = nullptr;
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&normal)))
 		return ADE_RETURN_NIL;
 
@@ -762,7 +763,7 @@ ADE_FUNC(findNearestPointOnLine,
 	"vector, number",
 	"Returns two arguments.  The first is the nearest point, and the second is a value indicating where on the line the point lies.  From the code: '0.0 means nearest_point is p1; 1.0 means it's p2; 2.0 means it's beyond p2 by 2x; -1.0 means it's \"before\" p1 by 1x'.")
 {
-	vec3d *point, *p0, *p1;
+	vec3d *point = nullptr, *p0 = nullptr, *p1 = nullptr;
 	if (!ade_get_args(L, "ooo", l_Vector.GetPtr(&point), l_Vector.GetPtr(&p0), l_Vector.GetPtr(&p1)))
 		return ADE_RETURN_NIL;
 
@@ -778,8 +779,8 @@ ADE_FUNC(perturb,
 	"vector",
 	"A vector, somewhat perturbed from the experience")
 {
-	vec3d *in, out;
-	float angle1, angle2;
+	vec3d *in = nullptr, out;
+	float angle1 = 0.0f, angle2 = 0.0f;
 
 	int numargs = ade_get_args(L, "of|f", l_Vector.GetPtr(&in), &angle1, &angle2);
 	if (numargs < 2)
@@ -802,7 +803,7 @@ ADE_FUNC(perturb,
 {
 	matrix_h* mh = nullptr;
 	vec3d out;
-	float angle1, angle2;
+	float angle1 = 0.0f, angle2 = 0.0f;
 
 	int numargs = ade_get_args(L, "of|f", l_Matrix.GetPtr(&mh), &angle1, &angle2);
 	if (numargs < 2)
@@ -823,10 +824,10 @@ ADE_FUNC(randomInCircle,
 	"vector",
 	"A point within the plane of the circle")
 {
-	vec3d *in, out;
+	vec3d *in = nullptr, out;
 	matrix_h* mh = nullptr;
-	float radius;
-	bool on_edge;
+	float radius = 0.0f;
+	bool on_edge = false;
 	bool bias_towards_center = true;
 
 	if (!ade_get_args(L, "oofb|b", l_Vector.GetPtr(&in), l_Matrix.GetPtr(&mh), &radius, &on_edge, &bias_towards_center))
@@ -844,9 +845,9 @@ ADE_FUNC(randomInSphere,
 	"vector",
 	"A point within the plane of the circle")
 {
-	vec3d *in, out;
-	float radius;
-	bool on_surface;
+	vec3d *in = nullptr, out;
+	float radius = 0.0f;
+	bool on_surface = false;
 	bool bias_towards_center = true;
 
 	if (!ade_get_args(L, "ofb|b", l_Vector.GetPtr(&in), &radius, &on_surface, &bias_towards_center))

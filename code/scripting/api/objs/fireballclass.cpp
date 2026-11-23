@@ -15,7 +15,7 @@ ADE_OBJ_VALIDATOR(l_Fireballclass, idx, Fireball_info.in_bounds(idx));
 
 ADE_FUNC(__tostring, l_Fireballclass, NULL, "Fireball class name", "string", "Fireball class unique id, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -27,7 +27,7 @@ ADE_FUNC(__tostring, l_Fireballclass, NULL, "Fireball class name", "string", "Fi
 
 ADE_FUNC(__eq, l_Fireballclass, "fireballclass, fireballclass", "Checks if the two classes are equal", "boolean", "true if equal, false otherwise")
 {
-	int idx1,idx2;
+	int idx1 = 0,idx2 = 0;
 	if(!ade_get_args(L, "oo", l_Fireballclass.Get(&idx1), l_Fireballclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -42,7 +42,7 @@ ADE_FUNC(__eq, l_Fireballclass, "fireballclass, fireballclass", "Checks if the t
 
 ADE_VIRTVAR(UniqueID, l_Fireballclass, "string", "Fireball class name", "string", "Fireball class unique id, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -57,7 +57,7 @@ ADE_VIRTVAR(UniqueID, l_Fireballclass, "string", "Fireball class name", "string"
 
 ADE_VIRTVAR(Filename, l_Fireballclass, NULL, "Fireball class animation filename (LOD 0)", "string", "Filename, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -73,7 +73,7 @@ ADE_VIRTVAR(Filename, l_Fireballclass, NULL, "Fireball class animation filename 
 
 ADE_VIRTVAR(NumberFrames, l_Fireballclass, NULL, "Amount of frames the animation has (LOD 0)", "number", "Amount of frames, or -1 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "i", -1);
 
@@ -88,7 +88,7 @@ ADE_VIRTVAR(NumberFrames, l_Fireballclass, NULL, "Amount of frames the animation
 
 ADE_VIRTVAR(FPS, l_Fireballclass, NULL, "The FPS with which this fireball's animation is played (LOD 0)", "number", "FPS, or -1 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_error(L, "i", -1);
 
@@ -103,7 +103,7 @@ ADE_VIRTVAR(FPS, l_Fireballclass, NULL, "The FPS with which this fireball's anim
 
 ADE_FUNC(getTableIndex, l_Fireballclass, NULL, "Gets the index value of the fireball class", "number", "index value of the fireball class")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 

@@ -188,7 +188,7 @@ ADE_FUNC(playGameSound,
 	"boolean",
 	"True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	int idx;
+	int idx = 0;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
@@ -218,7 +218,7 @@ ADE_FUNC(playGameSound,
 
 ADE_FUNC(playInterfaceSound, l_Audio, "number index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
@@ -238,7 +238,7 @@ ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
          "the retail sound syntax can be accessed by specifying the index number as a string.",
          "boolean", "True if sound was played, false if not")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "s", &name))
 		return ade_set_error(L, "b", false);
 
@@ -255,7 +255,7 @@ ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
 
 ADE_FUNC(playMusic, l_Audio, "string Filename, [number volume = 1.0, boolean looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
-	const char* s;
+	const char* s = nullptr;
 	float volume = 1.0f;
 	bool loop = true;
 	if (!ade_get_args(L, "s|fb", &s, &volume, &loop))
@@ -280,7 +280,7 @@ ADE_FUNC(stopMusic,
 	nullptr,
 	nullptr)
 {
-	int ah;
+	int ah = 0;
 	bool fade = false;
 	const char* music_type = nullptr;
 
@@ -315,8 +315,8 @@ ADE_FUNC(pauseMusic,
 	nullptr,
 	nullptr)
 {
-	int ah;
-	bool pause;
+	int ah = 0;
+	bool pause = false;
 
 	if(!ade_get_args(L, "ib", &ah, &pause))
 		return ADE_RETURN_NIL;
@@ -383,7 +383,7 @@ ADE_FUNC(pauseWeaponSounds,
 	nullptr,
 	nullptr)
 {
-	bool pause;
+	bool pause = false;
 
 	if (!ade_get_args(L, "b", &pause))
 		return ADE_RETURN_NIL;
@@ -404,7 +404,7 @@ ADE_FUNC(pauseVoiceMessages,
 	nullptr,
 	nullptr)
 {
-	bool pause;
+	bool pause = false;
 
 	if (!ade_get_args(L, "b", &pause))
 		return ADE_RETURN_NIL;

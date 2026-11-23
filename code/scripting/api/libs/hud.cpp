@@ -96,7 +96,7 @@ static int getDefaultGaugeIndex(lua_State* L)
 	}
 	else
 	{
-		const char* name;
+		const char* name = nullptr;
 		if (!ade_get_args(L, "s", &name))
 			return -1;
 
@@ -130,7 +130,7 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 	int g = 0;
 	int b = 0;
 	int a = 0;
-	color col;
+	color col = {};
 
 	if (lua_isnumber(L, 2)) {
 		if (!ade_get_args(L, "*|iiii", &r, &g, &b, &a))
@@ -196,7 +196,7 @@ ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
 	int g = 0;
 	int b = 0;
 	int a = 255;
-	color col;
+	color col = {};
 
 	if (lua_isnumber(L, 2)) {
 		if (!ade_get_args(L, "*|iiii", &r, &g, &b, &a))
@@ -248,7 +248,7 @@ ADE_FUNC(getHUDGaugeColorInMission,
 
 ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specified HUD gauge", "HudGauge", "HUD Gauge handle, or nil if invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "s", &name))
 		return ADE_RETURN_NIL;
 	HudGauge* gauge = nullptr;
@@ -263,7 +263,7 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 ADE_FUNC(flashTargetBox, l_HUD, "enumeration section /* TBOX_* */, [number duration_in_milliseconds]", "Flashes a section of the target box with a default duration of " SCP_TOKEN_TO_STR(TBOX_FLASH_DURATION) " milliseconds", nullptr, nullptr)
 {
 	enum_h section;
-	int num_args, duration;
+	int num_args, duration = 0;
 	
 	num_args = ade_get_args(L, "o|i", l_Enum.Get(&section), &duration);
 	if (num_args == 1)
@@ -307,7 +307,7 @@ ADE_FUNC(flashTargetBox, l_HUD, "enumeration section /* TBOX_* */, [number durat
 
 ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]", "Returns the distance as displayed on the HUD, that is, the distance from a position to the bounding box of a target.  If targeter_position is nil, the function will use the player's position.", "number", "The distance, or nil if invalid")
 {
-	object_h *targetee_h;
+	object_h *targetee_h = nullptr;
 	vec3d *targeter_pos = nullptr;
 
 	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))

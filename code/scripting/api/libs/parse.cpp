@@ -16,7 +16,7 @@ ADE_FUNC(readFileText, l_Parsing, "string file, [string directory /* by default 
          "that location.",
          "boolean", "true if the operation was successful, false otherwise")
 {
-	const char* file;
+	const char* file = nullptr;
 	const char* dir = nullptr;
 	if (!ade_get_args(L, "s|s", &file, &dir)) {
 		return ADE_RETURN_FALSE;
@@ -65,7 +65,7 @@ ADE_FUNC(displayMessage, l_Parsing, "string message, boolean error = false",
 		return ADE_RETURN_FALSE;
 	}
 
-	const char* message;
+	const char* message = nullptr;
 	bool error = false;
 	if (!ade_get_args(L, "s|b", &message, &error)) {
 		return ADE_RETURN_FALSE;
@@ -89,7 +89,7 @@ ADE_FUNC(skipToString, l_Parsing, "string token", "Search for specified string, 
 		return ADE_RETURN_FALSE;
 	}
 
-	const char* str;
+	const char* str = nullptr;
 	if (!ade_get_args(L, "s", &str)) {
 		return ADE_RETURN_FALSE;
 	}
@@ -116,7 +116,7 @@ ADE_FUNC(requiredString, l_Parsing, "string token", "Require that a string appea
 		return ADE_RETURN_FALSE;
 	}
 
-	const char* str;
+	const char* str = nullptr;
 	if (!ade_get_args(L, "s", &str)) {
 		return ADE_RETURN_FALSE;
 	}
@@ -139,7 +139,7 @@ ADE_FUNC(optionalString, l_Parsing, "string token", "Check if the string appears
 		return ADE_RETURN_FALSE;
 	}
 
-	const char* str;
+	const char* str = nullptr;
 	if (!ade_get_args(L, "s", &str)) {
 		return ADE_RETURN_FALSE;
 	}

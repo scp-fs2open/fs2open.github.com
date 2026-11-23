@@ -96,7 +96,7 @@ ADE_INDEXER(l_ModelPath, "number", "Returns the point in the path with the speci
             "The point or invalid handle if index is invalid")
 {
 	model_path_h* p = nullptr;
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "oi", l_ModelPath.GetPtr(&p), &idx))
 		return ade_set_error(L, "o", l_ModelPathPoint.Set(model_path_point_h()));
 

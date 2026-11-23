@@ -56,7 +56,7 @@ ADE_OBJ(l_streaminganim, streaminganim_h, "streaminganim", "Streaming Animation 
 
 ADE_VIRTVAR(Loop, l_streaminganim, "boolean", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 	bool loop = false;
 
 	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &loop))
@@ -77,7 +77,7 @@ ADE_VIRTVAR(Loop, l_streaminganim, "boolean", "Make the streaming animation loop
 
 ADE_VIRTVAR(Pause, l_streaminganim, "boolean", "Pause the streaming animation.", "boolean", "Is the animation paused, or nil if anim invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 	bool pause = false;
 
 	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &pause))
@@ -98,7 +98,7 @@ ADE_VIRTVAR(Pause, l_streaminganim, "boolean", "Pause the streaming animation.",
 
 ADE_VIRTVAR(Reverse, l_streaminganim, "boolean", "Make the streaming animation play in reverse.", "boolean", "Is the animation playing in reverse, or nil if anim invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 	bool reverse = false;
 
 	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &reverse))
@@ -119,7 +119,7 @@ ADE_VIRTVAR(Reverse, l_streaminganim, "boolean", "Make the streaming animation p
 
 ADE_VIRTVAR(Grayscale, l_streaminganim, "boolean", "Whether the streaming animation is drawn as grayscale multiplied by the current color (the HUD method).", "boolean", "Boolean flag")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 	bool grayscale = false;
 
 	if (!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &grayscale))
@@ -137,7 +137,7 @@ ADE_VIRTVAR(Grayscale, l_streaminganim, "boolean", "Whether the streaming animat
 
 ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation", "string", "Filename or nil if invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -151,7 +151,7 @@ ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation"
 ADE_FUNC(getFrameCount, l_streaminganim, nullptr, "Get the number of frames in the animation.", "number",
          "Total number of frames")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -165,7 +165,7 @@ ADE_FUNC(getFrameCount, l_streaminganim, nullptr, "Get the number of frames in t
 ADE_FUNC(getFrameIndex, l_streaminganim, nullptr, "Get the current frame index of the animation", "number",
          "Current frame index")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -184,7 +184,7 @@ ADE_FUNC(getFrameIndex, l_streaminganim, nullptr, "Get the current frame index o
 ADE_FUNC(getHeight, l_streaminganim, nullptr, "Get the height of the animation in pixels", "number",
          "Height or nil if invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -198,7 +198,7 @@ ADE_FUNC(getHeight, l_streaminganim, nullptr, "Get the height of the animation i
 ADE_FUNC(getWidth, l_streaminganim, nullptr, "Get the width of the animation in pixels", "number",
          "Width or nil if invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -211,7 +211,7 @@ ADE_FUNC(getWidth, l_streaminganim, nullptr, "Get the width of the animation in 
 
 ADE_FUNC(preload, l_streaminganim, NULL, "Load all apng animations into memory, enabling apng frame cache if not already enabled", "boolean", "true if preload was successful, nil if a syntax/type error occurs")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
@@ -227,7 +227,7 @@ ADE_FUNC(process, l_streaminganim, "[number x1, number y1, number x2, number y2,
 		 "Processes a streaming animation, including selecting the correct frame & drawing it.",
 		 "boolean", "True if processing was successful, otherwise nil")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 	generic_extras ge;
 	int x1 = 0, y1 = 0;
 	int x2 = INT_MAX, y2 = INT_MAX;
@@ -274,7 +274,7 @@ ADE_FUNC(process, l_streaminganim, "[number x1, number y1, number x2, number y2,
 
 ADE_FUNC(reset, l_streaminganim, nullptr, "Reset a streaming animation back to its 1st frame", "boolean", "True if successful, otherwise nil")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -289,7 +289,7 @@ ADE_FUNC(reset, l_streaminganim, nullptr, "Reset a streaming animation back to i
 
 ADE_FUNC(timeLeft, l_streaminganim, nullptr, "Get the amount of time left in the animation, in seconds", "number", "Time left in secs or nil if invalid")
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
@@ -313,7 +313,7 @@ ADE_FUNC(timeLeft, l_streaminganim, nullptr, "Get the amount of time left in the
 
 ADE_FUNC(unload, l_streaminganim, NULL, "Unloads a streaming animation from memory", NULL, NULL)
 {
-	streaminganim_h* sah;
+	streaminganim_h* sah = nullptr;
 
 	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;

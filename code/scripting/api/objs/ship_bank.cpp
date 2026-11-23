@@ -83,7 +83,7 @@ ADE_INDEXER(l_WeaponBankType, "number Index", "Array of weapon banks", "weaponba
 
 ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or unlinked fire mode (Primary-only)", "boolean", "Link status, or false if handle is invalid")
 {
-	ship_banktype_h *bth;
+	ship_banktype_h *bth = nullptr;
 	bool newlink = false;
 	int numargs = ade_get_args(L, "o|b", l_WeaponBankType.GetPtr(&bth), &newlink);
 
@@ -112,7 +112,7 @@ ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or u
 
 ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire mode (Secondary-only)", "boolean", "Dual fire status, or false if handle is invalid")
 {
-	ship_banktype_h *bth;
+	ship_banktype_h *bth = nullptr;
 	bool newfire = false;
 	int numargs = ade_get_args(L, "o|b", l_WeaponBankType.GetPtr(&bth), &newfire);
 
@@ -230,7 +230,7 @@ ADE_VIRTVAR(WeaponClass, l_WeaponBank, "weaponclass", "Class of weapon mounted i
 ADE_VIRTVAR(AmmoLeft, l_WeaponBank, "number", "Ammo left for the current bank", "number", "Ammo left, or 0 if handle is invalid")
 {
 	ship_bank_h *bh = NULL;
-	int ammo;
+	int ammo = 0;
 	if(!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &ammo))
 		return ade_set_error(L, "i", 0);
 
@@ -265,7 +265,7 @@ ADE_VIRTVAR(AmmoMax, l_WeaponBank, "number", "Maximum ammo for the current bank<
 	"<b>Note:</b> Setting this value actually sets the <i>capacity</i> of the weapon bank. To set the actual maximum ammunition use <tt>AmmoMax = <amount> * class.CargoSize</tt>", "number", "Ammo capacity, or 0 if handle is invalid")
 {
 	ship_bank_h *bh = NULL;
-	int ammomax;
+	int ammomax = 0;
 	if(!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &ammomax))
 		return ade_set_error(L, "i", 0);
 

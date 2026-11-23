@@ -257,7 +257,7 @@ ADE_OBJ(l_ParticleSource, particle_source_h, "particle_source", "Handle to a par
 ADE_FUNC(setNormal, l_ParticleSource, "vector normal", "Sets the normal vector of this particle source.", nullptr, nullptr)
 {
 	particle_source_h ps;
-	vec3d normal;
+	vec3d normal = vmd_zero_vector;
 	if (!ade_get_args(L, "oo", l_ParticleSource.Get(&ps), l_Vector.Get(&normal)))
 		return ADE_RETURN_NIL;
 
@@ -274,7 +274,7 @@ ADE_FUNC(setNormal, l_ParticleSource, "vector normal", "Sets the normal vector o
 ADE_FUNC(setTriggerRadius, l_ParticleSource, "number triggerRadius", "Sets the trigger radius of this particle source.", nullptr, nullptr)
 {
 	particle_source_h ps;
-	float trigger;
+	float trigger = 0.0f;
 	if (!ade_get_args(L, "of", l_ParticleSource.Get(&ps), &trigger))
 		return ADE_RETURN_NIL;
 
@@ -290,7 +290,7 @@ ADE_FUNC(setTriggerRadius, l_ParticleSource, "number triggerRadius", "Sets the t
 ADE_FUNC(setTriggerVelocity, l_ParticleSource, "number triggerVelocity", "Sets the trigger velocity of this particle source.", nullptr, nullptr)
 {
 	particle_source_h ps;
-	float trigger;
+	float trigger = 0.0f;
 	if (!ade_get_args(L, "of", l_ParticleSource.Get(&ps), &trigger))
 		return ADE_RETURN_NIL;
 
@@ -306,7 +306,7 @@ ADE_FUNC(setTriggerVelocity, l_ParticleSource, "number triggerVelocity", "Sets t
 ADE_FUNC(createOnCoordinates, l_ParticleSource, "vector position, orientation orientation, [vector velocity = zero_vector, orientation orientationOverride = identity, boolean orientationOverrideIsRelative = true]", "Actually spawns this particle source at the specified position.", "boolean", "returns true if the source was successfully created, false otherwise")
 {
 	particle_source_h ps;
-	vec3d position;
+	vec3d position = vmd_zero_vector;
 	matrix_h orientation;
 	vec3d velocity = ZERO_VECTOR;
 	matrix_h orientationOverride(&vmd_identity_matrix);
@@ -329,7 +329,7 @@ ADE_FUNC(createOnObject, l_ParticleSource, "object object, vector offset, [orien
 {
 	particle_source_h ps;
 	object_h objh;
-	vec3d position;
+	vec3d position = vmd_zero_vector;
 	matrix_h orientationOverride(&vmd_identity_matrix);
 	bool orientationOverrideRelative = true;
 
@@ -354,7 +354,7 @@ ADE_FUNC(createOnSubmodel, l_ParticleSource, "object object, submodel submodel, 
 	particle_source_h ps;
 	object_h objh;
 	submodel_h subobjh;
-	vec3d position;
+	vec3d position = vmd_zero_vector;
 	matrix_h orientationOverride(&vmd_identity_matrix);
 	bool orientationOverrideRelative = true;
 
@@ -379,7 +379,7 @@ ADE_FUNC(createOnTurret, l_ParticleSource, "object object, submodel submodel, nu
 	particle_source_h ps;
 	object_h objh;
 	submodel_h subobjh;
-	int firepoint;
+	int firepoint = 0;
 	matrix_h orientationOverride(&vmd_identity_matrix);
 	bool orientationOverrideRelative = true;
 

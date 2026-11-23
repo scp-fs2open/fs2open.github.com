@@ -12,7 +12,7 @@ ADE_OBJ_VALIDATOR(l_Event, idx, Mission_events.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", nullptr)
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -31,7 +31,7 @@ ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", nullptr)
 
 ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", nullptr)
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -50,7 +50,7 @@ ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", nullpt
 
 ADE_VIRTVAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.", "string", nullptr)
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -69,7 +69,7 @@ ADE_VIRTVAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress te
 
 ADE_VIRTVAR(Interval, l_Event, "number", "Time for event to repeat (in seconds)", "number", "Repeat time, or 0 if invalid handle")
 {
-	int idx;
+	int idx = 0;
 	int newinterval = 0;
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newinterval))
 		return ade_set_error(L, "i", 0);
@@ -88,7 +88,7 @@ ADE_VIRTVAR(Interval, l_Event, "number", "Time for event to repeat (in seconds)"
 
 ADE_VIRTVAR(ObjectCount, l_Event, "number", "Number of objects left for event", "number", "Repeat count, or 0 if invalid handle")
 {
-	int idx;
+	int idx = 0;
 	int newobject = 0;
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newobject))
 		return ade_set_error(L, "i", 0);
@@ -107,7 +107,7 @@ ADE_VIRTVAR(ObjectCount, l_Event, "number", "Number of objects left for event", 
 
 ADE_VIRTVAR(RepeatCount, l_Event, "number", "Event repeat count", "number", "Repeat count, or 0 if invalid handle")
 {
-	int idx;
+	int idx = 0;
 	int newrepeat = 0;
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newrepeat))
 		return ade_set_error(L, "i", 0);
@@ -126,7 +126,7 @@ ADE_VIRTVAR(RepeatCount, l_Event, "number", "Event repeat count", "number", "Rep
 
 ADE_VIRTVAR(Score, l_Event, "number", "Event score", "number", "Event score, or 0 if invalid handle")
 {
-	int idx;
+	int idx = 0;
 	int newscore = 0;
 	if (!ade_get_args(L, "o|i", l_Event.Get(&idx), &newscore))
 		return ade_set_error(L, "i", 0);

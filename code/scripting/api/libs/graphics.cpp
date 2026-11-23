@@ -314,7 +314,7 @@ ADE_FUNC(clearScreen, l_Graphics, "[number|color /* red value or color object */
 	nullptr,
 	nullptr)
 {
-	int r, g, b, a;
+	int r = 0, g = 0, b = 0, a = 0;
 	r = g = b = 0;
 	a = 255;
 
@@ -322,7 +322,7 @@ ADE_FUNC(clearScreen, l_Graphics, "[number|color /* red value or color object */
 		ade_get_args(L, "|iiii", &r, &g, &b, &a);
 
 	} else {
-		color col;
+		color col = {};
 		gr_init_alphacolor(&col, 0, 0, 0, 255);
 
 		ade_get_args(L, "|o", l_Color.Get(&col));
@@ -574,8 +574,8 @@ ADE_FUNC(setColor,
 	if (!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r, g, b, a = 255;
-	color col;
+	int r = 0, g = 0, b = 0, a = 255;
+	color col = {};
 
 	if (lua_isnumber(L, 1)) {
 		if (!ade_get_args(L, "iii|i", &r, &g, &b, &a))
@@ -646,7 +646,7 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x,y,ra;
+	int x = 0,y = 0,ra = 0;
 	bool fill = true;
 
 	if(!ade_get_args(L, "iii|b", &ra,&x,&y,&fill))
@@ -669,8 +669,8 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x,y;
-	float ra,angle_start,angle_end;
+	int x = 0,y = 0;
+	float ra = 0.0f,angle_start = 0.0f,angle_end = 0.0f;
 	bool fill = true;
 
 	if(!ade_get_args(L, "fiiff|b", &ra,&x,&y,&angle_start,&angle_end,&fill)) {
@@ -689,7 +689,7 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x,y,ra,dir = 0;
+	int x = 0,y = 0,ra = 0,dir = 0;
 
 	if(!ade_get_args(L, "iii|i", &x,&y,&ra, &dir))
 		return ADE_RETURN_NIL;
@@ -708,7 +708,7 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!Gr_inited)
 		return 0;
 
-	int x1,y1,x2,y2;
+	int x1 = 0,y1 = 0,x2 = 0,y2 = 0;
 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
@@ -725,7 +725,7 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x1,y1,x2,y2;
+	int x1 = 0,y1 = 0,x2 = 0,y2 = 0;
 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
@@ -742,7 +742,7 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Draws a pixel using activ
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x,y;
+	int x = 0,y = 0;
 
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
@@ -848,7 +848,7 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x1,y1,x2,y2;
+	int x1 = 0,y1 = 0,x2 = 0,y2 = 0;
 	bool f=true;
 	float a = 0;
 
@@ -867,7 +867,7 @@ ADE_FUNC(drawRectangleCentered, l_Graphics,
 		if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x,y,w,h;
+	int x = 0,y = 0,w = 0,h = 0;
 	bool f=true;
 	float a = 0;
 
@@ -1531,7 +1531,7 @@ ADE_FUNC(setScreenScale, l_Graphics, "number width, number height, [number zoom_
 	if (!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x, y;
+	int x = 0, y = 0;
 	int zoom_x = -1, zoom_y = -1;
 	int max_x = gr_screen.max_w, max_y = gr_screen.max_h;
 	int center_x = gr_screen.center_w, center_y = gr_screen.center_h;
@@ -1560,7 +1560,7 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1577,7 +1577,7 @@ ADE_FUNC(getStringHeight, l_Graphics, "string String", "Gets string height", "nu
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1594,7 +1594,7 @@ ADE_FUNC(getStringSize, l_Graphics, "string String", "Gets string width and heig
 	if(!Gr_inited)
 		return ade_set_error(L, "ii", 0, 0);
 
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "ii", 0, 0);
 
@@ -1613,7 +1613,7 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 		 "streaminganim",
 		 "Streaming animation handle, or invalid handle if animation couldn't be loaded")
 {
-	const char* s;
+	const char* s = nullptr;
 	int rc = -1;
 	bool loop = false, reverse = false, pause = false, cache = true, grayscale = false;
 
@@ -1682,7 +1682,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "texture",
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
-	const char* s;
+	const char* s = nullptr;
 	int idx=-1;
 	bool b=false;
 	bool d=false;
@@ -1907,7 +1907,7 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 	LuaScreenContext context;
 
 	int idx;
-	int x,y;
+	int x = 0,y = 0;
 	int x2=INT_MAX;
 	int y2=INT_MAX;
 	int sx=0;
@@ -1966,7 +1966,7 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 
 ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "number", "Image width, or 0 if filename is invalid")
 {
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1983,7 +1983,7 @@ ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "numb
 
 ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
 {
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -2009,14 +2009,14 @@ ADE_FUNC(flashScreen,
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r, g, b;
+	int r = 0, g = 0, b = 0;
 
 	if (lua_isnumber(L, 1)) {
 		if (!ade_get_args(L, "iii", &r, &g, &b))
 			return ADE_RETURN_NIL;
 
 	} else {
-		color col;
+		color col = {};
 
 		gr_init_alphacolor(&col, 0, 0, 0, 255);
 
@@ -2045,14 +2045,14 @@ ADE_FUNC(flashScreenAlpha,
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r, g, b, a;
+	int r = 0, g = 0, b = 0, a = 0;
 
 	if (lua_isnumber(L, 1)) {
 		if (!ade_get_args(L, "iiii", &r, &g, &b, &a))
 			return ADE_RETURN_NIL;
 
 	} else {
-		color col;
+		color col = {};
 
 		gr_init_alphacolor(&col, 0, 0, 0, 255);
 
@@ -2072,7 +2072,7 @@ ADE_FUNC(flashScreenAlpha,
 
 ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not setup subsystem data, DO NOT USE FOR LOADING SHIP MODELS", "model", "Handle to a model")
 {
-	const char* s;
+	const char* s = nullptr;
 	int model_num = -1;
 
 	if(!ade_get_args(L, "s", &s))
@@ -2187,7 +2187,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration /* VM_* */", "Specifies if the cu
 
 ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration /* GR_RESIZE_* */]", "Sets the clipping region to the specified rectangle using GR_RESIZE_* enumerations. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
-	int x, y, width, height;
+	int x = 0, y = 0, width = 0, height = 0;
 	enum_h resize_arg;
 
 	if (!ade_get_args(L, "iiii|o", &x, &y, &width, &height, l_Enum.Get(&resize_arg)))
@@ -2290,11 +2290,11 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool
 }
 
 static int spawnParticles(lua_State *L, bool persistent) {
-	vec3d pos, vel;
-	float lifetime, rad;
+	vec3d pos = vmd_zero_vector, vel = vmd_zero_vector;
+	float lifetime = 0.0f, rad = 0.0f;
 
 	// Need to consume tracer_length parameter but it isn't used anymore
-	float temp;
+	float temp = 0.0f;
 
 	if (Is_standalone) {
 		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
@@ -2453,9 +2453,9 @@ ADE_FUNC(createColor,
 	"color",
 	"The color")
 {
-	int r;
-	int g;
-	int b;
+	int r = 0;
+	int g = 0;
+	int b = 0;
 	// Read alpha as a float so callers can pass either the historical 0-255 value or a 0-1 fraction.
 	float a_in = 255.0f;
 	if (!ade_get_args(L, "iii|f", &r, &g, &b, &a_in)) {

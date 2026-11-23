@@ -173,7 +173,7 @@ ADE_VIRTVAR(isVisible,
 	"true if visible, false if not visible")
 {
 	cutscene_info_h current;
-	bool visible;
+	bool visible = false;
 	if (!ade_get_args(L, "o|b", l_TechRoomCutscene.Get(&current), &visible)) {
 		return ADE_RETURN_NIL;
 	}

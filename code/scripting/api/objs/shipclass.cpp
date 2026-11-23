@@ -37,7 +37,7 @@ ADE_INDEXER(l_Default_Primary,
 	"weaponclass",
 	"The weapon index")
 {
-	int current;
+	int current = 0;
 	int idx = -1;
 	if (!ade_get_args(L, "oi", l_Default_Primary.Get(&current), &idx))
 		return ADE_RETURN_NIL;
@@ -63,7 +63,7 @@ ADE_FUNC(__len,
 	"number",
 	"The number of primary banks.")
 {
-	int current;
+	int current = 0;
 	ade_get_args(L, "o", l_Default_Primary.Get(&current));
 	ship_info* sip = &Ship_info[current];
 	return ade_set_args(L, "i", sip->num_primary_banks);
@@ -80,7 +80,7 @@ ADE_INDEXER(l_Default_Secondary,
 	"weaponclass",
 	"The weapon index")
 {
-	int current;
+	int current = 0;
 	int idx = -1;
 	if (!ade_get_args(L, "oi", l_Default_Secondary.Get(&current), &idx))
 		return ADE_RETURN_NIL;
@@ -106,7 +106,7 @@ ADE_FUNC(__len,
 	"number",
 	"The number of secondary banks.")
 {
-	int current;
+	int current = 0;
 	ade_get_args(L, "o", l_Default_Secondary.Get(&current));
 	ship_info* sip = &Ship_info[current];
 	return ade_set_args(L, "i", sip->num_secondary_banks);
@@ -118,7 +118,7 @@ ADE_OBJ_VALIDATOR_RANGE(l_Shipclass, ship_info_size());
 
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -131,7 +131,7 @@ ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class
 
 ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes are equal", "boolean", "true if equal, false otherwise")
 {
-	int idx1,idx2;
+	int idx1 = 0,idx2 = 0;
 	if(!ade_get_args(L, "oo", l_Shipclass.Get(&idx1), l_Shipclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -147,7 +147,7 @@ ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes a
 
 ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -166,7 +166,7 @@ ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship clas
 
 ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string", "Ship short name, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -185,7 +185,7 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 
 static int handle_ship_class_optional_string(lua_State *L, SCP_string ship_info::*optional_string_field)
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -239,7 +239,7 @@ ADE_VIRTVAR(MissileBanksString, l_Shipclass, "string", "Ship class missile banks
 
 ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "string", "velocity, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -266,7 +266,7 @@ ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "strin
 
 ADE_VIRTVAR(SelectIconFilename, l_Shipclass, "string", "Ship class select icon filename", "string", "Filename, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -283,7 +283,7 @@ ADE_VIRTVAR(SelectIconFilename, l_Shipclass, "string", "Ship class select icon f
 
 ADE_VIRTVAR(SelectAnimFilename, l_Shipclass, "string", "Ship class select animation filename", "string", "Filename, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -300,7 +300,7 @@ ADE_VIRTVAR(SelectAnimFilename, l_Shipclass, "string", "Ship class select animat
 
 ADE_VIRTVAR(SelectOverheadFilename, l_Shipclass, "string", "Ship class select overhead filename", "string", "Filename, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -327,7 +327,7 @@ ADE_VIRTVAR(numPrimaryBanks,
 	"number",
 	"number of banks or nil is ship handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -350,8 +350,8 @@ ADE_FUNC(getPrimaryBankCapacity,
 	"number",
 	"The bank capacity or nil if the index is invalid")
 {
-	int shipIdx;
-	int idx;
+	int shipIdx = 0;
+	int idx = 0;
 	if (!ade_get_args(L, "oi", l_Shipclass.Get(&shipIdx), &idx))
 		return ADE_RETURN_NIL;
 
@@ -373,7 +373,7 @@ ADE_VIRTVAR(numSecondaryBanks,
 	"number",
 	"number of banks or nil is ship handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -396,8 +396,8 @@ ADE_FUNC(getSecondaryBankCapacity,
 	"number",
 	"The bank capacity or nil if the index is invalid")
 {
-	int shipIdx;
-	int idx;
+	int shipIdx = 0;
+	int idx = 0;
 	if (!ade_get_args(L, "oi", l_Shipclass.Get(&shipIdx), &idx))
 		return ADE_RETURN_NIL;
 
@@ -419,7 +419,7 @@ ADE_VIRTVAR(defaultPrimaries,
 	"default_primary",
 	"The weapons array or nil if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -440,7 +440,7 @@ ADE_VIRTVAR(defaultSecondaries,
 	"default_secondary",
 	"The weapons array or nil if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -466,8 +466,8 @@ ADE_FUNC(isWeaponAllowedOnShip,
 	"boolean",
 	"True if allowed, false if not.")
 {
-	int idx;
-	int wepidx;
+	int idx = 0;
+	int wepidx = 0;
 	int bank = 0;
 	if (!ade_get_args(L, "oi|i", l_Shipclass.Get(&idx), &wepidx, &bank))
 		return ade_set_error(L, "b", false);
@@ -493,7 +493,7 @@ ADE_FUNC(isWeaponAllowedOnShip,
 
 ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacity", "number", "Afterburner capacity, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float fuel = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &fuel))
 		return ade_set_error(L, "f", 0.0f);
@@ -509,7 +509,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 
 ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This property is read-only")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "i", 0);
 
@@ -525,7 +525,7 @@ ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time re
 
 ADE_VIRTVAR(CountermeasureClass, l_Shipclass, "weaponclass", "The default countermeasure class assigned to this ship class", "weaponclass", "Countermeasure hardpoint weapon class, or invalid weaponclass handle if no countermeasure class or ship handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
@@ -547,7 +547,7 @@ ADE_VIRTVAR(CountermeasureClass, l_Shipclass, "weaponclass", "The default counte
 
 ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of countermeasures the ship can carry", "number", "Countermeasure capacity, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	int i = -1;
 	if(!ade_get_args(L, "o|i", l_Shipclass.Get(&idx), &i))
 		return ade_set_error(L, "i", 0);
@@ -585,7 +585,7 @@ ADE_VIRTVAR(Model, l_Shipclass, "model", "Model", "model", "Ship class model, or
 
 ADE_VIRTVAR(CloseupPosition, l_Shipclass, nullptr, "Ship class closeup position", "vector", "closeup position, or nil if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -601,7 +601,7 @@ ADE_VIRTVAR(CloseupPosition, l_Shipclass, nullptr, "Ship class closeup position"
 
 ADE_VIRTVAR(CloseupZoom, l_Shipclass, nullptr, "Ship class closeup zoom", "number", "closeup zoom, or nil if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -655,7 +655,7 @@ ADE_VIRTVAR(CockpitDisplays, l_Shipclass, "cockpitdisplays", "Gets the cockpit d
 
 ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number", "Hitpoints, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -672,7 +672,7 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 
 ADE_VIRTVAR(ShieldHitpointsMax, l_Shipclass, nullptr, "Ship class shield hitpoints", "number", "Shield hitpoints, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -688,7 +688,7 @@ ADE_VIRTVAR(ShieldHitpointsMax, l_Shipclass, nullptr, "Ship class shield hitpoin
 
 ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	int sidx = -1;
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Species.Get(&sidx)))
 		return ade_set_error(L, "o", l_Species.Set(-1));
@@ -705,7 +705,7 @@ ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "S
 
 ADE_VIRTVAR(Type, l_Shipclass, "shiptype", "Ship class type", "shiptype", "Ship type, or invalid handle if shipclass handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	int sidx = -1;
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Shiptype.Get(&sidx)))
 		return ade_set_error(L, "o", l_Shiptype.Set(-1));
@@ -723,7 +723,7 @@ ADE_VIRTVAR(Type, l_Shipclass, "shiptype", "Ship class type", "shiptype", "Ship 
 ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "string", "Alternate string or empty string if handle is invalid")
 {
 	const char* newName = nullptr;
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &newName))
 		return ade_set_error(L, "s", "");
 
@@ -745,7 +745,7 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 
 ADE_VIRTVAR(VelocityMax, l_Shipclass, "vector", "Ship's lateral and forward speeds", "vector", "Maximum velocity, or null vector if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	vec3d* vec = NULL;
 	if (!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -762,7 +762,7 @@ ADE_VIRTVAR(VelocityMax, l_Shipclass, "vector", "Ship's lateral and forward spee
 
 ADE_VIRTVAR(VelocityDamping, l_Shipclass, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. ", "number", "Damping, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -779,7 +779,7 @@ ADE_VIRTVAR(VelocityDamping, l_Shipclass, "number", "Damping, the natural period
 
 ADE_VIRTVAR(RearVelocityMax, l_Shipclass, "number", "The maximum rear velocity of the ship", "number", "Speed, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -796,7 +796,7 @@ ADE_VIRTVAR(RearVelocityMax, l_Shipclass, "number", "The maximum rear velocity o
 
 ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleration time", "number", "Forward acceleration time, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -813,7 +813,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleratio
 
 ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward deceleration time, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -830,7 +830,7 @@ ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleratio
 
 ADE_VIRTVAR(RotationTime, l_Shipclass, "vector", "Maximum rotation time on each axis", "vector", "Full rotation time for each axis, or null vector if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	vec3d* vec = NULL;
 	if (!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -847,7 +847,7 @@ ADE_VIRTVAR(RotationTime, l_Shipclass, "vector", "Maximum rotation time on each 
 
 ADE_VIRTVAR(RotationalVelocityDamping, l_Shipclass, "number", "Rotational damping, ie derivative of rotational speed", "number", "Rotational damping, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -864,7 +864,7 @@ ADE_VIRTVAR(RotationalVelocityDamping, l_Shipclass, "number", "Rotational dampin
 
 ADE_VIRTVAR(AfterburnerAccelerationTime, l_Shipclass, "number", "Afterburner acceleration time", "number", "Afterburner acceleration time, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -881,7 +881,7 @@ ADE_VIRTVAR(AfterburnerAccelerationTime, l_Shipclass, "number", "Afterburner acc
 
 ADE_VIRTVAR(AfterburnerVelocityMax, l_Shipclass, "vector", "Afterburner max velocity", "vector", "Afterburner max velocity, or null vector if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	vec3d* vec = NULL;
 	if (!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -898,7 +898,7 @@ ADE_VIRTVAR(AfterburnerVelocityMax, l_Shipclass, "vector", "Afterburner max velo
 
 ADE_VIRTVAR(AfterburnerRearVelocityMax, l_Shipclass, "number", "Afterburner maximum rear velocity", "number", "Rear velocity, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -915,8 +915,8 @@ ADE_VIRTVAR(AfterburnerRearVelocityMax, l_Shipclass, "number", "Afterburner maxi
 
 ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "number", "The score or -1 on invalid ship class")
 {
-	int idx;
-	int new_score;
+	int idx = 0;
+	int new_score = 0;
 	if(!ade_get_args(L, "o|i", l_Shipclass.Get(&idx), &new_score))
 		return ade_set_error(L, "i", -1);
 
@@ -932,8 +932,8 @@ ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "numbe
 
 ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this ship class is visible in the tech room", "boolean", "True or false")
 {
-	int idx;
-	bool new_value;
+	int idx = 0;
+	bool new_value = false;
 	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
 		return ade_set_error(L, "b", false);
 
@@ -953,8 +953,8 @@ ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this s
 
 ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether this ship class is allowed in loadouts in campaign mode", "boolean", "True or false")
 {
-	int idx;
-	bool new_value;
+	int idx = 0;
+	bool new_value = false;
 	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
 		return ade_set_error(L, "b", false);
 
@@ -974,8 +974,8 @@ ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether thi
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")
 {
-	int idx;
-	float new_power;
+	int idx = 0;
+	float new_power = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &new_power))
 		return ade_set_error(L, "f", -1.0f);
 
@@ -991,7 +991,7 @@ ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' powe
 
 ADE_VIRTVAR(ScanningTimeMultiplier, l_Shipclass, nullptr, "Time multiplier for scans performed by this ship class", "number", "Scanning time multiplier, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -1007,7 +1007,7 @@ ADE_VIRTVAR(ScanningTimeMultiplier, l_Shipclass, nullptr, "Time multiplier for s
 
 ADE_VIRTVAR(ScanningRangeMultiplier, l_Shipclass, nullptr, "Range multiplier for scans performed by this ship class", "number", "Scanning range multiplier, or 0 if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -1023,7 +1023,7 @@ ADE_VIRTVAR(ScanningRangeMultiplier, l_Shipclass, nullptr, "Range multiplier for
 
 ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for this ship class", "table", "The ship class's custom data table") 
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 	
@@ -1044,7 +1044,7 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 
 ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass's custom_data is not empty, false otherwise") 
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 	
@@ -1066,7 +1066,7 @@ ADE_VIRTVAR(CustomStrings,
 	"table",
 	"The ship's custom data table")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -1104,7 +1104,7 @@ ADE_FUNC(hasCustomStrings,
 	"boolean",
 	"true if the ship's custom_strings is not empty, false otherwise")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -1119,7 +1119,7 @@ ADE_FUNC(hasCustomStrings,
 
 ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is available in the techroom", "boolean", "Whether ship has been revealed in the techroom, false if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "b", false);
 
@@ -1144,9 +1144,9 @@ ADE_FUNC(renderTechModel,
 	"boolean",
 	"Whether ship was rendered")
 {
-	int x1,y1,x2,y2;
+	int x1 = 0,y1 = 0,x2 = 0,y2 = 0;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
-	int idx;
+	int idx = 0;
 	float zoom = 1.3f;
 	bool lighting = true;
 	int tc_idx = -1;
@@ -1206,8 +1206,8 @@ ADE_FUNC(renderTechModel,
 // Nuke's alternate tech model rendering function
 ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, teamcolor TeamColor=nil, string[] DestroyedSubsystems=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
-	int x1,y1,x2,y2;
-	int idx;
+	int x1 = 0,y1 = 0,x2 = 0,y2 = 0;
+	int idx = 0;
 	float zoom = 1.3f;
 	matrix_h *mh = nullptr;
 	int tc_idx = -1;
@@ -1262,10 +1262,10 @@ ADE_FUNC(renderSelectModel,
 	"boolean",
 	"true if rendered, false if error")
 {
-	int idx;
-	bool restart;
-	int x1;
-	int y1;
+	int idx = 0;
+	bool restart = false;
+	int x1 = 0;
+	int y1 = 0;
 	int x2 = 629;
 	int y2 = 355;
 	int effect = -1;
@@ -1363,9 +1363,9 @@ ADE_FUNC(renderOverheadModel,
 	"boolean",
 	"true if rendered, false if error")
 {
-	int idx;
-	int x1;
-	int y1;
+	int idx = 0;
+	int x1 = 0;
+	int y1 = 0;
 	int x2 = 467;
 	int y2 = 362;
 	int selectedSlot = -1;
@@ -1555,7 +1555,7 @@ ADE_FUNC(renderOverheadModel,
 
 ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the model used for this shipclass is loaded or not and optionally loads the model, which might be a slow operation.", "boolean", "If the model is loaded or not")
 {
-	int idx;
+	int idx = 0;
 	bool load_check = false;
 	if(!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &load_check))
 		return ADE_RETURN_FALSE;
@@ -1582,7 +1582,7 @@ ADE_FUNC(isPlayerAllowed,
 	"boolean",
 	"true if player allowed, false otherwise, nil if a syntax/type error occurs")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -1600,7 +1600,7 @@ ADE_FUNC(isPlayerAllowed,
 
 ADE_FUNC(getShipClassIndex, l_Shipclass, nullptr, "Gets the index value of the ship class", "number", "index value of the ship class")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 

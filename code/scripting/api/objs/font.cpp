@@ -50,7 +50,7 @@ ADE_FUNC(__tostring, l_Font, nullptr, "Name of font", "string", "Font filename, 
 
 ADE_FUNC(__eq, l_Font, "font, font", "Checks if the two fonts are equal", "boolean", "true if equal, false otherwise")
 {
-	font_h *fh1, *fh2;
+	font_h *fh1 = nullptr, *fh2 = nullptr;
 	if (!ade_get_args(L, "oo", l_Font.GetPtr(&fh1), l_Font.GetPtr(&fh2)))
 		return ade_set_error(L, "b", false);
 

@@ -174,7 +174,7 @@ ADE_FUNC(flushMouse,
 
 static int AxisActionInverted_sub(int AxisAction, int ordinal, lua_State* L)
 {
-	bool b;
+	bool b = false;
 	if (!ade_get_args(L, "*|b", &b))
 		return ade_set_error(L, "b", false);
 
@@ -349,7 +349,7 @@ ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration /* FLIGHTMODE_* */", "Flight
 
 ADE_VIRTVAR(FlightCursorExtent, l_Mouse, "number angle", "How far from the center the cursor can go.", "number", "Flight cursor extent in radians")
 {
-	float extent_angle;
+	float extent_angle = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &extent_angle))
 	{
@@ -361,7 +361,7 @@ ADE_VIRTVAR(FlightCursorExtent, l_Mouse, "number angle", "How far from the cente
 
 ADE_VIRTVAR(FlightCursorDeadzone, l_Mouse, "number angle", "How far from the center the cursor needs to go before registering.", "number", "Flight cursor deadzone in radians")
 {
-	float deadzone_angle;
+	float deadzone_angle = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &deadzone_angle))
 	{
@@ -373,7 +373,7 @@ ADE_VIRTVAR(FlightCursorDeadzone, l_Mouse, "number angle", "How far from the cen
 
 ADE_VIRTVAR(FlightCursorPitch, l_Mouse, "number", "Flight cursor pitch value", "number", "Flight cursor pitch value")
 {
-	float val_pitch;
+	float val_pitch = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &val_pitch)) {
 		Player_flight_cursor.p = val_pitch;
@@ -384,7 +384,7 @@ ADE_VIRTVAR(FlightCursorPitch, l_Mouse, "number", "Flight cursor pitch value", "
 
 ADE_VIRTVAR(FlightCursorHeading, l_Mouse, "number", "Flight cursor heading value", "number", "Flight cursor heading value")
 {
-	float val_heading;
+	float val_heading = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &val_heading)) {
 		Player_flight_cursor.h = val_heading;
@@ -404,7 +404,7 @@ ADE_FUNC(resetFlightCursor, l_Mouse, nullptr, "Resets flight cursor position to 
 
 ADE_VIRTVAR(FlightCursorSensitivity, l_Mouse, "number", "Flight cursor movement sensitivity multiplier", "number", "Flight cursor sensitivity multiplier")
 {
-	float val_sens;
+	float val_sens = 0.0f;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &val_sens)) {
 		Player_flight_cursor_sensitivity = val_sens;
@@ -463,7 +463,7 @@ ADE_FUNC(forceMousePosition, l_Mouse, "number x, number y", "function to force m
 	if(!Gr_inited)
 		return ADE_RETURN_FALSE;
 
-	int x, y;
+	int x = 0, y = 0;
 	if (!(ade_get_args(L, "ii", &x, &y)))
 		return ADE_RETURN_FALSE;
 

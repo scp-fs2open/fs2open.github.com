@@ -30,8 +30,8 @@ ADE_OBJ(l_Eyepoint, eye_h, "eyepoint", "Eyepoint handle");
 
 ADE_VIRTVAR(Normal, l_Eyepoint, "vector", "Eyepoint normal", "vector", "Eyepoint normal, or null vector if handle is invalid")
 {
-	eye_h *eh;
-	vec3d *v;
+	eye_h *eh = nullptr;
+	vec3d *v = nullptr;
 	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -50,8 +50,8 @@ ADE_VIRTVAR(Normal, l_Eyepoint, "vector", "Eyepoint normal", "vector", "Eyepoint
 
 ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location (Local vector)", "vector", "Eyepoint location, or null vector if handle is invalid")
 {
-	eye_h *eh;
-	vec3d *v;
+	eye_h *eh = nullptr;
+	vec3d *v = nullptr;
 	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 

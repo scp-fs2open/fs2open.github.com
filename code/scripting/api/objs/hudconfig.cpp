@@ -202,7 +202,7 @@ ADE_VIRTVAR(CurrentColor,
 	"The gauge color or nil if the gauge is invalid")
 {
 	gauge_config_h current;
-	color newColor;
+	color newColor = {};
 	if (!ade_get_args(L, "o|o", l_Gauge_Config.Get(&current), l_Color.Get(&newColor))) {
 		return ADE_RETURN_NIL;
 	}
@@ -240,7 +240,7 @@ ADE_VIRTVAR(ShowGaugeFlag,
 	"True if on, false if otherwise")
 {
 	gauge_config_h current;
-	bool show;
+	bool show = false;
 	if (!ade_get_args(L, "o|b", l_Gauge_Config.Get(&current), &show)) {
 		return ADE_RETURN_NIL;
 	}
@@ -264,7 +264,7 @@ ADE_VIRTVAR(PopupGaugeFlag,
 	"True if on, false otherwise")
 {
 	gauge_config_h current;
-	bool popup;
+	bool popup = false;
 	if (!ade_get_args(L, "o|b", l_Gauge_Config.Get(&current), &popup)) {
 		return ADE_RETURN_NIL;
 	}
@@ -368,7 +368,7 @@ ADE_VIRTVAR(isCustomGauge,
 ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the currently selected gauge for drawing as selected.", nullptr, nullptr)
 {
 	gauge_config_h current;
-	bool select;
+	bool select = false;
 	if (!ade_get_args(L, "o|b", l_Gauge_Config.Get(&current), &select)) {
 		return ADE_RETURN_NIL;
 	}

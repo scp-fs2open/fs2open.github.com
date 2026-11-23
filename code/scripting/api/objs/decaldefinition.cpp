@@ -17,7 +17,7 @@ ADE_OBJ_VALIDATOR(l_DecalDefinitionclass, idx, decals::DecalDefinitions.in_bound
 
 ADE_FUNC(__tostring, l_DecalDefinitionclass, nullptr, "Decal definition name", "string", "Decal definition unique id, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_DecalDefinitionclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -30,7 +30,7 @@ ADE_FUNC(__tostring, l_DecalDefinitionclass, nullptr, "Decal definition name", "
 
 ADE_FUNC(__eq, l_DecalDefinitionclass, "decaldefinition, decaldefinition", "Checks if the two definitions are equal", "boolean", "true if equal, false otherwise")
 {
-	int idx1,idx2;
+	int idx1 = 0,idx2 = 0;
 	if (!ade_get_args(L, "oo", l_DecalDefinitionclass.Get(&idx1), l_DecalDefinitionclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -45,7 +45,7 @@ ADE_FUNC(__eq, l_DecalDefinitionclass, "decaldefinition, decaldefinition", "Chec
 
 ADE_VIRTVAR(Name, l_DecalDefinitionclass, "string", "Decal definition name", "string", "Decal definition name, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_DecalDefinitionclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -62,8 +62,8 @@ ADE_VIRTVAR(Name, l_DecalDefinitionclass, "string", "Decal definition name", "st
 ADE_FUNC(create, l_DecalDefinitionclass, "number width, number height, number minLifetime, number maxLifetime, object host, submodel submodel, [vector local_pos, orientation local_orient]",
 	"Creates a decal with the specified parameters.  A negative value for either lifetime will result in a perpetual decal.  The position and orientation are in the frame-of-reference of the submodel.", nullptr, "Nothing")
 {
-	int idx;
-	float width, height, minLifetime, maxLifetime;
+	int idx = 0;
+	float width = 0.0f, height = 0.0f, minLifetime = 0.0f, maxLifetime = 0.0f;
 	object_h *objh = nullptr;
 	submodel_h *smh = nullptr;
 	vec3d *local_pos = nullptr;

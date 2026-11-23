@@ -13,7 +13,7 @@ ADE_OBJ_VALIDATOR(l_Goal, idx, Mission_goals.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Goal, nullptr, "The name of the goal", "string", "The goal name")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -27,7 +27,7 @@ ADE_VIRTVAR(Name, l_Goal, nullptr, "The name of the goal", "string", "The goal n
 
 ADE_VIRTVAR(Message, l_Goal, nullptr, "The message of the goal", "string", "The goal message")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -41,7 +41,7 @@ ADE_VIRTVAR(Message, l_Goal, nullptr, "The message of the goal", "string", "The 
 
 ADE_VIRTVAR(Type, l_Goal, nullptr, "The goal type", "string", "primary, secondary, bonus, or none")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -76,7 +76,7 @@ ADE_VIRTVAR(Type, l_Goal, nullptr, "The goal type", "string", "primary, secondar
 
 ADE_VIRTVAR(Team, l_Goal, nullptr, "The goal team", "team", "The goal team")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -90,7 +90,7 @@ ADE_VIRTVAR(Team, l_Goal, nullptr, "The goal team", "team", "The goal team")
 
 ADE_VIRTVAR(isGoalSatisfied, l_Goal, nullptr, "The status of the goal", "number", "0 if failed, 1 if complete, 2 if incomplete")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -104,7 +104,7 @@ ADE_VIRTVAR(isGoalSatisfied, l_Goal, nullptr, "The status of the goal", "number"
 
 ADE_VIRTVAR(Score, l_Goal, nullptr, "The score of the goal", "number", "the score")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -118,7 +118,7 @@ ADE_VIRTVAR(Score, l_Goal, nullptr, "The score of the goal", "number", "the scor
 
 ADE_VIRTVAR(isGoalValid, l_Goal, nullptr, "The goal validity", "boolean", "true if valid, false otherwise")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Goal.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}

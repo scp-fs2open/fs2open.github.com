@@ -19,7 +19,7 @@ ADE_VIRTVAR(Name, l_Shiptype, "string", "Ship type name", "string", "Ship type n
 		return ade_set_error(L, "s", "");
 
 	const char* s = nullptr;
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o|s", l_Shiptype.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 

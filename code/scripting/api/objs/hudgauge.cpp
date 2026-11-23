@@ -15,7 +15,7 @@ ADE_OBJ_VALIDATOR(l_HudGauge, gauge, gauge != nullptr);
 
 ADE_FUNC(isCustom, l_HudGauge, nullptr, "Custom HUD Gauge status", "boolean", "Returns true if this is a custom HUD gauge, or false if it is a non-custom (default) HUD gauge")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
@@ -25,7 +25,7 @@ ADE_FUNC(isCustom, l_HudGauge, nullptr, "Custom HUD Gauge status", "boolean", "R
 
 ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if this is a default gauge or the handle is invalid")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
@@ -41,7 +41,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 
 ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if this is a default gauge or the handle is invalid")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	const char* text = nullptr;
 
 	if (!ade_get_args(L, "o|s", l_HudGauge.Get(&gauge), &text))
@@ -60,7 +60,7 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 
 ADE_VIRTVAR(ConfigType, l_HudGauge, "string", "The config type (such as \"LEAD_INDICATOR\") of this HUD Gauge", "string", "HUD Gauge config type, or nil if this gauge does not have a config type (custom gauges and some default gauges do not) or if the handle is invalid")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
@@ -77,7 +77,7 @@ ADE_VIRTVAR(ConfigType, l_HudGauge, "string", "The config type (such as \"LEAD_I
 
 ADE_VIRTVAR(ObjectType, l_HudGauge, "string", "The object type (such as \"Lead indicator\") of this HUD Gauge", "string", "HUD Gauge object type, or nil if this gauge does not have an object type or if the handle is invalid")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
@@ -101,7 +101,7 @@ ADE_VIRTVAR(ObjectType, l_HudGauge, "string", "The object type (such as \"Lead i
 ADE_FUNC(getBaseResolution, l_HudGauge, nullptr, "Returns the base width and base height (which may be different from the screen width and height) used by the specified HUD gauge.",
 	"number, number", "Base width and height")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -111,7 +111,7 @@ ADE_FUNC(getBaseResolution, l_HudGauge, nullptr, "Returns the base width and bas
 ADE_FUNC(getAspectQuotient, l_HudGauge, nullptr, "Returns the aspect quotient (ratio between the current aspect ratio and the HUD's native aspect ratio) used by the specified HUD gauge.",
 	"number", "Aspect quotient")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -121,7 +121,7 @@ ADE_FUNC(getAspectQuotient, l_HudGauge, nullptr, "Returns the aspect quotient (r
 ADE_FUNC(getPosition, l_HudGauge, nullptr, "Returns the position of the specified HUD gauge.",
 	"number, number", "X and Y coordinates")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -132,8 +132,8 @@ ADE_FUNC(getPosition, l_HudGauge, nullptr, "Returns the position of the specifie
 
 ADE_FUNC(setPosition, l_HudGauge, "number, number", "Sets the position of the specified HUD gauge.", nullptr, nullptr)
 {
-	HudGauge* gauge;
-	int x, y;
+	HudGauge* gauge = nullptr;
+	int x = 0, y = 0;
 	if (!ade_get_args(L, "oii", l_HudGauge.Get(&gauge), &x, &y))
 		return ADE_RETURN_NIL;
 
@@ -144,7 +144,7 @@ ADE_FUNC(setPosition, l_HudGauge, "number, number", "Sets the position of the sp
 ADE_FUNC(getFont, l_HudGauge, nullptr, "Returns the font used by the specified HUD gauge.",
 	"font", "The font handle")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -159,7 +159,7 @@ ADE_FUNC(getFont, l_HudGauge, nullptr, "Returns the font used by the specified H
 ADE_FUNC(getOriginAndOffset, l_HudGauge, nullptr, "Returns the origin and offset of the specified HUD gauge as specified in the table.",
 	"number, number, number, number", "Origin X, Origin Y, Offset X, Offset Y")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -172,7 +172,7 @@ ADE_FUNC(getOriginAndOffset, l_HudGauge, nullptr, "Returns the origin and offset
 ADE_FUNC(getCoords, l_HudGauge, nullptr, "Returns the coordinates of the specified HUD gauge as specified in the table.",
 	"boolean, number, number", "Coordinates flag (whether coordinates are used), X, Y")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -185,7 +185,7 @@ ADE_FUNC(getCoords, l_HudGauge, nullptr, "Returns the coordinates of the specifi
 ADE_FUNC(isHiRes, l_HudGauge, nullptr, "Returns whether this is a hi-res HUD gauge, determined by whether the +Filename property is prefaced with \"2_\".  Not all gauges have such a filename.",
 	"boolean", "Whether the HUD gauge is known to be hi-res")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
@@ -199,7 +199,7 @@ ADE_FUNC(getColor,
 	"number, number, number, number | color",
 	"The current color, in red, green, blue, and alpha components from 0 to 255")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	bool rc = false;
 	if (!ade_get_args(L, "o|b", l_HudGauge.Get(&gauge), &rc))
 		return ADE_RETURN_NIL;
@@ -220,7 +220,7 @@ ADE_FUNC(setColor,
 	nullptr, nullptr)
 {
 	HudGauge* gauge = nullptr;
-	int r, g, b, a = -1;
+	int r = 0, g = 0, b = 0, a = -1;
 
 	if (lua_isnumber(L, 2)) {
 		if (!ade_get_args(L, "oiii|i", l_HudGauge.Get(&gauge) , &r, &g, &b, &a))
@@ -235,7 +235,7 @@ ADE_FUNC(setColor,
 		CLAMP(g, 0, 255);
 		CLAMP(b, 0, 255);
 	} else {
-		color col;
+		color col = {};
 		gr_init_alphacolor(&col, 0, 0, 0, 255);
 
 		ade_get_args(L, "oo", l_HudGauge.Get(&gauge), l_Color.Get(&col));
@@ -264,7 +264,7 @@ ADE_FUNC(setRenderOverride,
 	"boolean",
 	"True to enable the override and stop the gauge from rendering, false otherwise")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	bool override = false;
 	if (!ade_get_args(L, "o|b", l_HudGauge.Get(&gauge), &override))
 		return ADE_RETURN_NIL;
@@ -280,7 +280,7 @@ ADE_VIRTVAR(RenderFunction,
             "For scripted HUD gauges, the function that will be called for rendering the HUD gauge",
             "function (HudGaugeDrawFunctions gauge_handle) => void",
             "Render function or nil if no action is set or handle is invalid") {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	luacpp::LuaFunction func;
 
 	if (!ade_get_args(L, "o|u", l_HudGauge.Get(&gauge), &func)) {
@@ -311,10 +311,10 @@ ADE_FUNC(drawString,
          "Draws a string in the context of the HUD gauge.",
          "boolean",
          "true on success, false otherwise") {
-	HudGauge* gauge;
-	float x;
-	float y;
-	const char* text;
+	HudGauge* gauge = nullptr;
+	float x = 0.0f;
+	float y = 0.0f;
+	const char* text = nullptr;
 
 	if (!ade_get_args(L, "osff", l_HudGaugeDrawFuncs.Get(&gauge), &text, &x, &y)) {
 		return ADE_RETURN_FALSE;
@@ -331,11 +331,11 @@ ADE_FUNC(drawString,
 ADE_FUNC(drawLine, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number Y2",
          "Draws a line in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
 {
-	HudGauge* gauge;
-	float x1;
-	float y1;
-	float x2;
-	float y2;
+	HudGauge* gauge = nullptr;
+	float x1 = 0.0f;
+	float y1 = 0.0f;
+	float x2 = 0.0f;
+	float y2 = 0.0f;
 
 	if (!ade_get_args(L, "offff", l_HudGaugeDrawFuncs.Get(&gauge), &x1, &y1, &x2, &y2)) {
 		return ADE_RETURN_FALSE;
@@ -352,10 +352,10 @@ ADE_FUNC(drawLine, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number
 ADE_FUNC(drawCircle, l_HudGaugeDrawFuncs, "number radius, number X, number Y, [boolean filled=true]",
          "Draws a circle in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
 {
-	HudGauge* gauge;
-	float x;
-	float y;
-	float radius;
+	HudGauge* gauge = nullptr;
+	float x = 0.0f;
+	float y = 0.0f;
+	float radius = 0.0f;
 	bool filled=true;
 
 	if (!ade_get_args(L, "offf|b", l_HudGaugeDrawFuncs.Get(&gauge), &radius, &x, &y, &filled)) {
@@ -373,11 +373,11 @@ ADE_FUNC(drawCircle, l_HudGaugeDrawFuncs, "number radius, number X, number Y, [b
 ADE_FUNC(drawRectangle, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number Y2, [boolean Filled=true]",
          "Draws a rectangle in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
 {
-	HudGauge* gauge;
-	float x1;
-	float y1;
-	float x2;
-	float y2;
+	HudGauge* gauge = nullptr;
+	float x1 = 0.0f;
+	float y1 = 0.0f;
+	float x2 = 0.0f;
+	float y2 = 0.0f;
 	bool filled = true;
 
 	if (!ade_get_args(L, "offff|b", l_HudGaugeDrawFuncs.Get(&gauge), &x1, &y1, &x2, &y2, &filled)) {
@@ -403,7 +403,7 @@ ADE_FUNC(drawImage, l_HudGaugeDrawFuncs, "texture Texture, [number X=0, number Y
          "Draws an image in the context of the HUD gauge.", "boolean",
          "true on success, false otherwise")
 {
-	HudGauge* gauge;
+	HudGauge* gauge = nullptr;
 	texture_h* texture = nullptr;
 	float x1           = 0;
 	float y1           = 0;
