@@ -19811,7 +19811,8 @@ void sexp_prop_create(int n)
 		new_prop_ori = vmd_identity_matrix;
 
 	int objnum = prop_create(&new_prop_ori, &new_prop_pos, new_prop_class, new_ship_name);
-	Assert(objnum != -1);
+	if (objnum < 0)
+		return;
 
 	// note: model_page_in_textures was called via the sexp preloader
 }
