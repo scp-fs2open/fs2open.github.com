@@ -1369,8 +1369,11 @@ void std_gs_send_godstuff_message()
 
 	// get the text in the edit control
 	memset(txt,0,256);
-	txt[0]=120;	
-	SendMessage(Godstuff_broadcast_text,EM_GETLINE,(WPARAM)0,(LPARAM)&txt[0]);
+	// EM_GETLINE reads the most characters to copy from the buffer's first WORD, and does not add a terminator
+	WORD max_chars = static_cast<WORD>(CHATBOX_MAX_LEN - 1);
+	memcpy(txt, &max_chars, sizeof(max_chars));
+	auto copied = SendMessage(Godstuff_broadcast_text,EM_GETLINE,(WPARAM)0,(LPARAM)&txt[0]);
+	txt[copied] = '\0';
 	
 	// if the string is not zero length
 	if( txt[0] != '\0' ){		
@@ -1422,7 +1425,7 @@ void std_gs_init_godstuff_controls()
 
 	// initialize the messaging edit control
 	Godstuff_broadcast_text = GetDlgItem(Page_handles[GODSTUFF_PAGE], (int)(uintptr_t)MAKEINTRESOURCE(IDC_GODSTUFF_BROADCAST));
-	SendMessage(Godstuff_broadcast_text, EM_SETLIMITTEXT, (WPARAM)CHATBOX_MAX_LEN, (LPARAM)0);
+	SendMessage(Godstuff_broadcast_text, EM_SETLIMITTEXT, (WPARAM)(CHATBOX_MAX_LEN - 1), (LPARAM)0);
 	SendMessage(Godstuff_broadcast_text, EM_FMTLINES, (WPARAM)TRUE, (LPARAM)0);
 
 	// create the player chatter list box

@@ -57,6 +57,7 @@ Container& split(Container& result, const typename Container::value_type& s,
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 
+#include "missionui/chatbox.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -552,8 +553,16 @@ json_t* chatGet(ResourceContext *context) {
 json_t* chatPost(ResourceContext *context) {
     const char* message = json_string_value(json_object_get(context->requestEntity, "message"));
     if (message) {
-        send_game_chat_packet(Net_player, const_cast<char*>(message), MULTI_MSG_ALL, NULL);
-        std_add_chat_text(const_cast<char*>(message), 0 /*MY_NET_PLAYER_NUM*/, 1);
+        // the chat box holds at most this much; don't cut a UTF-8 character in half
+        size_t len = strnlen(message, CHATBOX_MAX_LEN - 1);
+        if (message[len] != '\0') {
+            while (len > 0 && (static_cast<unsigned char>(message[len]) & 0xC0) == 0x80) {
+                --len;
+            }
+        }
+        SCP_string text(message, len);
+        send_game_chat_packet(Net_player, text.c_str(), MULTI_MSG_ALL, nullptr);
+        std_add_chat_text(text.c_str(), 0 /*MY_NET_PLAYER_NUM*/, 1);
     }
 
     return emptyResource(context);
