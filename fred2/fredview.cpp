@@ -2773,7 +2773,16 @@ int CFREDView::global_error_check()
 			//Shouldn't be needed anymore.
 			//If we really do need it, call me and I'll write a is_valid function for jumpnodes -WMC
 		} 
-		else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP)
+		else if (ptr->type == OBJ_PROP)
+		{
+			const prop* propp = prop_id_lookup(ptr->instance);
+			if (propp != nullptr &&
+				(fred_check_sexp(propp->spawn_cue, OPR_BOOL, "spawn cue of prop \"%s\"", propp->prop_name) ||
+				fred_check_sexp(propp->despawn_cue, OPR_BOOL, "despawn cue of prop \"%s\"", propp->prop_name))) {
+				return -1;
+			}
+		}
+		else if (ptr->type == OBJ_JUMP_NODE)
 		{
 			//nothing needs to be done here, we just need to make sure the else doesn't occur
 		}

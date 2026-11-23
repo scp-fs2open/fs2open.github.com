@@ -1277,6 +1277,10 @@
 #define IDC_PROP_PREV                   1710
 #define IDC_PROP_NEXT                   1711
 #define IDC_PROP_FLAGS                  1712
+#define IDC_PROP_SPAWN_DELAY            1760
+#define IDC_PROP_DESPAWN_DELAY          1761
+#define IDC_PROP_SPAWN_TREE             1762
+#define IDC_PROP_DESPAWN_TREE           1763
 #define IDC_NEB2_FOG_1000M_VIS          1713
 #define IDC_NEB2_FOG_NEAR_DIST          1714
 #define IDC_NEB2_FOG_SKYBOX_CLIP        1715
@@ -1641,7 +1645,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
-#define _APS_NEXT_CONTROL_VALUE         1749
+#define _APS_NEXT_CONTROL_VALUE         1764
 #define _APS_NEXT_COMMAND_VALUE         33125
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

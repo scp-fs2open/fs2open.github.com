@@ -2112,6 +2112,14 @@ int reference_handler(const char *name, sexp_ref_type type, int obj)
 				sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
 				break;
 
+			case sexp_src::PROP_SPAWN:
+				sprintf(text, "the spawn cue of prop \"%s\"", Props[n]->prop_name);
+				break;
+
+			case sexp_src::PROP_DESPAWN:
+				sprintf(text, "the despawn cue of prop \"%s\"", Props[n]->prop_name);
+				break;
+
 			case sexp_src::EVENT:
 				if (!Mission_events[n].name.empty())
 					sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
@@ -2309,6 +2317,17 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 			Wing_editor_dialog.select_sexp_node = node;
 			unmark_all();
 			mark_wing(n);
+			break;
+
+		case sexp_src::PROP_SPAWN:
+		case sexp_src::PROP_DESPAWN:
+			Prop_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
+				SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+			Prop_editor_dialog.ShowWindow(SW_RESTORE);
+
+			Prop_editor_dialog.select_sexp_node = node;
+			unmark_all();
+			mark_object(Props[n]->objnum);
 			break;
 
 		case sexp_src::EVENT:

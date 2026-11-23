@@ -1,20 +1,30 @@
 #include "stdafx.h"
 #include "FRED.h"
+#include "FREDDoc.h"
 #include "propdlg.h"
 #include "Management.h"
 #include "MainFrm.h"
 #include "object/object.h"
+#include "parse/sexp.h"
 #include "prop/prop.h"
 
 prop_dlg::prop_dlg(CWnd* pParent /*=NULL*/) : CDialog(prop_dlg::IDD, pParent)
 {
 	m_name = _T("");
 	bypass_errors = 0;
+	m_spawn_delay = 0;
+	m_despawn_delay = 0;
+	m_cues_modified = 0;
+	select_sexp_node = -1;
 }
 
 BOOL prop_dlg::Create()
 {
 	BOOL r = CDialog::Create(IDD, Fred_main_wnd);
+	m_spawn_tree._model.modified = &m_cues_modified;
+	m_spawn_tree.setup((CEdit*)GetDlgItem(IDC_HELP_BOX));
+	m_despawn_tree._model.modified = &m_cues_modified;
+	m_despawn_tree.setup();
 	initialize_data(1);
 	return r;
 }
@@ -24,6 +34,10 @@ void prop_dlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_PROP_NAME, m_name);
 	DDX_Control(pDX, IDC_PROP_FLAGS, m_flags_list);
+	DDX_Control(pDX, IDC_PROP_SPAWN_TREE, m_spawn_tree);
+	DDX_Control(pDX, IDC_PROP_DESPAWN_TREE, m_despawn_tree);
+	DDX_Text(pDX, IDC_PROP_SPAWN_DELAY, m_spawn_delay);
+	DDX_Text(pDX, IDC_PROP_DESPAWN_DELAY, m_despawn_delay);
 }
 
 BEGIN_MESSAGE_MAP(prop_dlg, CDialog)
@@ -31,6 +45,14 @@ ON_WM_CLOSE()
 ON_WM_SIZE()
 ON_BN_CLICKED(IDC_PROP_NEXT, OnPropNext)
 ON_BN_CLICKED(IDC_PROP_PREV, OnPropPrev)
+ON_NOTIFY(NM_RCLICK, IDC_PROP_SPAWN_TREE, OnRclickSpawnTree)
+ON_NOTIFY(NM_RCLICK, IDC_PROP_DESPAWN_TREE, OnRclickDespawnTree)
+ON_NOTIFY(TVN_BEGINLABELEDIT, IDC_PROP_SPAWN_TREE, OnBeginlabeleditSpawnTree)
+ON_NOTIFY(TVN_BEGINLABELEDIT, IDC_PROP_DESPAWN_TREE, OnBeginlabeleditDespawnTree)
+ON_NOTIFY(TVN_ENDLABELEDIT, IDC_PROP_SPAWN_TREE, OnEndlabeleditSpawnTree)
+ON_NOTIFY(TVN_ENDLABELEDIT, IDC_PROP_DESPAWN_TREE, OnEndlabeleditDespawnTree)
+ON_NOTIFY(TVN_SELCHANGED, IDC_PROP_SPAWN_TREE, OnSelchangedSpawnTree)
+ON_NOTIFY(TVN_SELCHANGED, IDC_PROP_DESPAWN_TREE, OnSelchangedDespawnTree)
 END_MESSAGE_MAP()
 
 void prop_dlg::OnClose()
@@ -80,15 +102,34 @@ void prop_dlg::initialize_data(int full_update)
 	if (!GetSafeHwnd())
 		return;
 
+	m_spawn_tree.select_sexp_node = m_despawn_tree.select_sexp_node = select_sexp_node;
+	select_sexp_node = -1;
+
 	// Check if we have a selected prop
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_PROP) {
 		auto prp = prop_id_lookup(Objects[cur_object_index].instance);
 		m_name = _T(prp->prop_name);
+		m_spawn_delay = prp->spawn_delay;
+		m_despawn_delay = prp->despawn_delay;
+		m_spawn_tree.load_tree(prp->spawn_cue);
+		m_despawn_tree.load_tree(prp->despawn_cue, "false");
+
+		if (m_spawn_tree.select_sexp_node != -1)
+			m_spawn_tree.hilite_item(m_spawn_tree.select_sexp_node);
+		else if (m_despawn_tree.select_sexp_node != -1)
+			m_despawn_tree.hilite_item(m_despawn_tree.select_sexp_node);
 	} else {
 		// No valid prop selected; disable editing fields
 		m_name = _T("");
+		m_spawn_delay = 0;
+		m_despawn_delay = 0;
+		m_spawn_tree.clear_tree();
+		m_spawn_tree.DeleteAllItems();
+		m_despawn_tree.clear_tree();
+		m_despawn_tree.DeleteAllItems();
 		enable = FALSE;
 	}
+	m_cues_modified = 0;
 
 	m_flags_list.ResetContent();
 
@@ -126,12 +167,18 @@ void prop_dlg::initialize_data(int full_update)
 
 	GetDlgItem(IDC_PROP_NAME)->EnableWindow(enable);
 	m_flags_list.EnableWindow(enable);
+	GetDlgItem(IDC_PROP_SPAWN_DELAY)->EnableWindow(enable);
+	GetDlgItem(IDC_PROP_DESPAWN_DELAY)->EnableWindow(enable);
+	m_spawn_tree.EnableWindow(enable);
+	m_despawn_tree.EnableWindow(enable);
 }
 
 int prop_dlg::update_data(int redraw)
 {
 	if (!GetSafeHwnd())
 		return 0;
+
+	UpdateData(TRUE);
 
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_PROP) {
 		int this_instance = Objects[cur_object_index].instance;
@@ -161,7 +208,7 @@ int prop_dlg::update_data(int redraw)
 
 				m_name = _T(prp->prop_name);
 				UpdateData(FALSE);
-				return 1;
+				break;
 			}
 		}
 		
@@ -183,7 +230,31 @@ int prop_dlg::update_data(int redraw)
 				Objects[cur_object_index].flags.set(Object::Object_Flags::Collides, !selected);
 			}
 		}
+
+		int spawn_delay = (m_spawn_delay > 0) ? m_spawn_delay : 0;
+		int despawn_delay = (m_despawn_delay > 0) ? m_despawn_delay : 0;
+		if (spawn_delay != prp->spawn_delay || despawn_delay != prp->despawn_delay) {
+			prp->spawn_delay = spawn_delay;
+			prp->despawn_delay = despawn_delay;
+			set_modified();
+		}
+
+		// a tree that was never edited may not hold this prop's cue, so only an edit is written back
+		if (m_cues_modified) {
+			if (prp->spawn_cue >= 0)
+				free_sexp2(prp->spawn_cue);
+			prp->spawn_cue = m_spawn_tree._model.save_tree();
+
+			if (prp->despawn_cue >= 0)
+				free_sexp2(prp->despawn_cue);
+			prp->despawn_cue = m_despawn_tree._model.save_tree();
+
+			m_cues_modified = 0;
+			set_modified();
+		}
 	}
+
+	bypass_errors = 0;
 
 	if (redraw)
 		update_map_window();
@@ -239,4 +310,83 @@ void prop_dlg::OnPropPrev()
 	select_prop_from_object_list(GET_PREV(&Objects[cur_object_index]), false);
 }
 
-void prop_dlg::OnOK() {}
+void prop_dlg::OnOK()
+{
+	// Enter ends a label edit in a cue tree; moving the focus away and back commits it
+	CWnd* w = GetFocus();
+	if (w) {
+		HWND h = w->m_hWnd;
+		GetDlgItem(IDC_PROP_NAME)->SetFocus();
+		::SetFocus(h);
+	}
+}
+
+void prop_dlg::OnRclickSpawnTree(NMHDR* /*pNMHDR*/, LRESULT* pResult)
+{
+	m_spawn_tree.right_clicked();
+	*pResult = 0;
+}
+
+void prop_dlg::OnRclickDespawnTree(NMHDR* /*pNMHDR*/, LRESULT* pResult)
+{
+	m_despawn_tree.right_clicked();
+	*pResult = 0;
+}
+
+void prop_dlg::OnBeginlabeleditSpawnTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
+
+	if (m_spawn_tree.edit_label(pTVDispInfo->item.hItem) == 1) {
+		*pResult = 0;
+		m_cues_modified = 1;
+	} else {
+		*pResult = 1;
+	}
+}
+
+void prop_dlg::OnBeginlabeleditDespawnTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
+
+	if (m_despawn_tree.edit_label(pTVDispInfo->item.hItem) == 1) {
+		*pResult = 0;
+		m_cues_modified = 1;
+	} else {
+		*pResult = 1;
+	}
+}
+
+void prop_dlg::OnEndlabeleditSpawnTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
+
+	*pResult = m_spawn_tree.end_label_edit(pTVDispInfo->item);
+}
+
+void prop_dlg::OnEndlabeleditDespawnTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
+
+	*pResult = m_despawn_tree.end_label_edit(pTVDispInfo->item);
+}
+
+void prop_dlg::OnSelchangedSpawnTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;
+	HTREEITEM h = pNMTreeView->itemNew.hItem;
+	if (h)
+		m_spawn_tree.update_help(h);
+
+	*pResult = 0;
+}
+
+void prop_dlg::OnSelchangedDespawnTree(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;
+	HTREEITEM h = pNMTreeView->itemNew.hItem;
+	if (h)
+		m_despawn_tree.update_help(h);
+
+	*pResult = 0;
+}
