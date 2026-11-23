@@ -1208,6 +1208,14 @@ int Editor::reference_handler(const char* name, sexp_ref_type type, int obj) {
 			sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
 			break;
 
+		case sexp_src::PROP_SPAWN:
+			sprintf(text, "the spawn cue of prop \"%s\"", Props[n]->prop_name);
+			break;
+
+		case sexp_src::PROP_DESPAWN:
+			sprintf(text, "the despawn cue of prop \"%s\"", Props[n]->prop_name);
+			break;
+
 		case sexp_src::EVENT:
 			if (!Mission_events[n].name.empty()) {
 				sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());

@@ -6,6 +6,7 @@
 
 #include <QTimer>
 
+#include <algorithm>
 #include <unordered_set>
 
 namespace fso::fred::dialogs {
@@ -290,6 +291,98 @@ void PropEditorDialogModel::setLayer(const SCP_string& layer)
 			continue;
 		_viewport->moveObjectToLayer(obj_idx, layer);
 	}
+	set_modified();
+	_editor->missionChanged();
+}
+
+SCP_vector<prop*> PropEditorDialogModel::selectedProps() const
+{
+	SCP_vector<prop*> props;
+	for (auto obj_idx : _selectedPropObjects) {
+		if (!query_valid_object(obj_idx) || Objects[obj_idx].type != OBJ_PROP)
+			continue;
+		auto prp = prop_id_lookup(Objects[obj_idx].instance);
+		if (prp != nullptr)
+			props.push_back(prp);
+	}
+	return props;
+}
+
+const SCP_vector<int>& PropEditorDialogModel::getSelectedProps() const
+{
+	return _selectedPropObjects;
+}
+
+int PropEditorDialogModel::getSpawnCue() const
+{
+	auto props = selectedProps();
+	return props.empty() ? Locked_sexp_true : props.front()->spawn_cue;
+}
+
+int PropEditorDialogModel::getDespawnCue() const
+{
+	auto props = selectedProps();
+	return props.empty() ? Locked_sexp_false : props.front()->despawn_cue;
+}
+
+int PropEditorDialogModel::getSpawnDelay() const
+{
+	auto props = selectedProps();
+	return props.empty() ? 0 : props.front()->spawn_delay;
+}
+
+int PropEditorDialogModel::getDespawnDelay() const
+{
+	auto props = selectedProps();
+	return props.empty() ? 0 : props.front()->despawn_delay;
+}
+
+bool PropEditorDialogModel::cuesDiffer() const
+{
+	auto props = selectedProps();
+	return std::any_of(props.begin(), props.end(), [&props](const prop* prp) {
+		const prop* first = props.front();
+		return prp->spawn_delay != first->spawn_delay || prp->despawn_delay != first->despawn_delay ||
+			   !cmp_sexp_chains(prp->spawn_cue, first->spawn_cue) ||
+			   !cmp_sexp_chains(prp->despawn_cue, first->despawn_cue);
+	});
+}
+
+void PropEditorDialogModel::setSpawnCue(const SexpTreeModel& tree)
+{
+	for (auto prp : selectedProps()) {
+		if (prp->spawn_cue >= 0)
+			free_sexp2(prp->spawn_cue);
+		// each prop owns its cue, so every selected prop gets its own copy
+		prp->spawn_cue = tree.save_tree();
+	}
+	set_modified();
+	_editor->missionChanged();
+}
+
+void PropEditorDialogModel::setDespawnCue(const SexpTreeModel& tree)
+{
+	for (auto prp : selectedProps()) {
+		if (prp->despawn_cue >= 0)
+			free_sexp2(prp->despawn_cue);
+		prp->despawn_cue = tree.save_tree();
+	}
+	set_modified();
+	_editor->missionChanged();
+}
+
+void PropEditorDialogModel::setSpawnDelay(int delay)
+{
+	for (auto prp : selectedProps())
+		prp->spawn_delay = delay;
+	set_modified();
+	_editor->missionChanged();
+}
+
+void PropEditorDialogModel::setDespawnDelay(int delay)
+{
+	for (auto prp : selectedProps())
+		prp->despawn_delay = delay;
 	set_modified();
 	_editor->missionChanged();
 }

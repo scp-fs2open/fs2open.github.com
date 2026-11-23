@@ -27,6 +27,19 @@ PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	ui->propNameLineEdit->setMaxLength(NAME_LENGTH - 1);
 
+	ui->spawnCueTree->initializeEditor(viewport->editor, nullptr, viewport);
+	ui->despawnCueTree->initializeEditor(viewport->editor, nullptr, viewport);
+	connect(ui->spawnCueTree, &sexp_tree_view::modified, this, [this] {
+		_model->setSpawnCue(ui->spawnCueTree->_model);
+		_loadedSpawnCue = _model->getSpawnCue();
+	});
+	connect(ui->despawnCueTree, &sexp_tree_view::modified, this, [this] {
+		_model->setDespawnCue(ui->despawnCueTree->_model);
+		_loadedDespawnCue = _model->getDespawnCue();
+	});
+	connect(ui->spawnCueTree, &sexp_tree_view::helpChanged, ui->cueHelpText, &QPlainTextEdit::setPlainText);
+	connect(ui->despawnCueTree, &sexp_tree_view::helpChanged, ui->cueHelpText, &QPlainTextEdit::setPlainText);
+
 	initializeUi();
 	updateUi();
 
@@ -111,6 +124,32 @@ void PropEditorDialog::initializeUi() {
 	ui->nextButton->setEnabled(has_props);
 	ui->prevButton->setEnabled(has_props);
 	ui->layerCombo->setEnabled(enable);
+	ui->spawnDelaySpinBox->setEnabled(enable);
+	ui->despawnDelaySpinBox->setEnabled(enable);
+	ui->spawnCueTree->setEnabled(enable);
+	ui->despawnCueTree->setEnabled(enable);
+}
+
+void PropEditorDialog::loadCueTrees() {
+	// the model reports every mission change, and reloading a tree the user is editing would collapse it
+	if (_loadedProps == _model->getSelectedProps() && _loadedSpawnCue == _model->getSpawnCue() &&
+		_loadedDespawnCue == _model->getDespawnCue()) {
+		return;
+	}
+
+	_loadedProps = _model->getSelectedProps();
+	_loadedSpawnCue = _model->getSpawnCue();
+	_loadedDespawnCue = _model->getDespawnCue();
+
+	if (_model->hasValidSelection()) {
+		ui->spawnCueTree->load_tree(_loadedSpawnCue, "true");
+		ui->despawnCueTree->load_tree(_loadedDespawnCue, "false");
+		ui->spawnCueTree->expandAll();
+		ui->despawnCueTree->expandAll();
+	} else {
+		ui->spawnCueTree->clear_tree("");
+		ui->despawnCueTree->clear_tree("");
+	}
 }
 
 void PropEditorDialog::updateUi() {
@@ -118,6 +157,10 @@ void PropEditorDialog::updateUi() {
 
 	ui->propNameLineEdit->setText(QString::fromStdString(_model->getPropName()));
 	ui->layerCombo->setCurrentIndex(ui->layerCombo->findData(QString::fromStdString(_model->getLayer())));
+	ui->spawnDelaySpinBox->setValue(_model->getSpawnDelay());
+	ui->despawnDelaySpinBox->setValue(_model->getDespawnDelay());
+	ui->cuesDifferLabel->setVisible(_model->cuesDiffer());
+	loadCueTrees();
 }
 
 void PropEditorDialog::on_propNameLineEdit_editingFinished() {
@@ -138,6 +181,14 @@ void PropEditorDialog::on_layerCombo_currentIndexChanged(int index) {
 	if (index < 0)
 		return;
 	_model->setLayer(ui->layerCombo->itemData(index).toString().toUtf8().constData());
+}
+
+void PropEditorDialog::on_spawnDelaySpinBox_valueChanged(int value) {
+	_model->setSpawnDelay(value);
+}
+
+void PropEditorDialog::on_despawnDelaySpinBox_valueChanged(int value) {
+	_model->setDespawnDelay(value);
 }
 
 } // namespace fso::fred::dialogs
