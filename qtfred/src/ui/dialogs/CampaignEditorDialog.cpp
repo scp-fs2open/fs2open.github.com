@@ -413,6 +413,9 @@ bool CampaignEditorDialog::questionSaveChanges()
 
 	if (reply == QMessageBox::Save) {
 		on_actionSave_triggered();
+		// a failed or cancelled save must not discard the changes
+		if (_model->query_modified())
+			return false;
 	}
 
 	// If we get here, the user chose Save or Discard.

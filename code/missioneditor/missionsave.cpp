@@ -3294,11 +3294,14 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 		fout("\n");
 	}
 
-	// the last buffered bytes reach the disk only here
+	// the last buffered bytes are written out only here
 	if (cfclose(fp) != 0 && err == 0)
 		err = -19;
-	if (err)
+	if (err) {
 		mprintf(("Mission saving error code #%d\n", err));
+		// a cut-off file must not be left where autosave recovery or Undo would load it
+		cf_delete(pathname, CF_TYPE_MISSIONS);
+	}
 }
 
 int Fred_mission_save::save_music()

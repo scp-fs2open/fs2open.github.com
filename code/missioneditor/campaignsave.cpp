@@ -305,7 +305,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 	parse_comments();
 	fout("\n");
 
-	if (cfclose(fp) != 0)
+	if (cfclose(fp) != 0 && err == 0)
 		err = -19;
 	fso_comment_pop(true);
 

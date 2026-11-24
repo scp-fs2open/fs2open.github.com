@@ -4,7 +4,6 @@
 #include <ui/util/default_dir.h>
 
 #include <QDir>
-#include <QFile>
 #include <QFileDialog>
 #include <QPointer>
 #include <QFileInfo>
@@ -288,9 +287,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.set_view_orient(_viewport->camera.view_orient);
 		save.set_fred_alt_names(Fred_alt_names);
 		save.set_fred_callsigns(Fred_callsigns);
-		// a cut-off autosave would be offered for recovery on the next open
-		if (save.save_autosave_file(savePath.toUtf8().constData()) != 0)
-			QFile::remove(savePath);
+		save.save_autosave_file(savePath.toUtf8().constData());
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
@@ -528,11 +525,11 @@ bool FredView::saveMissionAs() {
 		return false;
 
 	const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
-	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
-	if (saveName.isEmpty())
+	QString newName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
+	if (newName.isEmpty())
 		return false;
 
-	fso::fred::util::saveLastDir("missions/saveMission", saveName);
+	fso::fred::util::saveLastDir("missions/saveMission", newName);
 
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
@@ -543,10 +540,11 @@ bool FredView::saveMissionAs() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	if (save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData()) != 0) {
+	if (save.save_mission_file(newName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData()) != 0) {
 		QMessageBox::critical(this, tr("Failed saving mission."), tr("An error occurred while saving the mission."));
 		return false;
 	}
+	saveName = newName;
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
 

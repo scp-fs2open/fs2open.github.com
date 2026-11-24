@@ -583,6 +583,7 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 	}else{
 		// On success, update our internal state.
 		modify(m_campaign_filename, target_filename);
+		_modified = false;
 
 		// Clean up the global struct now that the save is complete.
 		clearCampaignGlobal();
