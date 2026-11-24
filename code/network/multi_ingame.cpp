@@ -1008,6 +1008,34 @@ int multi_ingame_handle_timeout(bool API_Access)
 
 #define INGAME_PACKET_SLOP		75				// slop value used for packets to ingame joiner
 
+static void ingame_ships_packet_abort(header* hinfo)
+{
+	multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+
+	// stops multi_process_bigdata from reading the rest of the buffer as more packets
+	hinfo->bytes_processed = 10000;
+}
+
+// creating a docked group brings its wing ships in through parse_bring_in_docked_wing, and the join list recreates
+// the group once for each member it names, so the list can hold gaps and a count larger than its ships
+static void ingame_compact_wing(wing* wingp)
+{
+	int count = 0;
+	for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
+		if (wingp->ship_index[i] < 0) {
+			continue;
+		}
+		if (wingp->special_ship == i) {
+			wingp->special_ship = count;
+		}
+		wingp->ship_index[count++] = wingp->ship_index[i];
+	}
+	for (int i = count; i < MAX_SHIPS_PER_WING; i++) {
+		wingp->ship_index[i] = -1;
+	}
+	wingp->current_count = count;
+}
+
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
@@ -1052,6 +1080,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				shipnum = -1;
 			}
 			Wings[i].current_count = 0;
+			Wings[i].special_ship = 0;
 		}
 
 		Ingame_ships_deleted = 1;
@@ -1087,14 +1116,22 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		GET_INT( team );		
 		GET_SHORT( wing_data );
-		if (wing_data < -1 || wing_data >= Num_wings ||
-			(wing_data >= 0 && Wings[wing_data].current_count >= MAX_SHIPS_PER_WING)) {
+		if (wing_data < -1 || wing_data >= Num_wings) {
 			mprintf(("ABORTING in-game join since the server put ship %s in bad wing %d!\n", ship_name, wing_data));
-			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			ingame_ships_packet_abort(hinfo);
 			return;
 		}
+		ubyte wing_leader = 0;
 		if(wing_data >= 0){
-			GET_INT(Wings[wing_data].current_wave);			
+			int current_wave;
+			GET_INT(current_wave);
+			GET_DATA(wing_leader);
+			if (current_wave < 0 || current_wave > Wings[wing_data].num_waves) {
+				mprintf(("ABORTING in-game join on bad wave %d for wing %s!\n", current_wave, Wings[wing_data].name));
+				ingame_ships_packet_abort(hinfo);
+				return;
+			}
+			Wings[wing_data].current_wave = current_wave;
 		}
 
 		// lookup ship in the registry
@@ -1102,7 +1139,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		p_objp = entry ? entry->p_objp_or_null() : nullptr;
 		if (p_objp == nullptr) {
 			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
-			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			ingame_ships_packet_abort(hinfo);
 			return;
 		}
 
@@ -1129,7 +1166,23 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		if (wing_data >= 0) {
 			wing* wingp = &Wings[wing_data];
-			wingp->ship_index[wingp->current_count++] = ship_num;
+			ingame_compact_wing(wingp);
+
+			auto listed = std::find(std::begin(wingp->ship_index), std::end(wingp->ship_index), ship_num);
+			if (listed == std::end(wingp->ship_index)) {
+				if (wingp->current_count >= MAX_SHIPS_PER_WING) {
+					mprintf(("ABORTING in-game join since wing %s has no room for ship %s!\n", wingp->name, ship_name));
+					ingame_ships_packet_abort(hinfo);
+					return;
+				}
+				listed = &wingp->ship_index[wingp->current_count++];
+				*listed = ship_num;
+			}
+
+			if (wing_leader != 0) {
+				wingp->special_ship = static_cast<int>(listed - std::begin(wingp->ship_index));
+				wingp->special_ship_ship_info_index = Ships[ship_num].ship_info_index;
+			}
 
 			// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet
 			if (Ships[ship_num].wing_status_wing_index < 0) {
@@ -1148,11 +1201,6 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	if ( p_type == INGAME_SHIP_LIST_EOL ) {		
 		// merge all created list
 		obj_merge_created_list();
-
-		// the comm menu and hotkey list read ship_index[special_ship], so it must point into the rebuilt list
-		for (int i = 0; i < Num_wings; i++) {
-			Wings[i].special_ship = std::min(Wings[i].special_ship, std::max(Wings[i].current_count - 1, 0));
-		}
 
 		// fixup player ship stuff
 		for(idx=0; idx<MAX_SHIPS; idx++){
@@ -1261,6 +1309,10 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_SHORT(wing_data);
 		if(wing_data >= 0){
 			ADD_INT(Wings[wing_data].current_wave);
+			const wing* wingp = &Wings[wing_data];
+			bool leader_known = wingp->special_ship >= 0 && wingp->special_ship < MAX_SHIPS_PER_WING;
+			ubyte wing_leader = (leader_known && wingp->ship_index[wingp->special_ship] == SHIP_INDEX(shipp)) ? 1 : 0;
+			ADD_DATA(wing_leader);
 		}
 
 		// don't send anymore data if we are getting close to the maximum size of this packet.  Send it off and
