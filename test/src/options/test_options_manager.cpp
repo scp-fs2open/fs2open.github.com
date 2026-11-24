@@ -687,6 +687,7 @@ class KeepAspectRatio : public OptionsManagerOverride {
 		saved_vr = Cmdline_enable_vr;
 		saved_fred = Fred_running;
 		saved_native_res_hud = Gr_native_res_hud;
+		saved_nograb = Cmdline_nograb;
 
 		Cmdline_window_res.emplace(static_cast<uint16_t>(1920), static_cast<uint16_t>(1080));
 		gr_screen.mode = GraphicsAPI::OpenGL;
@@ -706,6 +707,7 @@ class KeepAspectRatio : public OptionsManagerOverride {
 		Cmdline_enable_vr = saved_vr;
 		Fred_running = saved_fred;
 		Gr_native_res_hud = saved_native_res_hud;
+		Cmdline_nograb = saved_nograb;
 		OptionsManagerOverride::TearDown();
 	}
 
@@ -731,6 +733,7 @@ class KeepAspectRatio : public OptionsManagerOverride {
 	bool saved_vr = false;
 	int saved_fred = 0;
 	bool saved_native_res_hud = false;
+	bool saved_nograb = false;
 };
 
 TEST_F(KeepAspectRatio, StretchesWhenOff)
@@ -754,6 +757,9 @@ TEST_F(KeepAspectRatio, ConfinesThePointerOnlyInFullscreenWithBars)
 	EXPECT_EQ(r, (std::array<int, 4>{240, 0, 1440, 1080}));
 	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Windowed, r[0], r[1], r[2], r[3]));
 	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Borderless, r[0], r[1], r[2], r[3]));
+	Cmdline_nograb = true;
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
+	Cmdline_nograb = false;
 	setKeep(false);
 	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
 }

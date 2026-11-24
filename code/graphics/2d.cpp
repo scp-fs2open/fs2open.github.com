@@ -1356,8 +1356,8 @@ void gr_present_rect(int& x, int& y, int& w, int& h)
 bool gr_pointer_confine_rect(os::ViewportState state, int& x, int& y, int& w, int& h)
 {
 	// A click in a bar would reach the controls at the edge of the frame. A window is not confined, so that the
-	// pointer can still leave it.
-	if (!Cmdline_window_res || state != os::ViewportState::Fullscreen) {
+	// pointer can still leave it. With -nograb the pointer is never confined.
+	if (!Cmdline_window_res || Cmdline_nograb || state != os::ViewportState::Fullscreen) {
 		return false;
 	}
 	gr_present_rect(x, y, w, h);

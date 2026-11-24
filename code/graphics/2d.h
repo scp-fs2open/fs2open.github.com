@@ -111,7 +111,7 @@ bool gr_upscale_nearest();
 void gr_present_rect(int& x, int& y, int& w, int& h);
 
 // The rectangle that the pointer must stay in, for a window in the given state: the frame while black bars show in
-// exclusive fullscreen. Returns false when the pointer is free.
+// exclusive fullscreen, unless -nograb is set. Returns false when the pointer is free.
 bool gr_pointer_confine_rect(os::ViewportState state, int& x, int& y, int& w, int& h);
 
 // The bottom edge of a gr_present_rect() rectangle in a window of height window_h, with y from the bottom as

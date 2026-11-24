@@ -106,7 +106,8 @@ int mouse_down(const CC_bind& bind, bool must_be_wheel = false);
 int mouse_down(int btn, bool must_be_wheel = false);
 
 void mouse_reset_deltas();
-// Keeps the pointer inside the frame while black bars show in exclusive fullscreen. Call once per frame.
+// Keeps the pointer inside the frame while black bars show in exclusive fullscreen, unless -nograb is set. Call once
+// per frame.
 void mouse_confine_to_frame();
 void mouse_get_delta(int* dx = nullptr, int* dy = nullptr, int* dz = nullptr);
 void mouse_get_wheel_delta(int* dx = nullptr, int* dy = nullptr);
