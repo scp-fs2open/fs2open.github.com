@@ -138,13 +138,6 @@ struct PoolTraits<shockwave> {
 CHECKPOINT_POOL(shockwave);
 
 template <>
-struct PoolTraits<ai_profile_t> {
-	static int index_of(const ai_profile_t* p) { return AI_PROFILES_INDEX(p); }
-	static ai_profile_t* at(int index) { return (index >= 0 && index < MAX_AI_PROFILES) ? &Ai_profiles[index] : nullptr; }
-};
-CHECKPOINT_POOL(ai_profile_t);
-
-template <>
 struct PoolTraits<traitor_override_t> {
 	static int index_of(const traitor_override_t* p) { return static_cast<int>(p - Traitor_overrides.data()); }
 	static traitor_override_t* at(int index) { return SCP_vector_inbounds(Traitor_overrides, index) ? &Traitor_overrides[index] : nullptr; }

@@ -9,7 +9,6 @@
 
 #include "ai/ai_profiles.h"
 #include "ai/aibig.h"
-#include "checkpoint/registry.h"
 #include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
@@ -20,13 +19,8 @@
 
 
 // global stuff
-int Num_ai_profiles;
 int Default_ai_profile;
-ai_profile_t Ai_profiles[MAX_AI_PROFILES];
-// set-friendly-damage-caps changes the caps of the mission's AI profile
-CHECKPOINT_TABLE_FIELD(checkpoint::first_n(Ai_profiles, Num_ai_profiles), beam_friendly_damage_cap);
-CHECKPOINT_TABLE_FIELD(checkpoint::first_n(Ai_profiles, Num_ai_profiles), weapon_friendly_damage_cap);
-CHECKPOINT_TABLE_FIELD(checkpoint::first_n(Ai_profiles, Num_ai_profiles), weapon_self_damage_cap);
+SCP_vector<ai_profile_t> Ai_profiles;
 
 // local to this file
 static int Ai_profiles_initted = 0;
@@ -121,7 +115,7 @@ void parse_ai_profiles_tbl(const char *filename)
 			stuff_string(profile_name, F_NAME, NAME_LENGTH);
 
 			// see if it exists
-			for (i = 0; i < Num_ai_profiles; i++)
+			for (i = 0; i < sz2i(Ai_profiles.size()); i++)
 			{
 				if (!stricmp(Ai_profiles[i].profile_name, profile_name))
 				{
@@ -149,16 +143,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 				else
 				{
-					// make sure we're under the limit
-					if (Num_ai_profiles >= MAX_AI_PROFILES)
-					{
-						Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES - 1);	// -1 because one is built-in
-						skip_to_string("#End", NULL);
-						break;
-					}
-
-					profile = &Ai_profiles[Num_ai_profiles];
-					Num_ai_profiles++;
+					Ai_profiles.emplace_back();
+					profile = &Ai_profiles.back();
 				}
 			}
 
@@ -166,7 +152,7 @@ void parse_ai_profiles_tbl(const char *filename)
 			if (!no_create)
 			{
 				// base profile, so zero it out
-				if (profile == &Ai_profiles[0])
+				if (profile == &Ai_profiles.front())
 				{
                     profile->reset();
 				}
@@ -814,7 +800,7 @@ void ai_profiles_init()
 	if (Ai_profiles_initted)
 		return;
 
-	Num_ai_profiles = 0;
+	Ai_profiles.clear();
 	Default_ai_profile = 0;
 	Default_profile_name[0] = '\0';
 
@@ -847,7 +833,7 @@ void ai_profiles_init()
 
 int ai_profile_lookup(const char *name)
 {
-	for (int i = 0; i < Num_ai_profiles; i++)
+	for (int i = 0; i < sz2i(Ai_profiles.size()); i++)
 		if (!stricmp(name, Ai_profiles[i].profile_name))
 			return i;
 

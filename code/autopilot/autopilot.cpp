@@ -967,6 +967,15 @@ void EndAutoPilot()
 	}
 }
 
+// End autopilot while the old nav is still selected so shutdown removes its goals.
+static void nav_set_selection(int nav)
+{
+	if (nav == CurrentNav)
+		return;
+	if (AutoPilotEngaged)
+		EndAutoPilot();
+	CurrentNav = nav;
+}
 
 // ********************************************************************************************
 
@@ -1111,9 +1120,9 @@ void NavSystem_Do()
 			{
 				if (Objects[Navs[i].target_index].flags[Object::Object_Flags::Should_be_dead])
 				{
-					if (CurrentNav == i)
-						CurrentNav = -1;
 					DelNavPoint(i);
+					// The next nav may also be for a dead ship.
+					--i;
 				}
 			}
 		}
@@ -1359,13 +1368,14 @@ bool DelNavPoint(int nav)
 {	
 	if (nav != -1)
 	{
-		if (nav != MAX_NAVPOINTS-1)
-		{
-			for (int i = nav; i < MAX_NAVPOINTS-1; i++)
-			{
-				Navs[nav] = Navs[nav+1];
-			}
+		if (CurrentNav == nav)
+			nav_set_selection(-1);
+		else if (CurrentNav > nav)
+			--CurrentNav;
 
+		for (int i = nav; i < MAX_NAVPOINTS-1; i++)
+		{
+			Navs[i] = Navs[i+1];
 		}
 		Navs[MAX_NAVPOINTS-1].clear();
 		return true;
@@ -1552,18 +1562,22 @@ bool Nav_UnSet_Visited(const char *Nav)
 // Selects a navpoint by name.
 void SelectNav(const char *Nav)
 {
+	// Keep the last match, and change the selection once so a duplicate name does not end autopilot.
+	int nav = -1;
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 	{
 		if (!stricmp(Navs[i].m_NavName, Nav))
-			if (!(Nav_Get_Flags(Nav) & NP_HIDDEN || Nav_Get_Flags(Nav) & NP_NOACCESS)) CurrentNav = i;
+			if (!(Nav_Get_Flags(Nav) & NP_HIDDEN || Nav_Get_Flags(Nav) & NP_NOACCESS)) nav = i;
 	}
+	if (nav >= 0)
+		nav_set_selection(nav);
 }
 
 // ********************************************************************************************
 // Deselects any navpoint selected.
 void DeselectNav()
 {
-  CurrentNav = 0;
+	nav_set_selection(-1);
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

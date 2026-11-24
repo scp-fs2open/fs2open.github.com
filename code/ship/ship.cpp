@@ -6053,6 +6053,9 @@ void ship_init()
 			Ship_types.erase(Ship_types.begin() + idx);
 		}
 
+		Fighter_bomber_valid = false;
+		Ship_type_fighter = Ship_type_bomber = Ship_type_fighter_bomber = -1;
+
 		// See whether this mod defines an explicit "fighter/bomber" type (which would take priority over the special usage), and if not, whether the component types exist
 		if (ship_type_name_lookup(Fighter_bomber_type_name) < 0)
 		{
@@ -6099,6 +6102,7 @@ void ship_init()
 			//Parse main TBL first
 			Removed_ships.clear();
 			Ship_info.clear();
+			Wing_formations.clear();
 			Hud_parsed_ships.clear();
 			parse_shiptbl("ships.tbl");
 
@@ -6463,7 +6467,7 @@ void physics_ship_init(object *objp)
 	pi->glide_accel_mult = sinfo->glide_accel_mult;
 
 	//SUSHI: This defaults to the AI_Profile value, and is only optionally overridden
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_newtonian_dampening])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Use_newtonian_dampening])
 		pi->flags |= PF_NEWTONIAN_DAMP;
 	if (sinfo->newtonian_damp_override)
 	{
@@ -7500,9 +7504,9 @@ static void resolve_subsystem_flags(const model_subsystem &msp, flagset<Ship::Su
 	resolve_subsystem_flags(msp.flags, subsys_flags, weapon_flags);
 
 	// post-resolution: AI profile flags apply to all turrets
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Advanced_turret_fov_edge_checks])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Advanced_turret_fov_edge_checks])
 		subsys_flags.set(Ship::Subsystem_Flags::FOV_edge_check);
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_turret_to_have_target_in_fov])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Require_turret_to_have_target_in_fov])
 		subsys_flags.set(Ship::Subsystem_Flags::FOV_Required);
 
 	// post-resolution: the mission can free all beam weapons by default
@@ -8604,7 +8608,7 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 	// do standard departure stuff first
 	objp->flags.set(Object::Object_Flags::Should_be_dead);
 	if (objp->type == OBJ_SHIP)
-		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
+		ship_cleanup(objp->instance, infop->parameter_variables.int_value);
 
 	// do the end-mission stuff if it's the player ship
 	if (objp == Player_obj)
@@ -8617,7 +8621,8 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 void ship_actually_depart(int shipnum, int method)
 {
 	dock_function_info dfi;
-	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
+	dfi.parameter_variables.int_value = method;
+
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
 
 	// in a couple of cases we'll need to send a packet to update clients 
@@ -8846,7 +8851,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	}
 
 	// maybe clean up any wings that arrived from this ship
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship]) {
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship]) {
 		for (int child_wingnum = 0; child_wingnum < Num_wings; ++child_wingnum) {
 			auto child_wingp = &Wings[child_wingnum];
 			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && child_wingp->arrival_anchor.value() == entry_index) {
@@ -12677,14 +12682,14 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	const bool autoaim_convergence_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Autoaim_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Autoaim_convergence]));
 
 	// Now check that we have a target and an FOV value
-	has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+	has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile()->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
 	has_autoaim = ((autoaim_flagged || has_converging_autoaim || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
 	}
 
-	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
+	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile()->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
 
 	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
@@ -12886,14 +12891,14 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		const bool auto_convergence_flagged = ((sip->aiming_flags[Object::Aiming_Flags::Auto_convergence]) || (winfo_p->aiming_flags[Object::Aiming_Flags::Auto_convergence]));
 
 		// Now add in other checks like difficulty and game mode as appropriate. Also make sure we have a target and an FOV if necessary.
-		has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+		has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile()->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
 		has_autoaim = ((autoaim_flagged || has_converging_autoaim || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 		needs_target_pos = ((auto_convergence_flagged || has_autoaim) && aip->target_objnum != -1);
 		// TODO: check if weapon has launch curves that might need distance to enemy
 
 		if (needs_target_pos) {
 			if (has_autoaim) {
-				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
+				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile()->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
 			}
 
 			// If a subsystem is targeted, fire in that direction instead
@@ -12909,7 +12914,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
 
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
@@ -13012,7 +13017,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		}
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
-		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_linked_fire_penalty]) )
+		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Disable_linked_fire_penalty]) )
 		{
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
@@ -13119,7 +13124,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// This is to circumvent a nine-year-old bug that prevents autoaim from working in multi. In most cases polish_predicted_target_pos needs
 				// the Player object, but in multi it needs the shooting object.  Also, additional conditions would need to be added in the future if you 
 				// want to apply autoaim to AI, for whatever reason.
-				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship]) ? obj : Player_obj;
+				// a player joining a game in progress has no ship yet, so measure from the shooter
+				object* object_to_send = (obj->flags[Object::Object_Flags::Player_ship] || Player_obj == nullptr) ? obj : Player_obj;
 
 				vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
 				polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1, object_to_send);
@@ -13903,12 +13909,12 @@ bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank)
 	// use the flag, not Player_obj, for multiplayer correctness
 	if (shipp->objnum >= 0 && Objects[shipp->objnum].flags[Object::Object_Flags::Player_ship])
 	{
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire])
+		if (The_mission.ai_profile()->flags[AI::Profile_Flags::Disable_player_secondary_doublefire])
 			return false;
 	}
 	else
 	{
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire])
+		if (The_mission.ai_profile()->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire])
 			return false;
 	}
 
@@ -14879,7 +14885,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	float target_range, weapon_range_max, weapon_range_min;
 	target_range = 0.0f;
 
-	if (The_mission.ai_profile->ai_range_aware_secondary_select_mode!= AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
+	if (The_mission.ai_profile()->ai_range_aware_secondary_select_mode!= AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 		vec3d our_position = objp->pos;
 		vec3d target_position;
 		object *target = &Objects[Ai_info[shipp->ai_index].target_objnum];
@@ -14901,7 +14907,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 	}
 	for (i=0; i<shipp->weapons.num_secondary_banks; i++)
 		if (ship_secondary_has_ammo(&shipp->weapons, i)) {
-			if (The_mission.ai_profile->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
+			if (The_mission.ai_profile()->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
 				weapon_range_min = wepp->weapon_min_range;
 				weapon_range_max = wepp->weapon_range;
@@ -15687,15 +15693,19 @@ void ship_index_subsystems(ship *shipp)
 }
 
 /**
- * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems.
+ * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems,
+ * or nullptr if there is no such subsystem.
  */
 ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 {
 	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
 	Assertion(index < Ship_info[sp->ship_info_index].n_subsystems, "Subsystem index out of range!");
 
+	if (index < 0 || index >= Ship_info[sp->ship_info_index].n_subsystems)
+		return nullptr;
+
 	// might need to refresh the cache
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	return sp->subsys_list_indexer[index];
@@ -15715,7 +15725,7 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 
 	// might need to refresh the cache
 	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
-	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid] || sp->subsys_list_indexer == nullptr)
 		ship_index_subsystems(sp);
 
 	Assertion(subsys->parent_subsys_index >= 0, "Somehow a subsystem could not be found in its parent ship %s's subsystem list!", sp->ship_name);
@@ -15998,7 +16008,7 @@ static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 	return The_mission.support_ships.rearm_weapon_pool[team].value_or(weapon_class, The_mission.support_ships.rearm_pool_default());
 }
 
-static bool weapon_allowed_for_current_game_type(int weapon_flags)
+bool eval_weapon_flag_for_game_type(int weapon_flags)
 {
 	if (MULTI_DOGFIGHT) {
 		return (weapon_flags & DOGFIGHT_WEAPON) != 0;
@@ -16007,22 +16017,20 @@ static bool weapon_allowed_for_current_game_type(int weapon_flags)
 	return (weapon_flags & REGULAR_WEAPON) != 0;
 }
 
-static bool support_rearm_bank_allows_weapon(const ship_info* sip, int bank_index, int weapon_class)
+bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
 {
-	if (!weapon_allowed_for_current_game_type(sip->allowed_weapons[weapon_class])) {
+	if (weapon_class < 0)
+		return true;
+
+	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
 		return false;
-	}
 
-	if (bank_index >= 0 && !sip->restricted_loadout_flag.empty()) {
-		if (weapon_allowed_for_current_game_type(sip->restricted_loadout_flag[bank_index])) {
-			if (sip->allowed_bank_restricted_weapons.empty() ||
-				!weapon_allowed_for_current_game_type(sip->allowed_bank_restricted_weapons[bank_index][weapon_class])) {
-				return false;
-			}
-		}
-	}
+	// no bank given, or no per-bank lists: the class list decides
+	if (bank < 0 || sip->restricted_loadout_flag.empty() ||
+		!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
+		return true;
 
-	return true;
+	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]);
 }
 
 static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool is_secondary_bank)
@@ -16050,7 +16058,7 @@ static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool 
 			}
 		}
 
-		if (!support_rearm_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
+		if (!ship_class_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
 			continue;
 		}
 
@@ -16633,9 +16641,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 }
 
 /**
- * Called in game_shutdown() to free malloced memory
- *
- * NOTE: do not call this function.  It is only called from ::game_shutdown()
+ * Frees the ship tables and other memory allocated by ship_init()
  */
 void ship_close()
 {
@@ -16659,6 +16665,8 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
+
+	Ships_inited = false;
 }	
 
 /**
@@ -17063,7 +17071,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 			if (flags == SHIP_GET_UNSILENCED) {
 				if (Ships[ship_index].flags[Ship_Flags::No_builtin_messages])
 					continue;
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[ship_index]) <= COMM_DAMAGED)
+				if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[ship_index]) <= COMM_DAMAGED)
 					continue;
 			}
 
@@ -17299,7 +17307,7 @@ int ship_engine_ok_to_warp(ship *sp)
 int ship_navigation_ok_to_warp(ship *sp)
 {
 	// if not using the special flag, warp is always allowed
-	if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Navigation_subsys_governs_warp]))
+	if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::Navigation_subsys_governs_warp]))
 		return 1;
 
 	float navigation_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_NAVIGATION);
@@ -18266,7 +18274,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	if ( killer_sp->flags[Ship_Flags::No_builtin_messages] ) {
 		return; 
 	}
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(killer_sp) != COMM_OK) {
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(killer_sp) != COMM_OK) {
 		return;
 	}
 
@@ -18374,7 +18382,7 @@ play_ask_help:
 		return;
 	}
 
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[objp->instance]) <= COMM_DAMAGED) {
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(&Ships[objp->instance]) <= COMM_DAMAGED) {
 		return;
 	}
 
@@ -18427,7 +18435,7 @@ void ship_scream(ship *sp)
 	// Bail if the ship is silenced
 	if (sp->flags[Ship_Flags::No_builtin_messages])
 		return;
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp, true) <= COMM_DAMAGED)
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp, true) <= COMM_DAMAGED)
 		return;
 
 	if (message_send_builtin(MESSAGE_WINGMAN_SCREAM, sp, nullptr, -1, multi_team_filter)) {
@@ -18459,7 +18467,7 @@ void ship_maybe_scream(ship *sp)
 			return;
 
 		// for WCSaga, only do a subset of the checks
-		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Perform_fewer_scream_checks]))
+		if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::Perform_fewer_scream_checks]))
 		{
 			// bail if this ship isn't from the player wing
 			if (!(sp->flags[Ship_Flags::From_player_wing]))
@@ -18509,7 +18517,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 	if (sp->flags[Ship_Flags::No_builtin_messages]) {
 		return;
 	}
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
 		return;
 
 	// don't mention low ammo if we're docked, for the same reason as in maybe_request_support
@@ -18573,7 +18581,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 	// Silent ships should remain just that
 	if (sp->flags[Ship_Flags::No_builtin_messages])
 		return;
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp) <= COMM_DAMAGED)
 		return;
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
@@ -20093,7 +20101,7 @@ void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
-	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
+	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile());
 
 	shipp->weapons.ai_class = new_ai_class;
 

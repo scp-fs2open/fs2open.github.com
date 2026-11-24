@@ -1897,6 +1897,19 @@ extern int ship_info_lookup(const char *name);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(const char *name);
 
+/**
+ * @brief Whether REGULAR_WEAPON / DOGFIGHT_WEAPON flags allow a weapon in the current game type
+ */
+bool eval_weapon_flag_for_game_type(int weapon_flags);
+
+/**
+ * @brief Whether a ship class can load a weapon in one of its banks, in the current game type
+ * @param[in] bank Index into the class's bank lists, secondaries starting at MAX_SHIP_PRIMARY_BANKS; -1 checks only
+ * the class-wide list
+ * @param[in] weapon_class Weapon_info index; -1 (an empty bank) is always allowed
+ */
+bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class);
+
 inline int ship_info_size()
 {
 	return static_cast<int>(Ship_info.size());
@@ -1954,7 +1967,7 @@ extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew = true, bool local_pos = false, bool local_orient = false);
 
 extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
-extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
+extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship, or nullptr if there is none
 extern int ship_find_subsys(const ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(const ship_subsys *subsys);
 
@@ -1983,7 +1996,7 @@ extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 extern void wing_maybe_cleanup( wing *wingp, int team = -1 );
 
 extern int ship_find_repair_ship( object *requester_obj, object **ship_we_found = NULL );
-extern void ship_close();	// called in game_shutdown() to free malloced memory
+extern void ship_close();	// frees the ship tables
 
 
 extern void ship_assign_sound_all();

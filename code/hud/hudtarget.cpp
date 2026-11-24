@@ -40,6 +40,7 @@
 #include "network/multiutil.h"
 #include "object/object.h"
 #include "libs/renderdoc/renderdoc.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3dinternal.h"
@@ -77,6 +78,29 @@ SCP_vector<target_display_info> target_display_list;
 object* hostile_obj = NULL;
 
 static int ballistic_hud_index = 0;	// Goober5000
+
+static bool ballistic_gauge_default = false;
+
+static void parse_ballistic_gauge_func()
+{
+	stuff_boolean(&ballistic_gauge_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Cmdline_ballistic_gauge = ballistic_gauge_default ? 1 : 0;
+}
+
+static auto BallisticGaugeOption __UNUSED = options::OptionBuilder<bool>("HUD.BallisticGauge",
+	std::pair<const char*, int>{"Ballistic Ammo Gauge", -1},
+	std::pair<const char*, int>{"Shows an ammo gauge in place of the energy gauge for ships with ballistic primary "
+		"weapons.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return ballistic_gauge_default; })
+	.change_listener([](bool val, bool) {
+		Cmdline_ballistic_gauge = val ? 1 : 0;
+		return true;
+	})
+	.importance(47)
+	.parser(parse_ballistic_gauge_func)
+	.finish();
 
 extern object obj_used_list;		// dummy node in linked list of active objects
 extern char *Cargo_names[];
@@ -3902,7 +3926,7 @@ bool hud_calculate_lead_pos(vec3d* shooter_pos, vec3d *lead_target_pos, vec3d *t
 		}
 	}
 
-	if(The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
+	if(The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 		vm_vec_scale_sub2(&target_speed, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 
 	// test if the target is moving at all
@@ -3999,14 +4023,14 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 	
 	vec3d enemy_vel = targetp->phys_info.vel;
 	vec3d enemy_acc;
-	if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
+	if (The_mission.ai_profile()->second_order_lead_predict_factor > 0) {
 		vec3d world_rotvel;
 		vm_vec_unrotate(&world_rotvel, &targetp->phys_info.rotvel, &targetp->orient);
 		vm_vec_cross(&enemy_acc, &world_rotvel, &enemy_vel);
 	}
 	// additive velocity stuff
 	// not just the player's main target
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
 		vm_vec_scale_sub2( &enemy_vel, &reference_object->phys_info.vel, wip->vel_inherit_amount);
 	}
 
@@ -4014,8 +4038,8 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &reference_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
 		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
-		if (The_mission.ai_profile->second_order_lead_predict_factor > 0) {
-			vm_vec_scale_add(predicted_enemy_pos, predicted_enemy_pos, &enemy_acc, (time_to_enemy * time_to_enemy / 2) * The_mission.ai_profile->second_order_lead_predict_factor);
+		if (The_mission.ai_profile()->second_order_lead_predict_factor > 0) {
+			vm_vec_scale_add(predicted_enemy_pos, predicted_enemy_pos, &enemy_acc, (time_to_enemy * time_to_enemy / 2) * The_mission.ai_profile()->second_order_lead_predict_factor);
 		}
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;

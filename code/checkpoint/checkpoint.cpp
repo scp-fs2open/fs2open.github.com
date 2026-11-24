@@ -212,8 +212,12 @@ NameLists table_names()
 	tables.emplace_back("Damage_types", names_of(Damage_types, [](const DamageTypeStruct& e) { return e.name; }));
 	tables.emplace_back("Asteroid_info", names_of(Asteroid_info, [](const asteroid_info& e) { return e.name; }));
 	tables.emplace_back("Personas", names_of(Personas, [](const Persona& e) { return e.name; }));
+	// a mission's transient copy of its profile (set-friendly-damage-caps) isn't part of the table; see missionparse.cpp
 	tables.emplace_back("Ai_profiles", SCP_vector<SCP_string>());
-	for (int i = 0; i < Num_ai_profiles; ++i)
+	size_t num_table_profiles = Ai_profiles.size();
+	if (The_mission.flags[Mission::Mission_Flags::Has_transient_ai_profile] && num_table_profiles > 0)
+		--num_table_profiles;
+	for (size_t i = 0; i < num_table_profiles; ++i)
 		tables.back().second.emplace_back(Ai_profiles[i].profile_name);
 	tables.emplace_back("Prop_info", names_of(Prop_info, [](const prop_info& e) { return e.name; }));
 	tables.emplace_back("Ship_types", names_of(Ship_types, [](const ship_type_info& e) { return e.name; }));
