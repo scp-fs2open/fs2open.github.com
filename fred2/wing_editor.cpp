@@ -265,10 +265,11 @@ void wing_editor::OnClose()
 		return;
 	}
 
+	// recorded before closing, so the main window's "Editing" step when focus returns is the skipped duplicate
+	FREDDoc_ptr->autosave("wing editor");
+
 	SetWindowPos(Fred_main_wnd, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_HIDEWINDOW);
 	Fred_main_wnd->SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-
-	FREDDoc_ptr->autosave("wing editor");
 }
 
 // initialize everything that update_data_safe() saves.

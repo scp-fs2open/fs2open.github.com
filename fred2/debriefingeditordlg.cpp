@@ -465,9 +465,10 @@ void debriefing_editor_dlg::OnClose()
 	theApp.record_window_data(&Debriefing_wnd_data, this);
 	debriefing_editor_dlg *ptr = Debriefing_dialog;
 	Debriefing_dialog = nullptr;
-	delete ptr;
 
+	// recorded before closing, so the main window's "Editing" step when focus returns is the skipped duplicate
 	FREDDoc_ptr->autosave("debriefing editor");
+	delete ptr;
 }
 
 void debriefing_editor_dlg::OnOK()

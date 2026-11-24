@@ -213,11 +213,12 @@ void CMessageEditorDlg::OnButtonOk()
 {
 	update(m_cur_msg);
 
+	// recorded before closing, so the main window's "Editing" step when focus returns is the skipped duplicate
+	FREDDoc_ptr->autosave("message editor");
+
 	theApp.record_window_data(&Messages_wnd_data, this);
 	delete Message_editor_dlg;
 	Message_editor_dlg = NULL;
-
-	FREDDoc_ptr->autosave("message editor");
 }
 
 void CMessageEditorDlg::OnCancel()
