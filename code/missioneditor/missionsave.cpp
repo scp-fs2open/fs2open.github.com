@@ -2925,7 +2925,10 @@ int Fred_mission_save::save_mission_info()
 		}
 	}
 
-	if (The_mission.flags[Mission::Mission_Flags::All_attack]) {
+	// older engines read All Teams at War only from this tag, not from the mission flag
+	if (The_mission.flags[Mission::Mission_Flags::All_attack] &&
+		(save_config.save_format == MissionFormat::RETAIL ||
+			The_mission.required_fso_version <= gameversion::version(26, 3))) {
 		if (optional_string_fred("+All Teams Attack")) {
 			parse_comments();
 		} else {
