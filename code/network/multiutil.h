@@ -14,6 +14,8 @@
 
 #include "network/psnet2.h"
 
+#include <utility>
+
 // prototypes instead of headers :)
 struct net_player;
 struct net_addr;
@@ -47,7 +49,7 @@ extern int find_player_index(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( const object *obj );
 extern int multi_find_player_by_signature( int signature );
-extern int multi_find_player_by_callsign(const char *callsign);
+extern std::pair<int, int> multi_find_player_by_callsign(const char *callsign, bool requires_ship = false);
 extern int multi_find_player_by_net_signature(ushort net_signature);
 extern int multi_find_player_by_parse_object(p_object *p_objp );
 extern int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning = false);
@@ -211,6 +213,9 @@ int multi_unpack_turret_angles(ubyte* data, std::pair<bool, float>& angle1, std:
 
 // Cyborg17 - Compresses the list of subsystems, so that we don't have to mark each one with a ubyte
 int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data);
+
+// returns the index'th subsystem of a ship, or nullptr if the index read from a packet is not in its list
+ship_subsys* multi_get_indexed_subsys(ship* shipp, int index);
 
 char multi_unit_to_char(float unit);
 float multi_char_to_unit(float val);

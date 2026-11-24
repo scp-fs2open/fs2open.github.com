@@ -150,6 +150,7 @@ void bm_close();
 #define BMP_FLAG_CUBEMAP					(1<<2)
 #define BMP_FLAG_RENDER_TARGET_MIPMAP		(1<<3)
 #define BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT	(1<<4)
+#define BMP_FLAG_RENDER_TARGET_HDR			(1<<5)	// 16 bit float color, like the screen
 
 /**
  * @brief Allocates memory for the given handle.
@@ -435,6 +436,13 @@ void bm_get_filename(int bitmapnum, char *filename);
  *   void bm_get_filename(int handle, SCP_string *filename, bool must_exist = false);
  */
 const char *bm_get_filename(int handle);
+
+/**
+ * @brief Gets the name of the file that holds the pixels of this bitmap
+ *
+ * This is the same as bm_get_filename(), except for an EFF. For an EFF it is the file of the individual image.
+ */
+const char *bm_get_image_filename(int handle);
 
 /**
  * @brief Unloads all used bitmaps, should only ever be called by game_shutdown()

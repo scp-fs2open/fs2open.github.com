@@ -894,7 +894,7 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 		damage = 0.0f;
 	}
 
-	if (hitpos && force && The_mission.ai_profile->flags[AI::Profile_Flags::Whackable_debris]) {
+	if (hitpos && force && The_mission.ai_profile()->flags[AI::Profile_Flags::Whackable_debris]) {
 		vec3d rel_hit_pos = *hitpos - debris_obj->pos;
 		physics_calculate_and_apply_whack(force, &rel_hit_pos, &debris_obj->phys_info, &debris_obj->orient, &debris_obj->phys_info.I_body_inv);
 	}
@@ -1273,6 +1273,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	}
 
 	model_render_params render_info;
+	render_info.set_object_number(OBJ_INDEX(obj));
 
 	if ( db->is_hull ) {
 		MONITOR_INC(NumHullDebrisRend, 1);

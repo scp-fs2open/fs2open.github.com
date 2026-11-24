@@ -12,6 +12,7 @@
 // specifically None and Always; see https://stackoverflow.com/questions/22476110/c-compiling-error-including-x11-x-h-x11-xlib-h
 
 #include "cmdline/cmdline.h"
+#include "imgui.h"
 #include "io/cursor.h"
 #include "io/mouse.h"
 #include "graphics/matrix.h"
@@ -207,7 +208,7 @@ bool gr_opengl_openxr_acquire_swapchain_buffers() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, xr_swap_tex, 0);
 	opengl_set_object_label(GL_TEXTURE, xr_swap_tex, "XR Swap Texture");
@@ -254,7 +255,7 @@ bool gr_opengl_openxr_flip() {
 
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_BACK);
-		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		glDrawBuffer(GL_NONE);
 
 		GL_state.PopFramebufferState();
@@ -347,8 +348,9 @@ bool gr_opengl_openxr_flip() {
 			gr_set_clear_color(0, 0, 0);
 			opengl_render_primitives_immediate(PRIM_TYPE_TRIFAN, &vert_def, 4, v, sizeof(v));
 
-			//And if we have a curser, it also needs to be put onscreen manually
-			if (io::mouse::CursorManager::get()->isCursorShown()) {
+			//And if we have a curser, it also needs to be put onscreen manually. Unless ImGui drew its own (see gr_imgui_begin_frame()).
+			const bool imgui_cursor = ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().MouseDrawCursor;
+			if (io::mouse::CursorManager::get()->isCursorShown() && !imgui_cursor) {
 				opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY_WORLD, SDR_FLAG_COPY_FROM_ARRAY));
 				Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 				
@@ -391,7 +393,7 @@ bool gr_opengl_openxr_flip() {
 			gr_end_proj_matrix();
 			gr_end_view_matrix();
 			gr_reset_clip();
-			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+			glViewport(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height());
 
 			GL_state.Texture.Enable(0);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
@@ -410,7 +412,7 @@ bool gr_opengl_openxr_flip() {
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_BACK);
-			glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+			glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
 			glDrawBuffer(GL_NONE);
 

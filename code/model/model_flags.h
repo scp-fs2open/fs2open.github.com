@@ -81,13 +81,13 @@ namespace Model {
 
 	FLAG_LIST(Render_Flags) {
 		Normal,					// Draw a normal object
-		Show_outline,			// Draw the object in outline mode. Color specified by model_set_outline_color
+		Show_outline,			// Draw the object in outline mode. Color specified by model_render_params::set_color
 		Show_pivots,			// Show the pivot points
 		Show_paths,				// Show the paths associated with a model
 		Show_radius,			// Show the radius around the object
 		Show_shields,			// Show the shield mesh
-		Show_thrusters,			// Show the engine thrusters. See model_set_thrust for how long it draws.
-		Lock_detail,			// Only draw the detail level defined in model_set_detail_level
+		Show_thrusters,			// Show the engine thrusters. See model_render_params::set_thruster_info for how long it draws.
+		Lock_detail,			// Only draw the detail level defined in model_render_params::set_detail_level_lock
 		No_polys,				// Don't draw the polygons.
 		No_lighting,			// Don't perform any lighting on the model.
 		No_texturing,			// Draw textures as flat-shaded polygons.

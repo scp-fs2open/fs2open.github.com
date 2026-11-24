@@ -1,6 +1,7 @@
 
 #include "matrix.h"
 
+#include "graphics/openxr.h"
 #include "graphics/util/UniformBuffer.h"
 #include "cmdline/cmdline.h"
 
@@ -30,6 +31,114 @@ static bool matrix_uniform_up_to_date = false;
 
 static bool  gr_ortho_override_active   = false;
 static float gr_ortho_override_distance = 0.0f;
+
+bool Gr_motion_vectors_active = false;
+
+namespace {
+struct velocity_camera {
+	matrix4 view_proj;
+	matrix4 previous_view_proj;
+
+	void capture()
+	{
+		previous_view_proj = view_proj;
+		vm_matrix4_x_matrix4(&view_proj, &gr_projection_matrix, &gr_view_matrix);
+	}
+};
+
+struct temporal_view {
+	velocity_camera scene;
+	velocity_camera cockpit;
+	matrix4 cockpit_last_view_proj;
+	vec3d cockpit_sway = vmd_zero_vector;
+	vec3d cockpit_last_sway = vmd_zero_vector;
+	bool reset_requested = true;
+};
+
+// In VR, each eye's previous frame is its own, not the other eye's
+std::array<temporal_view, 2> Temporal_views;
+
+temporal_view& current_temporal_view()
+{
+	return Temporal_views[openxr_get_current_eye()];
+}
+}
+
+static const velocity_camera* Current_velocity_camera = &Temporal_views[0].scene;
+static float Scene_viewport_rect[4] = {0.0f, 0.0f, 1.0f, 1.0f};
+
+void gr_reset_temporal_history()
+{
+	for (auto& view : Temporal_views) {
+		view.reset_requested = true;
+	}
+}
+
+bool gr_consume_temporal_reset()
+{
+	auto& view = current_temporal_view();
+	const bool requested = view.reset_requested;
+	view.reset_requested = false;
+	return requested;
+}
+
+void gr_capture_scene_camera()
+{
+	auto& view = current_temporal_view();
+	view.scene.capture();
+	view.cockpit_last_view_proj = view.cockpit.view_proj;
+	view.cockpit_last_sway = view.cockpit_sway;
+	Current_velocity_camera = &view.scene;
+
+	Scene_viewport_rect[0] = i2fl(gr_screen.offset_x) / i2fl(gr_screen.max_w);
+	Scene_viewport_rect[1] = i2fl(gr_screen.offset_y) / i2fl(gr_screen.max_h);
+	Scene_viewport_rect[2] = i2fl(gr_screen.clip_width) / i2fl(gr_screen.max_w);
+	Scene_viewport_rect[3] = i2fl(gr_screen.clip_height) / i2fl(gr_screen.max_h);
+}
+
+void gr_begin_cockpit_camera(const matrix* ship_orient, const matrix* ship_last_orient, const vec3d* sway)
+{
+	auto& view = current_temporal_view();
+	vm_matrix4_x_matrix4(&view.cockpit.view_proj, &gr_projection_matrix, &gr_view_matrix);
+	view.cockpit_sway = *sway;
+
+	// Everything drawn here hangs off the ship's rotation plus the sway offset, so last frame's position of a point is
+	// its current one moved by the change of that frame.
+	matrix current = *ship_orient;
+	matrix last = *ship_last_orient;
+	matrix4 current_frame, inverse_current, last_frame, frame_change;
+	vm_matrix4_set_transform(&current_frame, &current, &view.cockpit_sway);
+	vm_matrix4_set_transform(&last_frame, &last, &view.cockpit_last_sway);
+	vm_inverse_matrix4(&inverse_current, &current_frame);
+	vm_matrix4_x_matrix4(&frame_change, &last_frame, &inverse_current);
+	vm_matrix4_x_matrix4(&view.cockpit.previous_view_proj, &view.cockpit_last_view_proj, &frame_change);
+
+	Current_velocity_camera = &view.cockpit;
+}
+
+void gr_end_cockpit_camera()
+{
+	Current_velocity_camera = &current_temporal_view().scene;
+}
+
+void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, float viewport_rect[4])
+{
+	*view_proj = Current_velocity_camera->view_proj;
+	*previous_view_proj = Current_velocity_camera->previous_view_proj;
+	memcpy(viewport_rect, Scene_viewport_rect, sizeof(Scene_viewport_rect));
+}
+
+void gr_get_velocity_uniforms(graphics::velocity_camera_data* out)
+{
+	// Only shaders writing motion vectors read this, and those only run in a scene that has them
+	if (!Gr_motion_vectors_active) {
+		return;
+	}
+	out->viewProj = Current_velocity_camera->view_proj;
+	out->prevViewProj = Current_velocity_camera->previous_view_proj;
+	out->uvScale[0] = Scene_viewport_rect[2];
+	out->uvScale[1] = Scene_viewport_rect[3];
+}
 
 static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {

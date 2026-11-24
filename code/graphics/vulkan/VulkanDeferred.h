@@ -24,6 +24,10 @@ void vulkan_override_fog(bool set_override);
 void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos, bool first_pass);
 void vulkan_shadow_map_end();
 
+// Sets the viewport and scissor to the current gr_screen clip area. Call this after a render
+// pass resumes in the middle of a scene, because the resume sets a full-extent viewport.
+void vulkan_restore_scene_viewport();
+
 // Decal pass
 void vulkan_start_decal_pass();
 void vulkan_stop_decal_pass();

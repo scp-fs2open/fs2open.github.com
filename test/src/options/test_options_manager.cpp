@@ -2,8 +2,14 @@
 #include "options/Option.h"
 #include "graphics/2d.h"
 #include "graphics/shadows.h"
+#include "cmdline/cmdline.h"
+#include "hud/hud.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
+#include "parse/parselo.h"
 #include "math/floating.h"
+#include "osapi/osregistry.h"
+#include "utils/finally.h"
 
 #include "util/FSTestFixture.h"
 
@@ -106,10 +112,55 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 // type) rather than getCurrentValueDescription(), because several options' display functions call XSTR() for
 // localized display strings (e.g. "On"/"Off", the shadow quality tiers). XSTR() hits an Int3() unless
 // lcl_xstr_init() ran first, and the OptionsManagerOverride fixture never runs it. Only FSTestFixture does,
-// and Xstr_inited stays set for the rest of the process afterwards, so under --gtest_shuffle a display call
-// from this fixture crashes or passes purely by test order. getValue() only exercises the deserializer, which
-// is exactly the contract these tests are checking anyway. The one test that must go through a display
-// function uses the OptionsManagerOverrideLocalized fixture below instead.
+// and its teardown resets Xstr_inited, so a display call from this fixture would hit the Int3() regardless
+// of test order. getValue() only exercises the deserializer, which is exactly the contract these tests are
+// checking anyway. The one test that must go through a display function uses the
+// OptionsManagerOverrideLocalized fixture below instead.
+
+// The display and window mode apply in a hook after the persist; what it could not apply must reach the restart prompt
+// like an option whose listener returned false. Nothing is pending, so the test writes no settings.
+TEST_F(OptionsManagerOverride, PostPersistHookReportsWhatItCouldNotApply)
+{
+	auto* mgr = OptionsManager::instance();
+	auto* opt = mgr->getOptionByKey("Graphics.VSync");
+	ASSERT_NE(opt, nullptr);
+
+	const OptionBase* unapplied_by_hook = opt;
+	int calls = 0;
+	const int hook = mgr->addPostPersistHook([&](const SCP_vector<const OptionBase*>& changed) {
+		++calls;
+		EXPECT_TRUE(changed.empty());
+		SCP_vector<const OptionBase*> unapplied;
+		if (unapplied_by_hook != nullptr) {
+			unapplied.push_back(unapplied_by_hook);
+		}
+		return unapplied;
+	});
+	auto remove_hook = util::finally([mgr, hook]() { mgr->removePostPersistHook(hook); });
+
+	mgr->discardChanges();
+	const auto unchanged = mgr->persistChanges();
+	ASSERT_EQ(unchanged.size(), 1u);
+	EXPECT_EQ(unchanged[0], opt);
+
+	unapplied_by_hook = nullptr;
+	EXPECT_TRUE(mgr->persistChanges().empty());
+	EXPECT_EQ(calls, 2);
+}
+
+TEST_F(OptionsManagerOverride, RemovedPostPersistHookNoLongerRuns)
+{
+	auto* mgr = OptionsManager::instance();
+	auto* opt = mgr->getOptionByKey("Graphics.VSync");
+	ASSERT_NE(opt, nullptr);
+
+	const int hook = mgr->addPostPersistHook(
+		[opt](const SCP_vector<const OptionBase*>&) { return SCP_vector<const OptionBase*>{opt}; });
+	mgr->removePostPersistHook(hook);
+
+	mgr->discardChanges();
+	EXPECT_TRUE(mgr->persistChanges().empty());
+}
 
 TEST_F(OptionsManagerOverride, BoolOverrideRoundTrips)
 {
@@ -271,6 +322,84 @@ TEST_F(OptionsManagerOverrideLocalized, MsaaOverrideAcceptsEverySampleCountTheFl
 	}
 }
 
+// Persisting writes the settings file, so this needs FSTestFixture's portable profile
+// (test_data/data/options_settings.ini, ignored by git); the value written is the same on every run.
+class OptionsManagerPersistHook : public test::FSTestFixture {
+  public:
+	OptionsManagerPersistHook() : test::FSTestFixture(INIT_CFILE) { pushModDir("options"); }
+
+  protected:
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+
+		// Once any os_init finds no settings file the flag stays false with no profile, so each persist would leak one
+		_save_found = Ingame_options_save_found;
+		os_deinit_registry_stuff();
+		Ingame_options_save_found = true;
+		os_init_registry_stuff(nullptr, "Test");
+
+		_option =
+			OptionBuilder<int>("Test.Hook.Changed", SCP_string("Test.Hook.Changed"), SCP_string("Test.Hook.Changed"))
+				.default_val(0)
+				.change_listener([](const int&, bool) { return true; })
+				.finish();
+	}
+	void TearDown() override
+	{
+		OptionsManager::instance()->discardChanges();
+		OptionsManager::instance()->removeOption(_option);
+		Ingame_options_save_found = _save_found;
+
+		test::FSTestFixture::TearDown();
+	}
+
+	std::shared_ptr<const Option<int>> _option;
+	bool _save_found = true;
+};
+
+TEST_F(OptionsManagerPersistHook, HookReceivesTheOptionsThisPersistNotified)
+{
+	auto* mgr = OptionsManager::instance();
+	SCP_vector<const OptionBase*> received;
+	const int hook = mgr->addPostPersistHook([&received](const SCP_vector<const OptionBase*>& changed) {
+		received = changed;
+		return SCP_vector<const OptionBase*>();
+	});
+	auto remove_hook = util::finally([mgr, hook]() { mgr->removePostPersistHook(hook); });
+
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_TRUE(mgr->persistChanges().empty());
+	ASSERT_EQ(received.size(), 1u);
+	EXPECT_EQ(received[0], _option.get());
+
+	received.clear();
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_TRUE(mgr->persistOptionChanges(_option.get()));
+	ASSERT_EQ(received.size(), 1u);
+	EXPECT_EQ(received[0], _option.get());
+}
+
+// persistOptionChanges() returns one bool for its own option, so another option a hook reports only reaches the log
+TEST_F(OptionsManagerPersistHook, PersistOneOptionReportsOnlyThatOption)
+{
+	auto* mgr = OptionsManager::instance();
+	auto* other = mgr->getOptionByKey("Graphics.VSync");
+	ASSERT_NE(other, nullptr);
+
+	const OptionBase* reported = _option.get();
+	const int hook = mgr->addPostPersistHook(
+		[&reported](const SCP_vector<const OptionBase*>&) { return SCP_vector<const OptionBase*>{reported}; });
+	auto remove_hook = util::finally([mgr, hook]() { mgr->removePostPersistHook(hook); });
+
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_FALSE(mgr->persistOptionChanges(_option.get()));
+
+	reported = other;
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_TRUE(mgr->persistOptionChanges(_option.get()));
+}
+
 // Graphics.RenderAPI only exists in builds compiled with Vulkan support (code/graphics/2d.cpp gates the whole
 // option definition on #ifdef WITH_VULKAN) -- in an OpenGL-only build there's nothing to choose between, so
 // gr_get_configured_render_api() just returns GraphicsAPI::Default and no option is registered at all.
@@ -340,12 +469,6 @@ TEST_F(OptionsManagerOverride, FlagsetOverrideRoundTrips)
 	ASSERT_TRUE(value[FramebufferEffects::Shockwaves]);
 }
 
-// Graphics.Anisotropy is only registered in builds with the OpenGL backend compiled in
-// (its Option<float> lives in gropengltexture.cpp, which the CMake build excludes entirely
-// when FSO_BUILD_WITH_OPENGL is off) -- so, like Graphics.RenderAPI above, round-trip
-// coverage needs a build-config split rather than a single unconditional test.
-#ifdef WITH_OPENGL
-
 TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy");
@@ -360,14 +483,136 @@ TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 	ASSERT_FLOAT_EQ(typedOpt->getValue(), 16.0f);
 }
 
-#else
+// these globals belong to the whole process and CI shuffles test order, so put them back after each test
+class AnisotropySetting : public OptionsManagerOverride {
+  protected:
+	void SetUp() override
+	{
+		_saved_property = gr_screen.gf_get_property;
+		_saved_ingame = Using_in_game_options;
+		_saved_level = Cmdline_aniso_level;
+		gr_screen.gf_get_property = [](gr_property p, void* dest) {
+			if (p != gr_property::MAX_ANISOTROPY) {
+				return false;
+			}
+			*static_cast<float*>(dest) = 16.0f;
+			return true;
+		};
+	}
+	void TearDown() override
+	{
+		gr_screen.gf_get_property = _saved_property;
+		Using_in_game_options = _saved_ingame;
+		Cmdline_aniso_level = _saved_level;
+		OptionsManagerOverride::TearDown();
+	}
 
-TEST_F(OptionsManagerOverride, AnisotropyIsAbsentWithoutOpenGLSupport)
+  private:
+	decltype(gr_screen.gf_get_property) _saved_property;
+	bool _saved_ingame = true;
+	int _saved_level = 0;
+};
+
+TEST_F(AnisotropySetting, InGameOptionsUseTheOption)
 {
-	ASSERT_EQ(OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy"), nullptr);
+	Using_in_game_options = true;
+	Cmdline_aniso_level = 0;
+	OptionsManager::instance()->setOverride("Graphics.Anisotropy", std::unique_ptr<json_t>(json_real(4.0)), "test");
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 4.0f);
 }
 
-#endif
+TEST_F(AnisotropySetting, WithoutInGameOptionsTheFlagWins)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 8;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 8.0f);
+}
+
+TEST_F(AnisotropySetting, WithNothingChosenItIsTheCardMaximum)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 16.0f);
+}
+
+TEST_F(AnisotropySetting, WithNoRendererAnswerItIsOff)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	gr_screen.gf_get_property = [](gr_property, void*) { return false; };
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 1.0f);
+}
+
+// the table parser writes a process-wide default, so put trilinear back after each test
+class TextureFilterSetting : public OptionsManagerOverride {
+  protected:
+	static void parseDefault(const char* value)
+	{
+		SCP_string text = SCP_string(value) + "\n";
+		reset_parse(text.data());
+		OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter")->parseDefaultSetting();
+		reset_parse(nullptr);
+	}
+	void SetUp() override { _saved_ingame = Using_in_game_options; }
+	void TearDown() override
+	{
+		parseDefault("Trilinear");
+		Using_in_game_options = _saved_ingame;
+		OptionsManagerOverride::TearDown();
+	}
+
+  private:
+	bool _saved_ingame = true;
+};
+
+TEST_F(TextureFilterSetting, InGameDefaultIsTrilinear)
+{
+	Using_in_game_options = true;
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, ModTableDefaultIsUsed)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+TEST_F(TextureFilterSetting, BilinearOverrideBeatsTrilinearDefault)
+{
+	Using_in_game_options = true;
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+// qtFRED sets an override and never loads initial values
+TEST_F(TextureFilterSetting, OverrideIsReadWithoutALoad)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, WithoutInGameOptionsTheLauncherDefaultIsTrilinear)
+{
+	Using_in_game_options = false;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+// texture filtering only trades quality for speed, so a mod's +Enforce does not outrank the player's choice
+TEST_F(TextureFilterSetting, OverrideBeatsAnEnforcedModValue)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->enforceOption("Graphics.TextureFilter");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	const int filter = gr_texture_filter_setting();
+	OptionsManager::instance()->unenforceOption("Graphics.TextureFilter");
+	ASSERT_EQ(filter, 1);
+}
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 {
@@ -405,4 +650,123 @@ TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 		"-lang");
 
 	ASSERT_EQ(typedOpt->getValue(), expected_idx);
+}
+
+// Restores the HUD globals these options write, so a failing assertion can't leak a value into later tests.
+class HudOptionGlobalsGuard {
+  public:
+	HudOptionGlobalsGuard()
+		: _orb(Cmdline_orb_radar), _scan(Cmdline_dualscanlines), _rearm(Cmdline_rearm_timer),
+		  _ballistic(Cmdline_ballistic_gauge), _targetInfo(Extra_target_info)
+	{
+	}
+	~HudOptionGlobalsGuard()
+	{
+		Cmdline_orb_radar = _orb;
+		Cmdline_dualscanlines = _scan;
+		Cmdline_rearm_timer = _rearm;
+		Cmdline_ballistic_gauge = _ballistic;
+		Extra_target_info = _targetInfo;
+	}
+
+  private:
+	int _orb;
+	int _scan;
+	int _rearm;
+	int _ballistic;
+	bool _targetInfo;
+};
+
+// cmdline.cpp overrides these keys by name; a typo there would leave an override no option ever reads.
+TEST_F(OptionsManagerOverride, HudFlagOptionsAreRegistered)
+{
+	for (const char* key :
+		{"HUD.OrbRadar", "HUD.DualScanLines", "HUD.RearmTimer", "HUD.TargetInfo", "HUD.BallisticGauge"}) {
+		ASSERT_NE(OptionsManager::instance()->getOptionByKey(key), nullptr) << key;
+	}
+}
+
+// These three are read once when the HUD is built, so a change after startup must ask for a restart.
+TEST_F(OptionsManagerOverride, HudStartupOptionsApplyOnlyOnInitialLoad)
+{
+	HudOptionGlobalsGuard guard;
+	Cmdline_orb_radar = 0;
+	Cmdline_dualscanlines = 0;
+	Cmdline_rearm_timer = 0;
+
+	for (const char* key : {"HUD.OrbRadar", "HUD.DualScanLines", "HUD.RearmTimer"}) {
+		auto* opt = OptionsManager::instance()->getOptionByKey(key);
+		ASSERT_NE(opt, nullptr) << key;
+		OptionsManager::instance()->setOverride(key, std::unique_ptr<json_t>(json_true()), "-test_flag");
+		opt->loadInitial();
+		ASSERT_FALSE(opt->valueChanged(json_false())) << key;
+		ASSERT_TRUE(opt->getIsOnce()) << key;
+	}
+
+	ASSERT_EQ(Cmdline_orb_radar, 1);
+	ASSERT_EQ(Cmdline_dualscanlines, 1);
+	ASSERT_EQ(Cmdline_rearm_timer, 1);
+}
+
+TEST_F(OptionsManagerOverride, TargetInfoOptionAppliesLive)
+{
+	HudOptionGlobalsGuard guard;
+	auto* opt = OptionsManager::instance()->getOptionByKey("HUD.TargetInfo");
+	ASSERT_NE(opt, nullptr);
+
+	Extra_target_info = false;
+	ASSERT_TRUE(opt->valueChanged(json_true()));
+	ASSERT_TRUE(Extra_target_info);
+	ASSERT_TRUE(opt->valueChanged(json_false()));
+	ASSERT_FALSE(Extra_target_info);
+}
+
+TEST_F(OptionsManagerOverride, BallisticGaugeOptionAppliesLive)
+{
+	HudOptionGlobalsGuard guard;
+	auto* opt = OptionsManager::instance()->getOptionByKey("HUD.BallisticGauge");
+	ASSERT_NE(opt, nullptr);
+
+	Cmdline_ballistic_gauge = 0;
+	ASSERT_TRUE(opt->valueChanged(json_true()));
+	ASSERT_EQ(Cmdline_ballistic_gauge, 1);
+	ASSERT_TRUE(opt->valueChanged(json_false()));
+	ASSERT_EQ(Cmdline_ballistic_gauge, 0);
+}
+
+// The options UI words the tooltip by source, so a mod's override must not read as a command line flag
+TEST_F(OptionsManagerOverride, OverrideRemembersItsSource)
+{
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("Test.OverrideSource.Flag", std::unique_ptr<json_t>(json_true()), "-test_flag");
+	mgr->setOverride("Test.OverrideSource.Mod",
+		std::unique_ptr<json_t>(json_true()),
+		"an active mod",
+		OverrideSource::Mod);
+
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.Flag"), OverrideSource::CommandLine);
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.Mod"), OverrideSource::Mod);
+	ASSERT_FALSE(mgr->getOverrideSource("Test.OverrideSource.Missing").has_value());
+}
+
+// Flags are read before the HUD tables, so a mod's override replaces a flag's and must carry the mod's source
+TEST_F(OptionsManagerOverride, ModOverrideReplacesFlagOverride)
+{
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("Test.OverrideSource.Replaced", std::unique_ptr<json_t>(json_true()), "-test_flag");
+	mgr->setOverride("Test.OverrideSource.Replaced",
+		std::unique_ptr<json_t>(json_false()),
+		"an active mod",
+		OverrideSource::Mod);
+
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.Replaced"), OverrideSource::Mod);
+	ASSERT_EQ(mgr->getOverrideReason("Test.OverrideSource.Replaced"), SCP_string("an active mod"));
+}
+
+TEST_F(OptionsManagerOverride, StringOverrideKeepsItsSource)
+{
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("Test.OverrideSource.String", "true", "an active mod", OverrideSource::Mod);
+
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.String"), OverrideSource::Mod);
 }
