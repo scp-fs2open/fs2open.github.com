@@ -305,7 +305,7 @@ void send_missile_kill_packet(object* objp);
 void process_weapon_kill_packet(ubyte* data, header* hinfo);
 
 // send a packet indicating a wing of ships should be created
-void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count );
+void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count, int pre_create_skipped );
 
 // send a packet indicating a ship should be created
 void send_ship_create_packet(object *objp, bool is_support = false );

@@ -4468,6 +4468,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 	// we need to send this in multiplayer
 	pre_create_count = wingp->total_arrived_count;
+	int pre_create_skipped = wingp->red_alert_skipped_ships;
 
 	// force_create is used to force creation of the wing -- used for multiplayer
 	if ( !force_create ) {
@@ -4830,7 +4831,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
-			send_wing_create_packet( wingp, num_create_save, pre_create_count );
+			send_wing_create_packet( wingp, num_create_save, pre_create_count, pre_create_skipped );
 		}
 
 #ifndef NDEBUG

@@ -2813,7 +2813,7 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating a wing of ships should be created
-void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count )
+void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count, int pre_create_skipped )
 {
 	int packet_size, index, ship_instance;
 	ubyte data[MAX_PACKET_SIZE];
@@ -2836,6 +2836,7 @@ void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_cou
 	ADD_INT(pre_create_count);
 	val = wingp->current_wave - 1;
 	ADD_INT(val);
+	ADD_INT(pre_create_skipped);
 	
 	multi_io_send_to_all_reliable(data, packet_size);	
 }
@@ -2845,7 +2846,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 {
 	int offset, index, num_to_create;
 	ushort signature;
-	int total_arrived_count, current_wave;
+	int total_arrived_count, current_wave, red_alert_skipped_ships;
 
 	offset = HEADER_LENGTH;
 	GET_INT(index);
@@ -2853,6 +2854,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	GET_USHORT(signature);	
 	GET_INT(total_arrived_count);
 	GET_INT(current_wave);
+	GET_INT(red_alert_skipped_ships);
 
 	PACKET_SET_SIZE();
 
@@ -2870,6 +2872,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	Wings[index].current_count = 0;
 	Wings[index].total_arrived_count = total_arrived_count;
 	Wings[index].current_wave = current_wave;
+	Wings[index].red_alert_skipped_ships = red_alert_skipped_ships;
 
 	// set the network signature that was passed.  The client should create ships in the same order
 	// as the server -- so all ships should get the same sigs as assigned by the server.  We also
