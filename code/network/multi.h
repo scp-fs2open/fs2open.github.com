@@ -77,8 +77,9 @@ class player;
 // Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
-// Version 64 - 11/24/2026 - Wing create packet carries the wing's count of skipped ships, so in-game joiners number
-// later waves like the server, and its ship count is the count before skips, so clients skip the same ships
+// Version 64 - 11/24/2026 - Wing create packet carries the wing's count of skipped ships and which positions were
+// skipped, and its ship count is the count before skips, so clients create and number the same ships as the server;
+// the in-game join ship list marks each wing's leader
 // STANDALONE_ONLY
 
 #define MULTI_FS_SERVER_VERSION							64

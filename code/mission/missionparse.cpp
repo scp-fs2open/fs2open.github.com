@@ -4457,9 +4457,10 @@ int find_wing_name(char *name)
 *								have been met yet.
 * @param[in] force_arrival		If true, the wing will assume its arrival cue is true
 * @param[in] specific_instance	Set this to create a specific ship from this wing
+* @param[in] skip_mask			Multiplayer clients: the wing positions the server skipped, instead of deciding locally
 * @returns						Number of ships created
 */
-int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, bool force_arrival, int specific_instance )
+int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, bool force_arrival, int specific_instance, int skip_mask )
 {
 	int wingnum, objnum, num_create_save;
 	int time_to_arrive;
@@ -4578,6 +4579,8 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 	num_create_save = num_to_create;
 	int num_requested = num_to_create;
+	int skipped_positions = 0;
+	static_assert(MAX_SHIPS_PER_WING <= 8, "the wing create packet sends skipped positions as one byte");
 
 	wingnum = WING_INDEX(wingp);					// get the wing number
 
@@ -4610,12 +4613,19 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		Assert((p_objp->pos_in_wing >= 0) && (p_objp->pos_in_wing < MAX_SHIPS_PER_WING));
 
 		// skip ships destroyed before mission in a similar way that red-alert-deleted ships are skipped
-		if (p_objp->destroy_before_mission_time >= 0)
+		// (a client skips what the server skipped: its own red-alert data can differ from the server's)
+		bool skip_now = p_objp->destroy_before_mission_time >= 0;
+		if (skip_mask >= 0)
+			skip_now = (skip_mask & (1 << p_objp->pos_in_wing)) != 0;
+		if (skip_now)
 		{
 			num_to_create--;
 			num_create_save--;
 			ship_add_ship_type_count(p_objp->ship_class, -1);
 			wingp->red_alert_skipped_ships++;	// even though it isn't red-alert, this is needed for keeping indexes correct
+			skipped_positions |= (1 << p_objp->pos_in_wing);
+			if (skip_mask >= 0)
+				p_objp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 
 			// skip over this parse object
 			if (num_to_create == 0)
@@ -4637,12 +4647,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			continue;
 		}
 		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
-        else if (p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
+        else if (skip_mask < 0 && p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
 		{
 			num_to_create--;
 			num_create_save--;
 			ship_add_ship_type_count(p_objp->ship_class, -1);
 			wingp->red_alert_skipped_ships++;
+			skipped_positions |= (1 << p_objp->pos_in_wing);
 
 			// clear the flag so that this parse object can be used for the next wave
             p_objp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
@@ -4832,7 +4843,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
-			send_wing_create_packet( wingp, num_create_save, num_requested, pre_create_count, pre_create_skipped );
+			send_wing_create_packet( wingp, num_create_save, num_requested, static_cast<ubyte>(skipped_positions), pre_create_count, pre_create_skipped );
 		}
 
 #ifndef NDEBUG

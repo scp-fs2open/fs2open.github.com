@@ -2813,7 +2813,7 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating a wing of ships should be created
-void send_wing_create_packet( wing *wingp, int num_created, int num_requested, int pre_create_count, int pre_create_skipped )
+void send_wing_create_packet( wing *wingp, int num_created, int num_requested, ubyte skipped_positions, int pre_create_count, int pre_create_skipped )
 {
 	int packet_size, index, ship_instance;
 	ubyte data[MAX_PACKET_SIZE];
@@ -2831,13 +2831,14 @@ void send_wing_create_packet( wing *wingp, int num_created, int num_requested, i
 
 	BUILD_HEADER( WING_CREATE );
 	ADD_INT(index);
-	// clients skip the same destroyed-before-mission and red-alert ships, so they need the count before the skips
+	// clients skip the ships named in skipped_positions, so they need the count before the skips
 	ADD_INT(num_requested);
 	ADD_USHORT(signature);		
 	ADD_INT(pre_create_count);
 	val = wingp->current_wave - 1;
 	ADD_INT(val);
 	ADD_INT(pre_create_skipped);
+	ADD_DATA(skipped_positions);
 	
 	multi_io_send_to_all_reliable(data, packet_size);	
 }
@@ -2848,6 +2849,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	int offset, index, num_to_create;
 	ushort signature;
 	int total_arrived_count, current_wave, red_alert_skipped_ships;
+	ubyte skipped_positions;
 
 	offset = HEADER_LENGTH;
 	GET_INT(index);
@@ -2856,6 +2858,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	GET_INT(total_arrived_count);
 	GET_INT(current_wave);
 	GET_INT(red_alert_skipped_ships);
+	GET_DATA(skipped_positions);
 
 	PACKET_SET_SIZE();
 
@@ -2870,7 +2873,6 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	}
 
 	// bash some info
-	Wings[index].current_count = 0;
 	Wings[index].total_arrived_count = total_arrived_count;
 	Wings[index].current_wave = current_wave;
 	Wings[index].red_alert_skipped_ships = red_alert_skipped_ships;
@@ -2880,7 +2882,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	// need to set some timestamps and cues correctly to be sure that these things get created on
 	// the clients correctly
 	multi_set_network_signature( signature, MULTI_SIG_SHIP );
-	parse_wing_create_ships( &Wings[index], num_to_create, true );
+	parse_wing_create_ships( &Wings[index], num_to_create, true, false, -1, skipped_positions );
 }
 
 // packet indicating a ship is departing
