@@ -178,6 +178,11 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 	return false;
 }
 
+static bool ship_can_take_flavor_order(const ship* shipp, const ship* ordering_shipp)
+{
+	return (shipp != ordering_shipp) && !is_instructor(&Objects[shipp->objnum]) && !shipp->is_dying_or_departing();
+}
+
 static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFlavor flavor, const ship* ordering_shipp)
 {
 	// retail behavior: a fighters-and-bombers order classifies each wing by its leader alone
@@ -188,8 +193,17 @@ static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFl
 	bool any_recipient = false;
 	for (int j = 0; j < wing_entry.current_count; j++) {
 		int shipnum = wing_entry.ship_index[j];
-		// the ordering ship never takes the order, so its class doesn't make the wing mixed
-		if ((shipnum < 0) || (&Ships[shipnum] == ordering_shipp)) {
+		if (shipnum < 0) {
+			continue;
+		}
+
+		// a wing order reaches every member, so a wing with an instructor in it goes ship by ship
+		if (is_instructor(&Objects[Ships[shipnum].objnum])) {
+			return false;
+		}
+
+		// a ship that can't take the order doesn't make the wing mixed
+		if (!ship_can_take_flavor_order(&Ships[shipnum], ordering_shipp)) {
 			continue;
 		}
 
@@ -199,7 +213,7 @@ static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFl
 		any_recipient = true;
 	}
 
-	// a wing holding only the ordering ship has nobody to order
+	// a wing where no member can take the order has nobody to order
 	return any_recipient;
 }
 
@@ -1077,7 +1091,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if ( (Wings[i].flags[Ship::Wing_Flags::Gone]) || (Wings[i].current_count == 0) )
 			continue;
 
-		// a wing order reaches every member, so a wing with any non-matching craft goes to the per-ship pass
+		// a wing order reaches every member, so a wing with a non-matching craft that can take it goes ship by ship
 		if ( !wing_takes_flavor_order_as_unit(Wings[i], flavor, ordering_shipp) )
 			continue;
 
@@ -1135,8 +1149,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if ( shipp->team != ordering_shipp->team )
 			continue;
 
-		// never order the ship that is giving the order, nor the instructor
-		if ( (shipp == ordering_shipp) || is_instructor(objp) )
+		if ( !ship_can_take_flavor_order(shipp, ordering_shipp) )
 			continue;
 
 		// retail leaves every wing member to the wing pass; the narrower flavors skip only wings ordered there
@@ -1152,10 +1165,6 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if (!is_smallcraft_flavor(&Ship_info[shipp->ship_info_index], flavor)) {
 			continue;
 		}
-
-		// skip departing/dying ships
-		if ( shipp->is_dying_or_departing() )
-			continue;
 
 		// don't send command if ship won't accept it
 		if (!shipp->orders_accepted.contains(command))
@@ -2244,9 +2253,7 @@ void hud_squadmsg_ship_command()
 				if (shipp->team != Player_ship->team)
 					continue;
 
-				// nor the ship giving the order or the instructor, since hud_squadmsg_send_to_all_fighters()
-				// will not order them either
-				if ((shipp == Player_ship) || is_instructor(&Objects[so->objnum]))
+				if (!ship_can_take_flavor_order(shipp, Player_ship))
 					continue;
 
 				// don't send message to non fighter or bomber wings
