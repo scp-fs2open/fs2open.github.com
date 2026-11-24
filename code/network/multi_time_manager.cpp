@@ -149,7 +149,11 @@ void multiplayer_timing_info::note_packet_time(int player_index, int remote_time
     // This is (clock offset + that packet's network delay), and the delay is always
     // positive, so the *minimum* skew over a window is the cleanest estimate of the
     // offset alone -- it is the packet that got here fastest.
-    const int skew = _current_time - remote_time;
+    // remote_time is unchecked network data, so keep the offset arithmetic below inside an int.
+    constexpr std::int64_t MAX_SKEW = INT_MAX / 4;
+    std::int64_t wide_skew = static_cast<std::int64_t>(_current_time) - remote_time;
+    CLAMP(wide_skew, -MAX_SKEW, MAX_SKEW);
+    const auto skew = static_cast<int>(wide_skew);
 
     if (!sc.acquired) {
         // Nothing is drawing off this clock yet, so take the estimate immediately
