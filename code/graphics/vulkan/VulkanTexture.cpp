@@ -2754,7 +2754,9 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 	if (!createStagingBuffer(dataSize, stagingBuffer, stagingAlloc)) {
 		nprintf(("vulkan", "Failed to create staging buffer for static texture '%s'!\n", debugName));
 		m_device.destroyImageView(outView);
+		outView = nullptr;
 		m_device.destroyImage(outImage);
+		outImage = nullptr;
 		m_memoryManager->freeAllocation(outAlloc);
 		return false;
 	}
@@ -2799,6 +2801,7 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 		nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
 			m_pendingCommandBuffers.size(), m_pendingUploadBytes));
 		const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
+		// waiting again on a fence that did not signal would never end
 		if (result != vk::Result::eSuccess) {
 			nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n", vk::to_string(result).c_str()));
 			return false;
