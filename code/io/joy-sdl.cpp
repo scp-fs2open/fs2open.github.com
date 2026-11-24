@@ -205,6 +205,50 @@ int twinNumber(const Joystick* stick)
 	return 0;
 }
 
+// true when another joystick setting names this model with another number, i.e. its twin is still wanted
+bool twinIsSaved(const SCP_string& guid, int axes, int buttons, int hats, int number)
+{
+	for (const char* key : {"Input.Joystick", "Input.Joystick1", "Input.Joystick2", "Input.Joystick3"}) {
+		std::optional<std::unique_ptr<json_t>> setting;
+		try {
+			setting = options::OptionsManager::instance()->getValueFromConfig(key);
+		} catch (const std::exception&) {
+			// an unreadable setting can't want a stick
+			continue;
+		}
+		if (!setting.has_value()) {
+			continue;
+		}
+		const char* other_guid = nullptr;
+		json_int_t other_axes = 0;
+		json_int_t other_buttons = 0;
+		json_int_t other_hats = 0;
+		json_int_t other_number = 0;
+		if (json_unpack(setting->get(),
+				"{s:s, s:I, s:I, s:I, s?:I}",
+				"guid",
+				&other_guid,
+				"axes",
+				&other_axes,
+				"buttons",
+				&other_buttons,
+				"hats",
+				&other_hats,
+				"number",
+				&other_number) != 0) {
+			// without counts (older builds, launchers) a setting doesn't name one model of a GUID
+			continue;
+		}
+		SCP_string other_guid_str(other_guid);
+		SCP_toupper(other_guid_str);
+		if (other_guid_str == guid && other_axes == axes && other_buttons == buttons && other_hats == hats &&
+			other_number != number) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Identical sticks share a GUID; their serial, or failing that their axis, button and hat counts, tells them apart,
 // and sticks alike in both go by their place in the list. A count below zero means the setting has none.
 Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int axes, int buttons, int hats, int number)
@@ -238,8 +282,8 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 	if (serial_hits == 1) {
 		return by_serial;
 	}
-	// a numbered setting names one of the sticks alike in counts, so it waits for that one instead of taking another
-	if (count_hits == 1 && number == 0) {
+	// a numbered setting waits for its own place while another setting wants the twin; otherwise a lone stick will do
+	if (count_hits == 1 && (number == 0 || !twinIsSaved(guid, axes, buttons, hats, number))) {
 		return by_counts;
 	}
 	return by_number;
