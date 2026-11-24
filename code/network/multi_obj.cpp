@@ -627,7 +627,7 @@ int multi_ship_record_find_time_after_frame(int starting_frame, int ending_frame
 	// timestamp_get_delta(before, after) returns after - before, so this has to be
 	// (starting, ending) to yield the elapsed time between them.  Reversed, it returns
 	// time_elapsed *plus* the gap instead of minus it -- roughly twice the frame interval
-	// too large.  Nothing caught it because the result was computed and then discarded.
+	// too large.
 	int return_value = time_elapsed - (timestamp_get_delta(Oo_info.timestamps[starting_frame], Oo_info.timestamps[ending_frame]));
 	return return_value;
 }

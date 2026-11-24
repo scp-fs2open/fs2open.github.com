@@ -20,8 +20,7 @@
 // the slower tables: your target updates fastest, and it is the one ship where showing the
 // past costs you shots.  Anything slower than this -- distant or rear-arc ships -- falls
 // back to dead reckoning, which is the right answer for a ship you hear from twice a second
-// anyway.  Every millisecond here is a millisecond of lead you have to guess with no visual
-// cue, because the fire packet's reference does not account for it (see send_primary_fired_packet).
+// anyway.
 constexpr int MULTI_INTERP_BUFFER_MS = 150;
 
 // How long a window of packets to gather before re-aiming the servo, in milliseconds.
