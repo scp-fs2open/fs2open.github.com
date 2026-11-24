@@ -2784,8 +2784,6 @@ void multi_init_oo_and_ship_tracker()
 	// Finally init the new timing system.
 	Multi_Timing_Info.set_mission_start_time();
 
-	multi_interpolate_debug_reset();	// TEMP INSTRUMENTATION
-
 	// reset datarate stamp now
 	extern int OO_gran;
 	for(int i=0; i<MAX_PLAYERS; i++){ // NOLINT

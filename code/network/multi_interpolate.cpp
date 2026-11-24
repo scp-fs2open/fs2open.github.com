@@ -4,105 +4,6 @@
 SCP_unordered_map<int, interpolation_manager> Interp_info;
 
 extern void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIMESTAMP upper_time_limit, int prev_packet_index, int current_packet_index);
-
-// ============================================================================
-// TEMPORARY INSTRUMENTATION - remove before merging.
-//
-// Answers one question: is interpolation actually running, or is every remote
-// ship permanently stuck dead-reckoning in _simulation_mode because the local
-// and remote clocks were never synchronized?
-//
-// Reports once per second to fs2_open.log, aggregated over all interpolated
-// objects.  Grep the log for "MULTI INTERP".
-// ============================================================================
-namespace {
-
-struct interp_debug_stats {
-	int warmup_frames = 0;			// object-frames spent waiting for a second packet
-	int interp_frames = 0;			// object-frames that actually interpolated between two packets
-	int sim_frames = 0;				// object-frames that dead-reckoned instead
-	int snap_events = 0;			// times the sim-mode "jump to newest packet" fired
-	int neg_sim_time_events = 0;	// times that snap computed a negative sim_time
-
-	// Object-frames for ships the server has deliberately stopped updating -- see the
-	// Dying/Exploded skip in multi_oo_build_ship_list().  These can only ever dead
-	// reckon, so counting them in the interp/sim ratio just dilutes it.
-	int stale_frames = 0;
-
-	// skew = local current_time - newest held packet's remote_missiontime, in ms.
-	// positive => the local clock has run past every packet we hold (client ahead)
-	// negative => every packet we hold is stamped in our future (client behind)
-	// A near-zero average with a small spread is what interpolation needs.
-	int skew_min = INT_MAX;
-	int skew_max = INT_MIN;
-	double skew_sum = 0.0;
-	int skew_count = 0;
-
-	float snap_sim_time_min = 1e9f;
-	float snap_sim_time_max = -1e9f;
-};
-
-interp_debug_stats Interp_debug;
-bool Interp_debug_report_scheduled = false;
-int Interp_debug_next_report = 0;
-
-// gated to once per second; safe to call from the per-object path
-void interp_debug_report()
-{
-	const int now = Multi_Timing_Info.get_current_time();
-
-	// first call in this mission - start the clock rather than dumping a partial second
-	if (!Interp_debug_report_scheduled) {
-		Interp_debug_report_scheduled = true;
-		Interp_debug_next_report = now + 1000;
-		return;
-	}
-
-	if (now < Interp_debug_next_report) {
-		return;
-	}
-	Interp_debug_next_report = now + 1000;
-
-	auto& s = Interp_debug;
-	const int decided = s.interp_frames + s.sim_frames;
-
-	if (decided + s.warmup_frames == 0) {
-		return;
-	}
-
-	if (decided > 0) {
-		mprintf(("MULTI INTERP: %d live obj-frames | interp %d (%.1f%%) | sim %d (%.1f%%) | warmup %d | stale %d | snaps %d (negative sim_time %d)\n",
-			decided,
-			s.interp_frames, (100.0f * s.interp_frames) / decided,
-			s.sim_frames, (100.0f * s.sim_frames) / decided,
-			s.warmup_frames, s.stale_frames, s.snap_events, s.neg_sim_time_events));
-	} else {
-		mprintf(("MULTI INTERP: no decided obj-frames, %d warmup frames (fewer than 2 packets held)\n", s.warmup_frames));
-	}
-
-	if (s.skew_count > 0) {
-		mprintf(("MULTI INTERP: skew (local - newest packet) avg %.1f ms | min %d | max %d | spread %d ms\n",
-			s.skew_sum / s.skew_count, s.skew_min, s.skew_max, s.skew_max - s.skew_min));
-	}
-
-	if (s.snap_events > 0) {
-		mprintf(("MULTI INTERP: snap sim_time min %.4f s | max %.4f s\n", s.snap_sim_time_min, s.snap_sim_time_max));
-	}
-
-	s = interp_debug_stats();
-}
-
-} // namespace
-
-// call this from mission start so the numbers don't carry across missions
-void multi_interpolate_debug_reset()
-{
-	Interp_debug = interp_debug_stats();
-	Interp_debug_report_scheduled = false;
-	Interp_debug_next_report = 0;
-}
-// ======================= END TEMPORARY INSTRUMENTATION =======================
-
 ///////////////////////////////////////////
 // interpolation info management functions
 
@@ -159,9 +60,6 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	// To optimize, we should not reassess_packet_index with a negative index.  
 	// The index will be made positive by add_packet, once a second packet has been received.
 	if (_upcoming_packet_index < 0 ) {
-		Interp_debug.warmup_frames++;	// TEMP INSTRUMENTATION
-		interp_debug_report();			// TEMP INSTRUMENTATION
-
 		*last_pos = *pos;
 		*last_orient = *ori;
 
@@ -176,35 +74,8 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 
 	reassess_packet_index(pos, ori, pip);
 
-	// --- TEMP INSTRUMENTATION: how far has our clock drifted from the newest packet we hold? ---
-	// Anything past this has not been updated by any rate in the Multi_oo_*_update_times
-	// tables (slowest is 2500ms), so the server has stopped sending it altogether -- it is
-	// dying or exploded.  Those can only dead reckon, so keep them out of the ratio.
-	constexpr int INTERP_DEBUG_STALE_MS = 3000;
-	bool interp_debug_stale = false;
-
-	if (!_packets.empty()) {
-		const int skew = Multi_Timing_Info.get_current_time() - _packets.front().remote_missiontime;
-		const int age = Multi_Timing_Info.get_playback_time(_source_player_index) - _packets.front().remote_missiontime;
-
-		interp_debug_stale = (age > INTERP_DEBUG_STALE_MS);
-
-		if (interp_debug_stale) {
-			Interp_debug.stale_frames++;
-		} else {
-			Interp_debug.skew_min = MIN(Interp_debug.skew_min, skew);
-			Interp_debug.skew_max = MAX(Interp_debug.skew_max, skew);
-			Interp_debug.skew_sum += skew;
-			Interp_debug.skew_count++;
-		}
-	}
-	interp_debug_report();
-	// --- END TEMP INSTRUMENTATION ---
-
 	// if we are off the beaten path
 	if(_simulation_mode) {
-
-		if (!interp_debug_stale) { Interp_debug.sim_frames++; }	// TEMP INSTRUMENTATION
 
 		float sim_time = flFrametime;
 
@@ -225,15 +96,6 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 
 			sim_time -= (static_cast<float>(reference.remote_missiontime) - static_cast<float>(playback_last)) / TIMESTAMP_FREQUENCY;
 			_packets_expended = true;
-
-			// --- TEMP INSTRUMENTATION: this is the once-per-packet reposition ---
-			Interp_debug.snap_events++;
-			Interp_debug.snap_sim_time_min = MIN(Interp_debug.snap_sim_time_min, sim_time);
-			Interp_debug.snap_sim_time_max = MAX(Interp_debug.snap_sim_time_max, sim_time);
-			if (sim_time < 0.0f) {
-				Interp_debug.neg_sim_time_events++;
-			}
-			// --- END TEMP INSTRUMENTATION ---
 		}
 
 		// A negative sim_time means our playback clock has not converged on this source
@@ -288,8 +150,6 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 
 	// protect against bad floating point arithmetic making orientation or position look off
 	CLAMP(scale, 0.001f, 0.999f);
-
-	if (!interp_debug_stale) { Interp_debug.interp_frames++; }	// TEMP INSTRUMENTATION
 
 	// one by one interpolate the vectors to get the desired results.
 	physics_snapshot temp_state;

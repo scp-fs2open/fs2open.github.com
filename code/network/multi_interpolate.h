@@ -182,9 +182,6 @@ public:
 
 void multi_interpolate_clear_all();
 
-// TEMP INSTRUMENTATION - remove along with the debug block in multi_interpolate.cpp
-void multi_interpolate_debug_reset();
-
 void multi_interpolate_clear_helper(int objnum);
 
 // interpolation_manager::get_render_reference for a given object, without exposing Interp_info.
