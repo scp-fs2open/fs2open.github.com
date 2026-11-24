@@ -1036,7 +1036,7 @@ static void maybe_throw_asteroid()
 			continue;
 		
 		// This should've been greater equal, but alas...
-		if (target.incoming_asteroids > The_mission.ai_profile->max_incoming_asteroids[Game_skill_level])
+		if (target.incoming_asteroids > The_mission.ai_profile()->max_incoming_asteroids[Game_skill_level])
 			continue;
 
 		nprintf(("AI", "Incoming asteroids to %s: %i\n", Ships[target_objp->instance].ship_name, target.incoming_asteroids));
@@ -1719,7 +1719,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 		send_asteroid_hit( pasteroid_obj, other_obj, hitpos, damage, force );
 	}
 	
-	if (hitpos && force && The_mission.ai_profile->flags[AI::Profile_Flags::Whackable_asteroids]) {
+	if (hitpos && force && The_mission.ai_profile()->flags[AI::Profile_Flags::Whackable_asteroids]) {
 		vec3d rel_hit_pos = *hitpos - pasteroid_obj->pos;
 		physics_calculate_and_apply_whack(force, &rel_hit_pos, &pasteroid_obj->phys_info, &pasteroid_obj->orient, &pasteroid_obj->phys_info.I_body_inv);
 		pasteroid_obj->phys_info.desired_vel = pasteroid_obj->phys_info.vel;

@@ -132,7 +132,7 @@ int collide_debris_ship( obj_pair * pair )
 				}
 
 				if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Big_damage] &&
-					The_mission.ai_profile->flags[AI::Profile_Flags::Debris_respects_big_damage]) {
+					The_mission.ai_profile()->flags[AI::Profile_Flags::Debris_respects_big_damage]) {
 
 					// scale based on hull
 					float hull_pct = ship_objp->hull_strength / shipp->ship_max_hull_strength;
@@ -153,7 +153,7 @@ int collide_debris_ship( obj_pair * pair )
 
 				if ( debris_hit_info.heavy == ship_objp) {
 					int quadrant_num = get_ship_quadrant_from_global(&hitpos, ship_objp);
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] || 
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] || 
 						(ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
 						quadrant_num = -1;
 					}
@@ -344,7 +344,7 @@ int collide_asteroid_ship( obj_pair * pair )
 
 				if ( asteroid_hit_info.heavy == ship_objp) {
 					int quadrant_num = get_ship_quadrant_from_global(&hitpos, ship_objp);
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] || 
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] || 
 						(ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
 						quadrant_num = -1;
 					}
