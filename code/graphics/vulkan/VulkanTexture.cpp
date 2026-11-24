@@ -314,12 +314,10 @@ void VulkanTextureManager::shutdown()
 	// it before destroying the command pool or allocator during shutdown.
 	try {
 		m_graphicsQueue.waitIdle();
-		processPendingCommandBuffers();
 	} catch (const vk::SystemError& e) {
 		// a failed wait, e.g. on a lost device, must not stop the rest of the teardown
 		nprintf(("vulkan", "VulkanTexture: failed waiting for pending uploads at shutdown: %s\n", e.what()));
 	}
-	// the renderer has already waited for the device, so nothing can still be using what the wait above left
 	for (auto& pending : m_pendingCommandBuffers) {
 		releasePendingUpload(pending);
 	}
@@ -2850,7 +2848,7 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 			processPendingCommandBuffers();
 		}
 	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n", e.what()));
+		nprintf(("vulkan", "VulkanTexture: waiting for pending texture uploads failed: %s\n", e.what()));
 		return false;
 	}
 	vk::BufferCreateInfo bufferInfo;

@@ -290,7 +290,7 @@ private:
 	 * buffer is destroyed and false is returned (outBuffer left null). Callers
 	 * remain responsible for any image/view they allocated beforehand.
 	 * May wait on the oldest upload fence when the staging budget is full, and
-	 * returns false if that wait fails.
+	 * returns false if waiting for or checking pending uploads fails.
 	 */
 	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
 
