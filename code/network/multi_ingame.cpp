@@ -39,6 +39,7 @@
 #include "network/multi_endgame.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
+#include "hud/hudwingmanstatus.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
@@ -1028,8 +1029,29 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		// delete all ships
 		for(idx=0; idx<MAX_SHIPS; idx++){
 			if((Ships[idx].objnum >= 0) && (Ships[idx].objnum < MAX_OBJECTS)){
+				ship* shipp = &Ships[idx];
+
+				// ship_create marks the entry present again if the list recreates this ship
+				int entry_index = ship_registry_get_index(shipp->ship_name);
+				if (entry_index >= 0) {
+					Ship_registry[entry_index].status = ShipStatus::EXITED;
+					Ship_registry[entry_index].objnum = -1;
+					Ship_registry[entry_index].shipnum = -1;
+				}
+
+				if ((shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0)) {
+					hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+				}
+
 				obj_delete(Ships[idx].objnum);
 			}
+		}
+
+		for (int i = 0; i < Num_wings; i++) {
+			for (int& shipnum : Wings[i].ship_index) {
+				shipnum = -1;
+			}
+			Wings[i].current_count = 0;
 		}
 
 		Ingame_ships_deleted = 1;
@@ -1065,6 +1087,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		GET_INT( team );		
 		GET_SHORT( wing_data );
+		if (wing_data < -1 || wing_data >= Num_wings ||
+			(wing_data >= 0 && Wings[wing_data].current_count >= MAX_SHIPS_PER_WING)) {
+			mprintf(("ABORTING in-game join since the server put ship %s in bad wing %d!\n", ship_name, wing_data));
+			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			return;
+		}
 		if(wing_data >= 0){
 			GET_INT(Wings[wing_data].current_wave);			
 		}
@@ -1097,7 +1125,19 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		Ships[ship_num].flags.reset();
 		Ships[ship_num].flags.set_from_vector(ship_flags);
 		Ships[ship_num].team = team;
-		Ships[ship_num].wingnum = (int)wing_data;				
+		Ships[ship_num].wingnum = (int)wing_data;
+
+		if (wing_data >= 0) {
+			wing* wingp = &Wings[wing_data];
+			wingp->ship_index[wingp->current_count++] = ship_num;
+
+			// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet
+			if (Ships[ship_num].wing_status_wing_index < 0) {
+				hud_wingman_status_set_index(wingp, &Ships[ship_num], p_objp);
+				p_objp->wing_status_wing_index = Ships[ship_num].wing_status_wing_index;
+				p_objp->wing_status_wing_pos = Ships[ship_num].wing_status_wing_pos;
+			}
+		}
 
 		GET_DATA( p_type );
 	}
@@ -1108,6 +1148,11 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	if ( p_type == INGAME_SHIP_LIST_EOL ) {		
 		// merge all created list
 		obj_merge_created_list();
+
+		// the comm menu and hotkey list read ship_index[special_ship], so it must point into the rebuilt list
+		for (int i = 0; i < Num_wings; i++) {
+			Wings[i].special_ship = std::min(Wings[i].special_ship, std::max(Wings[i].current_count - 1, 0));
+		}
 
 		// fixup player ship stuff
 		for(idx=0; idx<MAX_SHIPS; idx++){

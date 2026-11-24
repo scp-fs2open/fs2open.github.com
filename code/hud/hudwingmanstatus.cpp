@@ -780,6 +780,9 @@ void hud_wingman_status_set_index(int squad_wing_index, wing *wingp, ship *shipp
 		// fill in all the positions currently used by this wing
 		for (i = 0; i < wingp->wave_count; i++)
 		{
+			if (wingp->ship_index[i] < 0)
+				continue;
+
 			pos = Ships[wingp->ship_index[i]].wing_status_wing_pos;
 			if (pos >= 0)
 				wing_bitfield |= (1<<pos);
