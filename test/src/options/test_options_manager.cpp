@@ -798,6 +798,11 @@ TEST_F(KeepAspectRatio, LetterboxesATallerScreen)
 	gr_render_to_window_pos(x, y);
 	EXPECT_FLOAT_EQ(x, 640.0f);
 	EXPECT_FLOAT_EQ(y, 512.0f);
+
+	float dx = 128.0f, dy = 128.0f;
+	gr_window_to_render_delta(dx, dy);
+	EXPECT_FLOAT_EQ(dx, 192.0f);
+	EXPECT_FLOAT_EQ(dy, 192.0f);
 }
 
 // 1720x720 on 1920x1080 leaves 277 rows; the odd row goes to the bottom bar, where the blit puts it
