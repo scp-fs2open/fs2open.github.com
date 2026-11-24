@@ -4577,6 +4577,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 	// finally we can create the wing.
 
 	num_create_save = num_to_create;
+	int num_requested = num_to_create;
 
 	wingnum = WING_INDEX(wingp);					// get the wing number
 
@@ -4831,7 +4832,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
-			send_wing_create_packet( wingp, num_create_save, pre_create_count, pre_create_skipped );
+			send_wing_create_packet( wingp, num_create_save, num_requested, pre_create_count, pre_create_skipped );
 		}
 
 #ifndef NDEBUG

@@ -2813,7 +2813,7 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating a wing of ships should be created
-void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count, int pre_create_skipped )
+void send_wing_create_packet( wing *wingp, int num_created, int num_requested, int pre_create_count, int pre_create_skipped )
 {
 	int packet_size, index, ship_instance;
 	ubyte data[MAX_PACKET_SIZE];
@@ -2823,15 +2823,16 @@ void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_cou
 	// for creating wing -- we just send the index into the wing array of this wing.
 	// all players load the same mission, and so their array's should all match. We also
 	// need to send the signature of the first ship that was created.  We can find this by
-	// looking num_to_create places back in the ship_index field in the wing structure.
+	// looking num_created places back in the ship_index field in the wing structure.
 
 	index = WING_INDEX(wingp);
-	ship_instance = wingp->ship_index[wingp->current_count - num_to_create];
+	ship_instance = wingp->ship_index[wingp->current_count - num_created];
 	signature = Objects[Ships[ship_instance].objnum].net_signature;
 
 	BUILD_HEADER( WING_CREATE );
 	ADD_INT(index);
-	ADD_INT(num_to_create);
+	// clients skip the same destroyed-before-mission and red-alert ships, so they need the count before the skips
+	ADD_INT(num_requested);
 	ADD_USHORT(signature);		
 	ADD_INT(pre_create_count);
 	val = wingp->current_wave - 1;
