@@ -2745,6 +2745,7 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 	if (!outView) {
 		nprintf(("vulkan", "Failed to create static texture view '%s'!\n", debugName));
 		m_device.destroyImage(outImage);
+		outImage = nullptr;
 		m_memoryManager->freeAllocation(outAlloc);
 		return false;
 	}
