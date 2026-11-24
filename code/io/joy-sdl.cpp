@@ -691,7 +691,9 @@ bool device_event_handler(const SDL_Event &evt)
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
 
 			// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID.
-			// prefer the one with the same serial, then the same counts: it was this stick, so its label stays
+			// prefer the one with the same serial, then the same counts: it was this stick, so its label stays.
+			// An entry with other counts was another stick; taking it could move this one ahead of its twins and
+			// renumber them
 			auto reuse = joysticks.end();
 			int reuse_rank = 0;
 			const auto added_serial = added->getSerial();
@@ -702,14 +704,15 @@ bool device_event_handler(const SDL_Event &evt)
 				{
 					continue;
 				}
-				int rank = 1;
 				const auto old_serial = old->getSerial();
+				const bool same_counts = old->numAxes() == added->numAxes() &&
+										 old->numButtons() == added->numButtons() && old->numHats() == added->numHats();
+				int rank = same_counts ? 1 : 0;
 				if (!added_serial.empty() && old_serial == added_serial)
 				{
 					rank = 3;
 				}
-				else if ((added_serial.empty() || old_serial.empty()) && old->numAxes() == added->numAxes() &&
-						 old->numButtons() == added->numButtons() && old->numHats() == added->numHats())
+				else if (same_counts && (added_serial.empty() || old_serial.empty()))
 				{
 					rank = 2;
 				}
