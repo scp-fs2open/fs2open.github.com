@@ -5900,8 +5900,7 @@ const prop *eval_prop(int node)
 
 		// cache the value if it can't change later and we're in-game
 		if (!Fred_running && !is_node_value_dynamic(node))
-			Sexp_nodes[node].cache =
-				std::make_unique<sexp_cached_data>(OPF_PROP, Objects[propp->objnum].signature, propp->objnum);
+			Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_PROP, Objects[propp->objnum].signature, propp->objnum);
 
 		return propp;
 	}
