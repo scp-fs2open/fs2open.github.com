@@ -626,13 +626,25 @@ void DeleteObjectsCommand::redo()
 		}
 	}
 
-	// Re-mark the objects by their current live obj nums and delete them.
+	// Re-mark the objects by signature and delete them. Their slots can differ from
+	// the ones this command's undo restored them to: undoing and redoing an earlier
+	// Create puts the object back with its signature but in another slot.
 	_editor->unmark_all();
-	for (const int n : _currentObjNums) {
-		if (query_valid_object(n)) {
+	auto markBySignature = [this](int sig) {
+		const int n = (sig > 0) ? obj_get_by_signature(sig) : -1;
+		if (n >= 0 && query_valid_object(n))
 			_editor->markObject(n);
-		}
+	};
+	for (const auto& cs : _ships)
+		markBySignature(cs.signature);
+	for (const auto& group : _waypointGroups) {
+		for (const auto& pt : group.points)
+			markBySignature(pt.signature);
 	}
+	for (const auto& jd : _jumpNodes)
+		markBySignature(jd.signature);
+	for (const auto& pd : _props)
+		markBySignature(pd.signature);
 	AutoConfirmReferences guard(_editor);
 	_editor->delete_marked();
 }
@@ -641,6 +653,7 @@ void DeleteObjectsCommand::undo()
 {
 	// Deleting a wing member bashes its references to <name>; they are restored at
 	// the end (restoreShipReferences), as are a fully deleted wing's.
+	// A fully deleted path's <name> references are restored with the path.
 	// KNOWN LIMITATION: deleting a waypoint renumbers the later points' references
 	// in sexps, and undo does not reverse that; it would need every referencing
 	// tree captured. References to a deleted player start (<Player N>) also stay.
@@ -729,6 +742,8 @@ void DeleteObjectsCommand::undo()
 	// survive independent of the individual waypoint points.
 	for (const auto& wg : _waypointGroups) {
 		restoreWaypointListProperties(wg);
+		if (wg.entirePath)
+			restoreWaypointPathReferences(wg.listName.c_str(), _editor);
 	}
 
 	// Phase 2: move newly created objects into obj_used_list so markObject's

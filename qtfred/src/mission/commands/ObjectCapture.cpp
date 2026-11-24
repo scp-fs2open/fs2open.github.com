@@ -741,6 +741,14 @@ void restoreShipReferences(const char* name, Editor* editor)
 	                     Reinforcements.end());
 }
 
+void restoreWaypointPathReferences(const char* name, Editor* editor)
+{
+	char invalidated[NAME_LENGTH + 2];
+	sprintf(invalidated, "<%s>", name);
+	update_sexp_references(invalidated, name);
+	editor->ai_update_goal_references(sexp_ref_type::WAYPOINT_PATH, invalidated, name);
+}
+
 // Remove all Fred_texture_replacements entries belonging to the named ship.
 // Called from DeleteObjectsCommand::redo() before re-deleting ships.
 void removeShipTextureReplacements(const char* ship_name)

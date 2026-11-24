@@ -113,7 +113,7 @@ Snapshot the affected state before the action, run it, snapshot after, and push 
 
 ## Known limitations
 
-- Undoing a deletion restores the references the delete invalidated for ships that were in a wing and for fully deleted wings (anything bashed to `<name>`, so it also revives a `<name>` left by an earlier delete of a same-named ship). It does not reverse the renumbering of references to later points when a mid-path waypoint is deleted, or `<Player N>` references to a deleted player start.
+- Undoing a deletion restores the references the delete invalidated for ships that were in a wing, for fully deleted wings and for fully deleted waypoint paths (anything bashed to `<name>`, so it also revives a `<name>` left by an earlier delete of a same-named ship). It does not reverse the renumbering of references to later points when a mid-path waypoint is deleted, or `<Player N>` references to a deleted player start.
 - Renaming or deleting events, goals, and messages rewrites references in foreign sexp trees (e.g. ship arrival cues) at apply time; those rewrites are outside the owning dialog's capture scope and survive an undo of the apply.
 - Undoing the deletion of docked ships does not restore the dock pairing (`TODO(docking-undo)`).
 - Text widgets keep Qt's internal text-undo history; Ctrl+Z with focus in a line edit undoes typing first, then mission edits. The two histories stay consistent through the read-back pattern.

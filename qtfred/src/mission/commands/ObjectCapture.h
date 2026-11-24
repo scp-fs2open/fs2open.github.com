@@ -291,6 +291,10 @@ void recaptureShipForRedo(CapturedShip& data, int objNum);
 // a different ship with the same name.
 void restoreShipReferences(const char* name, Editor* editor);
 
+// Deleting a whole waypoint path renames its references in sexps and AI goals to
+// <name>; undo calls this once the path is back to turn them into the name again.
+void restoreWaypointPathReferences(const char* name, Editor* editor);
+
 // Remove all Fred_texture_replacements entries that belong to ship_name.
 void removeShipTextureReplacements(const char* ship_name);
 
