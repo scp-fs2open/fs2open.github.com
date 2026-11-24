@@ -140,7 +140,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	}
 
 	// calc what the current timing should be.  Playback clock, for the same reason as in reassess_packet_index.
-	float numerator = static_cast<float>(Multi_Timing_Info.get_playback_time_precise(_source_player_index) - _packets[_prev_packet_index].remote_missiontime);
+	auto numerator = static_cast<float>(Multi_Timing_Info.get_playback_time_precise(_source_player_index) - _packets[_prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
 	
 	// work around for weird situations that might cause NAN (you just never know with multi)
@@ -193,7 +193,7 @@ void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_pac
 	// but remote_missiontime is relative to the *source's* mission start, so drop our start
 	// time and then move the result onto the source's clock before comparing.
 	int local_time = stamp.value() - Multi_Timing_Info.get_mission_start_time();
-	float source_time = static_cast<float>(Multi_Timing_Info.local_time_to_remote(_source_player_index, local_time));
+	auto source_time = static_cast<float>(Multi_Timing_Info.local_time_to_remote(_source_player_index, local_time));
 	float numerator = source_time - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 
