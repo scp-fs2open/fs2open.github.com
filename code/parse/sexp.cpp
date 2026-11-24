@@ -5875,11 +5875,10 @@ const prop *eval_prop(int node)
 		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
 			return nullptr;
 
-		// a removed prop empties its slot and a later prop may take it, so the slot must still hold this name
-		int cached_idx = Sexp_nodes[node].cache->ship_registry_index;
-		if (SCP_vector_inbounds(Props, cached_idx) && Props[cached_idx].has_value() &&
-			!stricmp(Props[cached_idx]->prop_name, CTEXT(node)))
-			return prop_id_lookup(cached_idx);
+		// props can be removed mid-mission, so the cache also holds the object signature to catch that
+		auto objp = &Objects[Sexp_nodes[node].cache->ship_registry_index];
+		if (objp->signature == Sexp_nodes[node].cache->numeric_literal)
+			return prop_id_lookup(objp->instance);
 
 		Sexp_nodes[node].cache.reset();
 	}
@@ -5897,11 +5896,14 @@ const prop *eval_prop(int node)
 	auto prop_idx = prop_name_lookup(CTEXT(node));
 	if (prop_idx >= 0)
 	{
+		auto propp = prop_id_lookup(prop_idx);
+
 		// cache the value if it can't change later and we're in-game
 		if (!Fred_running && !is_node_value_dynamic(node))
-			Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_PROP, -1, prop_idx);
+			Sexp_nodes[node].cache =
+				std::make_unique<sexp_cached_data>(OPF_PROP, Objects[propp->objnum].signature, propp->objnum);
 
-		return prop_id_lookup(prop_idx);
+		return propp;
 	}
 
 	// we know nothing about this prop, apparently
