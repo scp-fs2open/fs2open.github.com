@@ -123,12 +123,12 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 
 	// if this is friendly fire, we check for the friendly fire cap values
 	if (wp->team == shipp->team) {
-		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+		if (&Objects[weapon_obj->parent] == pship_obj && The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
 			// if this is a ship shooting itself, we use the self damage cap
-			damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
-		} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+			damage = MIN(damage, The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level]);
+		} else if (The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 			// otherwise we use the friendly damage cap
-			damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+			damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 		}
 	}
 
@@ -235,7 +235,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 	vec3d weapon_start_pos = weapon_objp->last_pos;
 	// Maybe take into account the ship's velocity, so it won't later overstep the weapon's
 	// current position (what will be its last_pos next frame)
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
 		weapon_start_pos += ship_objp->phys_info.vel * flFrametime;
 
 	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
@@ -466,7 +466,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 			// if the shield is down in the quadrant we still want the AI to record that the shield was hit here
 			// so that the AI can put energy torwards repairing that shield segement (but put behind a flag)
 			// --wookieejedi
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_AI_shield_management_bug] && SCP_vector_inbounds(ship_objp->shield_quadrant, quadrant_num)) {
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_AI_shield_management_bug] && SCP_vector_inbounds(ship_objp->shield_quadrant, quadrant_num)) {
 				notify_ai_shield_down = quadrant_num;
 			}
 			quadrant_num = -1;

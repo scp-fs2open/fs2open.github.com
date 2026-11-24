@@ -1,5 +1,7 @@
 #IFFs
 
+$Radar Target ID Flags: ( "crosshairs" )
+
 $IFF Name: Pirate
 $Color: ( 200, 0, 200 )
 $Attacks: ( "Friendly" )
