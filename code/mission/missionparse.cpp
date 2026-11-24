@@ -4687,9 +4687,8 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			// if the bash renamed this parse object (which can happen if the ship was saved using the legacy
 			// hash format), re-key its not-yet-present registry entry so that the old name doesn't shadow
 			// lookups of the new name.  (For subsequent waves, the pre-bash name belongs to a previous wave's
-			// ship, whose entry must keep its key.  The wave check excludes that case; the status check alone
-			// doesn't, because an in-game joiner never sees the earlier ships that died before it joined.)
-			if (wingp->current_wave == 1 && stricmp(pre_bash_name, p_objp->name) != 0)
+			// ship, whose entry must keep its key, even on an in-game joiner that never saw that ship.)
+			if (pre_create_count == 0 && stricmp(pre_bash_name, p_objp->name) != 0)
 			{
 				auto ship_it = Ship_registry_map.find(pre_bash_name);
 				if (ship_it != Ship_registry_map.end()
