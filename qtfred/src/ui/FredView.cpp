@@ -4,6 +4,7 @@
 #include <ui/util/default_dir.h>
 
 #include <QDir>
+#include <QFile>
 #include <QFileDialog>
 #include <QPointer>
 #include <QFileInfo>
@@ -287,7 +288,9 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.set_view_orient(_viewport->camera.view_orient);
 		save.set_fred_alt_names(Fred_alt_names);
 		save.set_fred_callsigns(Fred_callsigns);
-		save.save_autosave_file(savePath.toUtf8().constData());
+		// a cut-off autosave would be offered for recovery on the next open
+		if (save.save_autosave_file(savePath.toUtf8().constData()) != 0)
+			QFile::remove(savePath);
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
@@ -496,7 +499,10 @@ bool FredView::saveMissionToCurrentPath() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	if (save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData()) != 0) {
+		QMessageBox::critical(this, tr("Failed saving mission."), tr("An error occurred while saving the mission."));
+		return false;
+	}
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
 
@@ -537,7 +543,10 @@ bool FredView::saveMissionAs() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	if (save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData()) != 0) {
+		QMessageBox::critical(this, tr("Failed saving mission."), tr("An error occurred while saving the mission."));
+		return false;
+	}
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
 
@@ -608,7 +617,8 @@ void FredView::saveAsTemplate() {
 	save.set_fred_callsigns(Fred_callsigns);
 	save.set_template_info(metaDialog.templateInfo());
 
-	save.save_template_file(templateName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	if (save.save_template_file(templateName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData()) != 0)
+		QMessageBox::critical(this, tr("Failed saving template."), tr("An error occurred while saving the template."));
 }
 
 void FredView::loadTemplate() {
