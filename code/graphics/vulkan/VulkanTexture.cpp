@@ -312,8 +312,13 @@ void VulkanTextureManager::shutdown()
 	}
 	// Upload ownership is independent of frame retirement. Complete and reclaim
 	// it before destroying the command pool or allocator during shutdown.
-	m_graphicsQueue.waitIdle();
-	processPendingCommandBuffers();
+	try {
+		m_graphicsQueue.waitIdle();
+		processPendingCommandBuffers();
+	} catch (const vk::SystemError& e) {
+		// a failed wait, e.g. on a lost device, must not stop the rest of the teardown
+		nprintf(("vulkan", "VulkanTexture: failed waiting for pending uploads at shutdown: %s\n", e.what()));
+	}
 	for (auto fence : m_freeUploadFences) {
 		m_device.destroyFence(fence);
 	}
@@ -2794,7 +2799,10 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 		nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
 			m_pendingCommandBuffers.size(), m_pendingUploadBytes));
 		const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
-		Assertion(result == vk::Result::eSuccess, "Failed waiting for a texture upload fence");
+		if (result != vk::Result::eSuccess) {
+			nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n", vk::to_string(result).c_str()));
+			return false;
+		}
 		processPendingCommandBuffers();
 	}
 	vk::BufferCreateInfo bufferInfo;
@@ -2956,25 +2964,29 @@ void VulkanTextureManager::recordUploadCommands(vk::CommandBuffer cmd, vk::Image
 void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
                                              VulkanAllocation stagingAllocation)
 {
-	cmd.end();
-
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmd;
 
 	vk::Fence fence;
-	if (m_freeUploadFences.empty()) {
-		fence = m_device.createFence(vk::FenceCreateInfo{});
-	} else {
-		// reset here, not on completion, so a failed reset cannot leave a half-released pending upload
-		m_device.resetFences(m_freeUploadFences.back());
-		fence = m_freeUploadFences.back();
-		m_freeUploadFences.pop_back();
-	}
 	try {
+		cmd.end();
+		if (m_freeUploadFences.empty()) {
+			fence = m_device.createFence(vk::FenceCreateInfo{});
+		} else {
+			// reset here, not on completion, so a failed reset cannot leave a half-released pending upload
+			m_device.resetFences(m_freeUploadFences.back());
+			fence = m_freeUploadFences.back();
+			m_freeUploadFences.pop_back();
+		}
 		m_graphicsQueue.submit(submitInfo, fence);
 	} catch (...) {
-		m_device.destroyFence(fence);
+		if (fence) {
+			m_device.destroyFence(fence);
+		}
+		m_device.freeCommandBuffers(m_commandPool, cmd);
+		m_device.destroyBuffer(stagingBuffer);
+		m_memoryManager->freeAllocation(stagingAllocation);
 		throw;
 	}
 	m_pendingCommandBuffers.push_back({cmd, stagingBuffer, stagingAllocation, fence});
