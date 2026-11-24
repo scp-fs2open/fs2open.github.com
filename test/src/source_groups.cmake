@@ -66,6 +66,10 @@ add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
 )
 
+add_file_folder("missionui"
+    missionui/test_chatbox.cpp
+)
+
 add_file_folder("mod"
     mod/test_mod_table.cpp
 )
