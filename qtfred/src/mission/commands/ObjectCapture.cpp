@@ -725,12 +725,11 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	return newObj;
 }
 
-void restoreShipReferences(const char* name, Editor* editor)
+void restoreShipReferences(const char* name)
 {
 	char invalidated[NAME_LENGTH + 2];
 	sprintf(invalidated, "<%s>", name);
 	update_sexp_references(invalidated, name);
-	editor->ai_update_goal_references(sexp_ref_type::SHIP, invalidated, name);
 	// restoreShip() already put the ship's texture replacements back under its name;
 	// the <name> copies the delete left behind are stale, so drop them.
 	removeShipTextureReplacements(invalidated);
@@ -741,12 +740,81 @@ void restoreShipReferences(const char* name, Editor* editor)
 	                     Reinforcements.end());
 }
 
-void restoreWaypointPathReferences(const char* name, Editor* editor)
+void restoreWaypointPathReferences(const char* name)
 {
 	char invalidated[NAME_LENGTH + 2];
 	sprintf(invalidated, "<%s>", name);
 	update_sexp_references(invalidated, name);
-	editor->ai_update_goal_references(sexp_ref_type::WAYPOINT_PATH, invalidated, name);
+}
+
+SCP_vector<CapturedGoal> captureGoalsTargeting(const SCP_vector<SCP_string>& names)
+{
+	SCP_vector<CapturedGoal> out;
+	auto targeted = [&](const ai_goal& g) {
+		return g.ai_mode != AI_GOAL_NONE && g.target_name != nullptr &&
+		       std::any_of(names.begin(), names.end(),
+		                   [&](const SCP_string& n) { return !stricmp(n.c_str(), g.target_name); });
+	};
+	for (const object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (p->type != OBJ_SHIP && p->type != OBJ_START)
+			continue;
+		const ship& s = Ships[p->instance];
+		if (s.ai_index < 0)
+			continue;
+		const ai_goal* goals = Ai_info[s.ai_index].goals;
+		for (int i = 0; i < MAX_AI_GOALS; i++) {
+			if (!targeted(goals[i]))
+				continue;
+			CapturedGoal cg;
+			cg.shipSignature = p->signature;
+			cg.slot          = i;
+			cg.goal          = goals[i];
+			out.push_back(std::move(cg));
+		}
+	}
+	for (const auto& w : Wings) {
+		if (w.wave_count <= 0)
+			continue;
+		for (int i = 0; i < MAX_AI_GOALS; i++) {
+			if (!targeted(w.ai_goals[i]))
+				continue;
+			CapturedGoal cg;
+			cg.wingName = w.name;
+			cg.slot     = i;
+			cg.goal     = w.ai_goals[i];
+			out.push_back(std::move(cg));
+		}
+	}
+	return out;
+}
+
+void restoreClearedGoals(const SCP_vector<CapturedGoal>& goals)
+{
+	for (const auto& cg : goals) {
+		ai_goal* owner = nullptr;
+		if (cg.shipSignature > 0) {
+			const int objNum = obj_get_by_signature(cg.shipSignature);
+			if (objNum < 0)
+				continue;
+			const ship& s = Ships[Objects[objNum].instance];
+			if (s.ai_index < 0)
+				continue;
+			owner = Ai_info[s.ai_index].goals;
+		} else {
+			for (auto& w : Wings) {
+				if (w.wave_count > 0 && !stricmp(w.name, cg.wingName.c_str())) {
+					owner = w.ai_goals;
+					break;
+				}
+			}
+		}
+		if (owner == nullptr)
+			continue;
+		// Only a goal the delete cleared: same slot, now empty, still naming the target.
+		ai_goal& g = owner[cg.slot];
+		if (g.ai_mode == AI_GOAL_NONE && g.target_name != nullptr && !stricmp(g.target_name, cg.goal.target_name))
+			g = cg.goal;
+	}
 }
 
 // Remove all Fred_texture_replacements entries belonging to the named ship.

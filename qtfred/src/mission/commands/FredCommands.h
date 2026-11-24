@@ -150,11 +150,14 @@ class DeleteObjectsCommand : public QUndoCommand {
 	SCP_vector<CapturedJumpNode>    _jumpNodes;
 	SCP_vector<CapturedProp>        _props;
 	SCP_vector<SavedWingData>       _affectedWings; // wings with ≥1 deleted member
-	// current live obj nums — repopulated by undo(), consumed by redo()
+	// live obj nums of the objects undo() restored, for layers and marking
 	SCP_vector<int>               _currentObjNums;
+	SCP_vector<CapturedGoal>      _clearedGoals; // AI goals targeting what is deleted
 	bool                          _firstRedo = true;
 	Editor*                       _editor;
 	EditorViewport*               _viewport;
+
+	SCP_vector<SCP_string> goalTargets() const;
 
 public:
 	// Construct BEFORE calling delete_marked(). Captures all marked objects.
@@ -487,6 +490,7 @@ public:
 	struct State {
 		SCP_vector<WingState> wings;
 		SCP_vector<ShipState> ships;
+		SCP_vector<CapturedGoal> goals; // goals targeting the wings, cleared when one is invalidated
 	};
 
 	// Snapshot the given ships and every live wing with one of the given names.
@@ -537,11 +541,14 @@ public:
 class DeleteWingCommand : public QUndoCommand {
 	SavedWingData             _savedWing;
 	SCP_vector<CapturedShip>  _savedShips; // member ships in slot order
+	SCP_vector<CapturedGoal>  _clearedGoals; // AI goals targeting the wing or its members
 	SCP_vector<int>          _currentObjNums; // live obj nums (updated by undo)
 	int                      _currentWingNum; // live wing slot (updated by undo)
 	Editor*                  _editor;
 	EditorViewport*          _viewport;
 	bool                     _firstRedo = true;
+
+	SCP_vector<SCP_string> goalTargets() const;
 
 public:
 	// Construct BEFORE delete_wing(wingNum, 0) is called. First redo() is a no-op.

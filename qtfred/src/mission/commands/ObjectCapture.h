@@ -281,19 +281,35 @@ int restoreShip(CapturedShip& data, Editor* editor);
 // restoreShip() call). Removes the ship's entries from Fred_texture_replacements.
 void recaptureShipForRedo(CapturedShip& data, int objNum);
 
-// Turn the references a wing member's delete invalidated (<name>, in sexps and
-// AI goals; see Editor::invalidate_references) back into the ship's name.
+// Turn the references a wing member's delete invalidated (<name> in sexps; see
+// Editor::invalidate_references) back into the ship's name. AI goals the delete
+// cleared come back through restoreClearedGoals.
 // common_object_delete only invalidates wing members' references. The stale
 // <name> texture replacements and Reinforcements entry are dropped, since
 // restoreShip() re-adds the ship's own. Call it after all of an undo's renames,
 // since a wing survivor can briefly hold the restored name. Like the wing undo,
 // it revives every <name> reference, including any left by an earlier delete of
 // a different ship with the same name.
-void restoreShipReferences(const char* name, Editor* editor);
+void restoreShipReferences(const char* name);
 
-// Deleting a whole waypoint path renames its references in sexps and AI goals to
-// <name>; undo calls this once the path is back to turn them into the name again.
-void restoreWaypointPathReferences(const char* name, Editor* editor);
+// Deleting a whole waypoint path renames its sexp references to <name>; undo
+// calls this once the path is back to turn them into the name again.
+void restoreWaypointPathReferences(const char* name);
+
+// An AI goal of a ship or wing, keyed by its owner and goal slot.
+struct CapturedGoal {
+	int        shipSignature = -1; // owner ship, or -1 when the owner is a wing
+	SCP_string wingName;
+	int        slot = -1;
+	ai_goal    goal{};
+};
+
+// Invalidating a reference does not rename AI goals that target it: it clears
+// them (ai_mode = AI_GOAL_NONE, see ai_update_goal_references), so nothing on
+// the goal says what it was. Capture every live goal that targets one of the
+// names before a delete, and put back the ones the delete cleared on undo.
+SCP_vector<CapturedGoal> captureGoalsTargeting(const SCP_vector<SCP_string>& names);
+void restoreClearedGoals(const SCP_vector<CapturedGoal>& goals);
 
 // Remove all Fred_texture_replacements entries that belong to ship_name.
 void removeShipTextureReplacements(const char* ship_name);

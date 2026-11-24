@@ -512,6 +512,20 @@ DeleteObjectsCommand::DeleteObjectsCommand(Editor* editor, EditorViewport* viewp
 
 		_affectedWings.push_back(std::move(wd));
 	}
+
+	_clearedGoals = captureGoalsTargeting(goalTargets());
+}
+
+SCP_vector<SCP_string> DeleteObjectsCommand::goalTargets() const
+{
+	SCP_vector<SCP_string> names;
+	for (const auto& cs : _ships)
+		names.emplace_back(cs.ship_name);
+	for (const auto& wd : _affectedWings)
+		names.emplace_back(wd.name);
+	for (const auto& group : _waypointGroups)
+		names.push_back(group.listName);
+	return names;
 }
 
 DeleteObjectsCommand::~DeleteObjectsCommand()
@@ -645,6 +659,7 @@ void DeleteObjectsCommand::redo()
 		markBySignature(jd.signature);
 	for (const auto& pd : _props)
 		markBySignature(pd.signature);
+	_clearedGoals = captureGoalsTargeting(goalTargets());
 	AutoConfirmReferences guard(_editor);
 	_editor->delete_marked();
 }
@@ -743,7 +758,7 @@ void DeleteObjectsCommand::undo()
 	for (const auto& wg : _waypointGroups) {
 		restoreWaypointListProperties(wg);
 		if (wg.entirePath)
-			restoreWaypointPathReferences(wg.listName.c_str(), _editor);
+			restoreWaypointPathReferences(wg.listName.c_str());
 	}
 
 	// Phase 2: move newly created objects into obj_used_list so markObject's
@@ -788,7 +803,6 @@ void DeleteObjectsCommand::undo()
 			char invalidatedName[NAME_LENGTH + 2];
 			sprintf(invalidatedName, "<%s>", wd.name);
 			update_sexp_references(invalidatedName, wd.name);
-			_editor->ai_update_goal_references(sexp_ref_type::WING, invalidatedName, wd.name);
 
 			// Restore the wing struct using resolved ship indices.
 			wing& w = Wings[slot];
@@ -872,12 +886,15 @@ void DeleteObjectsCommand::undo()
 			if (wd != _affectedWings.end() && !wd->entirelyDeleted)
 				continue;
 		}
-		restoreShipReferences(cs.ship_name, _editor);
+		restoreShipReferences(cs.ship_name);
 	}
 
 	// Restoring a ship can briefly give it a name a wing survivor still had, and
 	// the renames above then move the wrong registry entries; repair the keys.
 	syncAllShipRegistryEntries();
+
+	// AI goals the delete cleared, now that their owners and targets are back.
+	restoreClearedGoals(_clearedGoals);
 
 	// Phase 4: mark the restored objects.
 	for (const int n : _currentObjNums) {
@@ -1538,6 +1555,7 @@ FormWingCommand::State FormWingCommand::capture(const SCP_vector<int>& shipSigna
 		ss.reinforcement  = captureReinforcement(s.ship_name);
 		st.ships.push_back(std::move(ss));
 	}
+	st.goals = captureGoalsTargeting(wingNames);
 	return st;
 }
 
@@ -1654,9 +1672,10 @@ void FormWingCommand::apply(const State& target, const State& other)
 			                     Reinforcements.end());
 		} else if (!before && after) {
 			update_sexp_references(invalidated.c_str(), name.c_str());
-			_editor->ai_update_goal_references(sexp_ref_type::WING, invalidated.c_str(), name.c_str());
 		}
 	}
+	// Invalidating a wing clears the AI goals that target it; put back target's.
+	restoreClearedGoals(target.goals);
 
 	update_custom_wing_indexes();
 	syncAllShipRegistryEntries();
@@ -1778,6 +1797,15 @@ DeleteWingCommand::DeleteWingCommand(int             wingNum,
 		const int objNum = Ships[mem.shipIndex].objnum;
 		doCaptureShip(objNum, _savedShips);
 	}
+	_clearedGoals = captureGoalsTargeting(goalTargets());
+}
+
+SCP_vector<SCP_string> DeleteWingCommand::goalTargets() const
+{
+	SCP_vector<SCP_string> names{_savedWing.name};
+	for (const auto& cs : _savedShips)
+		names.emplace_back(cs.ship_name);
+	return names;
 }
 
 DeleteWingCommand::~DeleteWingCommand()
@@ -1846,12 +1874,12 @@ void DeleteWingCommand::undo()
 	char invalidatedName[NAME_LENGTH + 2];
 	sprintf(invalidatedName, "<%s>", _savedWing.name);
 	update_sexp_references(invalidatedName, _savedWing.name);
-	_editor->ai_update_goal_references(sexp_ref_type::WING, invalidatedName, _savedWing.name);
 
 	restoreWingIntoSlot(_savedWing, slot, _editor);
 	// ... and the member ships' references, which their deletes bashed to <name>.
 	for (const auto& cs : _savedShips)
-		restoreShipReferences(cs.ship_name, _editor);
+		restoreShipReferences(cs.ship_name);
+	restoreClearedGoals(_clearedGoals);
 	update_custom_wing_indexes();
 
 	// Select the restored wing (mark_wing calls unmark_all first, so markObject calls are redundant).
@@ -1895,6 +1923,7 @@ void DeleteWingCommand::redo()
 		doCaptureShip(n, _savedShips);
 		removeShipTextureReplacements(Ships[Objects[n].instance].ship_name); // as recaptureShipForRedo does
 	}
+	_clearedGoals = captureGoalsTargeting(goalTargets());
 
 	{
 		AutoConfirmReferences guard(_editor);
