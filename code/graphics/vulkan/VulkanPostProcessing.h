@@ -784,6 +784,12 @@ public:
 	void executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitDepth);
 
 	/**
+	 * @brief Whether executeLightshafts() will draw this frame
+	 * @param sunPos If not null, receives the sun's position in the pass's texture space
+	 */
+	bool lightshaftsActive(vec2d* sunPos = nullptr) const;
+
+	/**
 	 * @brief Buffer FXAA/SMAA edge detection should read for luma computation:
 	 * the real Scene_ldr when it's already bounded to [0,1], or the compressed
 	 * tonemap proxy when HDR output has left it in extended range.
@@ -1187,8 +1193,8 @@ public:
 	 * @brief Put the depth that saveSceneDepth() parked back into the scene depth buffer
 	 *
 	 * The post-processing passes that sample scene depth must see the scene, not the
-	 * cockpit. What the cockpit wrote is copied to m_cockpitDepth first, which the
-	 * lightshaft pass uses as its cockpit mask, like Cockpit_depth_texture in OpenGL.
+	 * cockpit. When lightshafts will run, what the cockpit wrote is copied to m_cockpitDepth
+	 * first, which that pass uses as its cockpit mask, like Cockpit_depth_texture in OpenGL.
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
@@ -1381,6 +1387,7 @@ private:
 	RenderTarget m_sceneDepthBackup; // Scene depth parked across the cockpit render (transfer only)
 	RenderTarget m_cockpitDepth;    // Cockpit depth from the last restoreSceneDepth(), the lightshaft mask
 	bool m_cockpitDepthValid = false; // m_cockpitDepth holds this frame's cockpit
+	bool m_cockpitDepthWritten = false; // m_cockpitDepth has been copied to since it was created
 	RenderTarget m_sceneEffect;     // RGBA16F effect/composite (snapshot of scene color)
 
 	// Scene render pass and framebuffer

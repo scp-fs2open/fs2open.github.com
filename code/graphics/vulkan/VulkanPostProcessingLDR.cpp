@@ -508,20 +508,18 @@ bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
 	return true;
 }
 
-void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitDepth)
+bool VulkanLDR::lightshaftsActive(vec2d* sunPos) const
 {
 	if (!m_initialized || !graphics::Post_processing_manager) {
-		return;
+		return false;
 	}
 
 	if (Game_subspace_effect || !gr_sunglare_enabled() || !gr_lightshafts_enabled()) {
-		return;
+		return false;
 	}
 
 	// Find a global light with glare facing the camera
 	int n_lights = light_get_global_count();
-	float sun_x = 0.0f, sun_y = 0.0f;
-	bool found = false;
 
 	for (int idx = 0; idx < n_lights; idx++) {
 		vec3d light_dir;
@@ -533,17 +531,24 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitD
 
 		float dot = vm_vec_dot(&light_dir, &Eye_matrix.vec.fvec);
 		if (dot > 0.7f) {
-			sun_x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f + 0.5f;
-			sun_y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
-			// The formula above is OpenGL's, whose texture V grows upward. The Vulkan fullscreen triangle in
-			// post-v.sdr has V = 0 at the top of the screen, so flip to the space ls-f.sdr's fragTexCoord is in.
-			sun_y = 1.0f - sun_y;
-			found = true;
-			break;
+			if (sunPos) {
+				sunPos->x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f + 0.5f;
+				sunPos->y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+				// The formula above is OpenGL's, whose texture V grows upward. The Vulkan fullscreen triangle in
+				// post-v.sdr has V = 0 at the top of the screen, so flip to the space ls-f.sdr's fragTexCoord is in.
+				sunPos->y = 1.0f - sunPos->y;
+			}
+			return true;
 		}
 	}
 
-	if (!found) {
+	return false;
+}
+
+void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitDepth)
+{
+	vec2d sun_pos{};
+	if (!lightshaftsActive(&sun_pos)) {
 		return;
 	}
 
@@ -586,8 +591,7 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitD
 	auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
 
 	graphics::generic_data::lightshaft_data lsData;
-	lsData.sun_pos.x = sun_x;
-	lsData.sun_pos.y = sun_y;
+	lsData.sun_pos = sun_pos;
 	lsData.density = ls_params.density;
 	lsData.weight = ls_params.weight;
 	lsData.falloff = ls_params.falloff;
@@ -598,12 +602,16 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitD
 	// Additive blend lightshafts onto Scene_ldr. With no cockpit, the cockpit slot keeps the
 	// white fallback, which ls-f.sdr reads as nothing to mask.
 	const vk::ImageView views[] = {m_sceneDepth->view, cockpitDepth};
+	// Linear filtering of depth formats is an optional format feature
+	vk::Sampler nearestSampler = getTextureManager()->getSampler(
+		vk::Filter::eNearest, vk::Filter::eNearest,
+		vk::SamplerAddressMode::eClampToEdge, false, 0.0f, false);
 	m_ctx->drawFullscreenTriangleMulti(cmd, m_ldrLoadRenderPass,
 		m_sceneLdrFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_LIGHTSHAFTS,
 		views, cockpitDepth ? 2 : 1,
 		&lsData, sizeof(lsData),
-		m_ctx->linearSampler, 1, ALPHA_BLEND_ADDITIVE);
+		nearestSampler, 1, ALPHA_BLEND_ADDITIVE);
 }
 
 } // namespace graphics::vulkan
