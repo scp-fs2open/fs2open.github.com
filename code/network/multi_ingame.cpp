@@ -1152,7 +1152,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
 
-		// the class may have changed since creation; later packets index subsystems and weapon banks by the server's
+		// the server may have changed the class after the ship arrived;
+		// later packets index subsystems and weapon banks by the server's class
 		change_ship_type(ship_num, ship_class, 1);
 
 		Objects[objnum].flags.reset();
@@ -1191,7 +1192,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
 
 			if ( (team_val != -1) && (slot_index != -1) ) {
-				// the ship already has the server's class; the loadout's weapons fit only if it is still the loadout's
+				// the ship already has the server's class;
+				// the loadout's weapons fit only if it is still the loadout's class
 				if (Ships[idx].ship_info_index == Wss_slots_teams[team_val][slot_index].ship_class) {
 					wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
 				}
