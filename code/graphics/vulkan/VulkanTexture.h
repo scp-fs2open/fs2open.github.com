@@ -289,7 +289,8 @@ private:
 	 * Creates the buffer and allocates CpuOnly memory for it. On failure the
 	 * buffer is destroyed and false is returned (outBuffer left null). Callers
 	 * remain responsible for any image/view they allocated beforehand.
-	 * May wait on the oldest upload fence when the staging budget is full.
+	 * May wait on the oldest upload fence when the staging budget is full, and
+	 * returns false if that wait fails.
 	 */
 	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
 
@@ -308,8 +309,10 @@ private:
 	 *
 	 * Owns staging resources until the submission's fence signals, even when
 	 * level loading does not advance render frames.
+	 * @return false if the submission failed; the command buffer and staging
+	 * resources are freed, and the caller still owns the destination image.
 	 */
-	void submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
+	bool submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
 	                       VulkanAllocation stagingAllocation);
 
 	/**
@@ -391,6 +394,11 @@ private:
 		vk::Fence fence;
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
+
+	/**
+	 * @brief Free an upload's staging resources and command buffer, and keep its fence for reuse
+	 */
+	void releasePendingUpload(PendingCommandBuffer& pending);
 	size_t m_pendingUploadBytes = 0;
 	static constexpr size_t MAX_PENDING_UPLOADS = 64;
 	// completed fences are kept for reuse because creating one per upload is slow on some drivers

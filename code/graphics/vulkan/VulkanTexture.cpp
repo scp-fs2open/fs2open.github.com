@@ -319,6 +319,11 @@ void VulkanTextureManager::shutdown()
 		// a failed wait, e.g. on a lost device, must not stop the rest of the teardown
 		nprintf(("vulkan", "VulkanTexture: failed waiting for pending uploads at shutdown: %s\n", e.what()));
 	}
+	// the renderer has already waited for the device, so nothing can still be using what the wait above left
+	for (auto& pending : m_pendingCommandBuffers) {
+		releasePendingUpload(pending);
+	}
+	m_pendingCommandBuffers.clear();
 	for (auto fence : m_freeUploadFences) {
 		m_device.destroyFence(fence);
 	}
@@ -768,7 +773,12 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	recordUploadCommands(cmd, image, stagingBuffer, format, width, height,
 	                     mipLevels, vk::ImageLayout::eUndefined, false, copyRegions,
 	                     arrayLayerCount);
-	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
+	if (!submitUploadAsync(cmd, stagingBuffer, stagingAllocation)) {
+		m_device.destroyImageView(imageView);
+		m_device.destroyImage(image);
+		m_memoryManager->freeAllocation(allocation);
+		return false;
+	}
 
 	// Store shared image in ALL frame slots
 	for (int frame = baseFrame; frame < baseFrame + numFrames; frame++) {
@@ -973,7 +983,14 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	}
 	recordUploadCommands(cmd, ts->image, stagingBuffer, format, faceW, faceH,
 	                     imageMipLevels, vk::ImageLayout::eUndefined, generateMips, copyRegions, 6);
-	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
+	if (!submitUploadAsync(cmd, stagingBuffer, stagingAllocation)) {
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
+		return false;
+	}
 
 	// Update slot info
 	ts->width = faceW;
@@ -1051,6 +1068,11 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	VulkanAllocation stagingAllocation;
 	if (!createStagingBuffer(dataSize, stagingBuffer, stagingAllocation)) {
 		nprintf(("vulkan", "Failed to create staging buffer for 3D texture!\n"));
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
 		return false;
 	}
 
@@ -1078,7 +1100,14 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	recordUploadCommands(cmd, ts->image, stagingBuffer, format, width, height,
 	                     1, vk::ImageLayout::eUndefined, false, {region});
-	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
+	if (!submitUploadAsync(cmd, stagingBuffer, stagingAllocation)) {
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
+		return false;
+	}
 
 	// Update slot info
 	ts->width = width;
@@ -1368,7 +1397,14 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	recordUploadCommands(cmd, ts->image, stagingBuffer, format, width, height,
 	                     mipLevels, vk::ImageLayout::eUndefined, autoGenerateMips, copyRegions);
-	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
+	if (!submitUploadAsync(cmd, stagingBuffer, stagingAllocation)) {
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
+		return false;
+	}
 
 	// Update slot info
 	ts->width = width;
@@ -1877,7 +1913,9 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	recordUploadCommands(cmd, ts->image, stagingBuffer, format, w, h,
 	                     ts->mipLevels, ts->currentLayout);
-	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
+	if (!submitUploadAsync(cmd, stagingBuffer, stagingAllocation)) {
+		return;
+	}
 
 	// Update layout tracking
 	ts->currentLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -2791,23 +2829,29 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffer,
                                                VulkanAllocation& outAllocation)
 {
-	processPendingCommandBuffers();
 	constexpr size_t maxPendingUploadBytes = 64 * 1024 * 1024;
-	// A single large upload may exceed this limit, but never accumulate more
-	// uploads behind it. Waiting on an upload fence does not submit or retire
-	// the render command buffer currently being recorded.
-	while (!m_pendingCommandBuffers.empty() &&
-	       (m_pendingCommandBuffers.size() >= MAX_PENDING_UPLOADS || m_pendingUploadBytes >= maxPendingUploadBytes ||
-	        size > maxPendingUploadBytes - m_pendingUploadBytes)) {
-		nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
-			m_pendingCommandBuffers.size(), m_pendingUploadBytes));
-		const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
-		// waiting again on a fence that did not signal would never end
-		if (result != vk::Result::eSuccess) {
-			nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n", vk::to_string(result).c_str()));
-			return false;
-		}
+	try {
 		processPendingCommandBuffers();
+		// A single large upload may exceed this limit, but never accumulate more
+		// uploads behind it. Waiting on an upload fence does not submit or retire
+		// the render command buffer currently being recorded.
+		while (!m_pendingCommandBuffers.empty() &&
+		       (m_pendingCommandBuffers.size() >= MAX_PENDING_UPLOADS || m_pendingUploadBytes >= maxPendingUploadBytes ||
+		        size > maxPendingUploadBytes - m_pendingUploadBytes)) {
+			nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
+				m_pendingCommandBuffers.size(), m_pendingUploadBytes));
+			const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
+			// waiting again on a fence that did not signal would never end
+			if (result != vk::Result::eSuccess) {
+				nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n",
+					vk::to_string(result).c_str()));
+				return false;
+			}
+			processPendingCommandBuffers();
+		}
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n", e.what()));
+		return false;
 	}
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.size = size;
@@ -2965,7 +3009,7 @@ void VulkanTextureManager::recordUploadCommands(vk::CommandBuffer cmd, vk::Image
 	}
 }
 
-void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
+bool VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
                                              VulkanAllocation stagingAllocation)
 {
 	vk::SubmitInfo submitInfo;
@@ -2984,38 +3028,40 @@ void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 			m_freeUploadFences.pop_back();
 		}
 		m_graphicsQueue.submit(submitInfo, fence);
-	} catch (...) {
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanTexture: failed to submit a texture upload: %s\n", e.what()));
 		if (fence) {
 			m_device.destroyFence(fence);
 		}
 		m_device.freeCommandBuffers(m_commandPool, cmd);
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
-		throw;
+		return false;
 	}
 	m_pendingCommandBuffers.push_back({cmd, stagingBuffer, stagingAllocation, fence});
 	m_pendingUploadBytes += static_cast<size_t>(stagingAllocation.size);
 	Assertion(m_pendingCommandBuffers.size() <= MAX_PENDING_UPLOADS,
 		"%zu texture uploads are pending; an upload skipped the budget wait in createStagingBuffer",
 		m_pendingCommandBuffers.size());
+	return true;
+}
+
+void VulkanTextureManager::releasePendingUpload(PendingCommandBuffer& pending)
+{
+	m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
+	m_device.destroyBuffer(pending.stagingBuffer);
+	m_memoryManager->freeAllocation(pending.stagingAllocation);
+	m_device.freeCommandBuffers(m_commandPool, pending.cb);
+	m_freeUploadFences.push_back(pending.fence);
 }
 
 void VulkanTextureManager::processPendingCommandBuffers()
 {
-	size_t completed = 0;
-	for (auto& pending : m_pendingCommandBuffers) {
-		if (m_device.getFenceStatus(pending.fence) != vk::Result::eSuccess) {
-			break;
-		}
-		m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
-		m_device.destroyBuffer(pending.stagingBuffer);
-		m_memoryManager->freeAllocation(pending.stagingAllocation);
-		m_device.freeCommandBuffers(m_commandPool, pending.cb);
-		m_freeUploadFences.push_back(pending.fence);
-		++completed;
-	}
-	if (completed != 0) {
-		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin(), m_pendingCommandBuffers.begin() + completed);
+	// each upload leaves the list as soon as it is released, so a throw from a later fence cannot release it twice
+	while (!m_pendingCommandBuffers.empty() &&
+	       m_device.getFenceStatus(m_pendingCommandBuffers.front().fence) == vk::Result::eSuccess) {
+		releasePendingUpload(m_pendingCommandBuffers.front());
+		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin());
 	}
 	Assert(m_pendingCommandBuffers.empty() == (m_pendingUploadBytes == 0));
 }
