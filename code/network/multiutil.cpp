@@ -76,6 +76,7 @@
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
 #include "network/multi_fstracker.h"
+#include "network/multi_time_manager.h"
 #include "parse/parselo.h"
 #include "debugconsole/console.h"
 
@@ -752,6 +753,9 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 
 	// blast _any_ old data
 	Net_players[net_player_num].init();
+
+	// the previous occupant's clock offset says nothing about the new player's clock
+	Multi_Timing_Info.reset_source_clock(net_player_num);
 
 	// get the current # of players
 	current_player_count = multi_num_players();

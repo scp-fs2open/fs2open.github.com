@@ -111,6 +111,9 @@ public:
 	// Record that a packet stamped remote_time arrived from player_index.  Feeds the servo.
 	void note_packet_time(int player_index, int remote_time);
 
+	// Forget player_index's clock, for when a new player takes that Net_players slot.
+	void reset_source_clock(int player_index);
+
 	// Local time expressed on player_index's clock, biased to sit MULTI_INTERP_BUFFER_MS
 	// behind that source's newest packet.  This -- not get_current_time() -- is what any
 	// comparison against a received timestamp should use.

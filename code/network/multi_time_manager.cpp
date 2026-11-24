@@ -114,16 +114,26 @@ void multiplayer_timing_info::in_game_set_skip_time(float mission_time)
 
 void multiplayer_timing_info::reset_source_clocks()
 {
-    for (auto& sc : _source_clocks) {
-        sc.acquired = false;
-        sc.windows_closed = 0;
-        sc.offset = 0;
-        sc.target_offset = 0;
-        sc.precise_offset = 0.0;
-        sc.window_min_skew = INT_MAX;
-        sc.window_has_sample = false;
-        sc.window_end = 0;
+    for (int i = 0; i < MAX_PLAYERS; ++i) {
+        reset_source_clock(i);
     }
+}
+
+void multiplayer_timing_info::reset_source_clock(int player_index)
+{
+    if (!valid_source(player_index)) {
+        return;
+    }
+
+    auto& sc = _source_clocks[player_index];
+    sc.acquired = false;
+    sc.windows_closed = 0;
+    sc.offset = 0;
+    sc.target_offset = 0;
+    sc.precise_offset = 0.0;
+    sc.window_min_skew = INT_MAX;
+    sc.window_has_sample = false;
+    sc.window_end = 0;
 }
 
 // Called for every position packet that arrives, from add_packet().
