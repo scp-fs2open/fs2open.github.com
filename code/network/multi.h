@@ -77,9 +77,10 @@ class player;
 // Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
+// Version 64 - 11/22/2026 - Added the prop packet: props that spawn, are created or are removed during a mission
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							63
+#define MULTI_FS_SERVER_VERSION							64
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -283,6 +284,7 @@ class player;
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define SEXP						0xF1		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
 #define LUA_DATA_PACKET				0xF2		// Lafiel - any generic data sent by lua
+#define PROP_INFO					0xF3		// a prop spawned, was created or was removed during the mission
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
@@ -361,6 +363,11 @@ class player;
 #define ASTEROID_CREATE				0x1		// create an asteroid
 #define ASTEROID_THROW				0x2		// throw an asteroid
 #define ASTEROID_HIT				0x3		// asteroid hit occured
+
+// prop stuff
+#define PROP_INFO_SPAWN				0x1		// a prop from the mission file spawned
+#define PROP_INFO_CREATE			0x2		// a prop was created that is not in the mission file
+#define PROP_INFO_REMOVE			0x3		// a prop was removed
 
 // commands for squadmate messages
 #define SQUAD_MSG_SHIP				0x1

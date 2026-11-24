@@ -2554,7 +2554,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
-				if (eval_prop(node) == nullptr) {
+				if (eval_prop(node) == nullptr && !mission_parse_prop_not_yet_present(CTEXT(node))) {
 					return SEXP_CHECK_INVALID_PROP;
 				}
 				break;
@@ -2628,7 +2628,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				if (eval_ship(node)) {
 					break;
 				}
-				if (eval_prop(node)) {
+				if (eval_prop(node) || mission_parse_prop_not_yet_present(CTEXT(node))) {
 					break;
 				}
 				return SEXP_CHECK_INVALID_SHIP_PROP;
@@ -3827,6 +3827,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 				if (ship_info_lookup(CTEXT(node)) < 0)
 					return SEXP_CHECK_INVALID_SHIP_CLASS_NAME;
+
+				break;
+
+			case OPF_PROP_CLASS_NAME:
+				if ( node_subtype != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (prop_info_lookup(CTEXT(node)) < 0)
+					return SEXP_CHECK_INVALID_PROP_CLASS_NAME;
 
 				break;
 
@@ -5866,7 +5875,15 @@ const prop *eval_prop(int node)
 		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
 			return nullptr;
 
-		return prop_id_lookup(Sexp_nodes[node].cache->ship_registry_index);
+		// a removed prop empties its slot and a later prop may take it, so the slot must still hold this name
+		int cached_idx = Sexp_nodes[node].cache->ship_registry_index;
+		// and, as in prop_name_lookup, a prop removed this frame no longer answers to its name
+		if (SCP_vector_inbounds(Props, cached_idx) && Props[cached_idx].has_value() &&
+			!stricmp(Props[cached_idx]->prop_name, CTEXT(node)) && Props[cached_idx]->objnum >= 0 &&
+			!Objects[Props[cached_idx]->objnum].flags[Object::Object_Flags::Should_be_dead])
+			return prop_id_lookup(cached_idx);
+
+		Sexp_nodes[node].cache.reset();
 	}
 
 	// maybe forward to a special-arg node
@@ -19771,7 +19788,16 @@ void sexp_prop_create(int n)
 	// if ship with this name already exists, ship_create will respond appropriately
 	if (!stricmp(new_ship_name, SEXP_NONE_STRING))
 		new_ship_name = nullptr;
-	
+
+	// the waiting prop would spawn under a generated name that can differ from one player to the next
+	if (new_ship_name != nullptr && mission_parse_prop_not_yet_present(new_ship_name))
+	{
+		Warning(LOCATION,
+			"Invalid name passed to prop-create; '%s' belongs to a mission prop that has not spawned yet",
+			new_ship_name);
+		return;
+	}
+
 	//Get ship class
 	new_prop_class = prop_info_lookup(CTEXT(n));
 	if (new_prop_class < 0)
@@ -19796,9 +19822,15 @@ void sexp_prop_create(int n)
 		new_prop_ori = vmd_identity_matrix;
 
 	int objnum = prop_create(&new_prop_ori, &new_prop_pos, new_prop_class, new_ship_name);
-	Assert(objnum != -1);
+	if (objnum < 0)
+		return;
 
 	// note: model_page_in_textures was called via the sexp preloader
+
+	// the flag is how the server finds this prop again for a player who joins later
+	prop_id_lookup(Objects[objnum].instance)->flags.set(Prop::Prop_Flags::Made_by_sexp);
+	if (MULTIPLAYER_MASTER)
+		send_prop_create_packet(&Objects[objnum]);
 }
 
 // Goober5000
@@ -19897,6 +19929,8 @@ void sexp_prop_vanish(int n)
 		auto prop_entry = eval_prop(n);
 		if (prop_entry != nullptr) {
 			Objects[prop_entry->objnum].flags.set(Object::Object_Flags::Should_be_dead);
+			if (MULTIPLAYER_MASTER)
+				send_prop_remove_packet(Objects[prop_entry->objnum].net_signature);
 		}
 	}
 }
@@ -35240,6 +35274,17 @@ std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type  /*type*/, const
 		}
 	}
 
+	for (i = 0; i < static_cast<int>(Props.size()); i++) {
+		if (Props[i].has_value()) {
+			if (query_node_in_sexp(n, Props[i]->spawn_cue)) {
+				return std::make_pair(i, sexp_src::PROP_SPAWN);
+			}
+			if (query_node_in_sexp(n, Props[i]->despawn_cue)) {
+				return std::make_pair(i, sexp_src::PROP_DESPAWN);
+			}
+		}
+	}
+
 	for (i=0; i<(int)Mission_events.size(); i++){
 		if (query_node_in_sexp(n, Mission_events[i].formula)){
 			return std::make_pair(i, sexp_src::EVENT);
@@ -35588,6 +35633,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
+
+		case SEXP_CHECK_INVALID_PROP_CLASS_NAME:
+			return "Invalid prop class name";
 
 		case SEXP_CHECK_INVALID_SKYBOX_NAME:
 			return "Invalid skybox name";

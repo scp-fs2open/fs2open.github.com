@@ -13,6 +13,7 @@
 #include <object/object.h>
 #include <object/objectdock.h>
 #include <object/waypoint.h>
+#include <prop/prop.h>
 #include <ship/ship.h>
 
 #include <algorithm>
@@ -344,7 +345,14 @@ int ErrorChecker::checkObjectList() {
 			char buf[256];
 			waypoint_stuff_name(buf, i);
 			entry.name = buf;
-		} else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP) {
+		} else if (ptr->type == OBJ_PROP) {
+			const prop* propp = prop_id_lookup(ptr->instance);
+			if (propp != nullptr &&
+				(fred_check_sexp(propp->spawn_cue, OPR_BOOL, "spawn cue of prop \"%s\"", propp->prop_name) ||
+					fred_check_sexp(propp->despawn_cue, OPR_BOOL, "despawn cue of prop \"%s\"", propp->prop_name))) {
+				return -1;
+			}
+		} else if (ptr->type == OBJ_JUMP_NODE) {
 			// nothing needed
 		} else {
 			return internal_error("An unknown object type (%d) was detected", ptr->type);

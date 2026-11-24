@@ -22,6 +22,7 @@
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
+#include "mission/missionparse.h"
 #include "mission/missiontraining.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
@@ -1470,6 +1471,14 @@ ADE_FUNC(createProp,
 	ade_get_args(L, "|sooo", &name, l_Propclass.Get(&pclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
 
 	if (!SCP_vector_inbounds(Prop_info, pclass)) {
+		return ade_set_error(L, "o", l_Prop.Set(object_h()));
+	}
+
+	// the waiting prop would spawn under a generated name that can differ from one player to the next
+	if (name != nullptr && mission_parse_prop_not_yet_present(name)) {
+		Warning(LOCATION,
+			"Invalid name passed to createProp; '%s' belongs to a mission prop that has not spawned yet",
+			name);
 		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 	}
 

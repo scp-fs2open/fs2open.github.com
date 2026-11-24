@@ -567,6 +567,23 @@ class Fred_mission_save {
 	int save_props();
 
 	/**
+	 * @brief Saves one of a prop's cues, unless it is the default
+	 *
+	 * @param[in] key           The key
+	 * @param[in] cue           The cue's sexp node
+	 * @param[in] default_cue   The cue a prop has when the key is absent
+	 */
+	void save_prop_cue(const char* key, int cue, int default_cue);
+
+	/**
+	 * @brief Saves one of a prop's cue delays, unless it is zero
+	 *
+	 * @param[in] key           The key
+	 * @param[in] delay         The delay in seconds
+	 */
+	void save_prop_delay(const char* key, int delay);
+
+	/**
 	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while
 	 * handling newlines properly
 	 */

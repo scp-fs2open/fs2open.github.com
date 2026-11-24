@@ -8,6 +8,7 @@
 #include "prop.h"
 #include "propclass.h"
 
+#include "mission/missionparse.h"
 #include "prop/prop.h"
 
 namespace scripting::api {
@@ -33,9 +34,16 @@ ADE_VIRTVAR(Name,
 	prop* propp = prop_id_lookup(objh->objp()->instance);
 
 	if (ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(propp->prop_name);
-		strncpy(propp->prop_name, s, len);
-		propp->prop_name[len - 1] = 0;
+		char stored[sizeof(propp->prop_name)];
+		strncpy(stored, s, sizeof(stored));
+		stored[sizeof(stored) - 1] = 0;
+
+		// the waiting prop would spawn under a generated name that can differ from one player to the next
+		if (mission_parse_prop_not_yet_present(stored)) {
+			Warning(LOCATION, "Invalid prop name '%s'; it belongs to a mission prop that has not spawned yet", stored);
+		} else {
+			strcpy_s(propp->prop_name, stored);
+		}
 	}
 
 	return ade_set_args(L, "s", propp->prop_name);

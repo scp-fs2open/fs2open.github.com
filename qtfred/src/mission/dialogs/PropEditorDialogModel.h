@@ -2,6 +2,9 @@
 
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "mission/missionparse.h"
+#include "missioneditor/sexp_tree_model.h"
+
+struct prop;
 
 namespace fso::fred::dialogs {
 
@@ -31,6 +34,17 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	SCP_string getLayer() const;
 	void setLayer(const SCP_string& layer);
 
+	const SCP_vector<int>& getSelectedProps() const;
+	int getSpawnCue() const;
+	int getDespawnCue() const;
+	int getSpawnDelay() const;
+	int getDespawnDelay() const;
+	bool cuesDiffer() const;
+	void setSpawnCue(const SexpTreeModel& tree);
+	void setDespawnCue(const SexpTreeModel& tree);
+	void setSpawnDelay(int delay);
+	void setDespawnDelay(int delay);
+
  signals:
 	void modelDataChanged();
 
@@ -46,6 +60,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	void selectPropFromObjectList(object* start, bool forward);
 	void selectFirstPropInMission();
 	SCP_vector<int> getSelectedPropObjects() const;
+	SCP_vector<prop*> selectedProps() const;
 	static bool getFlagValueForObject(const object& obj, size_t flag_index);
 	static int tristate_set(bool value, int current_state);
 

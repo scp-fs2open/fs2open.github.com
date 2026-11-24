@@ -2,9 +2,11 @@
 
 #include "globalincs/pstypes.h"
 
+#include "io/timer.h"
 #include "mission/mission_flags.h"
 #include "object/object.h"
 #include "object/objcollide.h"
+#include "parse/sexp.h"
 #include "prop/prop_flags.h"
 #include "ship/ship.h"
 
@@ -27,7 +29,7 @@ typedef struct prop_info {
 
 typedef struct prop {
 	char prop_name[NAME_LENGTH];
-	int objnum;
+	int objnum = -1;
 	int prop_info_index;
 	int model_instance_num;
 	uint create_time;                     // time prop was created, set by gettime()
@@ -37,12 +39,22 @@ typedef struct prop {
 	// glow points
 	SCP_deque<bool> glow_point_bank_active;
 	flagset<Prop::Prop_Flags> flags;
+	int spawn_cue = Locked_sexp_true;
+	int spawn_delay = 0;
+	int despawn_cue = Locked_sexp_false;
+	int despawn_delay = 0;
 } prop;
 
 typedef struct prop_category {
 	SCP_string name;
 	color list_color;
 } prop_category;
+
+enum class PropStatus {
+	NOT_YET_PRESENT,
+	PRESENT,
+	EXITED
+};
 
 typedef struct parsed_prop {
 	char name[NAME_LENGTH];
@@ -51,6 +63,17 @@ typedef struct parsed_prop {
 	vec3d position;
 	flagset<Mission::Parse_Object_Flags> flags;
 	SCP_string fred_layer = "Default";
+	int spawn_cue = Locked_sexp_true;
+	int spawn_delay = 0;
+	int despawn_cue = Locked_sexp_false;
+	int despawn_delay = 0;
+
+	PropStatus status = PropStatus::NOT_YET_PRESENT;
+	object_h objh;
+	ushort net_signature = 0;
+	TIMESTAMP spawn_timestamp;
+	TIMESTAMP despawn_timestamp;
+	bool object_table_was_full = false;
 } parsed_prop;
 
 extern bool Props_inited;

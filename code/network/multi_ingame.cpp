@@ -223,6 +223,7 @@ void multi_handle_ingame_joiners()
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
 				multi_obs_create_observer(&Net_players[idx]);
 				Net_players[idx].flags &= ~(NETINFO_FLAG_INGAME_JOIN);
+				send_prop_state(&Net_players[idx]);
 				Netgame.flags &= ~(NG_FLAG_INGAME_JOINING_CRITICAL | NG_FLAG_INGAME_JOINING);
 			}
 		
@@ -1677,6 +1678,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Net_players[player_num].m_player->objnum = OBJ_INDEX(objp);
 		Net_players[player_num].state = NETPLAYER_STATE_IN_MISSION;                   // since he'll do this anyway...
 		Net_players[player_num].flags &= ~(NETINFO_FLAG_INGAME_JOIN);
+		send_prop_state(&Net_players[player_num]);
 		multi_assign_player_ship( player_num, objp, Ships[objp->instance].ship_info_index );
 
 		// update his ets and link status stuff

@@ -3,8 +3,10 @@
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "freespace.h"
+#include "mission/missionparse.h"
 #include "model/model.h"
 #include "model/modelreplace.h"
+#include "network/multi.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "prop/prop_flags.h"
@@ -59,7 +61,8 @@ int prop_name_lookup(const char *name)
 			continue;
 		}
 		if (p->objnum >= 0){
-			if (Objects[p->objnum].type == OBJ_PROP) {
+			// a removed prop keeps its object until the frame ends, but its name is free from the moment it is removed
+			if (Objects[p->objnum].type == OBJ_PROP && !Objects[p->objnum].flags[Object::Object_Flags::Should_be_dead]) {
 				if (!stricmp(name, p->prop_name)) {
 					return static_cast<int>(i);
 				}
@@ -451,19 +454,28 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
 		strcpy_s(base_name, Prop_info[prop_type].name.c_str());
-		sprintf(suffix, NOX(" %d"), new_id);
 
-		// start building name
-		strcpy_s(propp->prop_name, base_name);
+		// the slot number alone can give a name that a prop has, or that a waiting mission prop will take
+		int names_in_use = static_cast<int>(Props.size() + Parse_props.size());
+		for (int number = new_id; number <= new_id + names_in_use; number++) {
+			sprintf(suffix, NOX(" %d"), number);
 
-		// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
-		int char_overflow = static_cast<int>(strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
-		if (char_overflow > 0) {
-			propp->prop_name[strlen(base_name) - static_cast<size_t>(char_overflow)] = '\0';
+			// start building name
+			strcpy_s(propp->prop_name, base_name);
+
+			// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
+			int char_overflow = static_cast<int>(strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
+			if (char_overflow > 0) {
+				propp->prop_name[strlen(base_name) - static_cast<size_t>(char_overflow)] = '\0';
+			}
+
+			// complete building the name by adding suffix number
+			strcat_s(propp->prop_name, suffix);
+
+			if (prop_name_lookup(propp->prop_name) < 0 && !mission_parse_prop_not_yet_present(propp->prop_name)) {
+				break;
+			}
 		}
-
-		// complete building the name by adding suffix number
-		strcat_s(propp->prop_name, suffix);
 
 	} else {
 		strcpy_s(propp->prop_name, name);
@@ -510,7 +522,11 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		pos,
 		model_get_radius(pip->model_num),
 		default_prop_object_flags);
-	Assert(objnum >= 0);
+	if (objnum < 0) {
+		mprintf(("Couldn't create prop %s -- out of object slots\n", propp->prop_name));
+		Props[new_id] = std::nullopt;
+		return -1;
+	}
 
 	propp->objnum = objnum;
 
@@ -524,7 +540,9 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 	objp->phys_info.flags = PF_CONST_VEL;
 
 	// For now use the asteroid signature for props as requested by Cyborg.
-	if (Game_mode & GM_MULTIPLAYER) {
+	// once its mission is loaded a client only uses the signatures the server sends, so it takes none itself
+	bool client_after_load = MULTIPLAYER_CLIENT && Multi_mission_loaded;
+	if ((Game_mode & GM_MULTIPLAYER) && !client_after_load) {
 		objp->net_signature = multi_assign_network_signature(MULTI_SIG_ASTEROID);
 	}
 
@@ -592,6 +610,16 @@ void prop_delete(object* obj)
 
 	model_delete_instance(propp.model_instance_num);
 	propp.model_instance_num = -1;
+
+	// in the editors a prop owns its cues, and a cue left behind would still count as naming its ships
+	if (Fred_running) {
+		if (propp.spawn_cue >= 0) {
+			free_sexp2(propp.spawn_cue);
+		}
+		if (propp.despawn_cue >= 0) {
+			free_sexp2(propp.despawn_cue);
+		}
+	}
 
 	// Leave the slot empty for the duration of the scene
 	// The Props array will be compacted at the end of the level

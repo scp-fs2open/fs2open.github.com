@@ -254,6 +254,11 @@ void clone_prop_instance_data(int src_prop_id, int dest_prop_id)
 	// fred view layer
 	dest->fred_layer = src->fred_layer;
 
+	dest->spawn_cue = dup_sexp_chain(src->spawn_cue);
+	dest->spawn_delay = src->spawn_delay;
+	dest->despawn_cue = dup_sexp_chain(src->despawn_cue);
+	dest->despawn_delay = src->despawn_delay;
+
 	// object flag the prop editor exposes (see save_props)
 	if (Objects[src->objnum].flags[Object::Object_Flags::Collides]) {
 		Objects[dest->objnum].flags.set(Object::Object_Flags::Collides);

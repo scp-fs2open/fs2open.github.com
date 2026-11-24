@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>420</width>
-    <height>320</height>
+    <width>640</width>
+    <height>620</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,6 +49,143 @@
     </widget>
    </item>
    <item>
+    <layout class="QHBoxLayout" name="cueLayout">
+     <item>
+      <layout class="QVBoxLayout" name="spawnLayout">
+       <item>
+        <layout class="QHBoxLayout" name="spawnDelayLayout">
+         <item>
+          <widget class="QLabel" name="spawnCueLabel">
+           <property name="text">
+            <string>Spawn cue</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="spawnSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="spawnDelayLabel">
+           <property name="text">
+            <string>Delay:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="spawnDelaySpinBox">
+           <property name="toolTip">
+            <string>Seconds between the spawn cue becoming true and the prop appearing</string>
+           </property>
+           <property name="suffix">
+            <string> s</string>
+           </property>
+           <property name="maximum">
+            <number>99999</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="fso::fred::sexp_tree_view" name="spawnCueTree">
+         <property name="toolTip">
+          <string>The prop is not in the mission until this is true</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="despawnLayout">
+       <item>
+        <layout class="QHBoxLayout" name="despawnDelayLayout">
+         <item>
+          <widget class="QLabel" name="despawnCueLabel">
+           <property name="text">
+            <string>Despawn cue</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="despawnSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="despawnDelayLabel">
+           <property name="text">
+            <string>Delay:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="despawnDelaySpinBox">
+           <property name="toolTip">
+            <string>Seconds between the despawn cue becoming true and the prop being removed</string>
+           </property>
+           <property name="suffix">
+            <string> s</string>
+           </property>
+           <property name="maximum">
+            <number>99999</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="fso::fred::sexp_tree_view" name="despawnCueTree">
+         <property name="toolTip">
+          <string>Once the prop has spawned, it is removed for good when this is true</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="cuesDifferLabel">
+     <property name="text">
+      <string>The selected props have different cues or delays. The first prop's are shown; an edit applies to all of them.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="cueHelpText">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>90</height>
+      </size>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QPushButton" name="prevButton">
@@ -82,6 +219,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree_view</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree_view.h</header>
+  </customwidget>
   <customwidget>
    <class>fso::fred::FlagListWidget</class>
    <extends>QWidget</extends>
