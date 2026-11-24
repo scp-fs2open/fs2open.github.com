@@ -105,7 +105,7 @@ public:
 
 #define	AF_USED					(1<<0)			// Set means used.
 
-typedef	struct asteroid {
+typedef	struct asteroid {	// @checkpoint fields
 	int		flags;
 	flagset<Object::Raw_Pof_Flags> render_flags; // Render flags
 	int		objnum;
@@ -126,15 +126,15 @@ typedef	struct asteroid {
 typedef enum {
 	DG_ASTEROID,
 	DG_DEBRIS
-} debris_genre_t;
+} debris_genre_t;	// @checkpoint fields
 
 // TYPEDEF FOR FIELD TYPE
 typedef enum {
 	FT_ACTIVE,
 	FT_PASSIVE
-} field_type_t;
+} field_type_t;	// @checkpoint fields
 
-struct asteroid_field {
+struct asteroid_field {	// @checkpoint fields
 	vec3d	min_bound;					// Minimum range of field.
 	vec3d	max_bound;					// Maximum range of field.
 	float	bound_rad;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 namespace util {
 
 class Random {
@@ -27,10 +25,6 @@ public:
 
 	// jump ahead in the RNG sequence
 	static void advance(unsigned long long distance);
-
-	// the complete state of the generator, so that it can continue the same sequence later (e.g. for checkpoints)
-	static std::string save_state();
-	static void load_state(const std::string& state);
 private:
 	Random();
 };

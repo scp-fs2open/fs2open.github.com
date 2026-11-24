@@ -4,8 +4,8 @@
 //
 // Structs are written as tagged fields (name hash, length, payload) and every struct carries its own length, so a
 // reader skips fields it doesn't know and leaves fields that are missing from the data untouched.  Which fields a
-// struct has comes from generated field lists (see tools/fieldscan); how a field is written is decided by its type
-// alone.
+// struct has comes from field lists generated from its definition, which is marked "// @checkpoint fields" (see
+// tools/fieldscan); how a field is written is decided by its type alone.
 //
 // This header is what engine files see: it handles scalars, key types (checkpoint_key / from_checkpoint_key), arrays,
 // the SCP containers, strings, pair, tuple, unique_ptr, optional, and raw pointers to containers or strings, which are
@@ -75,38 +75,11 @@ class LoadContext {
 	SCP_vector<std::function<void()>> m_fixups;
 };
 
-/**
- * @brief Optionally records where each saved field ended up, by path (e.g. "objects[12].ship.weapons.next_primary_fire_stamp"),
- * so that two saves can be compared field by field.
- */
-struct Trace {
-	struct Entry {
-		SCP_string path;
-		size_t begin;
-		size_t end;
-	};
-
-	SCP_vector<Entry> entries;
-	SCP_vector<SCP_string> path;
-
-	SCP_string current_path() const
-	{
-		SCP_string result;
-		for (const auto& part : path) {
-			if (!result.empty() && part[0] != '[')
-				result += '.';
-			result += part;
-		}
-		return result;
-	}
-};
-
 class Writer {
   public:
-	explicit Writer(Buffer& buffer, Trace* trace = nullptr) : m_buffer(buffer), m_trace(trace) {}
+	explicit Writer(Buffer& buffer) : m_buffer(buffer) {}
 
 	size_t size() const { return m_buffer.size(); }
-	Trace* trace() const { return m_trace; }
 
 	void bytes(const void* data, size_t size)
 	{
@@ -139,27 +112,6 @@ class Writer {
 
   private:
 	Buffer& m_buffer;
-	Trace* m_trace;
-};
-
-// Adds a part to the trace path for the lifetime of the scope.
-class TraceScope {
-  public:
-	TraceScope(Writer& w, SCP_string part) : m_trace(w.trace())
-	{
-		if (m_trace != nullptr)
-			m_trace->path.push_back(std::move(part));
-	}
-	~TraceScope()
-	{
-		if (m_trace != nullptr)
-			m_trace->path.pop_back();
-	}
-	TraceScope(const TraceScope&) = delete;
-	TraceScope& operator=(const TraceScope&) = delete;
-
-  private:
-	Trace* m_trace;
 };
 
 class Reader {
@@ -385,10 +337,8 @@ struct Codec<T[N]> {
 	static void save(Writer& w, const T (&v)[N])
 	{
 		w.u32(static_cast<uint32_t>(N));
-		for (size_t i = 0; i < N; ++i) {
-			TraceScope scope(w, w.trace() != nullptr ? "[" + std::to_string(i) + "]" : SCP_string());
+		for (size_t i = 0; i < N; ++i)
 			checkpoint::save(w, v[i]);
-		}
 	}
 	static void load(Reader& r, T (&v)[N])
 	{
@@ -435,11 +385,8 @@ struct SequenceCodec {
 	static void save(Writer& w, const C& v)
 	{
 		w.u32(static_cast<uint32_t>(v.size()));
-		size_t index = 0;
-		for (const auto& element : v) {
-			TraceScope scope(w, w.trace() != nullptr ? "[" + std::to_string(index++) + "]" : SCP_string());
+		for (const auto& element : v)
 			checkpoint::save(w, element);
-		}
 	}
 	static void load(Reader& r, C& v)
 	{

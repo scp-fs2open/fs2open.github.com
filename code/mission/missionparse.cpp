@@ -114,7 +114,7 @@ static void mission_checkpoint_apply_ambient_light()
 	auto level = The_mission.ambient_light_level;
 	gr_set_ambient_light(level & 0xff, (level >> 8) & 0xff, (level >> 16) & 0xff);
 }
-CHECKPOINT_AFTER_GLOBALS("Ambient light", mission_checkpoint_apply_ambient_light);
+CHECKPOINT_AFTER_GLOBALS(mission_checkpoint_apply_ambient_light);
 char Mission_filename[80];
 
 int Mission_palette;  // index into Nebula_palette_filenames[] of palette file to use for mission
@@ -184,7 +184,7 @@ static void ship_arrival_list_checkpoint_apply(const SCP_vector<int>& indexes)
 	}
 }
 
-CHECKPOINT_STATE("Ship_arrival_list", ship_arrival_list_checkpoint_capture, ship_arrival_list_checkpoint_apply, AfterGlobals);
+CHECKPOINT_STATE(ship_arrival_list_checkpoint_capture, ship_arrival_list_checkpoint_apply, AfterGlobals);
 
 // all the ships that we parse
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
@@ -200,35 +200,11 @@ SCP_vector<parsed_prop> Parse_props;
 p_object	Support_ship_pobj;
 CHECKPOINT_GLOBAL(Support_ship_pobj);
 p_object *Arriving_support_ship;
+CHECKPOINT_GLOBAL(Arriving_support_ship);
 char Arriving_repair_targets[MAX_AI_GOALS][NAME_LENGTH];
 CHECKPOINT_GLOBAL(Arriving_repair_targets);
 int Num_arriving_repair_targets;
 CHECKPOINT_GLOBAL(Num_arriving_repair_targets);
-
-// The arriving support ship is either a parse object or the separate support ship parse object.
-static void arriving_support_ship_checkpoint_save(checkpoint::Writer& w)
-{
-	int index = -1;
-	if (Arriving_support_ship == &Support_ship_pobj)
-		index = -2;
-	else if (Arriving_support_ship != nullptr)
-		index = POBJ_INDEX(Arriving_support_ship);
-	w.value(index);
-}
-
-static void arriving_support_ship_checkpoint_load(checkpoint::Reader& r)
-{
-	int index = -1;
-	r.value(index);
-	if (index == -2)
-		Arriving_support_ship = &Support_ship_pobj;
-	else if (SCP_vector_inbounds(Parse_objects, index))
-		Arriving_support_ship = &Parse_objects[index];
-	else
-		Arriving_support_ship = nullptr;
-}
-
-CHECKPOINT_GLOBAL_FUNCTIONS("Arriving_support_ship", arriving_support_ship_checkpoint_save, arriving_support_ship_checkpoint_load);
 
 #define MIN_SUBSYS_STATUS_SIZE		25
 subsys_status *Subsys_status = NULL;

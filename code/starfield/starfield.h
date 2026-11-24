@@ -50,7 +50,7 @@ constexpr float SUN_ANGULAR_SIZE_MAX = 90.0f;
 // becomes SUN_ANGULAR_SIZE_MAX. field is the name of the parsed field, for the error message.
 float stars_check_angular_size(float degrees, const char* field, const char* sun_filename);
 
-typedef struct starfield_list_entry {
+typedef struct starfield_list_entry {	// @checkpoint fields
 	char filename[MAX_FILENAME_LEN];		// bitmap filename
 	float scale_x, scale_y;					// x and y scale
 	int div_x, div_y;						// # of x and y divisions
@@ -68,7 +68,7 @@ typedef struct starfield_list_entry {
 } starfield_list_entry;
 
 // backgrounds
-typedef struct background_t {
+typedef struct background_t {	// @checkpoint fields
 	flagset<Starfield::Background_Flags> flags;
 	SCP_vector<starfield_list_entry> bitmaps;
 	SCP_vector<starfield_list_entry> suns;

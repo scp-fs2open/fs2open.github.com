@@ -181,30 +181,31 @@ struct TableFieldRegistration {
 		checkpoint_global_, __LINE__)(#variable, variable)
 
 // Saves and restores state with dedicated functions: void save(checkpoint::Writer&), void load(checkpoint::Reader&).
-#define CHECKPOINT_GLOBAL_FUNCTIONS(name, save_function, load_function)                                                \
-	static ::checkpoint::FunctionRegistration CHECKPOINT_CONCAT(checkpoint_functions_, __LINE__)(name, save_function, load_function)
+#define CHECKPOINT_GLOBAL_FUNCTIONS(save_function, load_function)                                                      \
+	static ::checkpoint::FunctionRegistration CHECKPOINT_CONCAT(checkpoint_functions_, __LINE__)(#save_function,       \
+		save_function, load_function)
 
 // Runs a function after all globals have been restored, e.g. to rebuild lookup tables from them.
-#define CHECKPOINT_AFTER_GLOBALS(name, function)                                                                       \
-	static ::checkpoint::AfterGlobalsRegistration CHECKPOINT_CONCAT(checkpoint_after_globals_, __LINE__)(name, function)
+#define CHECKPOINT_AFTER_GLOBALS(function)                                                                             \
+	static ::checkpoint::AfterGlobalsRegistration CHECKPOINT_CONCAT(checkpoint_after_globals_, __LINE__)(#function, function)
 
 // Runs a function once everything is restored, e.g. to rebuild state derived from objects.
-#define CHECKPOINT_AFTER_RESTORE(name, function)                                                                      \
-	static ::checkpoint::AfterRestoreRegistration CHECKPOINT_CONCAT(checkpoint_after_restore_, __LINE__)(name, function)
+#define CHECKPOINT_AFTER_RESTORE(function)                                                                             \
+	static ::checkpoint::AfterRestoreRegistration CHECKPOINT_CONCAT(checkpoint_after_restore_, __LINE__)(#function, function)
 
 // Saves state that is applied at a later point of the restore than the globals are loaded, e.g. because applying it
 // needs the restored objects.  capture is T(), apply is void(const T&), phase is AfterGlobals or AfterRestore.  If a
 // checkpoint has no saved state of this name, apply isn't called.
-#define CHECKPOINT_STATE(name, capture, apply, phase)                                                                  \
+#define CHECKPOINT_STATE(capture, apply, phase)                                                                        \
 	static ::checkpoint::StateRegistration<decltype(capture())> CHECKPOINT_CONCAT(checkpoint_state_, __LINE__)(       \
-		name, capture, apply, ::checkpoint::Phase::phase)
+		#capture, capture, apply, ::checkpoint::Phase::phase)
 
 // Saves a field of every entry of a table, for fields missions change at runtime: tables aren't reset when a mission
-// loads.  The entries are saved in order, e.g. CHECKPOINT_TABLE_FIELD("Weapon damage types", Weapon_info, damage_type_idx).
-// Tables in fixed arrays are given as checkpoint::first_n(array, count).
-#define CHECKPOINT_TABLE_FIELD(name, table, member)                                                                    \
+// loads.  The entries are saved in order, e.g. CHECKPOINT_TABLE_FIELD(Weapon_info, damage_type_idx).  Tables in fixed
+// arrays are given as checkpoint::first_n(array, count).
+#define CHECKPOINT_TABLE_FIELD(table, member)                                                                          \
 	static ::checkpoint::TableFieldRegistration CHECKPOINT_CONCAT(checkpoint_table_field_, __LINE__)(                 \
-		name, [](auto&& visit) {                                                                                       \
+		#table "." #member, [](auto&& visit) {                                                                                       \
 			for (auto& entry : table)                                                                                  \
 				visit(entry.member);                                                                                   \
 		})

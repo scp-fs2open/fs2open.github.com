@@ -11,7 +11,7 @@
 #include "parse/sexp.h"
 
 // enum class inherits from int by default
-enum class ContainerType {
+enum class ContainerType {	// @checkpoint fields
 	NONE = 0x00,
 	LIST = 0x01,
 	MAP = 0x02,
@@ -109,7 +109,7 @@ using ListModifier = list_modifier::Modifier;
 ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
 const char *get_list_modifier_name(ListModifier modifier);
 
-struct sexp_container
+struct sexp_container	// @checkpoint fields
 {
 	// meta-character for containers in text replacement, etc.
 	static constexpr char DELIM = '&';

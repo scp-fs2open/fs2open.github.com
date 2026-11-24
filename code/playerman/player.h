@@ -79,7 +79,7 @@
 // having the opportunity to skip it
 #define PLAYER_MISSION_FAILURE_LIMIT		5
 
-class player
+class player	// @checkpoint fields
 {
 public:
 	void reset();

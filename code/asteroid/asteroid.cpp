@@ -10,7 +10,6 @@
 
 
 #include "asteroid/asteroid.h"
-#include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"
@@ -64,7 +63,7 @@ int	Num_asteroids = 0;
 // Contains information for asteroid and debris objects for use in asteroid fields
 SCP_vector< asteroid_info > Asteroid_info;
 // sexps change the damage types of asteroid classes
-CHECKPOINT_TABLE_FIELD("Asteroid damage types", Asteroid_info, damage_type_idx);
+CHECKPOINT_TABLE_FIELD(Asteroid_info, damage_type_idx);
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 CHECKPOINT_GLOBAL(Asteroid_field);
@@ -333,7 +332,7 @@ static void asteroid_checkpoint_save(checkpoint::Writer& w, const object& objp)
 {
 	const asteroid *asp = &Asteroids[objp.instance];
 	checkpoint::save(w, *asp);
-	checkpoint::save_model_instance(w, asp->model_instance_num);
+	checkpoint::save(w, object_get_model_instance(&objp));
 }
 
 static void asteroid_checkpoint_restore(checkpoint::Reader& r, object& objp)
@@ -343,7 +342,8 @@ static void asteroid_checkpoint_restore(checkpoint::Reader& r, object& objp)
 	checkpoint::load(r, *asp);
 	asteroid_load(asp->asteroid_type, asp->asteroid_subtype);
 	asteroid_acquire_resources(objp.instance);
-	checkpoint::load_model_instance(r, asp->model_instance_num);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
 }
 
 CHECKPOINT_OBJECT_TYPE(OBJ_ASTEROID, asteroid_checkpoint_save, asteroid_checkpoint_restore, nullptr, nullptr, MAX_ASTEROIDS);

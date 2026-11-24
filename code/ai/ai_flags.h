@@ -4,7 +4,7 @@
 #include "globalincs/flagset.h"
 
 namespace AI {
-	FLAG_LIST(AI_Flags) {
+	FLAG_LIST(AI_Flags) {	// @checkpoint fields
 		Formation_wing,				//	Fly in formation as part of wing. Also used when flying waypoints.
 		Awaiting_repair,			//	Awaiting a repair ship.
 		Being_repaired,				//	Currently docked with repair ship.
@@ -38,7 +38,7 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Goal_Flags) {
+	FLAG_LIST(Goal_Flags) {	// @checkpoint fields
 		Docker_index_valid,	// when set, index field for docker is valid
 		Dockee_index_valid,	// when set, index field for dockee is valid
 		Goal_on_hold,		// when set, this goal cannot currently be satisfied, although it could be in the future
@@ -57,7 +57,7 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Maneuver_Override_Flags) {
+	FLAG_LIST(Maneuver_Override_Flags) {	// @checkpoint fields
 		Full_rot,	//	full sexp control over pitch/bank/heading rotation
 		Roll,		//	Sexp forced roll maneuver
 		Pitch,		//	Sexp forced pitch change
@@ -77,7 +77,7 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Profile_Flags) {
+	FLAG_LIST(Profile_Flags) {	// @checkpoint fields
         Advanced_turret_fov_edge_checks,
         Ai_aims_from_ship_center,
         Ai_can_slow_down_attacking_big_ships,

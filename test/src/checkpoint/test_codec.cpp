@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#define CHECKPOINT_CODEC_IMPLEMENTATION
 #include "checkpoint/codec_impl.h"
 
 namespace {

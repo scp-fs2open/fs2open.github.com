@@ -484,7 +484,7 @@ static void death_checkpoint_apply(const death_checkpoint_state& state)
 		popupdead_start();
 }
 
-CHECKPOINT_STATE("Death_state", death_checkpoint_capture, death_checkpoint_apply, AfterRestore);
+CHECKPOINT_STATE(death_checkpoint_capture, death_checkpoint_apply, AfterRestore);
 
 UI_TIMESTAMP Multi_ping_timestamp;
 
@@ -4671,9 +4671,6 @@ void game_set_frametime(int state)
 #endif
 		Frametime = MAX_FRAMETIME;
 	}
-
-	// when verifying checkpoints, frames must be reproducible
-	checkpoint::override_frametime(Frametime);
 
 	flRealframetime = f2fl(Frametime);
 

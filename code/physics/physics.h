@@ -40,7 +40,7 @@ extern const float SUPERCAP_WARP_T_CONST;
 extern const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD;
 
 //information for physics sim for an object
-typedef struct physics_info {
+typedef struct physics_info {	// @checkpoint fields
 	uint		flags;			//misc physics flags
 
 	float		mass;				//the mass of this object

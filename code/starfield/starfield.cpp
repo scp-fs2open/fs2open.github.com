@@ -3369,7 +3369,7 @@ static void starfield_checkpoint_apply(const starfield_checkpoint_state& state)
 	stars_set_dynamic_environment(dynamic_environment);
 }
 
-CHECKPOINT_STATE("Starfield", starfield_checkpoint_capture, starfield_checkpoint_apply, AfterGlobals);
+CHECKPOINT_STATE(starfield_checkpoint_capture, starfield_checkpoint_apply, AfterGlobals);
 void stars_invalidate_environment_map() {
 	// This will cause a redraw in the next frame
 	Env_cubemap_drawn = false;

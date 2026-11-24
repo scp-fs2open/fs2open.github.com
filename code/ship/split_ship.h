@@ -8,7 +8,7 @@
 #include "ship/ship.h"
 #include "sound/sound.h"
 
-typedef struct clip_ship {
+typedef struct clip_ship {	// @checkpoint fields
 	object*			parent_obj;
 	float 			length_left;	// uncomsumed length
 	matrix			orient;
@@ -22,7 +22,7 @@ typedef struct clip_ship {
 	int				next_fireball;
 } clip_ship;
 
-typedef struct split_ship {
+typedef struct split_ship {	// @checkpoint fields
 	int used = 0; // 0 if not used, 1 if used
 	clip_ship		front_ship;
 	clip_ship		back_ship;

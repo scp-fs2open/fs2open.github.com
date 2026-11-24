@@ -95,7 +95,7 @@ static void storm_checkpoint_load(checkpoint::Reader& r)
 	nebl_set_storm(name.c_str());
 }
 
-CHECKPOINT_GLOBAL_FUNCTIONS("Storm", storm_checkpoint_save, storm_checkpoint_load);
+CHECKPOINT_GLOBAL_FUNCTIONS(storm_checkpoint_save, storm_checkpoint_load);
 
 // vars
 DCF(b_scale, "Sets the scale factor for debug nebula bolts")

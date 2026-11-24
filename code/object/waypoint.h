@@ -8,7 +8,7 @@
 //********************CLASSES********************
 class waypoint_list;
 
-class waypoint
+class waypoint	// @checkpoint fields
 {
 	public:
 		waypoint();
@@ -35,7 +35,7 @@ class waypoint
 	friend struct checkpoint::Fields;
 };
 
-class waypoint_list
+class waypoint_list	// @checkpoint fields
 {
 	public:
 		waypoint_list();

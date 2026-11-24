@@ -1,33 +1,21 @@
 # Generates the field lists the checkpoint codec uses to visit structs (see tools/fieldscan).
 #
-# target_checkpoint_fields(<target> LIST <struct list> OUTPUT <generated header name>)
+# target_checkpoint_fields(<target> OUTPUT <generated header name>)
 #
-# The struct list names "<struct> <header>" pairs, with headers relative to the directory of the list's target
-# (code/). The generated header is placed in <binary dir>/checkpoint/ and regenerated whenever the list or one of
-# the listed headers changes.
+# Scans the headers of the target for structs and enums marked with "// @checkpoint fields".  The generated header is
+# placed in <binary dir>/checkpoint/ and regenerated whenever one of the headers changes.
 function(target_checkpoint_fields _target)
-	cmake_parse_arguments(ARG "" "LIST;OUTPUT" "" ${ARGN})
+	cmake_parse_arguments(ARG "" "OUTPUT" "" ${ARGN})
 
-	get_filename_component(_listPath "${ARG_LIST}" ABSOLUTE)
 	set(_sourceRoot "${CMAKE_CURRENT_SOURCE_DIR}")
 	set(_outputDir "${CMAKE_CURRENT_BINARY_DIR}/checkpoint")
 	set(_output "${_outputDir}/${ARG_OUTPUT}")
 	set(_stamp "${_outputDir}/${ARG_OUTPUT}.stamp")
+	set(_headerList "${_outputDir}/${ARG_OUTPUT}.headers")
 
-	# the headers to depend on come from the list itself, so reconfigure when it changes
-	set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_listPath}")
-	file(STRINGS "${_listPath}" _lines)
-	set(_headers)
-	foreach(_line IN LISTS _lines)
-		string(REGEX REPLACE "#.*" "" _line "${_line}")
-		string(STRIP "${_line}" _line)
-		if (_line STREQUAL "")
-			continue()
-		endif()
-		string(REGEX REPLACE "^[^ \t]+[ \t]+" "" _header "${_line}")
-		list(APPEND _headers "${_sourceRoot}/${_header}")
-	endforeach()
-	list(REMOVE_DUPLICATES _headers)
+	# the target's headers, as listed in its sources
+	set(_headers "$<FILTER:$<TARGET_PROPERTY:${_target},SOURCES>,INCLUDE,\\.h$>")
+	file(GENERATE OUTPUT "${_headerList}" CONTENT "$<JOIN:${_headers},\n>\n")
 
 	IF(CMAKE_CROSSCOMPILING)
 		SET(FIELDSCAN_PATH "FIELDSCAN-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to a fieldscan of a cmake build for the host OS")
@@ -48,9 +36,10 @@ function(target_checkpoint_fields _target)
 	add_custom_command(
 		OUTPUT "${_stamp}"
 		BYPRODUCTS "${_output}"
-		COMMAND ${FIELDSCAN_PATH} "${_sourceRoot}" "${_listPath}" "${_output}"
+		COMMAND ${FIELDSCAN_PATH} "${_sourceRoot}" "${_headerList}" "${_output}"
 		COMMAND ${CMAKE_COMMAND} -E touch "${_stamp}"
-		DEPENDS "${_listPath}" ${_headers} ${_fieldscanDependency}
+		DEPENDS "${_headerList}" "${_headers}" ${_fieldscanDependency}
+		COMMAND_EXPAND_LISTS
 		COMMENT "Generating checkpoint field lists"
 	)
 

@@ -1,7 +1,6 @@
 #include "prop.h"
 
 #include "asteroid/asteroid.h"
-#include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
 #include "debris/debris.h"
 #include "freespace.h"
@@ -28,7 +27,7 @@ static void prop_checkpoint_save(checkpoint::Writer& w, const object& objp)
 {
 	const prop& propp = *Props[objp.instance];
 	checkpoint::save(w, propp);
-	checkpoint::save_model_instance(w, propp.model_instance_num);
+	checkpoint::save(w, object_get_model_instance(&objp));
 }
 
 static void prop_checkpoint_restore(checkpoint::Reader& r, object& objp)
@@ -44,7 +43,8 @@ static void prop_checkpoint_restore(checkpoint::Reader& r, object& objp)
 	auto& pip = Prop_info[propp.prop_info_index];
 	pip.model_num = model_load(pip.pof_file.c_str());
 	propp.model_instance_num = model_create_instance(OBJ_INDEX(&objp), pip.model_num);
-	checkpoint::load_model_instance(r, propp.model_instance_num);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
 }
 
 CHECKPOINT_OBJECT_TYPE(OBJ_PROP, prop_checkpoint_save, prop_checkpoint_restore, nullptr, nullptr, MAX_OBJECTS);

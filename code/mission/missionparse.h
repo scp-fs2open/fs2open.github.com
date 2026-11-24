@@ -104,7 +104,7 @@ inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [
 }();
 
 // Goober5000
-struct support_ship_info
+struct support_ship_info	// @checkpoint fields
 {
 	ArrivalLocation     arrival_location;   // arrival location
 	anchor_t            arrival_anchor;     // arrival anchor
@@ -165,7 +165,7 @@ static const cutscene_type_data CutsceneMenuData[] = {
 };
 
 // defines a mission cutscene.
-typedef struct mission_cutscene {
+typedef struct mission_cutscene {	// @checkpoint fields
 	int type; 
 	char filename[MAX_FILENAME_LEN];
 	int formula;
@@ -177,7 +177,7 @@ typedef struct mission_default_custom_data {
 	SCP_string description;
 } mission_default_custom_data;
 
-typedef struct custom_string {
+typedef struct custom_string {	// @checkpoint fields
 	SCP_string name;
 	SCP_string value;
 	SCP_string text;
@@ -200,7 +200,7 @@ struct parse_object_flag_description {
 	const char *flag_desc;
 };
 
-typedef struct mission {
+typedef struct mission {	// @checkpoint fields
 	SCP_string	name;
 	SCP_string	author;
 	gameversion::version	required_fso_version;
@@ -279,7 +279,7 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 
 // enums for arrival locations.  The integer values of these enums should match their counterparts in the arrival location array
 #define	MAX_ARRIVAL_NAMES				9
-enum class ArrivalLocation : int
+enum class ArrivalLocation : int	// @checkpoint fields
 {
 	AT_LOCATION = 0,
 	NEAR_SHIP = 1,
@@ -294,7 +294,7 @@ enum class ArrivalLocation : int
 
 // enums for departure locations.  The integer values of these enums should match their counterparts in the departure location array
 #define MAX_DEPARTURE_NAMES			2
-enum class DepartureLocation : int
+enum class DepartureLocation : int	// @checkpoint fields
 {
 	AT_LOCATION = 0,
 	TO_DOCK_BAY = 1
@@ -428,7 +428,7 @@ struct alt_class {
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
 // be copied into the real object, ship, etc. structs
-class p_object
+class p_object	// @checkpoint fields
 {
 public:
 	char	name[NAME_LENGTH] = "";

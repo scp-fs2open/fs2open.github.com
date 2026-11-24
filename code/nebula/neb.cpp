@@ -103,7 +103,7 @@ static void neb2_checkpoint_apply_settings()
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
 		neb2_post_level_init(The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 }
-CHECKPOINT_AFTER_GLOBALS("Nebula", neb2_checkpoint_apply_settings);
+CHECKPOINT_AFTER_GLOBALS(neb2_checkpoint_apply_settings);
 
 // Deprecated!  Only used for compatibility
 bool  Neb2_fog_save_legacy_values = false;

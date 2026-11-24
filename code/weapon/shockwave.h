@@ -58,7 +58,7 @@ struct shockwave_info_ref : session_index {
 	static shockwave_info_ref from_checkpoint_key(const std::pair<SCP_string, bool>& key);
 };
 
-typedef struct shockwave {
+typedef struct shockwave {	// @checkpoint fields
 	shockwave	*next, *prev;	// @checkpoint skip: list link, rebuilt when the element is linked in again
 	int			flags;
 	int			objnum;					// index into Objects[] for shockwave

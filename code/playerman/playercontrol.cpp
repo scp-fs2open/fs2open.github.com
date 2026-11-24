@@ -64,7 +64,7 @@ static void player_checkpoint_load(checkpoint::Reader& r)
 	checkpoint::load(r, *Player);
 }
 
-CHECKPOINT_GLOBAL_FUNCTIONS("Player", player_checkpoint_save, player_checkpoint_load);
+CHECKPOINT_GLOBAL_FUNCTIONS(player_checkpoint_save, player_checkpoint_load);
 
 // Goober5000
 bool	Player_use_ai = false;

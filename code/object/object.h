@@ -135,7 +135,7 @@ typedef struct raw_pof_obj {
 
 extern SCP_map<int, raw_pof_obj> Pof_objects;
 
-class object
+class object	// @checkpoint fields
 {
 public:
 	class object	*next, *prev;	// for linked lists of objects @checkpoint skip: list link, rebuilt when the element is linked in again

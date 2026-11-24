@@ -83,7 +83,7 @@ enum class CycleDirection { NEXT, PREV };
 
 #define RF_IS_AVAILABLE			(1<<0)			// reinforcement is now available
 
-struct reinforcements {
+struct reinforcements {	// @checkpoint fields
 	char	name[NAME_LENGTH];	// ship or wing name (ship and wing names don't collide)
 	int	type;						// what operations this reinforcement unit can perform
 	int	uses;						// number of times reinforcemnt unit can be used
@@ -98,7 +98,7 @@ struct reinforcements {
 
 // Per-bank state for a weapon's external model - the model rendered at the bank's firing
 // points when the ship enables $Show Primary Models: / $Show Secondary Models:.
-struct external_weapon_state
+struct external_weapon_state	// @checkpoint fields
 {
 	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one @checkpoint skip: re-acquired after loading
 	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked @checkpoint skip: re-acquired after loading
@@ -108,7 +108,7 @@ struct external_weapon_state
 	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
 };
 
-class ship_weapon {
+class ship_weapon {	// @checkpoint fields
 public:
 	int num_primary_banks;					// Number of primary banks (same as model)
 	int num_secondary_banks;				// Number of secondary banks (same as model)
@@ -328,7 +328,7 @@ typedef struct cockpit_display_info {
 } cockpit_display_info;
 
 // structure to keep track of ship locks
-typedef struct lock_info {
+typedef struct lock_info {	// @checkpoint fields
 	object *obj;
 	ship_subsys *subsys;
 
@@ -367,7 +367,7 @@ struct guard_range_entry {
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
-class ship_subsys
+class ship_subsys	// @checkpoint fields
 {
 public:
 	class ship_subsys *next, *prev;				//	Index of next and previous objects in list. @checkpoint skip: list link, rebuilt when the element is linked in again
@@ -639,7 +639,7 @@ struct ship_electrical_arc : electrical_arc
 };
 
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
-class ship
+class ship	// @checkpoint fields
 {
 public:
 	int	objnum;
@@ -996,7 +996,7 @@ ai_target_priority init_ai_target_priorities();
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
 
-typedef struct exited_ship {
+typedef struct exited_ship {	// @checkpoint fields
 	char	ship_name[NAME_LENGTH];
 	SCP_string display_name;
 	int		obj_signature;
@@ -1020,7 +1020,7 @@ extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
-enum class ShipStatus
+enum class ShipStatus	// @checkpoint fields
 {
 	// The ship_registry_entry hasn't been initialized yet
 	INVALID = 0,
@@ -1041,7 +1041,7 @@ enum class ShipStatus
 	EXITED
 };
 
-struct ship_registry_entry
+struct ship_registry_entry	// @checkpoint fields
 {
 	ShipStatus status = ShipStatus::INVALID;
 	char name[NAME_LENGTH] = { 0 };
@@ -1688,7 +1688,7 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 
 
 //	Defines a wing of ships.
-typedef struct wing {
+typedef struct wing {	// @checkpoint fields
 	char	name[NAME_LENGTH];
 	SCP_string display_name;
 
@@ -1777,7 +1777,7 @@ extern SCP_vector<reinforcements> Reinforcements;
 // of a particular type, and the number of times that a ship of that particular type has been
 // killed.  When changing any info here, be sure to update the ship_type_names array in Ship.cpp
 // the order of the types here MUST match the order of the types in the array
-typedef struct ship_counts {
+typedef struct ship_counts {	// @checkpoint fields
 	int	total;
 	int	killed;
 	ship_counts(){total=0;killed=0;}

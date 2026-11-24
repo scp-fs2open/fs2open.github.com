@@ -28,7 +28,7 @@ struct ai_info;
 // have priority over others (i.e. when a player issues a goal to a wing, then a seperate
 // goal to a ship in that wing).  We would probably use this type in conjunction with
 // goal priority to establish which goal to follow
-enum class ai_goal_type
+enum class ai_goal_type	// @checkpoint fields
 {
 	INVALID = 0,
 	EVENT_SHIP,		// from mission event direct to ship
@@ -44,7 +44,7 @@ enum class ai_goal_type
 // to worry about doing this.  Also add it to list in Fred\Management.cpp, and let Hoffoss know!
 // WMC - Oh and add them to Ai_goal_names plz. TY! :)
 // Goober5000 - As well as Ai_goal_text and Ai_goal_list, if appropriate
-enum ai_goal_mode : uint8_t
+enum ai_goal_mode : uint8_t	// @checkpoint fields
 {
 	AI_GOAL_NONE = 0,
 	AI_GOAL_SCHROEDINGER,		// used for FRED when multiple ships are selected with different orders
@@ -127,7 +127,7 @@ struct ai_lua_parameters {
 void ai_lua_parameters_rebuild(ai_lua_parameters& parameters);
 
 // structure for AI goals
-typedef struct ai_goal {
+typedef struct ai_goal {	// @checkpoint fields
 	int	signature;			//	Unique identifier.  All goals ever created (per mission) have a unique signature.
 	ai_goal_mode ai_mode;	// one of the AI_GOAL_* modes for this goal
 	int	ai_submode;			// maybe need a submode

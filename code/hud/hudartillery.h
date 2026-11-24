@@ -52,7 +52,7 @@ typedef struct ssm_info {
 } ssm_info;
 
 // creation info for the strike (useful for multiplayer)
-typedef struct ssm_firing_info {
+typedef struct ssm_firing_info {	// @checkpoint fields
 	SCP_vector<TIMESTAMP>	delay_stamp;	// timestamps
 	SCP_vector<vec3d>		start_pos;		// start positions
 
@@ -64,7 +64,7 @@ typedef struct ssm_firing_info {
 } ssm_firing_info;
 
 // the strike itself
-typedef struct ssm_strike {
+typedef struct ssm_strike {	// @checkpoint fields
 	SCP_vector<int>		fireballs;		// warpin effect fireballs
 	SCP_vector<bool>	done_flags;		// when we've fired off the individual missiles
 

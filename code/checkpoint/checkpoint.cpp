@@ -36,7 +36,6 @@
 #include "species_defs/species_defs.h"
 #include "stats/medals.h"
 #include "stats/scoring.h"
-#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
@@ -86,12 +85,11 @@ const ObjectTypeHandler* find_object_type_handler(int type)
 
 // --- requests --------------------------------------------------------------------------------------------------------
 
-enum class RequestType { None, Save, Load, Verify };
+enum class RequestType { None, Save, Load };
 
 struct Request {
 	RequestType type = RequestType::None;
 	int slot = 0;
-	int frames = 0;
 	SCP_vector<SCP_string> excluded;
 	int replay_event = -1;	// a load: the event to run again once the checkpoint is loaded, see request_load()
 	SCP_string name;		// a save: the checkpoint's name, or empty to use the pending one
@@ -133,25 +131,6 @@ void set_loading(bool loading)
 	Loading = loading;
 	Scripting_hooks_suppressed = loading;
 }
-
-// verification in progress
-enum class VerifyStage { None, RunningOriginal, AwaitingRestore, RunningRestored };
-
-struct VerifyRun {
-	VerifyStage stage = VerifyStage::None;
-	int frames = 0;
-	int frames_left = 0;
-	Buffer start;		// the checkpoint the second run starts from
-	Buffer original;	// the state to compare against
-	Trace original_trace;
-};
-
-VerifyRun Verify;
-
-// fixed frame stepping while verifying
-bool Stepping = false;
-uint64_t Step_clock = 0;
-constexpr fix STEP_FRAMETIME = F1_0 / 30;
 
 // --- sections --------------------------------------------------------------------------------------------------------
 
@@ -418,13 +397,13 @@ void report_load(const Header& header, const LoadContext& context)
 
 // --- saving ----------------------------------------------------------------------------------------------------------
 
-Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}, const SCP_string& name = {})
+Buffer save_checkpoint(const SCP_vector<SCP_string>& excluded = {}, const SCP_string& name = {})
 {
 	// objects created this frame are still on the create list; they are saved like all others
 	obj_merge_created_list();
 
 	Buffer buffer;
-	Writer w(buffer, trace);
+	Writer w(buffer);
 	size_t at;
 
 	save_header(w);
@@ -434,17 +413,11 @@ Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}
 	w.end_block(at);
 
 	begin_section(w, "globals", at);
-	{
-		TraceScope scope(w, "globals");
-		for (const auto& handler : global_handlers()) {
-			TraceScope global_scope(w, handler.name);
-			w.u32(name_hash(handler.name));
-			auto global_at = w.begin_block();
-			handler.save(w);
-			if (trace != nullptr)
-				trace->entries.push_back({trace->current_path(), global_at + sizeof(uint32_t), w.size()});
-			w.end_block(global_at);
-		}
+	for (const auto& handler : global_handlers()) {
+		w.u32(name_hash(handler.name));
+		auto global_at = w.begin_block();
+		handler.save(w);
+		w.end_block(global_at);
 	}
 	w.end_block(at);
 
@@ -458,7 +431,6 @@ Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}
 		}
 		w.u32(static_cast<uint32_t>(saved.size()));
 		for (auto objp : saved) {
-			TraceScope scope(w, "objects[" + std::to_string(OBJ_INDEX(objp)) + "]");
 			w.value(static_cast<int32_t>(OBJ_INDEX(objp)));
 			w.value(static_cast<int32_t>(objp->type));
 			save(w, *objp);
@@ -475,7 +447,6 @@ Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}
 	}
 	w.end_block(at);
 
-	// the random number generator goes last, so nothing that is saved after it can use it
 	// the names to put back to their mission-start state when loading
 	begin_section(w, "excluded", at);
 	save(w, excluded);
@@ -484,10 +455,6 @@ Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}
 	// read without restoring anything, to list checkpoints; see read_name()
 	begin_section(w, "name", at);
 	save(w, name);
-	w.end_block(at);
-
-	begin_section(w, "random", at);
-	save(w, SCP_string(util::Random::save_state()));
 	w.end_block(at);
 
 	seal(buffer);
@@ -600,8 +567,7 @@ bool restore_checkpoint(const Buffer& buffer, bool& mission_changed)
 	auto clock = section("clock");
 	auto globals = section("globals");
 	auto objects = section("objects");
-	auto random = section("random");
-	if (clock == nullptr || globals == nullptr || objects == nullptr || random == nullptr)
+	if (clock == nullptr || globals == nullptr || objects == nullptr)
 		return false;
 
 	auto problem = check_objects(*objects);
@@ -694,60 +660,7 @@ bool restore_checkpoint(const Buffer& buffer, bool& mission_changed)
 		function.second();
 
 	report_load(header, context);
-
-	// restoring used random numbers, so the generator is restored last
-	SCP_string random_state;
-	load(*random, random_state);
-	util::Random::load_state(random_state);
-
-	return !random->failed();
-}
-
-// --- verification ----------------------------------------------------------------------------------------------------
-
-void report(const SCP_string& text)
-{
-	mprintf(("Checkpoint verify: %s\n", text.c_str()));
-	dc_printf("Checkpoint verify: %s\n", text.c_str());
-}
-
-void compare_saves(const Buffer& a, const Trace& a_trace, const Buffer& b, const Trace& b_trace)
-{
-	SCP_unordered_map<SCP_string, const Trace::Entry*> b_entries;
-	for (const auto& entry : b_trace.entries)
-		b_entries.emplace(entry.path, &entry);
-
-	int differences = 0;
-	int missing = 0;
-	constexpr int MAX_REPORTED = 50;
-
-	for (const auto& entry : a_trace.entries) {
-		auto it = b_entries.find(entry.path);
-		if (it == b_entries.end()) {
-			if (missing++ < MAX_REPORTED)
-				report("only in the first save: " + entry.path);
-			continue;
-		}
-		auto other = it->second;
-		bool same = (entry.end - entry.begin == other->end - other->begin)
-			&& memcmp(&a[entry.begin], &b[other->begin], entry.end - entry.begin) == 0;
-		if (!same && differences++ < MAX_REPORTED)
-			report("differs: " + entry.path);
-		b_entries.erase(it);
-	}
-	for (const auto& entry : b_entries) {
-		if (missing++ < MAX_REPORTED)
-			report("only in the second save: " + entry.first);
-	}
-
-	report(std::to_string(differences) + " fields differ, " + std::to_string(missing) + " fields exist in only one save, "
-		+ std::to_string(a_trace.entries.size()) + " fields compared");
-}
-
-void start_stepping()
-{
-	Stepping = true;
-	Step_clock = timestamp_get_checkpoint_state().microseconds;
+	return true;
 }
 
 // Reads one registered global from a saved checkpoint.
@@ -857,7 +770,7 @@ void handle_request(const Request& request)
 			scripting::hooks::OnCheckpointSave->run(scripting::hook_param_list(scripting::hook_param("Index", 'i', request.slot)));
 		auto name = request.name.empty() ? Pending_name : request.name;
 		Pending_name.clear();
-		auto buffer = save_checkpoint(nullptr, request.excluded, name);
+		auto buffer = save_checkpoint(request.excluded, name);
 		if (store_save(request.slot, buffer))
 			mprintf(("Checkpoint: saved checkpoint %d (%d bytes)\n", request.slot, static_cast<int>(buffer.size())));
 		else
@@ -881,23 +794,6 @@ void handle_request(const Request& request)
 		start_load(std::move(buffer));
 		break;
 	}
-
-	case RequestType::Verify:
-		Pending_index = Loaded_index;	// verifying doesn't change which checkpoint the mission was resumed from
-		Pending_replay_event = -1;
-		Verify = VerifyRun();
-		Verify.frames = request.frames;
-		if (request.frames <= 0) {
-			Verify.original = save_checkpoint(&Verify.original_trace);
-			Verify.stage = VerifyStage::AwaitingRestore;
-			start_load(Verify.original);
-		} else {
-			Verify.start = save_checkpoint(nullptr);
-			Verify.frames_left = request.frames;
-			Verify.stage = VerifyStage::RunningOriginal;
-			start_stepping();
-		}
-		break;
 
 	case RequestType::None:
 		break;
@@ -955,7 +851,7 @@ void register_object_type(ObjectTypeHandler handler)
 
 void request_save(int index, SCP_vector<SCP_string> excluded, SCP_string name)
 {
-	Pending_request = {RequestType::Save, index, 0, std::move(excluded), -1, std::move(name)};
+	Pending_request = {RequestType::Save, index, std::move(excluded), -1, std::move(name)};
 }
 
 void set_pending_name(const SCP_string& name)
@@ -1007,18 +903,13 @@ bool request_load(int index, int replay_event)
 		mprintf(("Checkpoint: there is no checkpoint %d in this mission\n", index));
 		return false;
 	}
-	Pending_request = {RequestType::Load, index, 0, {}, replay_event, {}};
+	Pending_request = {RequestType::Load, index, {}, replay_event, {}};
 	return true;
 }
 
 bool is_replaying_event()
 {
 	return Replaying_event;
-}
-
-void request_verify(int frames)
-{
-	Pending_request = {RequestType::Verify, 0, frames, {}, -1, {}};
 }
 
 bool has_slot(int index, const char* mission)
@@ -1096,23 +987,6 @@ void process_requests()
 	// the first frame after a restore is over: its events have run
 	First_frame_after_restore = false;
 
-	if (Verify.stage == VerifyStage::RunningOriginal || Verify.stage == VerifyStage::RunningRestored) {
-		if (--Verify.frames_left <= 0) {
-			Stepping = false;
-			if (Verify.stage == VerifyStage::RunningOriginal) {
-				Verify.original = save_checkpoint(&Verify.original_trace);
-				Verify.stage = VerifyStage::AwaitingRestore;
-				start_load(Verify.start);
-			} else {
-				Trace trace;
-				auto current = save_checkpoint(&trace);
-				compare_saves(Verify.original, Verify.original_trace, current, trace);
-				Verify = VerifyRun();
-			}
-		}
-		return;
-	}
-
 	if (Pending_request.type == RequestType::None || Loading)
 		return;
 
@@ -1142,7 +1016,6 @@ void apply_pending_restore()
 		// doesn't match what this build expects, and the mission can't be put back together.
 		if (mission_changed)
 			Error(LOCATION, "Restoring the checkpoint failed after the mission was cleared; the game cannot continue.");
-		Verify = VerifyRun();
 		Pending_replay_event = -1;
 		set_loading(false);
 		Warning(LOCATION, "Restoring the checkpoint failed; the mission continues from its start.");
@@ -1169,18 +1042,6 @@ void apply_pending_restore()
 		Replaying_event = false;
 	}
 
-	if (Verify.stage == VerifyStage::AwaitingRestore) {
-		if (Verify.frames <= 0) {
-			Trace trace;
-			auto current = save_checkpoint(&trace);
-			compare_saves(Verify.original, Verify.original_trace, current, trace);
-			Verify = VerifyRun();
-		} else {
-			Verify.frames_left = Verify.frames;
-			Verify.stage = VerifyStage::RunningRestored;
-			start_stepping();
-		}
-	}
 }
 
 void record_mission_structure()
@@ -1203,20 +1064,6 @@ bool is_loading()
 	return Loading;
 }
 
-bool override_frametime(fix& frametime)
-{
-	if (!Stepping)
-		return false;
-
-	frametime = STEP_FRAMETIME;
-	Step_clock += static_cast<uint64_t>(f2fl(STEP_FRAMETIME) * MICROSECONDS_PER_SECOND);
-
-	auto state = timestamp_get_checkpoint_state();
-	state.microseconds = Step_clock;
-	timestamp_restore_checkpoint_state(state);
-	return true;
-}
-
 } // namespace checkpoint
 
 // --- console commands ------------------------------------------------------------------------------------------------
@@ -1233,11 +1080,4 @@ DCF(checkpoint_load, "Loads a checkpoint saved in this mission (usage: checkpoin
 	int slot = 0;
 	dc_maybe_stuff_int(&slot);
 	checkpoint::request_load(slot);
-}
-
-DCF(checkpoint_verify, "Checks that saving and loading a checkpoint restores everything (usage: checkpoint_verify [frames])")
-{
-	int frames = 0;
-	dc_maybe_stuff_int(&frames);
-	checkpoint::request_verify(frames);
 }

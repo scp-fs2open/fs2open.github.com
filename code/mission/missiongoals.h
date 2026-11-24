@@ -50,7 +50,7 @@ extern const char *Goal_type_text(int n);
 
 #define	MGF_NO_MUSIC	(1<<0)		// don't play any event music when goal is achieved
 
-typedef struct mission_goal {
+typedef struct mission_goal {	// @checkpoint fields
 	SCP_string name;                        // used for storing status of goals in player file
 	int  type = PRIMARY_GOAL;               // primary/secondary/bonus
 	int  satisfied = GOAL_INCOMPLETE;       // has this goal been satisfied
@@ -98,7 +98,7 @@ enum class EventStatus : int
 
 #define MLF_ALL_REPETITION_FLAGS (MLF_FIRST_REPEAT_ONLY | MLF_LAST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY | MLF_LAST_TRIGGER_ONLY) 
 
-typedef struct mission_event {
+typedef struct mission_event {	// @checkpoint fields
 	SCP_string name;                                    // used for storing status of events in player file
 	int  formula = -1;                                  // index into sexpression array for this formula
 	int  result = 0;                                    // result of most recent evaluation of event

@@ -19,7 +19,7 @@
 
 // contrail info - similar to that for missile trails
 // place this inside of info structures instead of explicit structs (eg. ship_info instead of ship, or weapon_info instead of weapon)
-typedef struct trail_info {
+typedef struct trail_info {	// @checkpoint fields
 	vec3d pt;				// offset from the object's center
 	float w_start;			// starting width
 	float w_end;			// ending width

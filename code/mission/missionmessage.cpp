@@ -212,8 +212,6 @@ int MessageQ_num;			// keeps track of number of entries on the queue.
 
 // Persona information
 SCP_vector<Persona> Personas;
-// missions mark personas as used
-CHECKPOINT_TABLE_FIELD("Persona flags", Personas, flags);
 
 const char *Persona_type_names[MAX_PERSONA_TYPES] =
 {
@@ -2748,7 +2746,7 @@ static void messages_checkpoint_load(checkpoint::Reader& r)
 	Num_messages = static_cast<int>(Messages.size());
 }
 
-CHECKPOINT_GLOBAL_FUNCTIONS("Messages", messages_checkpoint_save, messages_checkpoint_load);
+CHECKPOINT_GLOBAL_FUNCTIONS(messages_checkpoint_save, messages_checkpoint_load);
 
 bool add_message(const char* name, const char* message, int persona_index, int multi_team)
 {

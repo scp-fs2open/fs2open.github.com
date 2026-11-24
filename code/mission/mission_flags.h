@@ -5,7 +5,7 @@
 
 namespace Mission {
 
-	FLAG_LIST(Mission_Flags) {
+	FLAG_LIST(Mission_Flags) {	// @checkpoint fields
 		Subspace,					// mission takes place in subspace
 		No_promotion,				// cannot get promoted or badges in this mission
 		Fullneb,					// mission is a full nebula mission
@@ -43,7 +43,7 @@ namespace Mission {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Parse_Object_Flags) {
+	FLAG_LIST(Parse_Object_Flags) {	// @checkpoint fields
 		SF_Cargo_known,
 		SF_Ignore_count,
 		SF_Reinforcement,

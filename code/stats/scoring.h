@@ -87,7 +87,7 @@ struct traitor_override_t {
 #define STATS_FLAG_CAMPAIGN		(1<<1)
 #define STATS_FLAG_MULTIPLAYER	(1<<2)
 
-class scoring_struct
+class scoring_struct	// @checkpoint fields
 {
 public:
 	int flags;

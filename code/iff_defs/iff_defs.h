@@ -23,7 +23,7 @@ extern int IFF_COLOR_SELECTION;
 extern int IFF_COLOR_MESSAGE;
 extern int IFF_COLOR_TAGGED;
 
-enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
+enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };	// @checkpoint fields
 
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
@@ -34,7 +34,7 @@ enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
 #define MAX_IFF_FLAGS						5
 
 // Goober5000
-typedef struct iff_info {
+typedef struct iff_info {	// @checkpoint fields
 
 	// required stuff
 	char iff_name[NAME_LENGTH];

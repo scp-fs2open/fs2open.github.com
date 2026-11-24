@@ -2,6 +2,7 @@
 // Instantiates the codec for every scanned struct and enum, so that the build fails as soon as a struct gains a member
 // the codec has no rule for, and so that engine files, which only see the declarations, can save these types.
 
+#define CHECKPOINT_CODEC_IMPLEMENTATION
 #include "checkpoint/codec_impl.h"
 
 #include "checkpoint/checkpoint_fields.inc"

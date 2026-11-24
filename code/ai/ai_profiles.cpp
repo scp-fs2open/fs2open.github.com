@@ -24,9 +24,9 @@ int Num_ai_profiles;
 int Default_ai_profile;
 ai_profile_t Ai_profiles[MAX_AI_PROFILES];
 // set-friendly-damage-caps changes the caps of the mission's AI profile
-CHECKPOINT_TABLE_FIELD("AI profile beam friendly damage caps", checkpoint::first_n(Ai_profiles, Num_ai_profiles), beam_friendly_damage_cap);
-CHECKPOINT_TABLE_FIELD("AI profile weapon friendly damage caps", checkpoint::first_n(Ai_profiles, Num_ai_profiles), weapon_friendly_damage_cap);
-CHECKPOINT_TABLE_FIELD("AI profile weapon self damage caps", checkpoint::first_n(Ai_profiles, Num_ai_profiles), weapon_self_damage_cap);
+CHECKPOINT_TABLE_FIELD(checkpoint::first_n(Ai_profiles, Num_ai_profiles), beam_friendly_damage_cap);
+CHECKPOINT_TABLE_FIELD(checkpoint::first_n(Ai_profiles, Num_ai_profiles), weapon_friendly_damage_cap);
+CHECKPOINT_TABLE_FIELD(checkpoint::first_n(Ai_profiles, Num_ai_profiles), weapon_self_damage_cap);
 
 // local to this file
 static int Ai_profiles_initted = 0;

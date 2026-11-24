@@ -9,7 +9,6 @@
 
 
 
-#include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
@@ -246,7 +245,7 @@ static void debris_checkpoint_save(checkpoint::Writer& w, const object& objp)
 {
 	const debris *db = &Debris[objp.instance];
 	checkpoint::save(w, *db);
-	checkpoint::save_model_instance(w, db->model_instance_num);
+	checkpoint::save(w, object_get_model_instance(&objp));
 }
 
 static void debris_checkpoint_restore(checkpoint::Reader& r, object& objp)
@@ -267,7 +266,8 @@ static void debris_checkpoint_restore(checkpoint::Reader& r, object& objp)
 	}
 
 	db->model_instance_num = model_create_instance(OBJ_INDEX(&objp), db->model_num);
-	checkpoint::load_model_instance(r, db->model_instance_num);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
 
 	db->flags.remove(Debris_Flags::OnHullDebrisList);
 	debris_add_to_hull_list(db);

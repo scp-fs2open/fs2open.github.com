@@ -124,7 +124,7 @@ static void hotkeys_checkpoint_apply(const hotkey_assignments& hotkeys)
 	}
 }
 
-CHECKPOINT_STATE("Hotkeys", hotkeys_checkpoint_capture, hotkeys_checkpoint_apply, AfterRestore);
+CHECKPOINT_STATE(hotkeys_checkpoint_capture, hotkeys_checkpoint_apply, AfterRestore);
 
 /*
 // coordinates and widths used to render the HUD afterburner energy gauge

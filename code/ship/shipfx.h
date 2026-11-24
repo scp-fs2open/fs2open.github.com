@@ -68,7 +68,7 @@ extern void ship_set_warp_effects(object *objp);
 extern void shipfx_actually_warpin(ship *shipp, object *objp);
 extern void shipfx_actually_warpout(ship *shipp, object *objp);
 
-enum class WarpDirection { NONE, WARP_IN, WARP_OUT };
+enum class WarpDirection { NONE, WARP_IN, WARP_OUT };	// @checkpoint fields
 
 
 // When a ship warps in, this gets called to start the effect
@@ -89,7 +89,7 @@ extern void shipfx_warpout_frame( object *objp, float frametime );
 // =================================================
 
 // WarpParams allows per-ship customization of what was previously in ships.tbl
-class WarpParams
+class WarpParams	// @checkpoint fields
 {
 public:
 	WarpDirection	direction = WarpDirection::WARP_IN;

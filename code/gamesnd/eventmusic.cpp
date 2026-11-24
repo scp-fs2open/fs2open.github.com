@@ -124,7 +124,7 @@ static void event_music_checkpoint_apply(const std::pair<SCP_string, int>& music
 		event_music_change_pattern(music.second);
 }
 
-CHECKPOINT_STATE("Event music", event_music_checkpoint_capture, event_music_checkpoint_apply, AfterRestore);
+CHECKPOINT_STATE(event_music_checkpoint_capture, event_music_checkpoint_apply, AfterRestore);
 
 typedef struct pattern_info
 {

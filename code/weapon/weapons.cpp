@@ -14,7 +14,6 @@
 
 #include "ai/aibig.h"
 #include "asteroid/asteroid.h"
-#include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
@@ -105,8 +104,8 @@ static TIMESTAMP Weapon_flyby_sound_timer;
 weapon Weapons[MAX_WEAPONS];
 SCP_vector<weapon_info> Weapon_info;
 // sexps change the damage types of weapon classes
-CHECKPOINT_TABLE_FIELD("Weapon damage types", Weapon_info, damage_type_idx);
-CHECKPOINT_TABLE_FIELD("Weapon shockwave damage types", Weapon_info, shockwave.damage_type_idx);
+CHECKPOINT_TABLE_FIELD(Weapon_info, damage_type_idx);
+CHECKPOINT_TABLE_FIELD(Weapon_info, shockwave.damage_type_idx);
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list
@@ -7203,7 +7202,7 @@ static void weapon_acquire_resources(int weapon_num)
 static void weapon_checkpoint_save(checkpoint::Writer& w, const object& objp)
 {
 	checkpoint::save(w, Weapons[objp.instance]);
-	checkpoint::save_model_instance(w, Weapons[objp.instance].model_instance_num);
+	checkpoint::save(w, object_get_model_instance(&objp));
 }
 
 static void weapon_checkpoint_restore(checkpoint::Reader& r, object& objp)
@@ -7220,7 +7219,8 @@ static void weapon_checkpoint_restore(checkpoint::Reader& r, object& objp)
 		weapon_load_bitmaps(wp->weapon_info_index);
 
 	weapon_acquire_resources(objp.instance);
-	checkpoint::load_model_instance(r, wp->model_instance_num);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
 	Num_weapons++;
 }
 

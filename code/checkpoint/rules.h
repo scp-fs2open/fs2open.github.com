@@ -4,6 +4,10 @@
 // exactly one rule here; see checkpoint/codec_impl.h for what each extension point means.  Only
 // checkpoint/checkpoint_fields.cpp includes this file.
 //
+// Structs and enums are scanned when the line naming them in their definition ends with a marker:
+//
+//     class ship		// @checkpoint fields
+//
 // Every member of a scanned struct is saved, unless its type is transient here or the member is marked in its header
 // at the end of its line, on its own or after the member's comment:
 //
@@ -12,8 +16,8 @@
 // Guidelines:
 // - Type rules are only for types with a single meaning.  Generic types (ints, vectors, pointers to scalars, generic
 //   wrappers) never get a rule; a member of such a type that must not be saved is skipped at the member.
-// - CHECKPOINT_RAW is for trivially copyable types without pointers or resource handles.  Prefer adding a struct to
-//   checkpoint_structs.txt, which tolerates changes to the struct between versions.
+// - CHECKPOINT_RAW is for trivially copyable types without pointers or resource handles.  Prefer marking a struct's
+//   definition with "// @checkpoint fields", which tolerates changes to the struct between versions.
 // - is_transient is for types that are rebuilt on load (resources, caches, links) and never saved.
 // - A rule must come after the rules of the types it saves, since each macro instantiates its type where it stands.
 
@@ -149,10 +153,26 @@ CHECKPOINT_POOL(traitor_override_t);
 
 template <>
 struct PoolTraits<p_object> {
-	static int index_of(const p_object* p) { return POBJ_INDEX(p); }
-	static p_object* at(int index) { return SCP_vector_inbounds(Parse_objects, index) ? &Parse_objects[index] : nullptr; }
+	// the support ship has its own parse object, outside Parse_objects
+	static constexpr int SUPPORT_SHIP = -2;
+
+	static int index_of(const p_object* p) { return (p == &Support_ship_pobj) ? SUPPORT_SHIP : POBJ_INDEX(p); }
+	static p_object* at(int index)
+	{
+		if (index == SUPPORT_SHIP)
+			return &Support_ship_pobj;
+		return SCP_vector_inbounds(Parse_objects, index) ? &Parse_objects[index] : nullptr;
+	}
 };
 CHECKPOINT_POOL(p_object);
+
+template <>
+struct PoolTraits<pnode> {
+	// the free pointer of the path points may point just past them
+	static int index_of(const pnode* p) { return static_cast<int>(p - Path_points); }
+	static pnode* at(int index) { return (index >= 0 && index <= MAX_PATH_POINTS) ? &Path_points[index] : nullptr; }
+};
+CHECKPOINT_POOL(pnode);
 
 // --- custom codecs ---------------------------------------------------------------------------------------------------
 
@@ -241,6 +261,92 @@ struct Rule<volumetric_nebula> {
 	}
 };
 CHECKPOINT_RULE(volumetric_nebula);
+
+// The model instance of an object: the pose of its submodels, replaced textures and running animations.  Null for an
+// object without one.  Loading fills the instance the object was just given, whose initial animation states (if any)
+// are already set up; if it has none, or its model differs from the saved one, the saved state is dropped.
+template <>
+struct Rule<polymodel_instance*> {
+	static void save(Writer& w, polymodel_instance* const& pmi)
+	{
+		auto at = w.begin_block();
+		if (pmi != nullptr)
+			save_state(w, *pmi);
+		w.end_block(at);
+	}
+
+	static void load(Reader& r, polymodel_instance*& pmi)
+	{
+		auto block = r.block();
+		if (pmi != nullptr && !block.at_end())
+			load_state(block, *pmi);
+		if (block.failed())
+			r.fail();
+	}
+
+  private:
+	static void save_state(Writer& w, const polymodel_instance& pmi)
+	{
+		auto pm = model_get(pmi.model_num);
+
+		// the pose is only meaningful for the same model
+		checkpoint::save(w, SCP_string(pm->filename));
+
+		w.u32(static_cast<uint32_t>(pm->n_models));
+		for (int i = 0; i < pm->n_models; ++i)
+			checkpoint::save(w, pmi.submodel[i]);
+
+		// replaced textures are saved by name, since bitmap handles differ between sessions
+		SCP_vector<std::pair<int, SCP_string>> textures;
+		if (pmi.texture_replace != nullptr) {
+			for (int slot = 0; slot < static_cast<int>(pmi.texture_replace->size()); ++slot) {
+				int handle = (*pmi.texture_replace)[slot];
+				if (handle >= 0)
+					textures.emplace_back(slot, bm_get_filename(handle));
+			}
+		}
+		checkpoint::save(w, textures);
+
+		checkpoint::save(w, animation::ModelAnimationSet::getRunningAnimationStates(&pmi));
+	}
+
+	static void load_state(Reader& r, polymodel_instance& pmi)
+	{
+		auto pm = model_get(pmi.model_num);
+
+		SCP_string filename;
+		checkpoint::load(r, filename);
+		if (stricmp(filename.c_str(), pm->filename) != 0) {
+			mprintf(("Checkpoint: the model %s has replaced %s; its saved pose and animations are dropped\n", pm->filename, filename.c_str()));
+			return;
+		}
+
+		auto submodel_count = r.u32();
+		for (uint32_t i = 0; i < submodel_count && !r.failed(); ++i) {
+			if (static_cast<int>(i) < pm->n_models) {
+				checkpoint::load(r, pmi.submodel[i]);
+			} else {
+				static submodel_instance discard;
+				checkpoint::load(r, discard);
+			}
+		}
+
+		SCP_vector<std::pair<int, SCP_string>> textures;
+		checkpoint::load(r, textures);
+		if (!textures.empty()) {
+			pmi.texture_replace = std::make_shared<model_texture_replace>();
+			for (const auto& texture : textures) {
+				if (texture.first >= 0 && texture.first < static_cast<int>(pmi.texture_replace->size()))
+					(*pmi.texture_replace)[texture.first] = bm_load_either(texture.second.c_str());
+			}
+		}
+
+		SCP_vector<animation::ModelAnimationSet::RunningAnimationState> animations;
+		checkpoint::load(r, animations);
+		animation::ModelAnimationSet::restoreRunningAnimationStates(&pmi, animations);
+	}
+};
+CHECKPOINT_RULE(polymodel_instance*);
 
 CHECKPOINT_RAW(object_ship_wing_point_team);
 

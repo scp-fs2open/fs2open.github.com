@@ -1543,7 +1543,7 @@ static void sound_env_checkpoint_apply(const sound_env& env)
 	sound_env_set(&copy);
 }
 
-CHECKPOINT_STATE("Sound environment", sound_env_checkpoint_capture, sound_env_checkpoint_apply, AfterRestore);
+CHECKPOINT_STATE(sound_env_checkpoint_capture, sound_env_checkpoint_apply, AfterRestore);
 
 // Set the sound environment
 //

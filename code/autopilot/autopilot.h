@@ -26,7 +26,7 @@
 #define NP_NOSELECT		( NP_HIDDEN | NP_NOACCESS )
 #define NP_VALIDTYPE	( NP_WAYPOINT | NP_SHIP )
 
-class NavPoint 
+class NavPoint	// @checkpoint fields
 {
 public:
 	char m_NavName[32] = { 0 };

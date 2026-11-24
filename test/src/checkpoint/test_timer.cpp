@@ -3,7 +3,6 @@
 #include "util/FSTestFixture.h"
 
 #include "io/timer.h"
-#include "utils/Random.h"
 
 class CheckpointClockTest : public test::FSTestFixture {
   public:
@@ -87,21 +86,4 @@ TEST_F(CheckpointClockTest, saved_timestamps_keep_their_remaining_time)
 
 	EXPECT_FALSE(timestamp_elapsed(stamp));
 	EXPECT_GT(timestamp_until(stamp), 4000);
-}
-
-TEST(CheckpointRandom, state_round_trip)
-{
-	util::Random::seed(12345);
-	util::Random::next();
-	auto state = util::Random::save_state();
-
-	int expected[5];
-	for (int& value : expected)
-		value = util::Random::next();
-
-	util::Random::seed(999);
-	util::Random::load_state(state);
-
-	for (int value : expected)
-		EXPECT_EQ(util::Random::next(), value);
 }

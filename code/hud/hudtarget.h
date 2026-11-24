@@ -47,7 +47,7 @@ const int CARGO_RADIUS_REAL_DELTA = 50;         // difference in distances used 
 // regular and ballistic weapon gauges
 #define NUM_HUD_SETTINGS	2
 
-typedef struct htarget_list {
+typedef struct htarget_list {	// @checkpoint fields
 	struct htarget_list	*next, *prev;		// for linked lists
 	int						how_added;			// determines how this hotkey was added (mission default or player)
 	object					*objp;				// the actual object

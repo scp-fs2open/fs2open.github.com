@@ -1,25 +1,31 @@
 // fieldscan: generates the field lists the checkpoint codec uses to visit structs.
 //
-// Usage: fieldscan <source root> <struct list> <output header>
+// Usage: fieldscan <source root> <header list> <output header>
 //
-// The struct list has one "<struct name> <header relative to the source root>" pair per line, or
-// "enum <enum name> <header>" for enums; '#' starts a comment.  For every listed struct the tool writes
+// The header list names one header per line, absolute or relative to the source root.  The structs and enums the
+// codec visits are marked where they are defined, with a line comment at the end of the line that names them:
+//
+//     class ship	// @checkpoint fields
+//     FLAG_LIST(Ship_Flags) {	// @checkpoint fields
+//     } debris_genre_t;	// @checkpoint fields		(typedef enum { ... } name;)
+//
+// For every marked struct the tool writes
 //
 //     CHECKPOINT_FIELDS_BEGIN(name)
 //     CHECKPOINT_FIELD(name, member)
 //     ...
 //     CHECKPOINT_FIELDS_END(name)
 //
-// and for every listed enum (enum, enum class or FLAG_LIST; the name may be qualified, e.g. Ship::Ship_Flags)
+// and for every marked enum (enum, enum class or FLAG_LIST)
 //
 //     CHECKPOINT_ENUM_BEGIN(name)
 //     CHECKPOINT_ENUM_VALUE(name, enumerator)
 //     ...
 //     CHECKPOINT_ENUM_END(name)
 //
-// preceded by includes of the listed headers and followed by CHECKPOINT_SCANNED_STRUCTS(X),
-// CHECKPOINT_SCANNED_ENUMS(X) and CHECKPOINT_SCANNED_FLAGS(X), X-macros listing all scanned structs, all scanned enums
-// and the enums among them that are flag lists (FLAG_LIST).
+// with names qualified by their enclosing namespaces and classes (e.g. Ship::Ship_Flags), preceded by includes of the
+// headers and followed by CHECKPOINT_SCANNED_STRUCTS(X), CHECKPOINT_SCANNED_ENUMS(X) and CHECKPOINT_SCANNED_FLAGS(X),
+// X-macros listing all scanned structs, all scanned enums and the enums among them that are flag lists.
 //
 // Members are saved unless marked.  A line comment at the end of a member's line containing
 //
@@ -27,8 +33,8 @@
 //
 // (on its own, or after the member's existing comment) leaves out the members declared by the statement that ends on
 // that line; the generated list notes them as "// skipped: member".  The reason is required.  A marker that belongs to
-// no data member of a listed struct (a line without one, a method, a struct that isn't in the list) is an error, as is
-// an unknown kind.
+// no data member of a marked struct (a line without one, a method, a struct that isn't marked), a "fields" marker on a
+// line that defines nothing, a name marked twice and an unknown kind are errors.
 //
 // Only member names are extracted.  Their types are deduced by the compiler from member pointers, so a wrong or
 // inaccessible name is a compile error rather than a silent mistake.  The scanner understands the subset of C++ used
@@ -36,7 +42,9 @@
 // initializers and function pointers), methods, nested types, access specifiers, and anonymous unions or structs that
 // declare members.
 
+#include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -54,9 +62,11 @@ bool is_ident_char(char c)
 	return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
 }
 
-// Marks a "// @checkpoint" comment in the stripped source: MARKER_BEGIN, the line number, MARKER_END.
+// Marks a "// @checkpoint" comment in the stripped source: MARKER_BEGIN, the kind, the line number, MARKER_END.
 constexpr char MARKER_BEGIN = '\x01';
 constexpr char MARKER_END = '\x02';
+constexpr char SKIP = 'S';
+constexpr char FIELDS = 'F';
 
 struct Diagnostics {
 	string header;
@@ -72,11 +82,14 @@ struct Diagnostics {
 string trim(const string& s);
 
 // Turns the text of a line comment into a marker if it is a valid "@checkpoint" annotation.
-void parse_marker(const string& comment, int line, string& out, std::set<int>& markers, Diagnostics& diag)
+void parse_marker(const string& comment, int line, string& out, std::map<int, char>& markers, Diagnostics& diag)
 {
 	const string prefix = "@checkpoint";
 	auto at = comment.find(prefix);
 	if (at == string::npos || (at > 0 && !std::isspace(static_cast<unsigned char>(comment[at - 1]))))
+		return;
+	// a comment quoting code with a marker, e.g. in documentation
+	if (comment.rfind("//", at) != string::npos)
 		return;
 	auto text = comment.substr(at + prefix.size());
 	if (!text.empty() && !std::isspace(static_cast<unsigned char>(text[0])))
@@ -84,23 +97,29 @@ void parse_marker(const string& comment, int line, string& out, std::set<int>& m
 	text = trim(text);
 	auto colon = text.find(':');
 	auto kind = trim(text.substr(0, colon));
-	if (kind != "skip") {
-		diag.error(line, "unknown @checkpoint kind \"" + kind + "\"; the only kind is \"skip\"");
-		return;
-	}
-	if (colon == string::npos || trim(text.substr(colon + 1)).empty()) {
-		diag.error(line, "@checkpoint skip needs a reason: @checkpoint skip: <reason>");
+	char code;
+	if (kind == "fields") {
+		code = FIELDS;
+	} else if (kind == "skip") {
+		if (colon == string::npos || trim(text.substr(colon + 1)).empty()) {
+			diag.error(line, "@checkpoint skip needs a reason: @checkpoint skip: <reason>");
+			return;
+		}
+		code = SKIP;
+	} else {
+		diag.error(line, "unknown @checkpoint kind \"" + kind + "\"; the kinds are \"fields\" and \"skip\"");
 		return;
 	}
 	out += MARKER_BEGIN;
+	out += code;
 	out += std::to_string(line);
 	out += MARKER_END;
-	markers.insert(line);
+	markers[line] = code;
 }
 
 // Removes comments and preprocessor lines and blanks out string and character literals, keeping the line structure.
 // "// @checkpoint" comments become markers.
-string strip_source(const string& s, std::set<int>& markers, Diagnostics& diag)
+string strip_source(const string& s, std::map<int, char>& markers, Diagnostics& diag)
 {
 	string out;
 	out.reserve(s.size());
@@ -211,29 +230,6 @@ string trim(const string& s)
 		return {};
 	auto last = s.find_last_not_of(" \t\r\n");
 	return s.substr(first, last - first + 1);
-}
-
-// Finds the opening brace of the definition of "struct name" or "class name" and returns the position after it.
-size_t find_definition(const string& s, const string& name)
-{
-	for (const char* keyword : {"struct", "class"}) {
-		string kw = keyword;
-		for (auto pos = s.find(kw); pos != string::npos; pos = s.find(kw, pos + 1)) {
-			if (!word_at(s, pos, kw))
-				continue;
-			auto p = pos + kw.size();
-			while (p < s.size() && std::isspace(static_cast<unsigned char>(s[p])))
-				++p;
-			if (!word_at(s, p, name))
-				continue;
-			p += name.size();
-			while (p < s.size() && s[p] != '{' && s[p] != ';' && s[p] != '(')
-				++p;
-			if (p < s.size() && s[p] == '{')
-				return p + 1;
-		}
-	}
-	return string::npos;
 }
 
 // Extracts the name from one declarator: the last identifier before an initializer, array bound or bit field width,
@@ -379,8 +375,11 @@ std::vector<Member> scan_members(const string& s, size_t pos, const string& stru
 
 		if (c == MARKER_BEGIN) {
 			auto end = s.find(MARKER_END, pos);
-			int marker = std::stoi(s.substr(pos, end - pos));
+			char kind = s[pos];
+			int marker = std::stoi(s.substr(pos + 1, end - pos - 1));
 			pos = end + 1;
+			if (kind != SKIP)
+				continue;	// the definition of a nested type
 			// a marker belongs to the statement that ended on its line
 			if (last_line != line || !trim(stmt).empty() || last_begin == last_end) {
 				misplaced(marker);
@@ -464,59 +463,137 @@ std::vector<Member> scan_members(const string& s, size_t pos, const string& stru
 	return members;
 }
 
-// Finds the opening brace of the definition of an enum ("enum name", "enum class name", "FLAG_LIST(name)" or
-// "typedef enum { ... } name;") and returns the position after it.
-size_t find_enum_definition(const string& s, const string& name, bool& is_flag_list)
+// The identifier that starts at pos, or after the whitespace at pos.
+string identifier_at(const string& s, size_t pos)
 {
-	is_flag_list = false;
-	for (auto pos = s.find(name); pos != string::npos; pos = s.find(name, pos + 1)) {
-		if (!word_at(s, pos, name))
-			continue;
+	while (pos < s.size() && std::isspace(static_cast<unsigned char>(s[pos])))
+		++pos;
+	string name;
+	for (; pos < s.size() && is_ident_char(s[pos]); ++pos)
+		name += s[pos];
+	return name;
+}
 
-		// typedef enum { ... } name;
-		auto close = s.find_last_not_of(" \t\r\n", pos == 0 ? 0 : pos - 1);
-		if (close != string::npos && s[close] == '}') {
-			int depth = 0;
-			size_t open = close;
-			for (; open != string::npos; --open) {
-				if (s[open] == '}')
-					++depth;
-				else if (s[open] == '{' && --depth == 0)
-					break;
-				if (open == 0) {
-					open = string::npos;
-					break;
+// The names of the namespaces and classes enclosing pos, outermost first.
+std::vector<string> scopes_at(const string& s, size_t pos)
+{
+	std::vector<string> scopes;
+	string stmt;
+	for (size_t i = 0; i < pos; ++i) {
+		char c = s[i];
+		if (c == '{') {
+			auto head = trim(without_markers(stmt));
+			string name;
+			if (starts_with_word(head, "namespace")) {
+				name = identifier_at(head, 9);
+			} else if (!contains_word(head, "enum") && head.find('(') == string::npos) {
+				for (const char* keyword : {"struct", "class"}) {
+					for (auto at = head.find(keyword); name.empty() && at != string::npos; at = head.find(keyword, at + 1)) {
+						if (word_at(head, at, keyword))
+							name = identifier_at(head, at + strlen(keyword));
+					}
 				}
 			}
-			if (open != string::npos) {
-				auto head = s.substr(open > 64 ? open - 64 : 0, open > 64 ? 64 : open);
-				if (contains_word(head, "enum"))
-					return open + 1;
-			}
-			continue;
-		}
-
-		// what precedes the name must introduce an enum
-		auto before = s.substr(0, pos);
-		auto last = before.find_last_not_of(" \t\r\n(");
-		if (last == string::npos)
-			continue;
-		auto start = before.find_last_of(" \t\r\n(", last);
-		auto word = before.substr(start == string::npos ? 0 : start + 1, last - (start == string::npos ? 0 : start + 1) + 1);
-		if (word != "enum" && word != "class" && word != "struct" && word != "FLAG_LIST")
-			continue;
-		if ((word == "class" || word == "struct") && !contains_word(before.substr(before.size() > 32 ? before.size() - 32 : 0), "enum"))
-			continue;
-
-		auto p = pos + name.size();
-		while (p < s.size() && s[p] != '{' && s[p] != ';' && s[p] != '(')
-			++p;
-		if (p < s.size() && s[p] == '{') {
-			is_flag_list = (word == "FLAG_LIST");
-			return p + 1;
+			scopes.push_back(name);
+			stmt.clear();
+		} else if (c == '}') {
+			if (!scopes.empty())
+				scopes.pop_back();
+			stmt.clear();
+		} else if (c == ';') {
+			stmt.clear();
+		} else {
+			stmt += c;
 		}
 	}
-	return string::npos;
+	return scopes;
+}
+
+struct Definition {
+	string name;		// qualified
+	size_t body = string::npos;	// the position after the opening brace
+	bool is_enum = false;
+	bool is_flag_list = false;
+};
+
+// The definition a "fields" marker at pos marks: the struct, class or enum named on the marker's line, or, for a line
+// that closes a definition ("} name;"), the typedef'd struct or enum it closes.
+bool definition_at(const string& s, size_t pos, Definition& def)
+{
+	auto line_start = s.rfind('\n', pos);
+	line_start = (line_start == string::npos) ? 0 : line_start + 1;
+	auto head = s.substr(line_start, pos - line_start);
+	auto first = head.find_first_not_of(" \t\r");
+	if (first == string::npos)
+		return false;
+
+	size_t name_from = string::npos;	// where the head's name starts
+	size_t keyword_at = string::npos;	// where the definition starts, for its scope
+	if (head[first] == '}') {
+		// typedef struct/enum { ... } name;
+		auto close = line_start + first;
+		int depth = 0;
+		size_t open = close;
+		for (;; --open) {
+			if (s[open] == '}')
+				++depth;
+			else if (s[open] == '{' && --depth == 0)
+				break;
+			if (open == 0)
+				return false;
+		}
+		auto stmt_start = s.find_last_of(";{}", open == 0 ? 0 : open - 1);
+		stmt_start = (stmt_start == string::npos) ? 0 : stmt_start + 1;
+		auto intro = without_markers(s.substr(stmt_start, open - stmt_start));
+		if (!contains_word(intro, "enum") && !contains_word(intro, "struct") && !contains_word(intro, "class"))
+			return false;
+		def.is_enum = contains_word(intro, "enum");
+		def.body = open + 1;
+		name_from = close + 1;
+		keyword_at = stmt_start;
+	} else {
+		auto flag_list = head.find("FLAG_LIST(");
+		if (flag_list != string::npos && word_at(head, flag_list, "FLAG_LIST")) {
+			def.is_enum = def.is_flag_list = true;
+			name_from = line_start + flag_list + 10;
+		} else {
+			for (const char* keyword : {"enum", "struct", "class"}) {
+				for (auto at = head.find(keyword); name_from == string::npos && at != string::npos; at = head.find(keyword, at + 1)) {
+					if (!word_at(head, at, keyword))
+						continue;
+					def.is_enum = (strcmp(keyword, "enum") == 0);
+					auto after = at + strlen(keyword);
+					// enum class name, enum struct name
+					if (def.is_enum) {
+						auto next = identifier_at(head, after);
+						if (next == "class" || next == "struct")
+							after = head.find(next, after) + next.size();
+					}
+					name_from = line_start + after;
+				}
+				if (name_from != string::npos)
+					break;
+			}
+			if (name_from == string::npos)
+				return false;
+		}
+		keyword_at = line_start + first;
+		auto brace = s.find_first_of("{;", name_from);
+		if (brace == string::npos || s[brace] != '{')
+			return false;
+		def.body = brace + 1;
+	}
+
+	def.name = identifier_at(s, name_from);
+	if (def.name.empty())
+		return false;
+	string qualified;
+	for (const auto& scope : scopes_at(s, keyword_at)) {
+		if (!scope.empty())
+			qualified += scope + "::";
+	}
+	def.name = qualified + def.name;
+	return true;
 }
 
 // Extracts the enumerator names of an enum body; values and the NUM_VALUES marker of flag lists are left out.
@@ -567,10 +644,22 @@ bool read_file(const string& path, string& out)
 
 } // namespace
 
+// The path to include a header by: relative to the source root, with forward slashes.
+string include_path(string path, string root)
+{
+	std::replace(path.begin(), path.end(), '\\', '/');
+	std::replace(root.begin(), root.end(), '\\', '/');
+	if (!root.empty() && root.back() != '/')
+		root += '/';
+	if (path.compare(0, root.size(), root) == 0)
+		path = path.substr(root.size());
+	return path;
+}
+
 int main(int argc, char** argv)
 {
 	if (argc != 4) {
-		std::cerr << "usage: fieldscan <source root> <struct list> <output header>\n";
+		std::cerr << "usage: fieldscan <source root> <header list> <output header>\n";
 		return 2;
 	}
 	string root = argv[1];
@@ -583,103 +672,95 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	// the struct definitions come first, so the list needs no includes kept up to date elsewhere
+	// sorted, so the output doesn't depend on the order of the list
+	std::set<string> header_paths;
+	{
+		std::istringstream lines(list);
+		string line;
+		while (std::getline(lines, line)) {
+			line = trim(line);
+			if (!line.empty())
+				header_paths.insert(include_path(line, root));
+		}
+	}
+
 	std::ostringstream includes;
-	std::vector<string> included;
 	std::ostringstream out;
 
 	int errors = 0;
 	std::vector<string> scanned;
 	std::vector<string> scanned_enums;
 	std::vector<string> scanned_flags;
+	std::map<string, string> defined_in;	// marked name -> header
 
-	// each header is read and stripped once; markers are checked once all its structs have been scanned
-	struct Header {
-		string source;
-		std::set<int> markers;
+	for (const auto& header : header_paths) {
+		auto path = (header.find(':') != string::npos || header[0] == '/') ? header : root + "/" + header;
+		string raw;
+		if (!read_file(path, raw)) {
+			std::cerr << "fieldscan: cannot read " << path << "\n";
+			++errors;
+			continue;
+		}
+		if (raw.find("@checkpoint") == string::npos)
+			continue;
+
+		std::map<int, char> markers;
 		std::set<int> consumed;
 		Diagnostics diag;
-	};
-	std::map<string, Header> headers;
-	std::istringstream lines(list);
-	string line;
-	while (std::getline(lines, line)) {
-		auto hash = line.find('#');
-		if (hash != string::npos)
-			line.resize(hash);
-		std::istringstream fields(line);
-		string name, header;
-		if (!(fields >> name))
-			continue;
-		bool is_enum = (name == "enum");
-		if (is_enum && !(fields >> name)) {
-			std::cerr << "fieldscan: no enum name given\n";
-			++errors;
-			continue;
-		}
-		if (!(fields >> header)) {
-			std::cerr << "fieldscan: no header given for " << name << "\n";
-			++errors;
-			continue;
-		}
+		diag.header = path;
+		auto source = strip_source(raw, markers, diag);
+		bool any = false;
 
-		auto known = headers.find(header);
-		if (known == headers.end()) {
-			string header_path = root;
-			header_path += '/';
-			header_path += header;
+		for (auto at = source.find(MARKER_BEGIN); at != string::npos; at = source.find(MARKER_BEGIN, at + 1)) {
+			if (source[at + 1] != FIELDS)
+				continue;
+			int line = std::stoi(source.substr(at + 2, source.find(MARKER_END, at) - at - 2));
+			consumed.insert(line);
 
-			string raw;
-			if (!read_file(header_path, raw)) {
-				std::cerr << "fieldscan: cannot read " << header_path << "\n";
-				++errors;
+			Definition def;
+			if (!definition_at(source, at, def)) {
+				diag.error(line, "@checkpoint fields must be at the end of the line that names a struct, class or enum definition");
 				continue;
 			}
-			Header parsed;
-			parsed.diag.header = header_path;
-			parsed.source = strip_source(raw, parsed.markers, parsed.diag);
-			known = headers.emplace(header, std::move(parsed)).first;
-		}
-		auto& parsed = known->second;
-		const auto& source = parsed.source;
+			auto previous = defined_in.find(def.name);
+			if (previous != defined_in.end()) {
+				diag.error(line, def.name + " is already marked in " + previous->second);
+				continue;
+			}
+			defined_in[def.name] = header;
+			any = true;
 
-		auto unqualified = name.substr(name.rfind(':') == string::npos ? 0 : name.rfind(':') + 1);
-		bool is_flag_list = false;
-		auto body = is_enum ? find_enum_definition(source, unqualified, is_flag_list) : find_definition(source, name);
-		if (body == string::npos) {
-			std::cerr << "fieldscan: no definition of " << name << " in " << header << "\n";
-			++errors;
-			continue;
+			if (def.is_enum) {
+				out << "CHECKPOINT_ENUM_BEGIN(" << def.name << ")\n";
+				for (const auto& enumerator : scan_enumerators(source, def.body))
+					out << "CHECKPOINT_ENUM_VALUE(" << def.name << ", " << enumerator << ")\n";
+				out << "CHECKPOINT_ENUM_END(" << def.name << ")\n\n";
+				scanned_enums.push_back(def.name);
+				if (def.is_flag_list)
+					scanned_flags.push_back(def.name);
+				continue;
+			}
+
+			out << "CHECKPOINT_FIELDS_BEGIN(" << def.name << ")\n";
+			for (const auto& member : scan_members(source, def.body, def.name, consumed, diag)) {
+				if (member.skipped)
+					out << "// skipped: " << member.name << "\n";
+				else
+					out << "CHECKPOINT_FIELD(" << def.name << ", " << member.name << ")\n";
+			}
+			out << "CHECKPOINT_FIELDS_END(" << def.name << ")\n\n";
+			scanned.push_back(def.name);
 		}
 
-		bool seen = false;
-		for (const auto& h : included)
-			seen = seen || h == header;
-		if (!seen) {
-			included.push_back(header);
+		if (any)
 			includes << "#include \"" << header << "\"\n";
-		}
 
-		if (is_enum) {
-			out << "CHECKPOINT_ENUM_BEGIN(" << name << ")\n";
-			for (const auto& enumerator : scan_enumerators(source, body))
-				out << "CHECKPOINT_ENUM_VALUE(" << name << ", " << enumerator << ")\n";
-			out << "CHECKPOINT_ENUM_END(" << name << ")\n\n";
-			scanned_enums.push_back(name);
-			if (is_flag_list)
-				scanned_flags.push_back(name);
-			continue;
+		// skip markers that no marked struct took, e.g. in a struct that isn't marked
+		for (const auto& marker : markers) {
+			if (consumed.count(marker.first) == 0)
+				diag.error(marker.first, "@checkpoint skip outside the structs marked with @checkpoint fields");
 		}
-
-		out << "CHECKPOINT_FIELDS_BEGIN(" << name << ")\n";
-		for (const auto& member : scan_members(source, body, name, parsed.consumed, parsed.diag)) {
-			if (member.skipped)
-				out << "// skipped: " << member.name << "\n";
-			else
-				out << "CHECKPOINT_FIELD(" << name << ", " << member.name << ")\n";
-		}
-		out << "CHECKPOINT_FIELDS_END(" << name << ")\n\n";
-		scanned.push_back(name);
+		errors += diag.errors;
 	}
 
 	// all scanned structs, for code that needs to handle each of them
@@ -700,20 +781,13 @@ int main(int argc, char** argv)
 		out << " \\\n\tX(" << name << ")";
 	out << "\n";
 
-	// markers that no listed struct took, e.g. in a struct that isn't in the list
-	for (auto& entry : headers) {
-		auto& parsed = entry.second;
-		for (int marker : parsed.markers) {
-			if (parsed.consumed.count(marker) == 0)
-				parsed.diag.error(marker, "@checkpoint marker outside the listed structs of this header");
-		}
-		errors += parsed.diag.errors;
-	}
-
 	if (errors > 0)
 		return 1;
 
-	string result = "// Generated by fieldscan from " + list_path + ". Do not edit.\n\n" + includes.str() + "\n" + out.str();
+	string result = "// Generated by fieldscan from the @checkpoint markers in the engine headers. Do not edit.\n\n"
+		"#ifndef CHECKPOINT_CODEC_IMPLEMENTATION\n"
+		"#error \"Only checkpoint/checkpoint_fields.cpp may include the generated checkpoint field lists\"\n"
+		"#endif\n\n" + includes.str() + "\n" + out.str();
 
 	// only touch the output when it changed, so dependent sources don't rebuild needlessly
 	string previous;

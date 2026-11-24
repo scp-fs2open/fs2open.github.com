@@ -3,7 +3,6 @@
 
 #include <limits>
 #include <random>
-#include <sstream>
 
 #include <cstdint>
 
@@ -38,19 +37,6 @@ public:
 	void advance(unsigned long long distance)
 	{
 		m_rng.discard(distance);
-	}
-
-	std::string save_state() const
-	{
-		std::ostringstream stream;
-		stream << m_rng;
-		return stream.str();
-	}
-
-	void load_state(const std::string& state)
-	{
-		std::istringstream stream(state);
-		stream >> m_rng;
 	}
 
 private:
@@ -97,15 +83,5 @@ bool Random::flip_coin()
 void Random::advance(unsigned long long distance)
 {
 	SCP_rng.advance(distance);
-}
-
-std::string Random::save_state()
-{
-	return SCP_rng.save_state();
-}
-
-void Random::load_state(const std::string& state)
-{
-	SCP_rng.load_state(state);
 }
 } // namespace util

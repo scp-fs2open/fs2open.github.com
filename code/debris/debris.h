@@ -22,7 +22,7 @@ class model_draw_list;
 
 #define MAX_DEBRIS_ARCS 8
 
-FLAG_LIST(Debris_Flags) {
+FLAG_LIST(Debris_Flags) {	// @checkpoint fields
 	Used,
 	OnHullDebrisList,
 	DoNotExpire,		// This debris piece has been placed in FRED and should not expire automatically
@@ -37,7 +37,7 @@ struct debris_electrical_arc
 	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
 };
 
-typedef struct debris {
+typedef struct debris {	// @checkpoint fields
 	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
 	int		source_objnum;			// What object this came from
 	int		damage_type_idx;		// Damage type of this debris

@@ -99,17 +99,7 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 campaign Campaign;
 
 // sexps choose the next mission during a mission; the rest of the campaign is committed when a mission ends
-static void campaign_checkpoint_save(checkpoint::Writer& w)
-{
-	checkpoint::save(w, Campaign.next_mission);
-}
-
-static void campaign_checkpoint_load(checkpoint::Reader& r)
-{
-	checkpoint::load(r, Campaign.next_mission);
-}
-
-CHECKPOINT_GLOBAL_FUNCTIONS("Campaign", campaign_checkpoint_save, campaign_checkpoint_load);
+CHECKPOINT_GLOBAL(Campaign.next_mission);
 
 
 /**

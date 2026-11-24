@@ -33,7 +33,7 @@ class model_draw_list;
 
 #define JN_DEFAULT_MODEL            "subspacenode.pof"
 
-class CJumpNode
+class CJumpNode	// @checkpoint fields
 {
 private:
 	char m_name[NAME_LENGTH];

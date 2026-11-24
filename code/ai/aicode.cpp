@@ -288,20 +288,7 @@ const char *Skill_level_names(int level, int translate)
 pnode		Path_points[MAX_PATH_POINTS];
 CHECKPOINT_GLOBAL(Path_points);
 pnode		*Ppfp;			//	Free pointer in path points.
-
-static void path_points_free_pointer_checkpoint_save(checkpoint::Writer& w)
-{
-	w.value(static_cast<int>(Ppfp - Path_points));
-}
-
-static void path_points_free_pointer_checkpoint_load(checkpoint::Reader& r)
-{
-	int index = 0;
-	r.value(index);
-	Ppfp = &Path_points[MAX(0, MIN(index, MAX_PATH_POINTS))];
-}
-
-CHECKPOINT_GLOBAL_FUNCTIONS("Ppfp", path_points_free_pointer_checkpoint_save, path_points_free_pointer_checkpoint_load);
+CHECKPOINT_GLOBAL(Ppfp);
 
 float	AI_frametime;
 

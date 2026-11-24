@@ -124,7 +124,7 @@ static void hud_gauges_checkpoint_apply(const hud_gauge_states_t& states)
 		hud_gauge_set_states(Ship_info[Player_ship->ship_info_index].hud_gauges, states.second);
 }
 
-CHECKPOINT_STATE("HUD gauges", hud_gauges_checkpoint_capture, hud_gauges_checkpoint_apply, AfterRestore);
+CHECKPOINT_STATE(hud_gauges_checkpoint_capture, hud_gauges_checkpoint_apply, AfterRestore);
 
 color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with different alpha blending
 color HUD_color_debug;										// grey debug text shown on HUD

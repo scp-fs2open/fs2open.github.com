@@ -2,7 +2,13 @@
 
 // The part of the checkpoint codec that needs the generated field lists and the rules: scanned structs, enums, flag
 // sets, raw types, pool pointers and custom rules.  Only checkpoint/checkpoint_fields.cpp (and tests) include this;
-// engine files include checkpoint/codec.h, which hands these types to save_external / load_external.
+// engine files include checkpoint/codec.h, which hands these types to save_external / load_external.  An engine file
+// that saw the definitions below would instantiate the codec without the field lists and rules, so including this file
+// (or checkpoint/rules.h, or the generated field lists) anywhere else is an error.
+
+#ifndef CHECKPOINT_CODEC_IMPLEMENTATION
+#error "Only checkpoint/checkpoint_fields.cpp and the codec tests may include the checkpoint codec implementation"
+#endif
 
 #include "checkpoint/codec.h"
 
@@ -37,8 +43,8 @@ struct Fields {
 	};
 
 /**
- * @brief The enumerators of an enum, by name.  Specialized by the generated lists for the enums in the struct list;
- * enums and flagsets are saved by enumerator name, so reordering or inserting enumerators keeps saved data valid.
+ * @brief The enumerators of an enum, by name.  Specialized by the generated lists for the enums marked
+ * "// @checkpoint fields"; enums and flagsets are saved by enumerator name, so reordering or inserting enumerators keeps saved data valid.
  */
 template <typename E>
 struct EnumNames {
@@ -155,15 +161,7 @@ struct FieldSaver {
 		} else {
 			w.u32(name_hash(name));
 			auto at = w.begin_block();
-			if (w.trace() == nullptr) {
-				save(w, object.*Member);
-			} else {
-				TraceScope scope(w, name);
-				save(w, object.*Member);
-				// structs record their own fields; everything else is recorded as one value
-				if constexpr (!Fields<F>::scanned)
-					w.trace()->entries.push_back({w.trace()->current_path(), at + sizeof(uint32_t), w.size()});
-			}
+			save(w, object.*Member);
 			w.end_block(at);
 		}
 	}
@@ -263,14 +261,7 @@ void save_struct(Writer& w, const T& v)
 	if constexpr (Extra<T>::present) {
 		w.u32(EXTRA_HASH);
 		auto extra = w.begin_block();
-		if (w.trace() == nullptr) {
-			Extra<T>::save(w, v);
-		} else {
-			// recorded as one value, so verification compares it like a field
-			TraceScope scope(w, "#extra");
-			Extra<T>::save(w, v);
-			w.trace()->entries.push_back({w.trace()->current_path(), extra + sizeof(uint32_t), w.size()});
-		}
+		Extra<T>::save(w, v);
 		w.end_block(extra);
 	}
 	w.end_block(at);
@@ -352,7 +343,7 @@ struct FlagsCodec;
 template <typename E>
 struct FlagsCodec<flagset<E>> {
 	static_assert(EnumNames<E>::listed,
-		"checkpoint: flags are saved by name. Add \"enum <name> <header>\" to checkpoint/checkpoint_structs.txt.");
+		"checkpoint: flags are saved by name. Mark the FLAG_LIST with \"// @checkpoint fields\" at the end of its line.");
 
 	static void save(Writer& w, const flagset<E>& v)
 	{
@@ -389,7 +380,7 @@ struct FlagsCodec<flagset<E>> {
 template <typename T>
 struct EnumCodec {
 	static_assert(EnumNames<T>::listed,
-		"checkpoint: enums are saved by name. Add \"enum <name> <header>\" to checkpoint/checkpoint_structs.txt.");
+		"checkpoint: enums are saved by name. Mark the enum with \"// @checkpoint fields\" at the end of the line naming it.");
 	static void save(Writer& w, const T& v) { save_enumerator(w, v); }
 	static void load(Reader& r, T& v) { load_enumerator(r, v); }
 };
@@ -419,7 +410,7 @@ struct StructCodec {
 template <typename T>
 struct NoRule {
 	static_assert(dependent_false<T>::value,
-		"checkpoint: no rule for this type. Add it to the struct list, or give it a rule in checkpoint/rules.h "
+		"checkpoint: no rule for this type. Mark its definition with \"// @checkpoint fields\", or give it a rule in checkpoint/rules.h "
 		"(CHECKPOINT_RAW, is_transient, CHECKPOINT_POOL or CHECKPOINT_RULE), or skip the field with a "
 		"\"// @checkpoint skip: <reason>\" comment at the end of its line.");
 	static void save(Writer&, const T&) {}

@@ -1392,7 +1392,7 @@ static void sexp_nodes_checkpoint_load(checkpoint::Reader& r)
 	}
 }
 
-CHECKPOINT_GLOBAL_FUNCTIONS("Sexp_nodes", sexp_nodes_checkpoint_save, sexp_nodes_checkpoint_load);
+CHECKPOINT_GLOBAL_FUNCTIONS(sexp_nodes_checkpoint_save, sexp_nodes_checkpoint_load);
 
 // done at the beginning of each mission
 void init_sexp()

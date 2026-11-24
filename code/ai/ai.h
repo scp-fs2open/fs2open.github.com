@@ -223,7 +223,7 @@ typedef struct ai_class {
 //	Contains hooks back to original path information.
 //	This hook is used to extract information on the point such as whether it is
 //	protected by turrets.
-typedef struct pnode {
+typedef struct pnode {	// @checkpoint fields
 	vec3d	pos;
 	int		path_num;			//	path number from polymodel, ie in polymodel, paths[path_num]
 	int		path_index;			//	index in original model path of point, ie in model_path, use verts[path_index]
@@ -238,7 +238,7 @@ extern pnode	*Ppfp;			//	Free pointer in path points.
 
 #define AI_DYNAMIC_PATH_RECHECK_DELAY 1*1000
 
-typedef struct ai_info {
+typedef struct ai_info {	// @checkpoint fields
 	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
 

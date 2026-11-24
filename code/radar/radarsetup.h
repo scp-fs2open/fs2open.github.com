@@ -82,7 +82,7 @@ extern TIMESTAMP	Radar_calc_bright_dist_timer;	// timestamp at which we recalc R
 
 extern int See_all;
 
-enum RadarVisibility
+enum RadarVisibility	// @checkpoint fields
 {
 	NOT_VISIBLE, //!< Not visible on the radar
 	VISIBLE, //!< Fully visible on the radar

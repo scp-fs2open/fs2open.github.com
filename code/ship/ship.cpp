@@ -15,7 +15,6 @@
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
-#include "checkpoint/model_instance.h"
 #include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
@@ -263,7 +262,7 @@ static void ship_registry_checkpoint_rebuild_map()
 	for (int i = 0; i < static_cast<int>(Ship_registry.size()); ++i)
 		Ship_registry_map[Ship_registry[i].name] = i;
 }
-CHECKPOINT_AFTER_GLOBALS("Ship_registry", ship_registry_checkpoint_rebuild_map);
+CHECKPOINT_AFTER_GLOBALS(ship_registry_checkpoint_rebuild_map);
 
 int ship_registry_get_index(const char *name)
 {
@@ -385,7 +384,7 @@ ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs, Stand
 
 SCP_vector<ship_info>	Ship_info;
 // sexps change the shockwave damage types of ship classes
-CHECKPOINT_TABLE_FIELD("Ship shockwave damage types", Ship_info, shockwave.damage_type_idx);
+CHECKPOINT_TABLE_FIELD(Ship_info, shockwave.damage_type_idx);
 SCP_vector<const char *> Ship_class_names;		// to be filled in from Ship_info
 
 SCP_vector<reinforcements>	Reinforcements;
@@ -11376,7 +11375,7 @@ static void ship_checkpoint_save(checkpoint::Writer& w, const object& objp)
 		checkpoint::save(w, *ss);
 	}
 
-	checkpoint::save_model_instance(w, shipp->model_instance_num);
+	checkpoint::save(w, model_get_instance(shipp->model_instance_num));
 }
 
 static void ship_checkpoint_restore_as(checkpoint::Reader& r, object& objp, bool ghost)
@@ -11434,7 +11433,8 @@ static void ship_checkpoint_restore_as(checkpoint::Reader& r, object& objp, bool
 	shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 
 	animation::anim_set_initial_states(shipp, false);
-	checkpoint::load_model_instance(r, shipp->model_instance_num);
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	checkpoint::load(r, pmi);
 
 	ship_set_warp_effects(&objp);
 

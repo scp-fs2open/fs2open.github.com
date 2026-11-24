@@ -126,7 +126,7 @@ include(shaders.cmake)
 
 target_embed_files(code FILES ${default_files_files} RELATIVE_TO "def_files")
 
-target_checkpoint_fields(code LIST checkpoint/checkpoint_structs.txt OUTPUT checkpoint_fields.inc)
+target_checkpoint_fields(code OUTPUT checkpoint_fields.inc)
 
 handle_embedded_files(code)
 

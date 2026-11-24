@@ -1401,7 +1401,7 @@ struct sexp_cached_data
 	}
 };
 
-struct sexp_node
+struct sexp_node	// @checkpoint fields
 {
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator) @checkpoint skip: looked up from the node text again; operator indices change as operators are added
@@ -1432,7 +1432,7 @@ struct sexp_node
 #define SNF_VARIABLE_TYPE_MISMATCH	(1<<10)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
-typedef struct sexp_variable {
+typedef struct sexp_variable {	// @checkpoint fields
 	int		type;
 	char	text[TOKEN_LENGTH];
 	char	variable_name[TOKEN_LENGTH];

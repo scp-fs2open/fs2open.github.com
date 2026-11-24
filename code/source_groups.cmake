@@ -130,12 +130,9 @@ add_file_folder("Checkpoint"
 	checkpoint/checkpoint.cpp
 	checkpoint/checkpoint.h
 	checkpoint/checkpoint_fields.cpp
-	checkpoint/checkpoint_structs.txt
 	checkpoint/codec.h
 	checkpoint/fresh_state.cpp
 	checkpoint/fresh_state.h
-	checkpoint/model_instance.cpp
-	checkpoint/model_instance.h
 	checkpoint/prompt.cpp
 	checkpoint/prompt.h
 	checkpoint/registry.h

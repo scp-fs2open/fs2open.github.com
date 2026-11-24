@@ -304,7 +304,7 @@ static void post_effects_checkpoint_load(checkpoint::Reader& r)
 	graphics::Post_processing_manager->getLightshaftParams() = lightshafts;
 }
 
-CHECKPOINT_GLOBAL_FUNCTIONS("Post effects", post_effects_checkpoint_save, post_effects_checkpoint_load);
+CHECKPOINT_GLOBAL_FUNCTIONS(post_effects_checkpoint_save, post_effects_checkpoint_load);
 
 bool gr_lightshafts_enabled()
 {

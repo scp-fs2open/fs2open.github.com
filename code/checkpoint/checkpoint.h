@@ -27,7 +27,7 @@
 // - Things written outside the mission aren't rolled back: tech room, campaign allowances, medals, promotions.  The
 //   pilot's all-time statistics aren't part of a checkpoint.
 // - Table fields that scripts change aren't saved; only the ones sexps change are.
-// - Random numbers from sources other than util::Random continue differently.
+// - Random numbers continue differently after loading.
 // - A checkpoint saved during the supernova sequence makes the player depart when loaded, since the sequence's control
 //   mode is taken for a warp out.
 // - Excluded ships and wings come back as at mission start, but events about them and the mission log keep their saved
@@ -64,11 +64,6 @@ bool request_load(int index, int replay_event = -1);
 
 // True while the event that loaded a checkpoint runs again on the loaded mission.
 bool is_replaying_event();
-
-// Debugging aid.  With frames == 0: saves, loads the save and saves again, then reports every field that differs
-// (errors in saving or restoring).  With frames > 0: additionally runs that many frames at a fixed frame time after
-// saving and after loading, and reports what differs then (state that is not saved at all).
-void request_verify(int frames);
 
 // Whether checkpoint index exists, or any checkpoint if index is negative, for this mission or another one.
 bool has_slot(int index, const char* mission = nullptr);
@@ -107,9 +102,5 @@ void apply_pending_restore();
 
 // True while a checkpoint load reloads the mission and restores it.  No scripting hooks run then.
 bool is_loading();
-
-// When verifying, replaces the frame time and advances the timestamp clock by it, so frames are reproducible.
-// Returns true if the frame time was replaced.
-bool override_frametime(fix& frametime);
 
 } // namespace checkpoint

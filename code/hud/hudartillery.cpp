@@ -59,7 +59,7 @@ static void ssm_checkpoint_restart_warpins()
 		}
 	}
 }
-CHECKPOINT_AFTER_GLOBALS("Ssm_strikes", ssm_checkpoint_restart_warpins);
+CHECKPOINT_AFTER_GLOBALS(ssm_checkpoint_restart_warpins);
 
 // Goober5000
 int ssm_info_lookup(const char *name)

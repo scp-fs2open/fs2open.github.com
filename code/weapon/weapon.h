@@ -94,14 +94,14 @@ namespace Weapon::Proximity {
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
 
-struct homing_cache_info {
+struct homing_cache_info {	// @checkpoint fields
 	TIMESTAMP next_update;
 	vec3d expected_pos;
 	bool valid;
 	bool skip_future_refinements;
 };
 
-typedef struct weapon {
+typedef struct weapon {	// @checkpoint fields
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
 	int		model_instance_num;				// model instance number, if we have any intrinsic-moving submodels @checkpoint skip: re-acquired after loading

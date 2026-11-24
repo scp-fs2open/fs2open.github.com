@@ -212,7 +212,7 @@ void hud_set_contrast(bool high);
 void hud_toggle_shadows();
 
 // The state of a gauge that sexps and scripts change during a mission, for checkpoints
-struct hud_gauge_mission_state {
+struct hud_gauge_mission_state {	// @checkpoint fields
 	bool active = true;
 	bool sexp_override = false;
 	bool pop_up = false;
