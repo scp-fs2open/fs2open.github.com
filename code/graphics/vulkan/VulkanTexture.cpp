@@ -2839,7 +2839,7 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 			nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
 				m_pendingCommandBuffers.size(), m_pendingUploadBytes));
 			const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
-			// waiting again on a fence that did not signal would never end
+			// only eTimeout reaches here; waiting on that fence again could repeat forever
 			if (result != vk::Result::eSuccess) {
 				nprintf(("vulkan", "VulkanTexture: texture upload fence wait failed: %s\n",
 					vk::to_string(result).c_str()));
