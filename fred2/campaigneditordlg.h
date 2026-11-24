@@ -44,6 +44,12 @@ public:
 	void onRootInserted(int old_formula, int new_formula) override;
 	void onRootMoved(int node1, int node2, bool insert_before) override;
 
+	SCP_vector<SCP_string> getMissionNames() override;
+	bool hasDefaultMissionName() override;
+
+	SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name) override;
+	SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name) override;
+
 // Form Data
 public:
 	void mission_selected(int num);
@@ -52,6 +58,7 @@ public:
 	void update();
 	void load_tree(int save = 1);
 	void save_tree(int clear = 1);
+	void mission_renumbered(int old_num, int new_num);	// keeps save_tree() working when a mission changes slots
 	void initialize( bool init_files, bool clear_path );
 	void load_campaign(const char *filename, const char *full_path);
 	void update_loop_desc_window();
@@ -98,7 +105,7 @@ protected:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-	CToolTipCtrl* m_SubstituteMainHallToolTip;
+	CToolTipCtrl m_SubstituteMainHallToolTip;
 
 	// Generated message map functions
 	//{{AFX_MSG(campaign_editor)

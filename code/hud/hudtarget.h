@@ -63,7 +63,6 @@ extern int Hud_target_w, Hud_target_h;
 
 extern shader Training_msg_glass;
 
-extern char **Ai_class_names;
 extern const char *Submode_text[];
 extern const char *Strafe_submode_text[];
 
@@ -557,7 +556,7 @@ public:
 	void initTriBase(float length);
 	void initTriHeight(float length);
 	void render(float frametime, bool config = false) override;
-	void calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep);
+	bool calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep);
 	void renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid = true, bool config = false);
 	void pageIn() override;
 };

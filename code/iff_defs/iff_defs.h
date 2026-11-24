@@ -58,6 +58,7 @@ typedef struct iff_info {
 } iff_info;
 
 extern SCP_vector<iff_info> Iff_info;
+extern SCP_vector<const char *> Iff_info_names;
 
 extern int Iff_traitor;
 
@@ -70,6 +71,10 @@ extern int iff_init_color(int r, int g, int b);
 
 // load the iff table
 extern void iff_init();
+
+// free the iff table
+// (call after ship_close(), since ship data holds IFF and color indices)
+extern void iff_close();
 
 // search for iff
 extern int iff_lookup(const char *iff_name);

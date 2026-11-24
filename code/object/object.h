@@ -54,7 +54,7 @@
 #define OBJ_PROP            17  // A prop object like a landscape. Similar to ships but is entirely non-interactable with the exception of collisions
 
 //Make sure to change Object_type_names in Object.c when adding another type!
-#define MAX_OBJECT_TYPES	17
+#define MAX_OBJECT_TYPES	18
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
@@ -250,7 +250,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
+#define OBJ_INDEX(objp) (static_cast<int>((objp)-Objects))
 
 /*
  *		FUNCTIONS
@@ -432,5 +432,23 @@ void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source
  */
 int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos);
 
+/**
+ * @brief Occupancy snapshot of the object/ship/weapon pools, for the profiler overlay's memory panel
+ *
+ * @details These pools are fixed-size static arrays, so their footprint is a compile-time
+ * constant; what's actually useful to report is how full they are.
+ */
+struct object_memory_stats {
+	int objects_used = 0;
+	int objects_max = MAX_OBJECTS;
+	int objects_peak = 0;
+
+	int ships_used = 0;
+	int ships_max = MAX_SHIPS;
+
+	int weapons_used = 0;
+	int weapons_max = MAX_WEAPONS;
+};
+object_memory_stats obj_get_memory_stats();
 
 #endif

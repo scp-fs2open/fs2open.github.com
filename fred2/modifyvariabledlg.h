@@ -68,9 +68,9 @@ private:
 protected:
 
 	// tooltips
-	CToolTipCtrl* m_ProgressToolTip;
-	CToolTipCtrl* m_CloseToolTip;
-	CToolTipCtrl* m_EternalToolTip;
+	CToolTipCtrl m_ProgressToolTip;
+	CToolTipCtrl m_CloseToolTip;
+	CToolTipCtrl m_EternalToolTip;
 
 	// Generated message map functions
 	//{{AFX_MSG(CModifyVariableDlg)

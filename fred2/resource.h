@@ -11,9 +11,10 @@
 #define IDD_VOICE_MANAGER               102
 #define IDR_MAINFRAME                   128
 #define IDR_MAINMENU                    128
-#define IDR_FREDTYPE                    129
-#define IDR_CAMPAIGN_VIEW               130
-#define IDR_CAMPAIGN_DLG                131
+#define IDR_MAINMENU_CLASSIC            129
+#define IDR_FREDTYPE                    130
+#define IDR_CAMPAIGN_VIEW               131
+#define IDR_CAMPAIGN_DLG                132
 #define IDR_TOOLBAR1                    150
 #define IDD_SHIP_EDITBAR                154
 #define IDD_SHIP_CLASS_EDITOR           161
@@ -1310,6 +1311,8 @@
 #define IDC_MESSAGE_MOVE_DOWN           1744
 #define IDC_MESSAGE_MOVE_TO_BOTTOM      1745
 #define IDC_INSERT_MSG                  1746
+#define IDC_SUN1_ANGULAR_SIZE_OVERRIDE  1747
+#define IDC_SUN1_ANGULAR_SIZE           1748
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1614,6 +1617,18 @@
 #define ID_OUTLINE_LOD_3                33110
 #define ID_OUTLINE_LOD_4                33111
 #define ID_REORDER                      33112
+#define ID_CLASSIC_MENU_LAYOUT          33113
+#define ID_LABEL_FONT_SCALE_50          33114
+#define ID_LABEL_FONT_SCALE_75          33115
+#define ID_LABEL_FONT_SCALE_100         33116
+#define ID_LABEL_FONT_SCALE_125         33117
+#define ID_LABEL_FONT_SCALE_150         33118
+#define ID_LABEL_FONT_SCALE_200         33119
+#define ID_LABEL_FONT_SCALE_250         33120
+#define ID_LABEL_FONT_SCALE_300         33121
+#define ID_LABEL_FONT_SCALE_350         33122
+#define ID_LABEL_FONT_SCALE_400         33123
+#define ID_MISC_ROTATE_SELECTION_MIDPOINT 33124
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1626,8 +1641,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
-#define _APS_NEXT_CONTROL_VALUE         1747
-#define _APS_NEXT_COMMAND_VALUE         33113
+#define _APS_NEXT_CONTROL_VALUE         1749
+#define _APS_NEXT_COMMAND_VALUE         33125
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

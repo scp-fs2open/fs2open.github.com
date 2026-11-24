@@ -12,7 +12,6 @@ namespace font
 		int m_handle = -1;
 		float m_letterSpacing = 0.0f;
 		float m_size = 12.0f;
-		float m_tabWidth = 20.0f;
 
 		font* m_specialCharacters = nullptr;
 
@@ -25,13 +24,11 @@ namespace font
 		int getHandle() const { return m_handle; }
 		float getSize() const { return m_size; }
 		float getLetterSpacing() const { return m_letterSpacing; }
-		float getTabWidth() const { return m_tabWidth; }
 		font* getSpecialCharacterFont() const { return m_specialCharacters; }
 
 		void setHandle(int handle);
 		void setSize(float size);
 		void setLetterSpacing(float spacing);
-		void setTabWidth(float tabWidth);
 		void setSpecialCharacterFont(font* fontData);
 
 		FontType getType() const override { return NVG_FONT; };

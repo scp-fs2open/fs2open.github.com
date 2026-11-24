@@ -13,6 +13,7 @@ namespace api {
 
 //**********HANDLE: WingFormation
 ADE_OBJ(l_WingFormation, int, "wingformation", "Wing formation handle");
+ADE_OBJ_VALIDATOR_RANGE(l_WingFormation, sz2i(Wing_formations.size()) + 1);	// + 1 admits the default formation
 
 ADE_FUNC(__tostring, l_WingFormation, nullptr, "Wing formation name", "string", "Wing formation name, or an empty string if handle is invalid")
 {
@@ -64,18 +65,6 @@ ADE_VIRTVAR(Name, l_WingFormation, "string", "Wing formation name", "string", "W
 		LuaError(L, "This property is read-only");
 
 	return ade_set_args(L, "s", Wing_formations[formation_id].name);
-}
-
-ADE_FUNC(isValid, l_WingFormation, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int formation_id;
-	if (!ade_get_args(L, "o", l_WingFormation.Get(&formation_id)))
-		return ADE_RETURN_NIL;
-
-	if (formation_id < 0 || formation_id >= (int)Wing_formations.size() + 1)
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 }

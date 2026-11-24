@@ -68,8 +68,39 @@ enum class AntiAliasMode {
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
+// AA renders at 1:1. Upscale upscales the scene from the render resolution to the window resolution, and everything
+// drawn after it then draws at that size.
+enum class FsrMode {
+	Off = 0,
+	AA = 1,
+	Upscale = 2,
+};
+extern FsrMode Gr_fsr_mode;
+// The chosen FSR major version, or 0 for the newest the renderer offers
+extern int Gr_fsr_major_version;
+// The FSR versions the renderer offers, newest first, such as "4.1.2". Empty without FSR.
+extern SCP_vector<SCP_string> Gr_fsr_versions;
+// The largest image side the renderer supports, which limits the output scale factor. 0 until the renderer is up.
+extern int Gr_max_output_size;
+
+// Draw the HUD and everything else after the scene at the output resolution rather than the render resolution
+extern bool Gr_native_res_hud;
+
+// What Gr_composition_scale should be. While FSR upscales or Gr_native_res_hud is set, this scales the render resolution
+// to cover the output (the window, or an HMD eye image in VR) in both axes, keeping its aspect ratio; the final blit
+// squeezes the rest. Otherwise, or when the output isn't larger than the render resolution, it is 1.
+float gr_wanted_composition_scale(bool fsr_upscaling);
+// Framebuffer pixels per gr_screen unit for what's drawn onto the screen, or into a screen layer, after the scene. Above
+// 1 while FSR upscales or the HUD is drawn at output resolution. Render targets always draw at 1.
+extern float Gr_composition_scale;
+
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
+
+// not clamped: only the renderer knows what the card supports
+float gr_anisotropy_setting();
+
+int gr_texture_filter_setting();
 
 extern bool Gr_post_processing_enabled;
 
@@ -232,6 +263,8 @@ enum shader_type {
 
 	SDR_TYPE_GAMMA_BLIT,
 
+	SDR_TYPE_MOTION_VECTORS,
+
 	NUM_SHADER_TYPES
 };
 
@@ -262,6 +295,7 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
@@ -301,6 +335,7 @@ struct vertex_format_data
 		RADIUS,
 		UVEC,
 		MATRIX4,
+		MOTION4, // Vulkan only. OpenGL's attribute tables have no slot for it.
 	};
 
 	vertex_format format_type;
@@ -370,7 +405,13 @@ enum class gr_capability {
 	CAPABILITY_INSTANCED_RENDERING,
 	CAPABILITY_FAST_SHADOWS,
 	CAPABILITY_QUERIES_REUSABLE,
-	CAPABILITY_RAYTRACED_SHADOWS
+	CAPABILITY_RAYTRACED_SHADOWS,
+	// A second, non-compare sampler bound to the shadow map for raw depth reads, needed by
+	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
+	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
+	// otherwise texture-object state shared by every sampler bound to that texture.
+	CAPABILITY_SHADOW_CONTACT_HARDENING,
+	CAPABILITY_FSR
 };
 
 struct gr_capability_def {
@@ -690,6 +731,56 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
  */
 typedef void* gr_sync;
 
+/**
+ * @brief Per-backend diagnostic counters, populated only when -gr_debug is active
+ *
+ * Each stat group carries its own "valid" flag since not every backend collects every
+ * group (e.g. per-draw-call counters currently only exist in the Vulkan backend). See
+ * gr_get_debug_stats().
+ */
+struct gr_debug_stats {
+	bool uniform_buffer_valid = false;
+	size_t uniform_buffer_size = 0;
+	size_t uniform_buffer_used = 0;
+
+	bool draw_stats_valid = false;
+	int draw_calls = 0;
+	int draw_indexed_calls = 0;
+	int total_vertices = 0;
+	int total_indices = 0;
+	int apply_material_calls = 0;
+	int apply_material_failures = 0;
+	int no_pipeline_skips = 0;
+	int descriptor_sets_allocated = 0;
+	int descriptor_writes = 0;
+	size_t pipeline_count = 0;
+	int on_demand_texture_uploads = 0;
+};
+
+/**
+ * @brief Cross-backend memory usage snapshot for the profiler overlay's memory panel
+ *
+ * Unlike gr_debug_stats, this is always populated when queried (no -gr_debug gate) -- memory
+ * usage is meant to be visible to anyone with the profiler overlay open. Each group still carries
+ * its own "valid" flag since not every backend/build collects every group (e.g. both graphics
+ * backends disabled at build time). See gr_get_memory_stats().
+ */
+struct gr_memory_stats {
+	bool model_heap_valid = false;
+	size_t model_vertex_heap_used = 0;
+	size_t model_vertex_heap_size = 0;
+	size_t model_index_heap_used = 0;
+	size_t model_index_heap_size = 0;
+
+	bool locked_bitmap_ram_valid = false;
+	size_t locked_bitmap_ram_bytes = 0;
+
+	bool gpu_purpose_valid = false;
+	size_t gpu_texture_bytes = 0;
+	size_t gpu_geometry_bytes = 0;
+	size_t gpu_render_target_bytes = 0;
+};
+
 typedef struct screen {
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
@@ -813,6 +904,7 @@ typedef struct screen {
 	std::function<void(bitmap_slot* slot)> gf_bm_create;
 	std::function<void(bitmap_slot* slot)> gf_bm_init;
 	std::function<void()> gf_bm_page_in_start;
+	std::function<void()> gf_bm_page_in_prepare;
 	std::function<bool(int handle, bitmap* bm)> gf_bm_data;
 
 	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;
@@ -828,13 +920,6 @@ typedef struct screen {
 	// backends that don't need them (OpenGL, stub) don't have to assign anything.
 	std::function<void(int pm_id)> gf_model_loaded = [](int) {};
 	std::function<void(int pm_id)> gf_model_unloaded = [](int) {};
-
-	// Rebuilds the raytraced-shadow top-level acceleration structure for the
-	// current frame from the live shadow-casting object set. Called once per
-	// frame from shadows_render_all(), alongside the cascaded shadow map pass --
-	// the shading pass picks between the two per shadows_use_raytracing().
-	// No-op default.
-	std::function<void()> gf_build_shadow_tlas = []() {};
 
 	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
 	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
@@ -963,6 +1048,14 @@ typedef struct screen {
 	std::function<void(const char* name)> gf_push_debug_group;
 	std::function<void()> gf_pop_debug_group;
 
+	// Fills in whichever debug_stats groups this backend collects. Defaults to a no-op
+	// so backends without per-draw-call counters (OpenGL, stub) don't have to assign it.
+	std::function<void(gr_debug_stats& stats)> gf_get_debug_stats = [](gr_debug_stats&) {};
+
+	// Fills in whichever memory_stats groups this backend collects (GPU-purpose byte totals).
+	// Defaults to a no-op so backends without per-purpose tagging don't have to assign it.
+	std::function<void(gr_memory_stats& stats)> gf_get_memory_stats = [](gr_memory_stats&) {};
+
 	std::function<int()> gf_create_query_object;
 	std::function<void(int obj, QueryType type)> gf_query_value;
 	std::function<bool(int obj)> gf_query_value_available;
@@ -980,6 +1073,9 @@ typedef struct screen {
 	std::function<void(gr_sync sync)> gf_sync_delete;
 
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
+
+	std::function<bool(int bitmap)> gf_screen_layer_begin;
+	std::function<void()> gf_screen_layer_end;
 
 	std::function<void(bool set_override)> gf_override_fog;
 
@@ -1053,6 +1149,14 @@ extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
 extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode = GraphicsAPI::Default,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
+
+// The render API (GraphicsAPI::OpenGL/GraphicsAPI::Vulkan) selected via the "Graphics.RenderAPI" in-game option (or a mod's
+// default settings table). The -vulkan/-opengl command line flags still win over this; see Cmdline_graphics_api.
+extern GraphicsAPI gr_get_configured_render_api();
+
+// The display name of a render API, e.g. "OpenGL". Returns "Unknown???" for GraphicsAPI values that are not
+// a real backend, such as GraphicsAPI::Stub.
+extern const char* gr_render_api_name(GraphicsAPI api);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
@@ -1153,6 +1257,23 @@ bool gr_is_screenshot_requested();
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
 
+/**
+ * @brief Collects whichever graphics-API debug stats are available for the active backend
+ *
+ * Returns a default-constructed (all-invalid) gr_debug_stats unless -gr_debug is active. Safe
+ * to call every frame regardless of backend or debug flag.
+ */
+gr_debug_stats gr_get_debug_stats();
+
+/**
+ * @brief Collects whichever cross-backend memory usage stats are available
+ *
+ * Unlike gr_get_debug_stats(), this is always populated (no -gr_debug gate) -- memory usage is
+ * meant to be visible whenever the profiler overlay is open. Safe to call every frame regardless
+ * of backend or build configuration; groups a backend/build doesn't support stay invalid/zero.
+ */
+gr_memory_stats gr_get_memory_stats();
+
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();
 }
@@ -1244,8 +1365,6 @@ inline void gr_model_unloaded(int pm_id)
 	gr_screen.gf_model_unloaded(pm_id);
 }
 
-#define gr_build_shadow_tlas GR_CALL(gr_screen.gf_build_shadow_tlas)
-
 #define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)
 inline void* gr_map_buffer(gr_buffer_handle handle)
@@ -1302,6 +1421,15 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
 
 /**
+ * @brief Registers the mod-defined TrueType font with ImGui
+ *
+ * @details Must be called after the FSO font system has been initialized
+ * and an ImGui context has been created. If no custom font is configured,
+ * the default ImGui font remains unchanged.
+ */
+void gr_init_imgui_font();
+
+/**
  * @brief Starts an ImGui frame, sized to the render target rather than to the OS window
  *
  * @details Drives the renderer backend, the SDL platform backend and ImGui itself, then corrects
@@ -1309,6 +1437,22 @@ inline void gr_post_process_restore_zbuffer()
  * ImGui::Render() and gr_imgui_render_draw_data().
  */
 void gr_imgui_begin_frame();
+
+/**
+ * @brief Renders and submits the open ImGui frame, if any. Called by gr_flip().
+ */
+void gr_imgui_end_frame();
+
+/**
+ * @brief Whether an ImGui frame is currently open for contributions
+ */
+bool gr_imgui_frame_active();
+
+/**
+ * @brief Adds the frame profiler overlay and renders the open ImGui frame, once per presented frame. Called by gr_flip(),
+ * or in VR by the HUD panel, so that both eyes show it.
+ */
+void gr_imgui_draw_overlay();
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,
@@ -1450,6 +1594,29 @@ inline void gr_set_viewport(int x, int y, int width, int height)
 {
 	gr_screen.gf_set_viewport(x, y, width, height);
 }
+
+/**
+ * @brief Sets up an offscreen layer that screen drawing can be redirected into, e.g. to show the HUD on a VR panel
+ *
+ * Call it while the game starts up, as the layer is a render target like any other.
+ * @param relative_scale The layer's pixels per gr_screen unit, relative to Gr_composition_scale, which it follows
+ */
+void gr_screen_layer_init(float relative_scale);
+
+// Remakes the screen layer for the current Gr_composition_scale. Renderers that change Gr_composition_scale while running call this.
+void gr_screen_layer_resize();
+
+/**
+ * @brief Redirects what is drawn onto the screen into the screen layer
+ *
+ * Unlike bm_set_render_target(), gr_screen stays exactly as it is, so everything lays itself out as it would on the
+ * screen. The layer starts out transparent and holds premultiplied alpha. Render targets set while it is active return
+ * to it. Must not be nested.
+ *
+ * @return The layer's bitmap handle, or -1 if there is no layer
+ */
+int gr_screen_layer_begin();
+void gr_screen_layer_end();
 
 inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)
 {

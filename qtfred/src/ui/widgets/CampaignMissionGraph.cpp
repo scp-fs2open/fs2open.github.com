@@ -40,6 +40,27 @@ MissionNodeItem::MissionNodeItem(int missionIndex,
 
 QRectF MissionNodeItem::boundingRect() const
 {
+	// the ports are drawn centered on the top and bottom edges, so half of each sticks out of the card
+	const qreal portExtent = m_style.portRadius + kMaxBorderWidth;
+	return m_rect.adjusted(-1, -portExtent, 1, portExtent);
+}
+
+QPainterPath MissionNodeItem::shape() const
+{
+	// the card and its ports; winding fill, or the half of each port inside the card would be a hole
+	const qreal r = m_style.portRadius + kMaxBorderWidth / 2;
+	const qreal centerX = m_rect.center().x();
+	QPainterPath path;
+	path.setFillRule(Qt::WindingFill);
+	path.addRect(cardRect());
+	path.addEllipse(QPointF(centerX, m_rect.top()), r, r);
+	path.addEllipse(QPointF(centerX - m_style.portOffsetX, m_rect.bottom()), r, r);
+	path.addEllipse(QPointF(centerX + m_style.portOffsetX, m_rect.bottom()), r, r);
+	return path;
+}
+
+QRectF MissionNodeItem::cardRect() const
+{
 	return m_rect.adjusted(-1, -1, 1, 1);
 }
 
@@ -55,7 +76,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	p->setRenderHint(QPainter::Antialiasing, true);
 
 	// Precompute geometry
-	const qreal borderW = isSelected() ? 2.0 : 1.0;
+	const qreal borderW = isSelected() ? kMaxBorderWidth : 1.0;
 	const QPen borderPen(m_style.nodeBorder, borderW, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
 	const qreal topPortY = m_rect.top();       // center exactly on edge; half visible
@@ -415,6 +436,13 @@ QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightS
 	return path;
 }
 
+QRectF EdgeItem::boundingRect() const
+{
+	// arrowheads are drawn across the line, past the path's own bounds
+	const qreal arrowExtent = m_style.arrowSize + pen().widthF();
+	return QGraphicsPathItem::boundingRect().adjusted(-arrowExtent, -arrowExtent, arrowExtent, arrowExtent);
+}
+
 void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	// Draw the line/path first
@@ -515,6 +543,17 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	// Recolor graph when the application theme changes
 	qApp->installEventFilter(this);
 }
+CampaignMissionGraph::~CampaignMissionGraph()
+{
+	qApp->removeEventFilter(this);
+	// disconnect, then delete while this view is still whole: a selected card's deletion sends selectionChanged
+	if (m_scene != nullptr) {
+		disconnect(m_scene, nullptr, this, nullptr);
+		delete m_scene;
+		m_scene = nullptr;
+	}
+}
+
 bool CampaignMissionGraph::eventFilter(QObject* watched, QEvent* event)
 {
 	if (event->type() == QEvent::ApplicationPaletteChange) {
@@ -857,7 +896,7 @@ void CampaignMissionGraph::buildMissionEdges()
 			if (i == j) {
 				// Selfloop: draw outside node
 				if (m_style.showSelfLoops) {
-					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->boundingRect());
+					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->cardRect());
 					const bool sourceRight = isSpecial; // special port on right; main on left
 					edge->setSelfLoop(nodeRectScene, sourceRight, sibIndex, sibCount);
 					m_scene->addItem(edge);
@@ -911,9 +950,9 @@ void CampaignMissionGraph::ensureEndSink()
 	// Position below the union of mission nodes
 	// Future TODO: Let the user move this around. Will require being able to save it's position to the campaign file
 	if (!m_nodeItems.empty()) {
-		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->boundingRect());
+		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->cardRect());
 		for (size_t i = 1; i < m_nodeItems.size(); ++i) {
-			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->boundingRect()));
+			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->cardRect()));
 		}
 		const qreal x = nodesRect.center().x() - m_style.endSinkSize.width() * 0.5;
 		const qreal y = nodesRect.bottom() + m_style.endSinkMargin;
@@ -1015,7 +1054,7 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 	const QPointF snapped(qRound(scenePt.x() / s) * s, qRound(scenePt.y() / s) * s);
 
 	// Don't spawn if we actually clicked on an item's body
-	if (!nodeAtScenePos(scenePt) && !(m_endSink && m_endSink->sceneBoundingRect().contains(scenePt))) {
+	if (!nodeAtScenePos(scenePt) && !(m_endSink && m_endSink->contains(m_endSink->mapFromScene(scenePt)))) {
 		m_spawnPending = true;
 		Q_EMIT createMissionAtAndConnectRequested(snapped, m_drag.fromIndex, m_drag.isSpecial);
 		// return false so caller won't rebuild; dialog will rebuild after it adds the mission
@@ -1036,6 +1075,7 @@ void CampaignMissionGraph::cancelDrag()
 	}
 
 	m_drag = DragState{}; // resets flags and clears the QPointer
+	setDragMode(QGraphicsView::ScrollHandDrag);
 }
 
 void CampaignMissionGraph::applyFocusEmphasis()
@@ -1136,7 +1176,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 	const QPointF sp = mapToScene(ev->pos());
 
 	// If we're already dragging, ignore
-	if (!m_drag.active) {
+	if (ev->button() == Qt::LeftButton && !m_drag.active) {
 		if (auto* raw = nodeAtScenePos(sp)) {
 			QPointer<detail::MissionNodeItem> n(raw);
 
@@ -1154,6 +1194,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 				// Recheck pointer right before using it again
 				if (!n) {
+					m_drag.active = false;
 					ev->ignore();
 					return;
 				}
@@ -1163,6 +1204,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 				// Build preview edge
 				const auto& missions = m_model->getCampaignMissions();
+
 				const auto mode = missions[m_drag.fromIndex].special_mode_hint;
 
 				m_drag.preview = new detail::EdgeItem(m_drag.fromIndex, /*branchId*/ -1, m_drag.isSpecial, mode, m_style);
@@ -1185,12 +1227,11 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 {
-	if (m_drag.active) {
+	if (ev->button() == Qt::LeftButton && m_drag.active) {
 		const QPointF sp = mapToScene(ev->pos());
 		bool made = tryFinishConnectionAt(sp);
 
 		cancelDrag();
-		setDragMode(QGraphicsView::ScrollHandDrag);
 
 		if (made) {
 			// Edges reflect the new branch; keep viewport stable
@@ -1208,6 +1249,11 @@ void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 
 void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 {
+	// a context menu request ends a connection drag: the menu would take the left release that finishes it
+	if (m_drag.active) {
+		cancelDrag();
+	}
+
 	const QPointF sp = mapToScene(e->pos());
 
 	// Node under cursor?
@@ -1252,7 +1298,7 @@ void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 	}
 
 	// END sink under cursor? no special menu
-	if (m_endSink && m_endSink->sceneBoundingRect().contains(sp)) {
+	if (m_endSink && m_endSink->contains(m_endSink->mapFromScene(sp))) {
 		QGraphicsView::contextMenuEvent(e);
 		return;
 	}

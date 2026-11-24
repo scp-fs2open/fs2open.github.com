@@ -61,11 +61,17 @@ public:
 	DataMenuStyle getDataMenuStyle() const;
 	void setDataMenuStyle(DataMenuStyle value);
 
+	bool getClassicMenuLayout() const;
+	void setClassicMenuLayout(bool value);
+
 	int  getToolbarIconSize() const;
 	void setToolbarIconSize(int size);
 
 	int  getOutlineLod() const;
 	void setOutlineLod(int value);
+
+	double getLabelFontScale() const;
+	void setLabelFontScale(double value);
 
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
@@ -76,6 +82,8 @@ public:
 	void setInvertOrbitX(bool value);
 	bool getInvertOrbitY() const;
 	void setInvertOrbitY(bool value);
+	bool getOrbitSelectionMidpoint() const;
+	void setOrbitSelectionMidpoint(bool value);
 
 	// Grid
 	int getGridCenterX() const;
@@ -106,13 +114,16 @@ private:
 	bool _showSexpHelpWingEditor;
 	ThemeMode _themeMode;
 	DataMenuStyle _dataMenuStyle;
+	bool _classicMenuLayout;
 	int  _toolbarIconSize;
 	int  _outlineLod;
+	float _labelFontScale;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;
 	bool _invertOrbitX;
 	bool _invertOrbitY;
+	bool _orbitSelectionMidpoint;
 
 	// Grid
 	int _gridCenterX;

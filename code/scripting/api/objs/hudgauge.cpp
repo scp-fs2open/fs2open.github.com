@@ -11,6 +11,7 @@ namespace scripting {
 namespace api {
 
 ADE_OBJ(l_HudGauge, HudGauge*, "HudGauge", "HUD Gauge handle");
+ADE_OBJ_VALIDATOR(l_HudGauge, gauge, gauge != nullptr);
 
 ADE_FUNC(isCustom, l_HudGauge, nullptr, "Custom HUD Gauge status", "boolean", "Returns true if this is a custom HUD gauge, or false if it is a non-custom (default) HUD gauge")
 {

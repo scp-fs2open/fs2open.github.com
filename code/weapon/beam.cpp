@@ -364,33 +364,30 @@ int beam_fire(beam_fire_info *fire_info)
 	wip = &Weapon_info[fire_info->beam_info_index];	
 
 	// copied from weapon_create()
-	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr)) {
+	// (a beam whose info was dictated by the server has already had its substitution resolved there)
+	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr) && (fire_info->beam_info_override == nullptr)) {
 		// using substitution
 
-		// get to the instance of the gun
-		Assertion(fire_info->shooter->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", fire_info->shooter->type);
-		Assertion((fire_info->shooter->instance < MAX_SHIPS) && (fire_info->shooter->instance >= 0),
-			"Ship index is %d, which is out of range [%d,%d)", fire_info->shooter->instance, 0, MAX_SHIPS);
-		ship* parent_shipp = &(Ships[fire_info->shooter->instance]);
-		Assert(parent_shipp != nullptr);
-
-		size_t* position = get_pointer_to_weapon_fire_pattern_index(fire_info->beam_info_index, fire_info->shooter->instance, fire_info->turret);
-		Assertion(position != nullptr, "'%s' is trying to fire a weapon that is not selected", Ships[fire_info->shooter->instance].ship_name);
-
-		size_t curr_pos = *position;
-		if ((parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) && curr_pos > 0) {
-			curr_pos--;
+		// the turret and fighter firing code both tell us which bank the beam is in
+		int pbank = fire_info->bank;
+		ship *parent_shipp = nullptr;
+		ship_weapon* swp = nullptr;
+		if (fire_info->fire_method == BFM_TURRET_FIRED || fire_info->fire_method == BFM_TURRET_FORCE_FIRED) {
+			// the fire method and the turret are set independently, so the turret can be null here
+			if (fire_info->turret != nullptr)
+				swp = &fire_info->turret->weapons;
+		} else if (fire_info->fire_method == BFM_FIGHTER_FIRED && fire_info->shooter->type == OBJ_SHIP) {
+			parent_shipp = &Ships[fire_info->shooter->instance];
+			swp = &parent_shipp->weapons;
 		}
-		++(*position);
-		*position = (*position) % wip->num_substitution_patterns;
 
-		if (wip->weapon_substitution_pattern[curr_pos] == -1) {
-			// weapon doesn't want any sub
-			return -1;
-		}
-		else if (wip->weapon_substitution_pattern[curr_pos] != fire_info->beam_info_index) {
-			fire_info->beam_info_index = wip->weapon_substitution_pattern[curr_pos];
-			// weapon wants to sub with weapon other than me
+		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(fire_info->beam_info_index, swp, pbank, -1, parent_shipp);
+
+		if (use_substitution) {
+			if (substituted_weapon_info_index < 0)
+				return -1;
+
+			fire_info->beam_info_index = substituted_weapon_info_index;
 			return beam_fire(fire_info);
 		}
 	}
@@ -1644,7 +1641,7 @@ void beam_render_muzzle_glow(beam *b)
 		b->objp != nullptr // Can validly be nullptr for floating beams!
 		&& b->objp == Player_obj  
 		&& Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model] 
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
+		&& (!Show_ship_only_if_cockpits_enabled || ship_cockpit_enabled(&Ship_info[Ships[b->objp->instance].ship_info_index])));
 	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && !Render_player_mflash && in_cockpit_view && !player_show_ship_model)) {
 		return;
 	}
@@ -3902,7 +3899,7 @@ int beam_collide_early_out(object *a, object *b)
 /*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
 		}*/
-		if(The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
+		if(The_mission.ai_profile()->flags[AI::Profile_Flags::Beams_damage_weapons]) {
 			if((Weapon_info[Weapons[b->instance].weapon_info_index].weapon_hitpoints <= 0) && (Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER)) {
 				return 1;
 			}
@@ -4218,7 +4215,7 @@ void beam_handle_collisions(beam *b)
 			}
 
 			case OBJ_WEAPON:
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
+				if (The_mission.ai_profile()->flags[AI::Profile_Flags::Beams_damage_weapons]) {
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 						object *trgt = &Objects[target];
 
@@ -4377,7 +4374,7 @@ int beam_ok_to_fire(beam *b)
 		vm_vec_normalize(&aim_dir);
 
 		if (!(b->flags & BF_IS_FIGHTER_BEAM)) {
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
 				vec3d turret_normal;
 				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
 
@@ -4506,9 +4503,9 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team)
-			&& (The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
-			&& (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
-		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
+			&& (The_mission.ai_profile()->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
+			&& (damage > The_mission.ai_profile()->beam_friendly_damage_cap[Game_skill_level]) ) {
+		damage = The_mission.ai_profile()->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
 		damage *= attenuation;

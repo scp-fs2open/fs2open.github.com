@@ -18,6 +18,7 @@
 extern int radar_target_id_flags;
 
 SCP_vector<iff_info> Iff_info;
+SCP_vector<const char *> Iff_info_names;		// to be filled in from Iff_info
 
 int Iff_traitor;
 
@@ -31,6 +32,15 @@ int IFF_COLOR_TAGGED    = 2;
 
 // global only to file
 SCP_vector <std::pair<color, color>> Iff_colors;		// AL 1-2-97: Create two IFF colors, regular and bright
+
+typedef struct {
+	int r;
+	int g;
+	int b;
+} temp_color_t;
+
+// parallel to Iff_colors
+static SCP_vector<temp_color_t> temp_colors;
 
 flag_def_list rti_flags[] = {
 	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
@@ -81,15 +91,7 @@ int iff_get_alpha_value(bool is_bright)
  */
 int iff_init_color(int r, int g, int b)
 {
-	typedef struct {
-		int r;
-		int g;
-		int b;
-	} temp_color_t;
-
 	int i, idx;
-
-	static SCP_vector<temp_color_t> temp_colors;
 
 	Assert(r >= 0 && r <= 255);
 	Assert(g >= 0 && g <= 255);
@@ -144,9 +146,13 @@ void resolve_iff_data()
 			Iff_info[Iff_traitor].iff_name);
 	}
 
+	Iff_info_names.clear();
+
 	// next get the attackees and colors
 	for (int cur_iff = 0; cur_iff < (int)Iff_info.size(); cur_iff++) {
 		iff_info* iff = &Iff_info[cur_iff];
+
+		Iff_info_names.push_back(iff->iff_name);
 
 		// clear the iffs to be attacked
 		iff->attackee_bitmask = 0;
@@ -200,6 +206,13 @@ void resolve_iff_data()
 					observed_color.iff_name,
 					iff->iff_name);
 			}
+		}
+
+		// an IFF that no table gave an accessibility color, such as one a mod adds in a tbm, keeps its normal colors
+		if (iff->accessibility_color_index < 0) {
+			iff->accessibility_color_index = iff->color_index;
+			iff->accessibility_observed_color_map.insert(iff->observed_color_map.begin(),
+				iff->observed_color_map.end());
 		}
 
 		// resolve the all teams at war relationships
@@ -479,8 +492,8 @@ void parse_iff_table(const char* filename)
 				iffp = &Iff_info[Iff_info.size() - 1];
 				//Initialize this to white for new IFFs
 				iffp->color_index = iff_init_color(255, 255, 255);
-				// Initialize this to white for new IFFs
-				iffp->accessibility_color_index = iff_init_color(255, 255, 255);
+				// -1 until a table sets it; resolve_iff_data() falls back to the normal colors
+				iffp->accessibility_color_index = -1;
 				//Make sure flags are reset for new IFFs
 				iffp->default_parse_flags.reset();
 			}
@@ -578,16 +591,45 @@ void parse_iff_table(const char* filename)
 			}
 
             // get default ship flags
+			SCP_vector<SCP_string> unparsed_flags;
             if (optional_string("$Default Ship Flags:"))
             {
-                parse_string_flag_list(iffp->default_parse_flags, Parse_object_flags, Num_parse_object_flags, nullptr);
+                parse_string_flag_list(iffp->default_parse_flags, Parse_object_flags, Num_parse_object_flags, &unparsed_flags);
             }
 
             // again, for compatibility reasons
             if (optional_string("$Default Ship Flags2:"))
             {
-                parse_string_flag_list(iffp->default_parse_flags, Parse_object_flags, Num_parse_object_flags, nullptr);
+                parse_string_flag_list(iffp->default_parse_flags, Parse_object_flags, Num_parse_object_flags, &unparsed_flags);
             }
+
+			for (const auto &unparsed : unparsed_flags)
+			{
+				// catch typos or deprecations
+				if (!stricmp(unparsed.c_str(), "no-collide") || !stricmp(unparsed.c_str(), "no_collide"))
+					iffp->default_parse_flags.set(Mission::Parse_Object_Flags::OF_No_collide);
+				else if (!stricmp(unparsed.c_str(), "cannot-perform-scan"))
+					iffp->default_parse_flags.set(Mission::Parse_Object_Flags::SF_Cannot_perform_scan_hide_cargo);
+				else
+					error_display(0, "Unknown default ship flag for IFF %s: %s\n", iffp->iff_name, unparsed.c_str());
+			}
+
+			// these flags only make sense on individual ships
+			for (size_t idx = 0; idx < Num_parse_object_flags; ++idx)
+			{
+				auto flag = Parse_object_flags[idx].def;
+				if (flag != Mission::Parse_Object_Flags::AIF_No_dynamic
+					&& flag != Mission::Parse_Object_Flags::SF_Red_alert_store_status
+					&& flag != Mission::Parse_Object_Flags::Knossos_warp_in
+					&& flag != Mission::Parse_Object_Flags::OF_Player_start)
+					continue;
+
+				if (iffp->default_parse_flags[flag])
+				{
+					error_display(0, "The \"%s\" flag cannot be a default ship flag; ignoring it for IFF %s\n", Parse_object_flags[idx].name, iffp->iff_name);
+					iffp->default_parse_flags.remove(flag);
+				}
+			}
 
 			// this is cleared between each level but let's just set it here for thoroughness
 			iffp->ai_good_rearm_timestamp = TIMESTAMP::invalid();
@@ -619,6 +661,28 @@ void iff_init()
 
 	// now resolve the relationships
 	resolve_iff_data();
+}
+
+void iff_close()
+{
+	Iff_info.clear();
+	Iff_info_names.clear();
+	Iff_colors.clear();
+	temp_colors.clear();
+
+	attack_names.clear();
+	observed_color_table.clear();
+	accessibility_observed_color_table.clear();
+
+	strcpy_s(traitor_name, "Traitor");
+	Iff_traitor = 0;
+	AccessiblitySupported = false;
+
+	// the table's built-in colors are created before it sets the brightness, so they use this initial value
+	iff_bright_delta = 0;
+
+	// the table only adds flags to this
+	radar_target_id_flags = 0;
 }
 
 /**

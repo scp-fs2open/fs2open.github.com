@@ -13,6 +13,12 @@ SexpTreeActions::SexpTreeActions(SexpTreeModel& model, ISexpTreeUI& ui)
 {
 }
 
+void SexpTreeActions::set_node_flags(int node_index, int flags)
+{
+	_model.tree_nodes[node_index].flags = flags;
+	_ui.ui_set_item_editable(_model.tree_nodes[node_index].handle, (flags & EDITABLE) != 0);
+}
+
 // Free all children of a node from both the model and the UI widget.
 // After this call, the node has no children in either layer.
 void SexpTreeActions::clear_node_children(int node_index)
@@ -52,7 +58,7 @@ void SexpTreeActions::replace_data(const char* data, int type)
 	_ui.ui_set_item_text(h, data);
 	NodeImage bmap = _model.get_data_image(node_idx);
 	_ui.ui_set_item_image(h, bmap);
-	_model.tree_nodes[node_idx].flags = EDITABLE;
+	set_node_flags(node_idx, EDITABLE);
 
 	// check remaining data beyond replaced data for validity
 	verify_and_fix_arguments(_model.tree_nodes[node_idx].parent);
@@ -82,7 +88,7 @@ void SexpTreeActions::replace_variable_data(int var_idx, int type)
 	void* h = _model.tree_nodes[node_idx].handle;
 	_ui.ui_set_item_text(h, buf);
 	_ui.ui_set_item_image(h, NodeImage::VARIABLE);
-	_model.tree_nodes[node_idx].flags = NOT_EDITABLE;
+	set_node_flags(node_idx, NOT_EDITABLE);
 
 	// check remaining data beyond replaced data for validity
 	verify_and_fix_arguments(_model.tree_nodes[node_idx].parent);
@@ -105,7 +111,7 @@ void SexpTreeActions::replace_container_name(const sexp_container& container)
 	void* h = _model.tree_nodes[node_idx].handle;
 	_ui.ui_set_item_image(h, NodeImage::CONTAINER_NAME);
 	_ui.ui_set_item_text(h, container.container_name.c_str());
-	_model.tree_nodes[node_idx].flags = NOT_EDITABLE;
+	set_node_flags(node_idx, NOT_EDITABLE);
 
 	if (_model.modified)
 		*_model.modified = 1;
@@ -151,7 +157,7 @@ void SexpTreeActions::replace_container_data(const sexp_container& container,
 	void* h = _model.tree_nodes[node_idx].handle;
 	_ui.ui_set_item_image(h, NodeImage::CONTAINER_DATA);
 	_ui.ui_set_item_text(h, container.container_name.c_str());
-	_model.tree_nodes[node_idx].flags = NOT_EDITABLE;
+	set_node_flags(node_idx, NOT_EDITABLE);
 
 	if (set_default_modifier) {
 		add_default_modifier(container);
@@ -174,7 +180,7 @@ void SexpTreeActions::replace_operator(const char* op)
 	_model.set_node(node_idx, (SEXPT_OPERATOR | SEXPT_VALID), op);
 	void* h = _model.tree_nodes[node_idx].handle;
 	_ui.ui_set_item_text(h, op);
-	_model.tree_nodes[node_idx].flags = OPERAND;
+	set_node_flags(node_idx, OPERAND);
 
 	if (_model.modified)
 		*_model.modified = 1;
@@ -207,10 +213,10 @@ void SexpTreeActions::expand_operator(int node)
 		Assertion(_model.tree_nodes[data].child == -1, "Child %d of node %d unexpectedly has its own children (child %d)", data, node, _model.tree_nodes[data].child);
 
 		_ui.ui_set_item_text(h, _model.tree_nodes[node].text);
-		_model.tree_nodes[node].flags = OPERAND;
+		set_node_flags(node, OPERAND);
 		NodeImage bmap = _model.get_data_image(data);
 		_model.tree_nodes[data].handle = _ui.ui_insert_item(_model.tree_nodes[data].text, bmap, h, nullptr);
-		_model.tree_nodes[data].flags = EDITABLE;
+		set_node_flags(data, EDITABLE);
 		_ui.ui_expand_item(h);
 	}
 }
@@ -232,7 +238,7 @@ int SexpTreeActions::add_data(const char* data, int type)
 	_model.set_node(node, type, data);
 	NodeImage bmap = _model.get_data_image(node);
 	_model.tree_nodes[node].handle = _ui.ui_insert_item(data, bmap, _model.tree_nodes[node_idx].handle, nullptr);
-	_model.tree_nodes[node].flags = EDITABLE;
+	set_node_flags(node, EDITABLE);
 	if (_model.modified)
 		*_model.modified = 1;
 	return node;
@@ -252,7 +258,7 @@ int SexpTreeActions::add_variable_data(const char* data, int type)
 	int node = _model.allocate_node(node_idx);
 	_model.set_node(node, type, data);
 	_model.tree_nodes[node].handle = _ui.ui_insert_item(data, NodeImage::VARIABLE, _model.tree_nodes[node_idx].handle, nullptr);
-	_model.tree_nodes[node].flags = NOT_EDITABLE;
+	set_node_flags(node, NOT_EDITABLE);
 	if (_model.modified)
 		*_model.modified = 1;
 	return node;
@@ -275,7 +281,7 @@ int SexpTreeActions::add_container_name(const char* container_name)
 	_model.set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_NAME | SEXPT_STRING), container_name);
 	_model.tree_nodes[node].handle =
 		_ui.ui_insert_item(container_name, NodeImage::CONTAINER_NAME, _model.tree_nodes[node_idx].handle, nullptr);
-	_model.tree_nodes[node].flags = NOT_EDITABLE;
+	set_node_flags(node, NOT_EDITABLE);
 	if (_model.modified)
 		*_model.modified = 1;
 	return node;
@@ -296,7 +302,7 @@ void SexpTreeActions::add_container_data(const char* container_name)
 	_model.set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_DATA | SEXPT_STRING), container_name);
 	_model.tree_nodes[node].handle =
 		_ui.ui_insert_item(container_name, NodeImage::CONTAINER_DATA, _model.tree_nodes[node_idx].handle, nullptr);
-	_model.tree_nodes[node].flags = NOT_EDITABLE;
+	set_node_flags(node, NOT_EDITABLE);
 	_model.item_index = node;
 	if (_model.modified)
 		*_model.modified = 1;
@@ -322,7 +328,7 @@ void SexpTreeActions::add_operator(const char* op, void* parent_handle)
 		_model.tree_nodes[node].handle = _ui.ui_insert_item(op, NodeImage::OPERATOR, _model.tree_nodes[_model.item_index].handle, nullptr);
 	}
 
-	_model.tree_nodes[node].flags = OPERAND;
+	set_node_flags(node, OPERAND);
 	_model.item_index = node;
 	if (_model.modified)
 		*_model.modified = 1;
@@ -391,7 +397,7 @@ void SexpTreeActions::add_or_replace_operator(int op, int replace_flag)
 				if (i < 0) {
 					_model.set_node(_model.item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 					_ui.ui_set_item_text(_model.tree_nodes[_model.item_index].handle, Operators[op].text.c_str());
-					_model.tree_nodes[_model.item_index].flags = OPERAND;
+					set_node_flags(_model.item_index, OPERAND);
 					return;
 				}
 			}
@@ -498,7 +504,6 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 
 	const int node = _model.allocate_node(parent_node, wrapped_node);
 	_model.set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
-	_model.tree_nodes[node].flags = node_flags;
 
 	void* parent_handle = nullptr;
 	if (parent_node >= 0) {
@@ -521,6 +526,7 @@ int SexpTreeActions::insert_operator(int op, void* root_parent_handle)
 	}
 
 	_model.tree_nodes[node].handle = _ui.ui_insert_item(Operators[op].text.c_str(), NodeImage::OPERATOR, parent_handle, wrapped_handle);
+	set_node_flags(node, node_flags);
 
 	_ui.ui_move_branch(wrapped_node, node);
 	_model.item_index = node;

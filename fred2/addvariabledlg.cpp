@@ -70,24 +70,21 @@ BOOL CAddVariableDlg::OnInitDialog() {
 	m_create = false;
 
 	//create tool tip controls
-	m_ProgressToolTip = new CToolTipCtrl();
-	m_ProgressToolTip->Create(this);
-	m_CloseToolTip = new CToolTipCtrl();
-	m_CloseToolTip->Create(this);
-	m_EternalToolTip = new CToolTipCtrl();
-	m_EternalToolTip->Create(this);
+	m_ProgressToolTip.Create(this);
+	m_CloseToolTip.Create(this);
+	m_EternalToolTip.Create(this);
 
 	CWnd* pWnd = GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT);
-	m_ProgressToolTip->AddTool(pWnd, "This type of variable will save when the player clicks Accept to go to the next mission");
-	m_ProgressToolTip->Activate(TRUE);
+	m_ProgressToolTip.AddTool(pWnd, "This type of variable will save when the player clicks Accept to go to the next mission");
+	m_ProgressToolTip.Activate(TRUE);
 
 	pWnd = GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT);
-	m_CloseToolTip->AddTool(pWnd, "This type of variable will save when the player leaves the mission");
-	m_CloseToolTip->Activate(TRUE);
+	m_CloseToolTip.AddTool(pWnd, "This type of variable will save when the player leaves the mission");
+	m_CloseToolTip.Activate(TRUE);
 
 	pWnd = GetDlgItem(IDC_TYPE_ETERNAL);
-	m_EternalToolTip->AddTool(pWnd, "This type of variable is saved to the player file. So it can be referred to by other campaigns");
-	m_EternalToolTip->Activate(TRUE);
+	m_EternalToolTip.AddTool(pWnd, "This type of variable is saved to the player file. So it can be referred to by other campaigns");
+	m_EternalToolTip.Activate(TRUE);
 	
 	// Send default name and values into dialog box
 	UpdateData(FALSE);
@@ -98,9 +95,9 @@ BOOL CAddVariableDlg::OnInitDialog() {
 
 BOOL CAddVariableDlg::PreTranslateMessage(MSG* pMsg) {
 
-	m_ProgressToolTip->RelayEvent(pMsg);
-	m_CloseToolTip->RelayEvent(pMsg);
-	m_EternalToolTip->RelayEvent(pMsg);
+	m_ProgressToolTip.RelayEvent(pMsg);
+	m_CloseToolTip.RelayEvent(pMsg);
+	m_EternalToolTip.RelayEvent(pMsg);
 
 	return CDialog::PreTranslateMessage(pMsg);
 }

@@ -55,7 +55,7 @@ void MissionSpecDialogModel::initializeData() {
 	}
 
 	_m_type = The_mission.game_type;
-	_m_ai_profile = AI_PROFILES_INDEX(The_mission.ai_profile);
+	_m_ai_profile = The_mission.ai_profile_index;
 
 	_m_event_music = Current_soundtrack_num + 1;
 	_m_substitute_event_music = The_mission.substitute_event_music_name;
@@ -77,11 +77,7 @@ void MissionSpecDialogModel::initializeData() {
 	_m_support_rearm_settings.limitRearmToPool = The_mission.flags[Mission::Mission_Flags::Limited_support_rearm_pool];
 	_m_support_rearm_settings.rearmPoolFromLoadout = The_mission.support_ships.rearm_pool_from_loadout;
 	_m_support_rearm_settings.allowWeaponPrecedence = The_mission.support_ships.allow_rearm_weapon_precedence;
-	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
-		for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
-			_m_support_rearm_settings.rearmWeaponPool[team][i] = The_mission.support_ships.rearm_weapon_pool[team][i];
-		}
-	}
+	_m_support_rearm_settings.rearmWeaponPool = The_mission.support_ships.rearm_weapon_pool;
 
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
@@ -146,11 +142,7 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.support_ships.disallow_rearm = _m_support_rearm_settings.disallowSupportRearm;
 	The_mission.support_ships.allow_rearm_weapon_precedence = _m_support_rearm_settings.allowWeaponPrecedence;
 	The_mission.support_ships.rearm_pool_from_loadout = _m_support_rearm_settings.rearmPoolFromLoadout;
-	for (int team = 0; team < MAX_TVT_TEAMS; ++team) {
-		for (int i = 0; i < weapon_info_size(); ++i) {
-			The_mission.support_ships.rearm_weapon_pool[team][i] = _m_support_rearm_settings.rearmWeaponPool[team][i];
-		}
-	}
+	The_mission.support_ships.rearm_weapon_pool = _m_support_rearm_settings.rearmWeaponPool;
 	
 	// Copy mission flags
 	The_mission.flags = _m_flags;
@@ -189,7 +181,7 @@ bool MissionSpecDialogModel::apply() {
 		strncpy(The_mission.squad_filename, _m_squad_filename.c_str(), MAX_FILENAME_LEN);
 	}
 
-	The_mission.ai_profile = &Ai_profiles[_m_ai_profile];
+	The_mission.ai_profile_index = _m_ai_profile;
 
 	Current_soundtrack_num = _m_event_music - 1;
 	strcpy_s(The_mission.substitute_event_music_name, _m_substitute_event_music.c_str());

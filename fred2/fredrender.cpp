@@ -43,6 +43,7 @@
 #include "model/model.h"
 #include "model/model.h"
 #include "mod_table/mod_table.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "physics/physics.h"
 #include "prop/prop.h"
@@ -107,6 +108,7 @@ int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;
 int Show_coordinates = 0;
+float Fred_label_font_scale = 1.0f;
 int Show_distances = 0;
 int Show_grid = 1;
 int Show_grid_positions = 1;
@@ -114,10 +116,12 @@ int Show_horizon = 0;
 int Show_outlines = 0;
 bool Draw_outlines_on_selected_ships = true;
 bool Draw_outline_at_warpin_position = false;
+bool Orbit_selection_midpoint = false;
 int Outline_lod = 1;
 bool Always_save_display_names = false;
 bool Error_checker_checks_potential_issues = true;
 bool Error_checker_checks_potential_issues_once = false;
+bool Classic_menu_layout = false;
 int Show_stars = 1;
 int Single_axis_constraint = 0;
 int True_rw, True_rh;
@@ -486,7 +490,7 @@ void display_distances() {
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW))	{
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 						}
 				}
 
@@ -546,7 +550,7 @@ void display_ship_info() {
 
 						shipp = &Ships[objp->instance];
 						ship_type = shipp->ship_info_index;
-						ASSERT(ship_type >= 0);
+						Assert(ship_type >= 0);
 						sprintf(buf, "%s\n%s", shipp->ship_name, Ship_info[ship_type].short_name);
 
 					} else if (objp->type == OBJ_WAYPOINT) {
@@ -570,7 +574,7 @@ void display_ship_info() {
 
 							propp = prop_id_lookup(objp->instance);
 							prop_type = propp->prop_info_index;
-							ASSERT(prop_type >= 0);
+							Assert(prop_type >= 0);
 							sprintf(buf, "%s\n", propp->prop_name);
 					} else
 						Assert(0);
@@ -592,7 +596,7 @@ void display_ship_info() {
 					else
 						gr_set_color_fast(&colour_white);
 
-					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 				}
 			}
 
@@ -829,7 +833,7 @@ void fredhtl_render_subsystem_highlight(subsys_to_render *s2r, subsystem_highlig
 		g3_rotate_vertex(&text_center, &center_pt);
 		g3_project_vertex(&text_center);
 		if (!(text_center.flags & PF_OVERFLOW)) {
-			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2);
+			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2, GR_RESIZE_FULL, Fred_label_font_scale);
 		}
 	}
 }
@@ -1053,10 +1057,9 @@ void game_do_frame() {
 	}
 
 	if (Lookat_mode && query_valid_object()) {
-		float dist;
-
-		dist = vm_vec_dist(&view_pos, &Objects[cur_object_index].pos);
-		vm_vec_scale_add(&view_pos, &Objects[cur_object_index].pos, &view_orient.vec.fvec, -dist);
+		vec3d center = selection_midpoint();
+		float dist = vm_vec_dist(&view_pos, &center);
+		vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
 	}
 
 	switch (viewpoint) {
@@ -1286,6 +1289,18 @@ void move_mouse(int btn, int mdx, int mdy) {
 	}
 }
 
+vec3d selection_midpoint()
+{
+	vec3d center;
+	float radius;
+
+	if (Orbit_selection_midpoint && Marked > 1 && get_object_bounds(true, &center, &radius)) {
+		return center;
+	}
+
+	return Objects[cur_object_index].pos;
+}
+
 // ---------- Orbit camera functions ----------
 
 vec3d orbit_camera_get_pivot()
@@ -1293,8 +1308,8 @@ vec3d orbit_camera_get_pivot()
 	vec3d pivot;
 
 	if (query_valid_object()) {
-		// Pivot on current object
-		pivot = Objects[cur_object_index].pos;
+		// Pivot on the selection
+		pivot = selection_midpoint();
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid
 		pivot = ZERO_VECTOR;
@@ -1766,6 +1781,9 @@ void render_frame() {
 				GR_DEBUG_SCOPE("Draw tooltip");
 
 				gr_get_string_size(&w, &h, buf);
+				// scale the box to match the scaled label text
+				w = fl2i(w * Fred_label_font_scale);
+				h = fl2i(h * Fred_label_font_scale);
 
 				x = (int) v.screen.xyw.x;
 				y = (int) v.screen.xyw.y + 20;
@@ -1777,7 +1795,7 @@ void render_frame() {
 				gr_rect(x - 5, y - 5, w + 5, h + 5);
 
 				gr_set_color_fast(&colour_white);
-				gr_string(x, y, buf);
+				gr_string(x, y, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 			}
 	}
 
@@ -1789,8 +1807,9 @@ void render_frame() {
 
 	sprintf(buf, "(%.1f,%.1f,%.1f)", eye_pos.xyz.x, eye_pos.xyz.y, eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
+	w = fl2i(w * Fred_label_font_scale);
 	gr_set_color_fast(&colour_white);
-	gr_string(gr_screen.max_w - w - 2, 2, buf);
+	gr_string(gr_screen.max_w - w - 2, 2, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 
 	g3_end_frame();	 // ** Accounted for
 	render_compass();

@@ -134,14 +134,5 @@ ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all
 	return ade_set_args(L, "f", shield_get_max_strength(objh->objp()));
 }
 
-ADE_FUNC(isValid, l_Shields, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	object_h *oh;
-	if(!ade_get_args(L, "o", l_Shields.GetPtr(&oh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", oh->isValid());
-}
-
 }
 }

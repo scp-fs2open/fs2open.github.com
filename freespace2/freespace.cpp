@@ -63,6 +63,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/debug_sphere.h"
+#include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -72,6 +73,7 @@
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
+#include "hud/hudvr.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
 #include "hud/hudparse.h"
@@ -208,10 +210,12 @@
 
 #include <SDL3/SDL_main.h>
 
+#include <algorithm>
 #include <cinttypes>
 #include <stdexcept>
 
 #include "imgui.h"
+#include "implot.h"
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -257,6 +261,7 @@ struct big_expl_flash {
 #define FRAME_FILTER 16
 
 #define DEFAULT_SKILL_LEVEL	1
+static int Default_skill_level = DEFAULT_SKILL_LEVEL; // can be overridden by default_settings.tbl
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
 static SCP_string skill_level_display(int value)
@@ -272,6 +277,7 @@ static void parse_skill_func()
 	value -= 1; // Parse 1-5 for the skill levels but convert to our internal 0-4
 	CLAMP(value, 0, 4);
 
+	Default_skill_level = value;
 	Game_skill_level = value;
 }
 
@@ -282,7 +288,7 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
                      .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
-                     .default_func([]() { return DEFAULT_SKILL_LEVEL; })
+                     .default_func([]() { return Default_skill_level; })
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
@@ -365,7 +371,61 @@ fix FrametimeOverall = 0;
 	int	Show_framerate = 0;
 #endif
 
+static bool show_fps_default = (Show_framerate != 0);
+
+static void parse_show_fps_func()
+{
+	stuff_boolean(&show_fps_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Show_framerate = show_fps_default ? 1 : 0;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto ShowFpsOption __UNUSED = options::OptionBuilder<bool>("HUD.ShowFPS",
+                     std::pair<const char*, int>{"Show FPS", -1},
+                     std::pair<const char*, int>{"Shows the frame rate on the HUD.", -1})
+                     .category(std::make_pair("Game", 1824))
+                     .default_func([]() { return show_fps_default; })
+                     .change_listener([](bool val, bool) {
+                         Show_framerate = val ? 1 : 0;
+                         return true;
+                     })
+                     .level(options::ExpertLevel::Beginner)
+                     .importance(46)
+                     .parser(parse_show_fps_func)
+                     .finish();
+
+static constexpr int MIN_FRAMERATE_CAP = 15;
+static constexpr int MAX_FRAMERATE_CAP = 120;
 int	Framerate_cap = 120;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto FramerateCapOption = options::OptionBuilder<int>("Graphics.FramerateCap",
+                     std::pair<const char*, int>{"Frame Rate Limit", 1952},
+                     std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1953})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .range(MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP)
+                     .default_func([]() { return Framerate_cap; })
+                     .deserializer([](const json_t* value) {
+                         int saved;
+                         json_error_t err;
+                         if (json_unpack_ex(const_cast<json_t*>(value), &err, 0, "i", &saved) != 0) {
+                             throw json_exception(err);
+                         }
+                         // Clamp saved out-of-range values
+                         return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+                     })
+                     .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1954)) : std::to_string(value); })
+                     .parser([]() {
+                         int value;
+                         stuff_int(&value);
+                         Framerate_cap = std::clamp(value, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+                     })
+                     .bind_to(&Framerate_cap)
+                     .importance(72)
+                     .flags({options::OptionFlags::RangeTypeInteger})
+                     .finish();
 
 // for the model page in system
 extern void model_page_in_start();
@@ -620,7 +680,7 @@ const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 
 int game_get_default_skill_level()
 {
-	return DEFAULT_SKILL_LEVEL;
+	return Default_skill_level;
 }
 
 // Resets the flash
@@ -893,7 +953,13 @@ static void game_flash_diminish(float frametime)
 	} else {
 		Big_expl_flash.cur_flash_intensity = 0.0f;
 	}
-	
+}
+
+/**
+ * Draws the full screen flash (damage, sun glare, big explosions) over what has been rendered so far.
+ */
+static void game_flash_draw()
+{
 	if ( Use_palette_flash )	{
 		int r,g,b;
 
@@ -933,7 +999,6 @@ static void game_flash_diminish(float frametime)
 			}
 		}
 	}
-	
 }
 
 
@@ -987,6 +1052,7 @@ void game_level_close()
 		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
+		common_select_level_close();	// usually already done on the state change, but not under a scripted UI
 		model_instance_free_all();
 		batch_render_close();
 
@@ -1014,14 +1080,6 @@ void game_level_close()
 
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			model_free_all();			// Free all existing models if standalone server
-
-			// clean out interp data as it's better to allocate as needed here instead
-			// of letting it use a bunch of memory
-			extern void model_deallocate_interp_data();
-			model_deallocate_interp_data();
-
-			extern void model_collide_free_point_list();
-			model_collide_free_point_list();
 		}
 	}
 	else
@@ -1209,6 +1267,8 @@ void game_do_networking()
 
 int Game_loading_callback_inited = 0;
 int Game_loading_background = -1;
+int Game_loading_default_bground_w = 0;
+int Game_loading_default_bground_h = 0;
 generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -1251,14 +1311,36 @@ void game_loading_callback(int count)
 		framenum = new_framenum;
 
 	if ( Game_loading_ani.num_frames > 0 )	{
+		int ani_x = Game_loading_ani_coords[gr_screen.res][0];
+		int ani_y = Game_loading_ani_coords[gr_screen.res][1];
+		float ani_scale = 1.0f;
+
 		GR_MAYBE_CLEAR_RES(Game_loading_background);
 		if ( Game_loading_background > -1 )	{
+			int bg_w, bg_h;
+			bm_get_info(Game_loading_background, &bg_w, &bg_h);
+
+			// the animation is assumed to match the default background, or the default layout if there is none
+			bool have_default = (Game_loading_default_bground_w > 0) && (Game_loading_default_bground_h > 0);
+			float ref_w = i2fl(have_default ? Game_loading_default_bground_w : gr_screen.max_w_unscaled);
+			float ref_h = i2fl(have_default ? Game_loading_default_bground_h : gr_screen.max_h_unscaled);
+
+			// fit the reference into the background the way menus are fit into the screen:
+			// scaled by the limiting dimension and centered in the other
+			ani_scale = MIN(i2fl(bg_w) / ref_w, i2fl(bg_h) / ref_h);
+			ani_x = fl2i(i2fl(ani_x) * ref_w / i2fl(gr_screen.max_w_unscaled) * ani_scale + (i2fl(bg_w) - ref_w * ani_scale) / 2.0f);
+			ani_y = fl2i(i2fl(ani_y) * ref_h / i2fl(gr_screen.max_h_unscaled) * ani_scale + (i2fl(bg_h) - ref_h * ani_scale) / 2.0f);
+
+			// set the screen scale to the background's dimensions
+			gr_set_screen_scale(bg_w, bg_h);
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 
 		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
-		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1], GR_RESIZE_MENU);
+		gr_bitmap(ani_x, ani_y, GR_RESIZE_MENU, false, ani_scale);
+
+		gr_reset_screen_scale();
 
 		do_flip = 1;
 	}
@@ -1304,9 +1386,17 @@ void game_loading_callback_init()
 	Assert( Game_loading_callback_inited==0 );
 
 	Game_loading_background = bm_load(The_mission.loading_screen[gr_screen.res]);
-	
+
 	if (Game_loading_background < 0)
 		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
+
+	Game_loading_default_bground_w = 0;
+	Game_loading_default_bground_h = 0;
+	int default_bground = bm_load(Game_loading_bground_fname[gr_screen.res]);
+	if (default_bground >= 0) {
+		bm_get_info(default_bground, &Game_loading_default_bground_w, &Game_loading_default_bground_h);
+		bm_release(default_bground);
+	}
 
 	generic_anim_init(&Game_loading_ani, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_load(&Game_loading_ani);
@@ -1445,6 +1535,7 @@ void game_post_level_init()
 {
 	TRACE_SCOPE(tracing::LoadPostMissionLoad);
 
+	gr_reset_temporal_history();
 	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
@@ -1854,6 +1945,7 @@ void game_init()
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 
 	Framerate_delay = 0;
 
@@ -1912,12 +2004,23 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
+	auto* options_manager = options::OptionsManager::instance();
 	// Must be run after mod table is parsed so we know the value of Using_in_game_options
 	// Must be run before everything else inits so we can init those with the correct
 	// default values or user preferences
- 	if (Using_in_game_options) {
+	if (Using_in_game_options) {
 		default_settings_init(); // load in current preferred default options values, if any
-		options::OptionsManager::instance()->loadInitialValues();
+	}
+
+	// Apply the legacy player preference after mod defaults and before saved in-game options.
+	const auto max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0);
+	if (max_fps >= MIN_FRAMERATE_CAP && max_fps <= MAX_FRAMERATE_CAP &&
+		(!Using_in_game_options || !options_manager->isOptionEnforced(FramerateCapOption->getConfigKey()))) {
+		Framerate_cap = static_cast<int>(max_fps);
+	}
+
+	if (Using_in_game_options) {
+		options_manager->loadInitialValues();
 	}
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
@@ -1946,6 +2049,11 @@ void game_init()
 		std_init_standalone();
 	}
 
+	if (Cmdline_NoFPSCap) {
+		options::OptionsManager::instance()->setOverride("Graphics.FramerateCap",
+			std::unique_ptr<json_t>(json_integer(Framerate_cap)), "-no_fps_capping");
+	}
+
 	// verify that he has a valid ships.tbl (will Game_ships_tbl_valid if so)
 	verify_ships_tbl();
 
@@ -1960,15 +2068,7 @@ void game_init()
 	Use_fullscreen_at_startup = os_config_read_uint( nullptr, NOX("ForceFullscreen"), 1 );
 #endif
 
-	// change FPS cap if told to do so (for those who can't use vsync or where vsync isn't enough)
-	uint max_fps = 0;
-	if ( (max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0)) != 0 ) {
-		if ( (max_fps > 15) && (max_fps < 120) ) {
-			Framerate_cap = (int)max_fps;
-		}
-	}
-
-	Asteroids_enabled = 1;		
+	Asteroids_enabled = 1;
 
 /////////////////////////////
 // SOUND INIT START
@@ -1997,6 +2097,8 @@ void game_init()
 		exit(1);
 		return;
 	}
+
+	hud_vr_init();
 
 	if (LoggingEnabled && Cmdline_debug_window) {
 		outwnd_debug_window_init();
@@ -2031,6 +2133,9 @@ void game_init()
 
 	font::init();					// loads up all fonts
 	font::checkFontOptions();
+
+	// Initialize the mod-defined ImGui font after the font tables have been loaded.
+	gr_init_imgui_font();
 	
 	// add title screen
 	game_title_screen_display();
@@ -2321,27 +2426,9 @@ void game_show_framerate()
 	}
 #endif
 
-	if ((Show_framerate && HUD_draw) || Cmdline_frame_profile || Cmdline_bmpman_usage) {
+	if ((Show_framerate && HUD_draw) || Cmdline_bmpman_usage) {
 
 		gr_set_color_fast(&HUD_color_debug);
-
-		if (Cmdline_frame_profile) {
-			// Split frame profile into two columns if necessary to avoid losing trace data
-			int fp_start_y = gr_screen.center_offset_y + 100 + line_height;
-			int fp_line_limit = (gr_screen.max_h - fp_start_y) / line_height;
-			size_t fp_column_break = 0;
-			auto fp_trace_str = tracing::get_frame_profile_output();
-
-			for (int i = 0; i < fp_line_limit && fp_column_break < fp_trace_str.length(); i++) {
-				fp_column_break = fp_trace_str.find_first_of('\n', fp_column_break+1);
-			}
-
-			gr_string(gr_screen.center_offset_x + 20, fp_start_y, fp_trace_str.substr(0,fp_column_break).c_str(), GR_RESIZE_NONE);
-
-			if (fp_column_break < fp_trace_str.length()) {
-				gr_string(gr_screen.max_w / 2, fp_start_y, fp_trace_str.substr(fp_column_break, fp_trace_str.npos).c_str(), GR_RESIZE_NONE);
-			}
-		}
 
 		if (Show_framerate) {
 			if (frametotal != 0.0f)
@@ -2383,15 +2470,15 @@ void game_show_framerate()
 		MEMORYSTATUSEX mem_stats;
 		mem_stats.dwLength = sizeof(mem_stats);
 		if (GlobalMemoryStatusEx(&mem_stats)) {
-			sprintf(mem_buffer, "Physical Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
+			sprintf(mem_buffer, "Physical Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Pagefile Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
+			sprintf(mem_buffer, "Pagefile Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Virtual Free:  %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
+			sprintf(mem_buffer, "Virtual Free:  " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 		}
 	}
@@ -2457,7 +2544,6 @@ void game_show_framerate()
 	modelstats_num_polys = 0;
 	modelstats_num_polys_drawn = 0;
 	modelstats_num_verts = 0;
-	modelstats_num_sortnorms = 0;
 #endif
 }
 
@@ -3005,7 +3091,7 @@ DCF(framerate_cap, "Sets the framerate cap")
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: framerate_cap [n]\nwhere n is the frames per second to cap framerate at.\n");
 		dc_printf("If n is 0 or omitted, then the framerate cap is removed\n");
-		dc_printf("[n] must be from 1 to 120.\n");
+		dc_printf("[n] must be from 1 to %d.\n", MAX_FRAMERATE_CAP);
 		process = false;
 	}
 
@@ -3027,8 +3113,8 @@ DCF(framerate_cap, "Sets the framerate cap")
 		Framerate_cap = 0;
 	}
 
-	if ((Framerate_cap < 0) || (Framerate_cap > 120)) {
-		dc_printf( "Illegal value for framerate cap. (Must be from 1-120) \n");
+	if ((Framerate_cap < 0) || (Framerate_cap > MAX_FRAMERATE_CAP)) {
+		dc_printf("Illegal value for framerate cap. (Must be from 1-%d) \n", MAX_FRAMERATE_CAP);
 		Framerate_cap = 0;
 	}
 
@@ -3289,6 +3375,9 @@ camid game_render_frame_setup()
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
 	bool camera_cut = false;
+	if (last_Viewer_mode != Viewer_mode) {
+		gr_reset_temporal_history();
+	}
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3621,6 +3710,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	gr_capture_scene_camera();
 
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
@@ -3998,30 +4088,36 @@ bool game_actually_playing()
 	return (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_DEATH_DIED) || (state == GS_STATE_DEATH_BLEW_UP);
 }
 
-void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
+void game_render_hud(camid cid)
 {
 	gr_reset_clip();
 
-	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
-	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
+	const bool vr_panel = hud_vr_drawing_panel();
 
 	if(cid.isValid()) {
 		g3_start_frame(0);		// 0 = turn zbuffering off
-		g3_set_view( cid.getCamera() );
 
-		if (fov_override)
-			g3_set_fov(*fov_override);
+		if (vr_panel) {
+			hud_vr_set_view();
+		} else {
+			g3_set_view( cid.getCamera() );
+		}
 
-		hud_render_preprocess(frametime);
+		hud_render_preprocess(flFrametime);
 
 		g3_end_frame();
 	}
 
 	// main HUD rendering function
-	hud_render_all(frametime);
+	hud_render_all(flFrametime);
 
 	// Diminish the palette effect
 	game_flash_diminish(flFrametime);
+
+	// It covers each eye's whole view, so it goes over the VR HUD panel instead of into it
+	if (!vr_panel) {
+		game_flash_draw();
+	}
 }
 
 //100% blackness
@@ -4184,6 +4280,13 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	camid cid = game_render_frame_setup();
 
+	// The VR HUD panel hangs off the camera as set up here, before game_render_frame() adds the head tracking to it
+	vec3d hud_camera_pos = vmd_zero_vector;
+	matrix hud_camera_orient = vmd_identity_matrix;
+	if (openxr_in_stereo_frame() && cid.getCamera() != nullptr) {
+		cid.getCamera()->get_info(&hud_camera_pos, &hud_camera_orient);
+	}
+
 	game_render_frame(cid, offset, rot_offset, fov_override);
 
 	//Cutscene bars
@@ -4194,38 +4297,51 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 		cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
 	}
 
-	Scripting_didnt_draw_hud = 1;
-	auto scripting_param_list = scripting::hook_param_list(
-		scripting::hook_param("Self", 'o', Viewer_obj),
-		scripting::hook_param("Player", 'o', Player_obj)
-	);
+	const auto vr_hud = hud_vr_begin_maybe(&hud_camera_pos, &hud_camera_orient);
 
-	if (scripting::hooks::OnHudDraw->isActive()) {
-		Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
-	}
+	if (vr_hud != VrHudPass::Reuse) {
+		Scripting_didnt_draw_hud = 1;
+		auto scripting_param_list = scripting::hook_param_list(
+			scripting::hook_param("Self", 'o', Viewer_obj),
+			scripting::hook_param("Player", 'o', Player_obj)
+		);
 
-	if (Scripting_didnt_draw_hud) {
-		GR_DEBUG_SCOPE("Render HUD");
-		TRACE_SCOPE(tracing::RenderHUD);
-
-		game_render_hud(cid, fov_override);
-	}
-	HUD_reset_clip();
-
-	if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
-		anim_render_all(0, flFrametime);
-	}
-
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
-	{
-		TRACE_SCOPE(tracing::RenderHUDHook);
-
-		// see also hu.isOnHudDrawCalled()
 		if (scripting::hooks::OnHudDraw->isActive()) {
-			if (fov_override)
-				g3_set_fov(*fov_override);
+			Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
+		}
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
+		if (Scripting_didnt_draw_hud) {
+			GR_DEBUG_SCOPE("Render HUD");
+			TRACE_SCOPE(tracing::RenderHUD);
+
+			game_render_hud(cid);
+		}
+		HUD_reset_clip();
+
+		if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
+			anim_render_all(0, flFrametime);
+		}
+
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+		{
+			TRACE_SCOPE(tracing::RenderHUDHook);
+
+			// see also hu.isOnHudDrawCalled()
+			if (scripting::hooks::OnHudDraw->isActive()) {
+				scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
+			}
+		}
+	}
+
+	if (vr_hud == VrHudPass::Panel) {
+		hud_vr_end();
+	}
+
+	if (vr_hud != VrHudPass::Direct) {
+		hud_vr_draw_panel(*fov_override);
+
+		if (Scripting_didnt_draw_hud) {
+			game_flash_draw();
 		}
 	}
 
@@ -4414,10 +4530,6 @@ void game_frame(bool paused)
 
 	// process lightning (nebula only)
 	nebl_process();
-
-	if (Cmdline_frame_profile) {
-		tracing::frame_profile_process_frame();
-	}
 
 	DEBUG_GET_TIME( total_time2 )
 
@@ -4721,6 +4833,11 @@ int game_check_key()
 
 bool pause_if_unfocused()
 {
+	// nobody is at the keyboard in a noninteractive run, so losing focus must not stop it
+	if (Cmdline_noninteractive) {
+		return false;
+	}
+
 	if (Using_in_game_options) {
 		return UnfocusedPauseOption->getValue();
 	} else {
@@ -5224,7 +5341,7 @@ void game_process_event( int current_state, int event )
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
 
-				if (!(The_mission.ai_profile->flags[AI::Profile_Flags::No_warp_camera])) {
+				if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::No_warp_camera])) {
 					Player->saved_viewer_mode = Viewer_mode;
 					Viewer_mode |= VM_WARP_CHASE;
 					Warp_camera = warp_camera(Player_obj);
@@ -5260,8 +5377,8 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act accordingly
-			if( player_select_get_last_pilot() ) {	
+			// see if the command line has been set to select a pilot automatically, and act accordingly
+			if( player_select_try_auto_select() ) {
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
 				gameseq_set_state(GS_STATE_MAIN_MENU);
@@ -5887,6 +6004,13 @@ void game_enter_state( int old_state, int new_state )
 		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
 		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
+	// consume the flag before any script override, so that it can't remain set for a later main hall entry
+	bool pilot_just_committed = false;
+	if (new_state == GS_STATE_MAIN_MENU) {
+		pilot_just_committed = Player_select_pilot_just_committed;
+		Player_select_pilot_just_committed = false;
+	}
+
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
 			scripting::hooks::OnStateStart->run(std::move(script_param_list));
@@ -5915,8 +6039,8 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
-			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
+			// if we have just selected a pilot, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(pilot_just_committed);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
 			if (result != 0) {
@@ -7021,7 +7145,7 @@ int game_main(int argc, char *argv[])
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone && !skip_intro) {
+	if (!Is_standalone && !skip_intro && !player_select_auto_select_requested()) {
 		movie::play("intro.mve");
 	}
 
@@ -7154,6 +7278,7 @@ void game_shutdown(void)
 		std_deinit_standalone();
 	}
 
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
 	os_cleanup();
@@ -7167,7 +7292,7 @@ void game_shutdown(void)
 		Cmdline_mod = nullptr;
 	}
 
-	lcl_xstr_close();
+	lcl_close();
 
 	threading::shut_down_task_pool();
 }
@@ -7502,7 +7627,6 @@ void Time_model( int modelnum )
 
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
-		model_set_detail_level(0);		// use highest detail level
 		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();
@@ -8168,6 +8292,12 @@ int main(int argc, char *argv[])
 	crashdump::installCrashHandler();
 
 #ifdef WIN32
+#ifndef __MINGW32__
+	// Report leaks when the CRT shuts down, i.e. after static destructors have run.  Calling
+	// _CrtDumpMemoryLeaks() at the end of main() would report every global container as a leak.
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
 	// Don't let more than one instance of FreeSpace run.
 	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), nullptr);
 	if (hwnd)	{
@@ -8247,11 +8377,14 @@ int main(int argc, char *argv[])
 	SCP_mspdbcs_Cleanup();
 
 	::CoUninitialize();
-
-#ifndef __MINGW32__
-	_CrtDumpMemoryLeaks();
-#endif
 #endif
 
 	return result;
 }
+
+#ifdef __ANDROID__
+extern "C" int android_main(int argc, char* argv[])
+{
+	return main(argc, argv);
+}
+#endif

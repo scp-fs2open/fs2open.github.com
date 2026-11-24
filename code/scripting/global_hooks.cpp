@@ -353,7 +353,7 @@ const std::shared_ptr<Hook<ShipDepartConditions>> OnShipDepart = Hook<ShipDepart
 	{
 		{"Ship", "ship", "The ship departing the mission"},
 		{"JumpNode", "string", "The name of the jump node the ship was in when it departed. Can be nil."},
-		{"Method", "ship", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
+		{"Method", "string", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
 	});
 
 const std::shared_ptr<Hook<WeaponDeathConditions>> OnWeaponDelete = Hook<WeaponDeathConditions>::Factory("On Weapon Delete",
@@ -557,6 +557,22 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 	"Called every frame when the camera is positioned and oriented for rendering.",
 	{
 		{"Camera", "camera", "The camera about to be used for rendering."},
+	});
+
+const std::shared_ptr<Hook<ShipDamageConditions>> OnShipDamage = Hook<ShipDamageConditions>::Factory(
+	"On Ship Damage", "Called after damage is applied to a ship; lethal hits run before the On Ship Death Started hook.  "
+		"Only called where damage is applied: in single player and on a multiplayer server, not on multiplayer clients.",
+	{
+		{"Target", "ship", "The ship that took the damage."},
+		{"Source", "object", "The weapon, beam, shockwave, or other object that caused the damage. Could be nil."},
+		{"Attacker", "object", "The source ship or parent object, if available."},
+		{"SourceKind", "string", "NON_BEAM_WEAPON, BEAM, SHOCKWAVE, COLLISION, EXPLOSION, WASH, SELF (the ship damaged itself, such as a self-destruct), or OTHER."},
+		{"DamageType", "string", "The damage type, or UNKNOWN if none is defined."},
+		{"ShieldDamage", "number", "Actual total shield strength removed by this damage application."},
+		{"HullDamage", "number", "Actual hull strength removed, clamped to the target's remaining hull."},
+		{"SubsystemDamage", "table", "Maps each subsystem's CanonicalName to the strength it lost in this damage application. Only subsystems that lost strength are listed, in no particular order."},
+		{"Quadrant", "number", "Shield quadrant hit, or -1 when no single quadrant applies."},
+		{"LethalHit", "boolean", "Whether this hit reduced positive hull strength to zero or below."},
 	});
 
 // ========== FRED HOOKS ==========

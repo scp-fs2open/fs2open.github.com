@@ -79,7 +79,7 @@ int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
 int Training_voice_type;
-int Training_voice_soundstream;
+int Training_voice_soundstream = -1;
 sound_handle Training_voice_snd_handle;
 int Training_flag = 0;
 int Training_failure = 0;
@@ -219,9 +219,10 @@ bool HudGaugeDirectives::canRender() const
 	}
 
 	if (render_for_cockpit_toggle > 0) {
-		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+		bool cockpit_active = ship_render_player_cockpit_active();
+		if (cockpit_active && (render_for_cockpit_toggle == 2)) {
 			return false;
-		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+		} else if (!cockpit_active && (render_for_cockpit_toggle == 1)) {
 			return false;
 		}
 	}
@@ -698,6 +699,7 @@ void training_mission_shutdown()
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
 			audiostream_close_file(Training_voice_soundstream, false);
+			Training_voice_soundstream = -1;
 
 		} else {
 			snd_stop(Training_voice_snd_handle);
@@ -831,6 +833,7 @@ int message_play_training_voice(int index)
 		if (Training_voice >= 0) {
 			if (Training_voice_type) {
 				audiostream_close_file(Training_voice_soundstream, false);
+				Training_voice_soundstream = -1;
 
 			} else {
 				snd_stop(Training_voice_snd_handle);
@@ -852,10 +855,8 @@ int message_play_training_voice(int index)
 			if ((Training_voice < 0) || !Training_voice_type || (Training_voice != index)) {
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
-						if (Training_voice == index)
-							audiostream_stop(Training_voice_soundstream, 1, 0);
-						else
-							audiostream_close_file(Training_voice_soundstream, false);
+						audiostream_close_file(Training_voice_soundstream, false);
+						Training_voice_soundstream = -1;
 
 					} else {
 						snd_stop(Training_voice_snd_handle);
@@ -891,6 +892,7 @@ int message_play_training_voice(int index)
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
 			audiostream_close_file(Training_voice_soundstream, false);
+			Training_voice_soundstream = -1;
 
 		} else {
 			snd_stop(Training_voice_snd_handle);

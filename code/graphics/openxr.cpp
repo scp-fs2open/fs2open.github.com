@@ -32,6 +32,10 @@ XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
 float xr_scale = 1.0f;
 
+// How xr_space sits in the runtime's LOCAL space. Recentering turns it to the head's heading.
+static XrPosef xr_space_pose{ XrQuaternionf{ 0, 0, 0, 1 }, XrVector3f{ 0, 0, 0 } };
+static bool xr_recenter_requested = false;
+
 #if !defined(NDEBUG) && defined(FS_OPENXR_DEBUG)
 static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* /*userData*/) {
 	SCP_string message;
@@ -69,12 +73,31 @@ static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDe
 }
 #endif
 
-void openxr_prepare(float hudscale) {
-	Hud_global_scale = hudscale;
+void openxr_prepare() {
 	openxr_req = true;
 }
 
+static void openxr_check_api_layers() {
+	uint32_t layerCount = 0;
+	if (xrEnumerateApiLayerProperties(0, &layerCount, nullptr) != XR_SUCCESS || layerCount == 0)
+		return;
+
+	SCP_vector<XrApiLayerProperties> layers(layerCount, XrApiLayerProperties { XR_TYPE_API_LAYER_PROPERTIES, nullptr, "", 0, 0, "" });
+	if (xrEnumerateApiLayerProperties(layerCount, &layerCount, layers.data()) != XR_SUCCESS)
+		return;
+
+	for (const auto& layer : layers) {
+		mprintf(("OpenXR API layer: %s (version %u)\n", layer.layerName, layer.layerVersion));
+
+		if (!strcmp(layer.layerName, "XR_APILAYER_NOVENDOR_toolkit")) {
+			ReleaseWarning(LOCATION, "OpenXR Toolkit is installed and active. There are known compatibility issues with FSO that will likely crash the game.\nPlease disable or uninstall OpenXR Toolkit to use VR with FSO.");
+		}
+	}
+}
+
 static bool openxr_init_instance() {
+	openxr_check_api_layers();
+
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
@@ -184,7 +207,10 @@ static bool openxr_init_swapchains() {
 			XR_TYPE_SWAPCHAIN_CREATE_INFO,
 			nullptr,
 			0,
-			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT,
+			//Vulkan runtimes hand back images they expect to receive again in
+			//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, which requires the color
+			//attachment usage. Inert for OpenGL.
+			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT,
 			chosenFormat,
 			1,
 			xr_configurationviews[i].recommendedImageRectWidth,
@@ -220,7 +246,7 @@ static bool openxr_init_space() {
 		XR_TYPE_REFERENCE_SPACE_CREATE_INFO,
 		nullptr,
 		XR_REFERENCE_SPACE_TYPE_LOCAL,
-		XrPosef{ XrQuaternionf{ 0, 0, 0, 1 }, XrVector3f{ 0, 0, 0 } },
+		xr_space_pose,
 	};
 
 	if (xrCreateReferenceSpace(xr_session, &spaceCreateInfo, &xr_space) != XR_SUCCESS) {
@@ -228,6 +254,41 @@ static bool openxr_init_space() {
 	}
 
 	return true;
+}
+
+static XrQuaternionf openxr_quat_multiply(const XrQuaternionf& a, const XrQuaternionf& b) {
+	return XrQuaternionf{
+		a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+		a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+		a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+		a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+	};
+}
+
+static XrVector3f openxr_quat_rotate(const XrQuaternionf& q, const XrVector3f& v) {
+	const XrQuaternionf p = openxr_quat_multiply(openxr_quat_multiply(q, XrQuaternionf{ v.x, v.y, v.z, 0 }), XrQuaternionf{ -q.x, -q.y, -q.z, q.w });
+	return XrVector3f{ p.x, p.y, p.z };
+}
+
+// Turns xr_space to the head's heading as last located. Pitch and roll are left to the runtime, so the horizon stays
+// level; the position is recentered by openxr_reset_offset() as usual.
+static void openxr_recenter() {
+	// OpenXR looks down -Z, and Y is up
+	const XrVector3f forward = openxr_quat_rotate(xr_views[0].pose.orientation, XrVector3f{ 0, 0, -1 });
+	const float yaw = atan2f(-forward.x, -forward.z);
+	const XrQuaternionf heading{ 0, sinf(yaw * 0.5f), 0, cosf(yaw * 0.5f) };
+
+	const XrPosef old_pose = xr_space_pose;
+	XrSpace old_space = xr_space;
+	xr_space_pose.orientation = openxr_quat_multiply(old_pose.orientation, heading);
+
+	if (openxr_init_space()) {
+		xrDestroySpace(old_space);
+	} else {
+		mprintf(("Failed to recenter the OpenXR reference space!\n"));
+		xr_space_pose = old_pose;
+		xr_space = old_space;
+	}
 }
 
 static void openxr_init_post() {
@@ -353,6 +414,38 @@ bool openxr_enabled() {
 
 bool openxr_requested() {
 	return openxr_req;
+}
+
+std::optional<std::pair<int, int>> openxr_get_eye_resolution() {
+	const auto& view = xr_configurationviews[0];
+	if (!openxr_req || view.recommendedImageRectWidth == 0 || view.recommendedImageRectHeight == 0) {
+		return std::nullopt;
+	}
+	return std::make_pair(static_cast<int>(view.recommendedImageRectWidth), static_cast<int>(view.recommendedImageRectHeight));
+}
+
+std::optional<asymmetric_fov> openxr_get_eye_fov() {
+	if (!openxr_initialized) {
+		return std::nullopt;
+	}
+	const auto& fov = xr_views[0].fov;
+	// Still all zero if the views could not be located at startup
+	if (fov.angleUp <= fov.angleDown) {
+		return std::nullopt;
+	}
+	return asymmetric_fov{ fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown };
+}
+
+int openxr_get_current_eye() {
+	return xr_stage == OpenXRFBStage::SECOND ? 1 : 0;
+}
+
+bool openxr_in_stereo_frame() {
+	return xr_stage != OpenXRFBStage::NONE;
+}
+
+void openxr_request_recenter() {
+	xr_recenter_requested = true;
 }
 
 void openxr_reset_offset() {
@@ -489,6 +582,13 @@ void openxr_start_frame() {
 
 	xrWaitFrame(xr_session, &frameWaitInfo, &xr_state);
 
+	// Only between frames: a frame's views and layers must all be in the same space
+	const bool recenter = xr_recenter_requested;
+	if (recenter) {
+		openxr_recenter();
+		xr_recenter_requested = false;
+	}
+
 	XrViewLocateInfo viewLocateInfo {
 		XR_TYPE_VIEW_LOCATE_INFO,
 		nullptr,
@@ -517,6 +617,10 @@ void openxr_start_frame() {
 		xr_views.data()
 	);
 
+	if (recenter) {
+		openxr_reset_offset();
+	}
+
 	XrFrameBeginInfo beginFrameInfo{ XR_TYPE_FRAME_BEGIN_INFO, nullptr };
 	xrBeginFrame(xr_session, &beginFrameInfo);
 }
@@ -525,9 +629,9 @@ void openxr_start_frame() {
 // Stubs for when building without OpenXR support.
 // NOTE: macOS has issues linking with OpenXR.
 
-void openxr_prepare(float hudscale) {}
+void openxr_prepare() {}
 
-float openxr_preinit(float req_ar, float scale) {
+float openxr_preinit(float /*req_ar*/, float /*scale*/) {
 	mprintf(("Cannot create OpenXR session. Not built with OpenXR support.\n"));
 	return 0.0f;
 }
@@ -543,6 +647,16 @@ void openxr_start_mission() {}
 bool openxr_enabled() { return false; }
 
 bool openxr_requested() { return false; }
+
+std::optional<std::pair<int, int>> openxr_get_eye_resolution() { return std::nullopt; }
+
+std::optional<asymmetric_fov> openxr_get_eye_fov() { return std::nullopt; }
+
+int openxr_get_current_eye() { return 0; }
+
+bool openxr_in_stereo_frame() { return false; }
+
+void openxr_request_recenter() {}
 
 OpenXRTrackingInfo openxr_start_stereo_frame() { return OpenXRTrackingInfo{}; }
 

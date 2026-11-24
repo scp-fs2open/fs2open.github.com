@@ -250,6 +250,51 @@ ADE_FUNC(getValidValues,
 
 	return ade_set_args(L, "t", &table);
 }
+ADE_VIRTVAR(OverrideReason,
+	l_Option,
+	nullptr,
+	"If this option's value is currently forced by something outside the options system, this is a human-readable "
+	"description of what forces it: the flag for a command line override (e.g. \"-no_vsync\"), or \"an active mod\". "
+	"See OverrideSource to tell the two apart. nil if the option is not currently overridden.",
+	"string",
+	"The override reason, or nil if not overridden or on error")
+{
+	option_h* opt;
+	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!opt->isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	auto reason = options::OptionsManager::instance()->getOverrideReason(opt->get()->getConfigKey());
+	if (!reason.has_value()) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", reason->c_str());
+}
+ADE_VIRTVAR(OverrideSource,
+	l_Option,
+	nullptr,
+	"What is forcing this option's value: \"CommandLine\" for a command line flag, \"Mod\" for an active mod's tables. "
+	"nil if the option is not currently overridden.",
+	"string",
+	"The override source, or nil if not overridden or on error")
+{
+	option_h* opt;
+	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!opt->isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	auto source = options::OptionsManager::instance()->getOverrideSource(opt->get()->getConfigKey());
+	if (!source.has_value()) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", (*source == options::OverrideSource::Mod) ? "Mod" : "CommandLine");
+}
 ADE_FUNC(persistChanges, l_Option, nullptr,
          "Immediately persists any changes made to this specific option.", "boolean",
          "true if the change was applied successfully, false otherwise. nil on error.")

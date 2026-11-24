@@ -259,6 +259,63 @@
     <addaction name="actionMusic_Player"/>
     <addaction name="actionError_Checker"/>
    </widget>
+   <widget class="QMenu" name="menuClassicEditors">
+    <property name="title">
+     <string>E&amp;ditors</string>
+    </property>
+    <addaction name="actionShips"/>
+    <addaction name="actionWings"/>
+    <addaction name="actionObject_Orientation"/>
+    <addaction name="actionProps"/>
+    <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionJump_Nodes"/>
+    <addaction name="separator"/>
+    <addaction name="actionMission_Specs"/>
+    <addaction name="actionMission_Goals"/>
+    <addaction name="actionMission_Events"/>
+    <addaction name="actionMission_Cutscenes"/>
+    <addaction name="actionVariables"/>
+    <addaction name="actionVoice_Acting_Manager"/>
+    <addaction name="separator"/>
+    <addaction name="actionFiction_Viewer"/>
+    <addaction name="actionCommand_Briefing"/>
+    <addaction name="actionLoadout"/>
+    <addaction name="actionBriefing"/>
+    <addaction name="actionDebriefing"/>
+    <addaction name="separator"/>
+    <addaction name="actionBackground"/>
+    <addaction name="actionAsteroid_Field"/>
+    <addaction name="actionVolumetric_Nebula"/>
+    <addaction name="separator"/>
+    <addaction name="actionReinforcements"/>
+    <addaction name="actionShield_System"/>
+    <addaction name="actionSet_Global_Ship_Flags"/>
+    <addaction name="actionReorder_Objects"/>
+    <addaction name="separator"/>
+    <addaction name="actionCampaign"/>
+   </widget>
+   <widget class="QMenu" name="menuClassicMisc">
+    <property name="title">
+     <string>&amp;Misc</string>
+    </property>
+    <addaction name="actionNext_Object"/>
+    <addaction name="actionPrev_Object"/>
+    <addaction name="actionControl_Object"/>
+    <addaction name="actionLevel_Object"/>
+    <addaction name="actionAlign_Object"/>
+    <addaction name="separator"/>
+    <addaction name="actionNext_Subsystem"/>
+    <addaction name="actionPrev_Subsystem"/>
+    <addaction name="actionCancel_Subsystem"/>
+    <addaction name="separator"/>
+    <addaction name="actionMark_Wing"/>
+    <addaction name="actionCalculate_Relative_Coordinates"/>
+    <addaction name="actionWaypointPathGenerator"/>
+    <addaction name="actionMission_Statistics"/>
+    <addaction name="actionMusic_Player"/>
+    <addaction name="separator"/>
+    <addaction name="actionError_Checker"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
@@ -269,6 +326,8 @@
    <addaction name="menuMission"/>
    <addaction name="menuNarrative"/>
    <addaction name="menuTools"/>
+   <addaction name="menuClassicEditors"/>
+   <addaction name="menuClassicMisc"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>

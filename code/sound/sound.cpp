@@ -48,7 +48,7 @@ struct loaded_sound {
 SCP_vector<loaded_sound> Sounds;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off
-size_t Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
+size_t Snd_sram;								// bytes held in OpenAL sound-effect and music-streaming buffers
 
 float Default_sound_volume = 1.0f;		// range is 0 -> 1, used for non-music sound fx
 float Master_sound_volume = Default_sound_volume;
@@ -1012,6 +1012,8 @@ void snd_stop(sound_handle sig)
 
 	channel = ds_get_channel(sig);
 	if ( channel == -1 )
+		channel = ds_get_channel_raw(sig);	// a stopped channel must still be stopped so its loop flag is cleared
+	if ( channel == -1 )
 		return;
 	
 	currentlyLoopingSoundInfos.erase(sig);
@@ -1390,6 +1392,13 @@ void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 int snd_num_playing()
 {
 	return ds_get_number_channels();
+}
+
+sound_memory_stats snd_get_memory_stats()
+{
+	sound_memory_stats stats;
+	stats.audio_buffer_bytes = Snd_sram;
+	return stats;
 }
 
 // Return the raw sound data for a loaded sound

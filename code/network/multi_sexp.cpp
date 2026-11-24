@@ -482,6 +482,7 @@ bool sexp_network_packet::get_ship(int & value)
 bool sexp_network_packet::get_ship(ship *& shipp)
 {
     int shipnum;
+    shipp = nullptr;
 
     if (get_ship(shipnum)) {
         shipp = &Ships[shipnum];
@@ -495,6 +496,7 @@ bool sexp_network_packet::get_wing(wing *& wingp)
 {
 	int i;
     ushort netsig;
+    wingp = nullptr;
 
     if (!sexp_bytes_left || !current_argument_count) {
         return false;
@@ -519,6 +521,7 @@ bool sexp_network_packet::get_wing(wing *& wingp)
 bool sexp_network_packet::get_object(object *& value)
 {
     ushort netsig;
+    value = nullptr;
 
     if (!sexp_bytes_left || !current_argument_count) {
         return false;
@@ -541,6 +544,7 @@ bool sexp_network_packet::get_object(object *& value)
 bool sexp_network_packet::get_parse_object(p_object *& pobjp)
 {
     ushort netsig;
+    pobjp = nullptr;
 
     if (!sexp_bytes_left || !current_argument_count) {
         return false;

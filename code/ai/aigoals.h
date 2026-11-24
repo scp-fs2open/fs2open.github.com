@@ -106,6 +106,10 @@ inline bool ai_goal_is_specific_chase(ai_goal_mode ai_mode)
 {
 	return ai_mode == AI_GOAL_CHASE || ai_mode == AI_GOAL_CHASE_WING || ai_mode == AI_GOAL_CHASE_SHIP_CLASS || ai_mode == AI_GOAL_CHASE_SHIP_TYPE;
 }
+inline bool ai_goal_is_standing_chase(ai_goal_mode ai_mode)
+{
+	return ai_mode == AI_GOAL_CHASE_ANY;
+}
 
 enum class ai_achievability { ACHIEVABLE, NOT_ACHIEVABLE, NOT_KNOWN, SATISFIED };
 
@@ -179,7 +183,7 @@ extern void ai_process_mission_orders( int objnum, ai_info *aip );
 extern int ai_goal_num(ai_goal *goals);
 
 // adds goals to ships/wing through sexpressions
-extern void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data);
+extern void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data, int docker_index = -1, int dockee_index = -1);
 extern void ai_add_ship_goal_sexp(int sexp, ai_goal_type type, ai_info *aip);
 extern void ai_add_wing_goal_sexp(int sexp, ai_goal_type type, wing *wingp);
 extern void ai_add_goal_sub_sexp(int sexp, ai_goal_type type, ai_info *aip, ai_goal *aigp, const char *actor_name);

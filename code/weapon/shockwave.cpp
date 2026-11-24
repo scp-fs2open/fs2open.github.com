@@ -42,7 +42,7 @@ int Shockwave_inited = 0;
 // -----------------------------------------------------------
 // Function macros
 // -----------------------------------------------------------
-#define SW_INDEX(sw) (sw-Shockwaves)
+#define SW_INDEX(sw) (static_cast<int>((sw)-Shockwaves))
 	
 // -----------------------------------------------------------
 // Externals
@@ -142,6 +142,7 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	sw->inner_radius = sci->inner_rad;
 	sw->outer_radius = sci->outer_rad;
 	sw->damage = sci->damage;
+	sw->radius_curve_idx = sci->radius_curve_idx;
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
@@ -298,8 +299,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	if (sw->weapon_info_index >= 0)
 		wip = &Weapon_info[sw->weapon_info_index];
 	
-	if (wip && wip->shockwave.radius_curve_idx >= 0) {
-		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
+	if (sw->radius_curve_idx >= 0) {
+		float val = Curves[sw->radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
 		sw->radius = val * sw->outer_radius;
 		if (sw->radius < 0.0f)
 			sw->radius = 0.0f;
@@ -312,7 +313,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	// which by default results in shockwave applying no damage.
 	// Provide optional fix to ensure shockwave is not killed until after this frame's damage pass has run.
 	bool sw_expired = sw->time_elapsed > sw->total_time;
-	bool sw_expire_fix = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
+	bool sw_expire_fix = The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
 
 	if ( sw_expired && !sw_expire_fix ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -385,12 +386,12 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				&& Objects[shockwave_objp->parent].type == OBJ_SHIP
 				&& Ships[Objects[shockwave_objp->parent].instance].team == shipp->team) {
 				if (&Objects[shockwave_objp->parent] == objp
-					&& The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+					&& The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
 					// if this is a ship shooting itself, we use the self damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
-				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+					damage = MIN(damage, The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level]);
+				} else if (The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 					// otherwise we use the friendly damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+					damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 				}
 			}
 
@@ -414,8 +415,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (shockwave_objp->parent >= 0 && sw->weapon_info_index >= 0 &&
 				Objects[shockwave_objp->parent].type == OBJ_SHIP &&
 				Ships[Objects[shockwave_objp->parent].instance].team == Weapons[objp->instance].team &&
-				The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
-				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+				The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+				damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 			}
 
 			objp->hull_strength -= damage;
@@ -457,6 +458,19 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	}
 }
 
+// an animated base texture carries its own fade in its frames, timed like the glow map
+static bool shockwave_model_base_is_animated(int model_id)
+{
+	polymodel *pm = model_get(model_id);
+
+	for (int i = 0; i < pm->n_textures; i++) {
+		if (pm->maps[i].textures[TM_BASE_TYPE].GetNumFrames() > 1)
+			return true;
+	}
+
+	return false;
+}
+
 /**
 * Draw the shockwave identified by handle
 *
@@ -491,7 +505,8 @@ void shockwave_render(const object *objp, model_draw_list *scene)
 
 		model_render_params render_info;
 
-		render_info.set_warp_params(-1, 1.0f - (sw->radius/sw->outer_radius), scale);
+		float warp_alpha = shockwave_model_base_is_animated(sw->model_id) ? 1.0f : 1.0f - (sw->radius/sw->outer_radius);
+		render_info.set_warp_params(-1, warp_alpha, scale);
 
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 

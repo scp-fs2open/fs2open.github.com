@@ -64,6 +64,7 @@ struct VulkanBufferObject {
 	vk::Buffer frameAllocBuffer;       // VkBuffer at upload time (may be old allocator buffer after growth)
 	size_t frameAllocOffset = 0;       // Byte offset within the frame allocator buffer
 	uint32_t frameAllocFrame = UINT32_MAX; // Frame index when last allocated
+	bool orphanPending = false;        // The next offset write must not reuse the current allocation
 
 	bool isStreaming() const {
 		return usage == BufferUsageHint::Streaming || usage == BufferUsageHint::Dynamic;
@@ -117,6 +118,12 @@ public:
 	 * @brief Get the current frame index
 	 */
 	uint32_t getCurrentFrame() const { return m_currentFrame; }
+
+	/**
+	 * @brief Get the monotonic frame number set by setCurrentFrame (total frames
+	 * rendered, never wraps back -- unlike getCurrentFrame()'s in-flight slot index)
+	 */
+	uint64_t getCurrentFrameNumber() const { return m_currentFrameNumber; }
 
 	/**
 	 * @brief Get the Vulkan logical device

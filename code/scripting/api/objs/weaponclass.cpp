@@ -17,6 +17,7 @@ namespace api {
 
 //**********HANDLE: Weaponclass
 ADE_OBJ(l_Weaponclass, int, "weaponclass", "Weapon class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Weaponclass, weapon_info_size());
 
 ADE_FUNC(__tostring, l_Weaponclass, NULL, "Weapon class name", "string", "Weapon class name, or an empty string if handle is invalid")
 {
@@ -139,13 +140,10 @@ ADE_VIRTVAR(Description, l_Weaponclass, "string", "Weapon class description stri
 	weapon_info *wip = &Weapon_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		wip->desc = util::unique_copy(s, true);
+		wip->desc = coalesce(s, "");
 	}
 
-	if(wip->desc != nullptr)
-		return ade_set_args(L, "s", wip->desc.get());
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", wip->desc.c_str());
 }
 
 ADE_VIRTVAR(TechTitle, l_Weaponclass, "string", "Weapon class tech title", "string", "Tech title, or empty string if handle is invalid")
@@ -233,13 +231,10 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 	weapon_info *wip = &Weapon_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		wip->tech_desc = util::unique_copy(s, true);
+		wip->tech_desc = coalesce(s, "");
 	}
 
-	if(wip->tech_desc != nullptr)
-		return ade_set_args(L, "s", wip->tech_desc.get());
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", wip->tech_desc.c_str());
 }
 
 ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model, or invalid model handle if weaponclass handle is invalid")
@@ -1083,18 +1078,6 @@ ADE_VIRTVAR(BeamWarmdown, l_Weaponclass, "number", "The time in seconds that a b
 	return ade_set_args(L, "f", 0.0f);
 }
 
-ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= weapon_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_FUNC(renderTechModel,
 	l_Weaponclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
@@ -1371,7 +1354,7 @@ ADE_FUNC(isWeaponRequired,
 
 	//This could be requested before Common_team has been initialized, so let's check.
 	if (Common_select_inited) {
-		return ade_set_args(L, "b", Team_data[Common_team].weapon_required[idx]);
+		return ade_set_args(L, "b", Team_data[Common_team].required_weapons.contains(idx));
 	} else {
 		return ADE_RETURN_NIL;
 	}

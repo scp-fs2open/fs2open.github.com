@@ -111,15 +111,6 @@ ADE_FUNC(get3DValues,
 	}
 }
 
-ADE_FUNC(isValid, l_SoundEntry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	sound_entry_h *seh;
-	if(!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", seh->isValid());
-}
-
 ADE_FUNC(tryLoad, l_SoundEntry, nullptr, "Detects whether handle references a sound that can be loaded", "boolean", "true if a load succeeded, false if not, nil if a syntax/type error occurs")
 {
 	sound_entry_h *seh;
@@ -407,6 +398,11 @@ ADE_FUNC(updatePosition, l_Sound3D,
 //**********HANDLE: Soundfile
 soundfile_h::soundfile_h(sound_load_id id) : idx(id) {}
 
+bool soundfile_h::isValid() const
+{
+	return idx.isValid();
+}
+
 ADE_OBJ(l_Soundfile, soundfile_h, "soundfile", "Handle to a sound file");
 
 ADE_VIRTVAR(Duration, l_Soundfile, "number", "The duration of the sound file, in seconds", "number", "The duration or -1 on error")
@@ -489,20 +485,6 @@ ADE_FUNC(unload, l_Soundfile, nullptr,
 	}
 
 	return ade_set_args(L, "b", result != 0);
-}
-
-ADE_FUNC(isValid, l_Soundfile, NULL, "Checks if the soundfile handle is valid", "boolean", "true if valid, false otherwise")
-{
-	soundfile_h* handle = nullptr;
-
-	if (!ade_get_args(L, "o", l_Soundfile.GetPtr(&handle)))
-		return ADE_RETURN_FALSE;
-
-	if (handle == nullptr) {
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", handle->idx.isValid());
 }
 
 

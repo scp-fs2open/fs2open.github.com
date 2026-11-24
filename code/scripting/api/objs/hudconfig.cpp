@@ -118,20 +118,6 @@ ADE_VIRTVAR(Color, l_HUD_Color_Preset, nullptr, "The name of this preset", "colo
 	return ade_set_args(L, "o", l_Color.Set(c));
 }
 
-ADE_FUNC(isValid,
-	l_HUD_Color_Preset,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	hud_color_preset_h current;
-	if (!ade_get_args(L, "o", l_HUD_Color_Preset.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 //**********HANDLE: hud preset
 ADE_OBJ(l_HUD_Preset, hud_preset_h, "hud_preset", "Hud preset handle");
 
@@ -167,15 +153,6 @@ ADE_FUNC(deletePreset, l_HUD_Preset, nullptr, "Deletes the preset file", nullptr
 	hud_config_delete_preset(current.getName());
 
 	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(isValid, l_HUD_Preset, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	hud_preset_h current;
-	if (!ade_get_args(L, "o", l_HUD_Preset.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
 }
 
 //**********HANDLE: gauge config
@@ -405,15 +382,6 @@ ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the curre
 	}
 
 	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(isValid, l_Gauge_Config, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	gauge_config_h current;
-	if (!ade_get_args(L, "o", l_Gauge_Config.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
 }
 
 } // namespace api

@@ -1186,7 +1186,11 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
 		
-		auto check = shipp->flags.to_ubyte_vector(ship_flags_out);
+		// this flag describes a lookup table in our own memory; it should not be passed to other clients
+		auto flags_to_send = shipp->flags;
+		flags_to_send.remove(Ship::Ship_Flags::Subsystem_cache_valid);
+
+		auto check = flags_to_send.to_ubyte_vector(ship_flags_out);
 		Assertion(check <= 255, "Somehow FSO thinks there are too many ship flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
 
 		auto temp_size = static_cast<ubyte>(check);
@@ -1332,7 +1336,12 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// kind of stupid, but bash the name since it won't get recreated properly from
 				// the parse_wing_create_ships call.
 				shipp = &Ships[shipnum];
+				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+				Assertion(ship_entry_index >= 0, "Ship %s must be in the ship registry!", shipp->ship_name);
 				wing_bash_ship_name(shipp, wingp, which_one + 1);
+				// need to update the ship registry too
+				if (ship_entry_index >= 0)
+					ship_registry_rename(ship_entry_index, shipp->ship_name, true);
 				nprintf(("Network", "Created %s\n", shipp->ship_name));
 
 				objp = &Objects[shipp->objnum];

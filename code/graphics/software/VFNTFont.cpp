@@ -39,7 +39,6 @@ namespace font
 		return volitionFontName;
 	}
 
-	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
 	void VFNTFont::getStringSize(const char *text, size_t textSize, int /* resize_mode */, float *w1, float *h1, float scaleMultiplier) const
 	{
 		int longest_width;
@@ -82,6 +81,24 @@ namespace font
 				if (*text == 0)
 				{
 					break;
+				}
+
+				// Handle tabs to match the VFNT render path
+				if (*text == '\t')
+				{
+					w += fl2i(this->getTabWidth());
+					if (w > longest_width)
+						longest_width = w;
+
+					text++;
+
+					if (checkLength)
+					{
+						textLen--;
+						if (textLen <= 0)
+							break;
+					}
+					continue;
 				}
 
 				get_char_width_old(fontPtr, text[0], text[1], &width, &spacing);

@@ -156,6 +156,45 @@
             </item>
            </widget>
           </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelFontScaleLabel">
+            <property name="text">
+             <string>Viewport label size:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="labelFontScaleSpin">
+            <property name="toolTip">
+             <string>Scale factor applied to text labels drawn in the viewport (ship names, ship classes, coordinates, distances, and subsystem labels). 1.0 is the default size.</string>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>0.500000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>4.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QCheckBox" name="classicMenuLayout">
+            <property name="toolTip">
+             <string>Replace the Objects, Environment, Mission, Narrative and Tools menus with FRED2's classic Editors and Misc menus.</string>
+            </property>
+            <property name="text">
+             <string>Classic menu layout</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -538,6 +577,16 @@
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="orbitSelectionMidpoint">
+         <property name="toolTip">
+          <string>When several objects are marked, rotate the view around the midpoint of the selection instead of the current object.</string>
+         </property>
+         <property name="text">
+          <string>Rotate Around Selection Midpoint</string>
+         </property>
         </widget>
        </item>
        <item>

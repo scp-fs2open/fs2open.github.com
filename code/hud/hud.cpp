@@ -48,6 +48,8 @@
 #include "tracing/tracing.h"
 #include "object/object.h"
 #include "object/objectdock.h"
+#include "options/Option.h"
+#include "parse/parselo.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
@@ -59,7 +61,7 @@
 #include "weapon/weapon.h"
 
 // This contains not only the retail HUD gauges but also any custom HUD gauges that are not specific to a ship.
-SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
+SCP_vector<SCP_polymorphic<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	
@@ -73,6 +75,7 @@ SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 // Externals not related to the HUD code itself
 extern fov_t View_zoom;
+extern vec3d Matrix_scale;
 
 // globals that will control the color of the HUD gauges
 int HUD_color_red = 0;
@@ -180,6 +183,26 @@ static int					Pl_hud_is_bright;
 
 float Player_rearm_eta = 0;
 bool Extra_target_info = false;
+
+static bool target_info_default = false;
+
+static void parse_target_info_func()
+{
+	stuff_boolean(&target_info_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Extra_target_info = target_info_default;
+}
+
+static auto TargetInfoOption __UNUSED = options::OptionBuilder<bool>("HUD.TargetInfo",
+	std::pair<const char*, int>{"Extra Target Info", -1},
+	std::pair<const char*, int>{"Shows the target's name and class next to its brackets, and distance and lead marks "
+		"on other marked targets.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return target_info_default; })
+	.bind_to(&Extra_target_info)
+	.importance(54)
+	.parser(parse_target_info_func)
+	.finish();
 
 // forward declarations
 void update_throttle_sound();
@@ -1413,11 +1436,10 @@ bool HudGauge::canRender() const
 	}
 	
 	if (render_for_cockpit_toggle > 0) {
-		if ((Viewer_mode & VM_CHASE) && (render_for_cockpit_toggle == 2)) {
-			return true;
-		} else if (Cockpit_active && (render_for_cockpit_toggle == 2)) {
+		bool cockpit_active = ship_render_player_cockpit_active();
+		if (cockpit_active && (render_for_cockpit_toggle == 2)) {
 			return false;
-		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+		} else if (!cockpit_active && (render_for_cockpit_toggle == 1)) {
 			return false;
 		}
 	}
@@ -2612,10 +2634,10 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		sprintf(buf, XSTR( "%d%%", 219), line.strength);
 		hud_num_make_mono(buf, font_num);
 
-		if (line.color_override != nullptr) {
+		if (!config && line.color_override != nullptr) {
 			gr_set_color_fast(line.color_override);
 		} else {
-			setGaugeColor(line.bright_index);
+			setGaugeColor(line.bright_index, config);
 		}
 
 		renderString(line.name_x, line.name_y, line.name.c_str(), scale, config);
@@ -4225,6 +4247,7 @@ void hud_save_restore_camera_data(int save)
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
+	static vec3d	save_matrix_scale;
 
 	if ( save ) {
 		save_view_position		= View_position;
@@ -4233,6 +4256,7 @@ void hud_save_restore_camera_data(int save)
 		save_view_matrix		= View_matrix;
 		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
+		save_matrix_scale		= Matrix_scale;
 	}
 	else {
 		// restore global view variables
@@ -4242,6 +4266,7 @@ void hud_save_restore_camera_data(int save)
 		View_matrix		= save_view_matrix;
 		Eye_matrix		= save_eye_matrix;
 		Eye_position	= save_eye_position;
+		Matrix_scale	= save_matrix_scale;
 	}
 }
 

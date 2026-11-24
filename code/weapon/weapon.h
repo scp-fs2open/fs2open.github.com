@@ -36,8 +36,11 @@
 #include "utils/modular_curves.h"
 
 #include <optional>
+#include <tuple>
 
 class object;
+class ship;
+class ship_weapon;
 class ship_subsys;
 
 #define WP_UNUSED    -1
@@ -361,6 +364,7 @@ float weapon_get_lifetime_pct(const weapon& wp);
 float weapon_get_age(const weapon& wp);
 float weapon_get_viewing_angle(const weapon& wp);
 float weapon_get_apparent_size(const weapon& wp);
+float weapon_get_target_dot(const weapon& wp);
 
 float beam_get_warmup_lifetime_pct(const beam& wp);
 float beam_get_warmdown_lifetime_pct(const beam& wp);
@@ -370,6 +374,7 @@ struct WeaponLaunchCurveData {
 	int num_firepoints;
 	float distance_to_target;
 	float target_radius;
+	float target_forward_speed;
 };
 
 struct weapon_info;
@@ -380,15 +385,15 @@ struct weapon_info
 	char	name[NAME_LENGTH];				// name of this weapon
 	SCP_string display_name;				// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
-	std::unique_ptr<char[]> desc;				// weapon's description (used by tooltips)
+	SCP_string desc;				// weapon's description (used by tooltips)
 	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
 
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int		model_num;							// modelnum of weapon -- -1 if no model
 	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
-	int		external_model_num;					//the model rendered on the weapon points of a ship
+	int		external_model_num;					// modelnum of the model rendered on the weapon points of a ship; -1 if $External Model File: was not given
 
-	std::unique_ptr<char[]> tech_desc;		// weapon's description (in tech database)
+	SCP_string tech_desc;		// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
@@ -699,7 +704,7 @@ struct weapon_info
 
 	// Optional weapon failures
 	float failure_rate;
-	std::unique_ptr<char[]> failure_sub_name;
+	SCP_string failure_sub_name;
 	int failure_sub;
 
 	// the optional pattern of weapons that this weapon will fire
@@ -748,7 +753,8 @@ struct weapon_info
 			},
 			std::pair {"Num Firepoints", modular_curves_submember_input<&WeaponLaunchCurveData::num_firepoints>{}},
 			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}},
-			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}}
+			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}},
+			std::pair {"Target Forward Speed", modular_curves_submember_input<&WeaponLaunchCurveData::target_forward_speed>{}}
 	);
 
   public:
@@ -829,7 +835,8 @@ struct weapon_info
 			>{}},
 			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}},
 			std::pair {"Viewing Angle", modular_curves_functional_input<weapon_get_viewing_angle>{}},
-			std::pair {"Apparent Size", modular_curves_functional_input<weapon_get_apparent_size>{}}
+			std::pair {"Apparent Size", modular_curves_functional_input<weapon_get_apparent_size>{}},
+			std::pair {"Dot To Target", modular_curves_functional_input<weapon_get_target_dot>{}}
 	);
 
   public:
@@ -956,6 +963,15 @@ struct weapon_info
 	bool has_display_name() const;
 
 	void reset();
+	void clone(const weapon_info& other) { *this = other; }
+
+	weapon_info(weapon_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
+	weapon_info &operator=(weapon_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
+
+  private:
+	// Private so nobody copies a weapon class by accident; use clone() for a deliberate deep copy.
+	weapon_info(const weapon_info& other) = default;
+	weapon_info &operator=(const weapon_info& other) = default;
 };
 
 extern special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[];
@@ -975,7 +991,8 @@ extern int Default_cmeasure_index;
 
 extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
 
-#define WEAPON_INDEX(wp)			(int)(wp-Weapons)
+#define WEAPON_INDEX(wp)			(static_cast<int>((wp)-Weapons))
+#define WEAPON_INFO_INDEX(wip)		(static_cast<int>((wip)-Weapon_info.data()))
 
 typedef struct tracking_info {
 	ship_subsys *subsys;
@@ -986,7 +1003,6 @@ typedef struct tracking_info {
 } tracking_info;
 
 int weapon_info_lookup(const char *name);
-int weapon_info_get_index(const weapon_info *wip);
 
 inline int weapon_info_size()
 {
@@ -995,7 +1011,7 @@ inline int weapon_info_size()
 
 void weapon_init();					// called at game startup
 void weapon_post_ship_init();		// called after ship_init() to resolve mine proximity ship type/class names
-void weapon_close();				// called at game shutdown
+void weapon_close();				// frees the weapon tables
 void weapon_level_init();			// called before the start of each level
 void weapon_render(object* obj, model_draw_list *scene);
 void weapon_delete( object * obj );
@@ -1028,10 +1044,12 @@ int weapon_create( const vec3d *pos,
 	int group_id=-1,
 	bool is_locked = false,
 	bool is_spawned = false,
-	float fof_cooldown = 0.0f,
-	ship_subsys *src_turret = nullptr,
+	ship_weapon *src_swp = nullptr,
+	int src_pbank = -1,
+	int src_sbank = -1,
 	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
 		0,
+		0.f,
 		0.f,
 		0.f
 	});
@@ -1043,8 +1061,8 @@ inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, track
 }
 
 // gets the substitution pattern pointer for a given weapon
-// src_turret may be null
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
+// returns [use_substitution, substituted_weapon_info_index]
+std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);

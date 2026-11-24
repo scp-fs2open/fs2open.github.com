@@ -14,6 +14,8 @@
 #include "graphics/grinternal.h"
 #include "graphics/shadows.h"
 #include "graphics/2d.h"
+#include "graphics/openxr.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
@@ -50,9 +52,12 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		return true;
 	}
 
+	Gr_aa_mode_last_frame = Gr_aa_mode;
+
 	m_ctx.device = device;
 	m_ctx.memoryManager = memMgr;
 	m_ctx.sceneExtent = extent;
+	m_ctx.outputExtent = extent;
 	m_ctx.depthFormat = depthFormat;
 	m_ctx.hdrActive = hdrActive;
 	// In HDR the tonemapped scene must be able to exceed paper white, so use fp16.
@@ -348,6 +353,8 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	// Wire the deferred light accumulation + fog subsystems (resources are lazy).
 	m_lighting.init(m_ctx, m_sceneColor, m_deferred, m_shadow);
 	m_fog.init(m_ctx, m_sceneColor, m_sceneDepth, m_sceneDepthCopy, m_deferred);
+	m_motionVectors.init(m_ctx);
+	m_upscaler.init(m_ctx);
 
 	// Initialize MSAA resources if MSAA is enabled and G-buffer is ready
 	if (m_deferred.isInitialized() && Cmdline_msaa_enabled > 0) {
@@ -368,6 +375,8 @@ void VulkanPostProcessor::shutdown()
 	if (m_ctx.device) {
 		m_ctx.device.waitIdle();
 
+		m_upscaler.destroyTargets();
+		m_motionVectors.shutdown();
 		m_fog.shutdown();
 		shutdownShadowPass();
 		shadow_cascade_params_shutdown();
@@ -391,6 +400,14 @@ void VulkanPostProcessor::shutdown()
 		}
 		destroySceneTargets();
 
+		if (m_velocitySceneRenderPassLoad) {
+			m_ctx.device.destroyRenderPass(m_velocitySceneRenderPassLoad);
+			m_velocitySceneRenderPassLoad = nullptr;
+		}
+		if (m_velocitySceneRenderPass) {
+			m_ctx.device.destroyRenderPass(m_velocitySceneRenderPass);
+			m_velocitySceneRenderPass = nullptr;
+		}
 		if (m_sceneRenderPassLoad) {
 			m_ctx.device.destroyRenderPass(m_sceneRenderPassLoad);
 			m_sceneRenderPassLoad = nullptr;
@@ -425,10 +442,12 @@ bool VulkanPostProcessor::createSceneTargets(vk::Extent2D extent)
 	m_sceneColor.height = extent.height;
 
 	// Scene depth target
+	// eTransferDst needed for restoreSceneDepth (backup→depth copy after the cockpit render)
 	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
 	                 vk::ImageUsageFlagBits::eDepthStencilAttachment
 	                 | vk::ImageUsageFlagBits::eSampled
-	                 | vk::ImageUsageFlagBits::eTransferSrc,
+	                 | vk::ImageUsageFlagBits::eTransferSrc
+	                 | vk::ImageUsageFlagBits::eTransferDst,
 	                 vk::ImageAspectFlagBits::eDepth,  // View uses depth-only aspect
 	                 m_sceneDepth.image, m_sceneDepth.view, m_sceneDepth.allocation)) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth image!\n"));
@@ -463,6 +482,22 @@ bool VulkanPostProcessor::createSceneTargets(vk::Extent2D extent)
 	m_sceneDepthCopy.width = extent.width;
 	m_sceneDepthCopy.height = extent.height;
 
+	// Scene depth backup (holds the scene's depth while the cockpit renders)
+	// Copy target on the way out, copy source on the way back in. No shader ever reads it,
+	// but eSampled stays: createImage() always builds a view, and a view needs at least one
+	// non-transfer usage bit (VUID-VkImageViewCreateInfo-image-04441).
+	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc
+	                 | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eDepth,
+	                 m_sceneDepthBackup.image, m_sceneDepthBackup.view, m_sceneDepthBackup.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth backup image!\n"));
+		return false;
+	}
+	m_sceneDepthBackup.format = m_ctx.depthFormat;
+	m_sceneDepthBackup.width = extent.width;
+	m_sceneDepthBackup.height = extent.height;
+
 	return true;
 }
 
@@ -472,10 +507,15 @@ void VulkanPostProcessor::destroySceneTargets()
 		m_ctx.device.destroyFramebuffer(m_sceneFramebuffer);
 		m_sceneFramebuffer = nullptr;
 	}
+	if (m_velocitySceneFramebuffer) {
+		m_ctx.device.destroyFramebuffer(m_velocitySceneFramebuffer);
+		m_velocitySceneFramebuffer = nullptr;
+	}
 	m_ctx.destroyTarget(m_sceneEffect);
 	m_ctx.destroyTarget(m_sceneColor);
 	m_ctx.destroyTarget(m_sceneDepth);
 	m_ctx.destroyTarget(m_sceneDepthCopy);
+	m_ctx.destroyTarget(m_sceneDepthBackup);
 }
 
 bool VulkanPostProcessor::createSceneFramebuffer()
@@ -499,17 +539,229 @@ bool VulkanPostProcessor::createSceneFramebuffer()
 	return true;
 }
 
-bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
+bool VulkanPostProcessor::createVelocitySceneResources()
+{
+	if (!m_velocitySceneRenderPass) {
+		// Same as the plain scene passes, with motion vectors at the location the model shader writes them.
+		const auto createPass = [this](vk::AttachmentLoadOp loadOp, vk::ImageLayout colorInitial, vk::ImageLayout depthInitial) {
+			std::array<vk::AttachmentDescription, 3> attachments;
+
+			attachments[0].format = HDR_COLOR_FORMAT;
+			attachments[0].loadOp = loadOp;
+			attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
+			attachments[0].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			attachments[0].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			attachments[0].initialLayout = colorInitial;
+			attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+			attachments[1].format = VulkanMotionVectors::DRAWN_FORMAT;
+			attachments[1].loadOp = loadOp;
+			attachments[1].storeOp = vk::AttachmentStoreOp::eStore;
+			attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			attachments[1].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			attachments[1].initialLayout = colorInitial;
+			attachments[1].finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+			attachments[2].format = m_ctx.depthFormat;
+			attachments[2].loadOp = loadOp;
+			attachments[2].storeOp = vk::AttachmentStoreOp::eStore;
+			attachments[2].stencilLoadOp = loadOp;
+			attachments[2].stencilStoreOp = vk::AttachmentStoreOp::eStore;
+			attachments[2].initialLayout = depthInitial;
+			attachments[2].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+			std::array<vk::AttachmentReference, VulkanDeferredGBuffer::VELOCITY_COLOR_LOCATION_COUNT> colorRefs;
+			for (auto& ref : colorRefs) {
+				ref.attachment = VK_ATTACHMENT_UNUSED;
+				ref.layout = vk::ImageLayout::eUndefined;
+			}
+			colorRefs[0].attachment = 0;
+			colorRefs[0].layout = vk::ImageLayout::eColorAttachmentOptimal;
+			colorRefs[PipelineConfig::VELOCITY_ATTACHMENT].attachment = 1;
+			colorRefs[PipelineConfig::VELOCITY_ATTACHMENT].layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+			vk::AttachmentReference depthRef;
+			depthRef.attachment = 2;
+			depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+			vk::SubpassDescription subpass;
+			subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+			subpass.colorAttachmentCount = static_cast<uint32_t>(colorRefs.size());
+			subpass.pColorAttachments = colorRefs.data();
+			subpass.pDepthStencilAttachment = &depthRef;
+
+			vk::SubpassDependency dependency;
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+			                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+			                        | vk::PipelineStageFlagBits::eLateFragmentTests
+			                        | vk::PipelineStageFlagBits::eFragmentShader
+			                        | vk::PipelineStageFlagBits::eTransfer;
+			dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+			                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+			dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+			                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+			                         | vk::AccessFlagBits::eShaderRead
+			                         | vk::AccessFlagBits::eTransferRead;
+			dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+			                         | vk::AccessFlagBits::eColorAttachmentRead
+			                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+			                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
+
+			vk::RenderPassCreateInfo rpInfo;
+			rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			rpInfo.pAttachments = attachments.data();
+			rpInfo.subpassCount = 1;
+			rpInfo.pSubpasses = &subpass;
+			rpInfo.dependencyCount = 1;
+			rpInfo.pDependencies = &dependency;
+
+			return m_ctx.device.createRenderPass(rpInfo);
+		};
+
+		try {
+			m_velocitySceneRenderPass = createPass(vk::AttachmentLoadOp::eClear,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eUndefined);
+			m_velocitySceneRenderPassLoad = createPass(vk::AttachmentLoadOp::eLoad,
+				vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create motion vector scene passes: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	if (!m_velocitySceneFramebuffer) {
+		std::array<vk::ImageView, 3> views = {m_sceneColor.view, m_motionVectors.drawnMotion().view, m_sceneDepth.view};
+
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_velocitySceneRenderPass;
+		fbInfo.attachmentCount = static_cast<uint32_t>(views.size());
+		fbInfo.pAttachments = views.data();
+		fbInfo.width = m_ctx.sceneExtent.width;
+		fbInfo.height = m_ctx.sceneExtent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_velocitySceneFramebuffer = m_ctx.device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create motion vector scene framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void VulkanPostProcessor::prepareMotionVectors()
+{
+	const bool active = VulkanMotionVectors::wanted()
+		&& m_motionVectors.createResources()
+		&& createVelocitySceneResources()
+		&& m_deferred.setVelocityTarget(&m_motionVectors.drawnMotion());
+
+	if (!active) {
+		m_deferred.setVelocityTarget(nullptr);
+	}
+
+	m_velocityActive = active;
+	Gr_motion_vectors_active = active;
+}
+
+void VulkanPostProcessor::setPostProcessInput(const RenderTarget& input)
+{
+	m_bloom.setSceneColor(input);
+	m_ldr.setSceneColor(input);
+	if (m_bloom.isInitialized() && !m_bloom.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Bloom rebuild failed, disabling bloom\n"));
+		m_bloom.shutdown();
+	}
+}
+
+void VulkanPostProcessor::updateUpscalerResources()
+{
+	if (m_upscaler.settingsChanged()) {
+		m_ctx.device.waitIdle();
+		m_upscaler.destroyTargets();
+		// Bloom and tonemapping must not keep the destroyed output, even if the new version then fails
+		setPostProcessInput(m_sceneColor);
+		m_upscalerActive = false;
+	}
+
+	if (VulkanUpscaler::wanted() && VulkanMotionVectors::wanted()) {
+		m_upscaler.createResources();
+	}
+}
+
+void VulkanPostProcessor::prepareUpscaler()
+{
+	const bool active = m_velocityActive && VulkanUpscaler::wanted() && m_upscaler.hasResources();
+
+	if (active != m_upscalerActive) {
+		m_ctx.device.waitIdle();
+		m_upscalerActive = active;
+		setPostProcessInput(postProcessInput());
+		gr_reset_temporal_history();
+	} else if (active) {
+		// In VR, each eye has an output of its own
+		m_bloom.setSceneColor(m_upscaler.output());
+		m_ldr.setSceneColor(m_upscaler.output());
+	}
+
+	float imageOffsetX = 0.0f;
+	float imageOffsetY = 0.0f;
+	float lodBias = 0.0f;
+	if (active) {
+		m_upscaler.beginFrame(imageOffsetX, imageOffsetY, lodBias);
+	}
+	getStateTracker()->setUpscalerSceneState(imageOffsetX, imageOffsetY, lodBias);
+}
+
+void VulkanPostProcessor::executeUpscaler(vk::CommandBuffer cmd)
+{
+	if (!m_upscalerActive) {
+		return;
+	}
+	if (!m_upscaler.dispatch(cmd, m_sceneColor, m_motionVectors.depth(), m_motionVectors.motion())) {
+		// The rest of this frame must not read the output FSR never wrote. Bloom hasn't been recorded yet, and
+		// the frames still in flight may use its targets, which rebuilding them around the scene color replaces.
+		m_ctx.device.waitIdle();
+		m_upscalerActive = false;
+		setPostProcessInput(m_sceneColor);
+	}
+}
+
+std::array<vk::ClearValue, 3> VulkanPostProcessor::sceneClearValues() const
+{
+	std::array<vk::ClearValue, 3> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	if (m_velocityActive) {
+		clearValues[1].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+		clearValues[2].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	} else {
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	}
+	return clearValues;
+}
+
+bool VulkanPostProcessor::resize(vk::Extent2D newExtent, vk::Extent2D outputExtent)
 {
 	if (!m_initialized) {
 		return false;
 	}
-	if (newExtent == m_ctx.sceneExtent) {
+	if (newExtent == m_ctx.sceneExtent && outputExtent == m_ctx.outputExtent) {
 		return true;
 	}
 
-	// Caller (recreateSwapChain) has already waited for the device to go idle.
+	// Caller has already waited for the device to go idle.
 	m_ctx.sceneExtent = newExtent;
+	m_ctx.outputExtent = outputExtent;
+
+	// Recreated at the new size on next use. Bloom is rebuilt around the input below.
+	m_upscaler.destroyTargets();
+	m_upscalerActive = false;
+	m_bloom.setSceneColor(m_sceneColor);
+	m_ldr.setSceneColor(m_sceneColor);
 
 	// Scene targets first: every subsystem framebuffer that wires scene
 	// color/depth needs the recreated views.
@@ -551,6 +803,8 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
 		nprintf(("vulkan", "VulkanPostProcessor: Fog resize failed, disabling fog\n"));
 		m_fog.shutdown();
 	}
+	// Recreated at the new size on next use.
+	m_motionVectors.destroyTargets();
 	// Distortion (fixed 32x32) and the shadow map (sized from Shadow_quality)
 	// are extent-independent.
 
@@ -577,6 +831,29 @@ void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd) const
 	copyImageToImage(cmd,
 		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		m_sceneDepthCopy.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_ctx.sceneExtent,
+		imageAspectFromFormat(m_ctx.depthFormat));
+}
+
+void VulkanPostProcessor::saveSceneDepth(vk::CommandBuffer cmd) const
+{
+	// Called outside a render pass, so scene depth is in eDepthStencilAttachmentOptimal
+	// (the scene/G-buffer render pass finalLayout). The backup keeps no content between
+	// frames, hence eUndefined: the copy overwrites every texel.
+	copyImageToImage(cmd,
+		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		m_sceneDepthBackup.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal,
+		m_ctx.sceneExtent,
+		imageAspectFromFormat(m_ctx.depthFormat));
+}
+
+void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd) const
+{
+	// The backup was left in eTransferSrcOptimal by saveSceneDepth() and stays there --
+	// the next save transitions it from eUndefined anyway.
+	copyImageToImage(cmd,
+		m_sceneDepthBackup.image, vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferSrcOptimal,
+		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		m_ctx.sceneExtent,
 		imageAspectFromFormat(m_ctx.depthFormat));
 }
@@ -611,7 +888,8 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// Build pipeline config for tonemapping (fullscreen, no depth, no blending)
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_POST_PROCESS_TONEMAPPING;
-	config.shaderFlags = useLdr ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0;
+	// With LDR targets this is only a copy. Without, it's the actual tonemapping, linear in VR like in executeTonemap().
+	config.shaderFlags = (useLdr || openxr_enabled()) ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0;
 	config.vertexLayoutHash = 0;  // Empty vertex layout
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;
@@ -634,8 +912,8 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// Set viewport (non-flipped for post-processing — textures are already
 	// in the correct Vulkan orientation, no Y-flip needed)
 	stateTracker->setViewport(0.0f, 0.0f,
-		static_cast<float>(m_ctx.sceneExtent.width),
-		static_cast<float>(m_ctx.sceneExtent.height));
+		static_cast<float>(m_ctx.outputExtent.width),
+		static_cast<float>(m_ctx.outputExtent.height));
 
 	stateTracker->applyDynamicState();
 
@@ -645,21 +923,21 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// Set 1: Material — source texture at array slot 0
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		texArrayInfos[0].sampler = m_ctx.linearSampler;
 		texArrayInfos[0].imageView = m_ldr.postEffectsApplied() ? m_ldr.luminanceView()
 		                            : useLdr ? m_ldr.ldrView()
-		                            : m_sceneColor.view;
+		                            : postProcessInput().view;
 		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 
 	// Set 2: PerDraw — tonemapping UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 
 	// LDR path: passthrough (tonemapping already ran). Fallback path: live
 	// parameters from the engine lighting profile.
@@ -690,8 +968,12 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 			{m_ctx.scratchRing.buffer(), slotOffset, m_ctx.scratchRing.slotSize()});
 	}
 	writer.flush();
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material,
+		materialSet,
+		writer.dynamicOffsets(DescriptorSetIndex::Material));
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw,
+		perDrawSet,
+		writer.dynamicOffsets(DescriptorSetIndex::PerDraw));
 
 	// Draw fullscreen triangle (3 vertices from gl_VertexIndex, no vertex buffer)
 	cmd.draw(3, 1, 0, 0);
@@ -758,7 +1040,7 @@ void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::Rende
 
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -769,7 +1051,7 @@ void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::Rende
 
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	{
 		vk::DeviceSize slotOffset =
 			m_ctx.scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
@@ -778,9 +1060,8 @@ void VulkanPostProcessor::encodeToSwapChainPass(vk::CommandBuffer cmd, vk::Rende
 	}
 	writer.flush();
 
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+	const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+	writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
@@ -822,15 +1103,34 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 void vulkan_post_process_begin() {}
 void vulkan_post_process_end() {}
 
-// No-op: In OpenGL, save/restore swap the depth attachment between
-// Scene_depth_texture and Cockpit_depth_texture to isolate cockpit
-// depth from the main scene. In Vulkan, the render pass loadOp=eClear
-// clears depth at the start of each scene pass, and separate cockpit
-// depth isolation is not yet implemented. Called from ship.cpp during
-// cockpit rendering but degrades gracefully as a no-op (cockpit just
-// shares the scene depth buffer).
-void vulkan_post_process_save_zbuffer() {}
-void vulkan_post_process_restore_zbuffer() {}
+// Isolate the cockpit's depth from the scene's, the way OpenGL does by swapping the
+// depth attachment between Scene_depth_texture and Cockpit_depth_texture. A Vulkan
+// framebuffer owns its attachments, so the scene depth is parked in a backup image and
+// the live depth buffer is cleared for the cockpit; the restore puts the scene back.
+//
+// Both halves are needed. Without the clear the ship hull the scene already drew wins
+// the depth test against the cockpit around the camera. Without the restore the
+// post-processing passes that sample scene depth (lightshafts) see cockpit depth.
+void vulkan_post_process_save_zbuffer()
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr) {
+		renderer->saveSceneDepth();
+	}
+
+	// Unconditional, exactly as in OpenGL: when there is nothing to park (post-processing
+	// off, or no scene render pass), clearing is still what gives the cockpit a depth
+	// buffer of its own.
+	gr_zbuffer_clear(TRUE);
+}
+
+void vulkan_post_process_restore_zbuffer()
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr) {
+		renderer->restoreSceneDepth();
+	}
+}
 
 void vulkan_post_process_set_effect(const char* name, int value, const vec3d* rgb)
 {
@@ -869,7 +1169,9 @@ void vulkan_post_process_set_defaults()
 	auto& postEffects = graphics::Post_processing_manager->getPostEffects();
 	for (auto& effect : postEffects) {
 		effect.intensity = effect.default_intensity;
+		effect.rgb = effect.default_rgb;
 	}
+	graphics::Post_processing_manager->resetLightshaftParams();
 }
 
 } // namespace graphics::vulkan

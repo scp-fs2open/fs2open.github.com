@@ -19,9 +19,8 @@
 
 
 // global stuff
-int Num_ai_profiles;
 int Default_ai_profile;
-ai_profile_t Ai_profiles[MAX_AI_PROFILES];
+SCP_vector<ai_profile_t> Ai_profiles;
 
 // local to this file
 static int Ai_profiles_initted = 0;
@@ -116,7 +115,7 @@ void parse_ai_profiles_tbl(const char *filename)
 			stuff_string(profile_name, F_NAME, NAME_LENGTH);
 
 			// see if it exists
-			for (i = 0; i < Num_ai_profiles; i++)
+			for (i = 0; i < sz2i(Ai_profiles.size()); i++)
 			{
 				if (!stricmp(Ai_profiles[i].profile_name, profile_name))
 				{
@@ -140,20 +139,12 @@ void parse_ai_profiles_tbl(const char *filename)
 				// don't create multiple profiles with the same name
 				if (previous_profile != NULL)
 				{
-					Warning(LOCATION, "An ai profile named '%s' already exists!  The new one will not be created.\n", profile_name);
+					Warning(LOCATION, "An AI profile named '%s' already exists!  The new one will not be created.\n", profile_name);
 				}
 				else
 				{
-					// make sure we're under the limit
-					if (Num_ai_profiles >= MAX_AI_PROFILES)
-					{
-						Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES - 1);	// -1 because one is built-in
-						skip_to_string("#End", NULL);
-						break;
-					}
-
-					profile = &Ai_profiles[Num_ai_profiles];
-					Num_ai_profiles++;
+					Ai_profiles.emplace_back();
+					profile = &Ai_profiles.back();
 				}
 			}
 
@@ -161,7 +152,7 @@ void parse_ai_profiles_tbl(const char *filename)
 			if (!no_create)
 			{
 				// base profile, so zero it out
-				if (profile == &Ai_profiles[0])
+				if (profile == &Ai_profiles.front())
 				{
                     profile->reset();
 				}
@@ -412,7 +403,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$disable player secondary doublefire:", AI::Profile_Flags::Disable_player_secondary_doublefire);
 
-				set_flag(profile, "$disable ai secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
+				set_flag(profile, "$disable AI secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
 
 				set_flag(profile, "$disable weapon damage scaling:", AI::Profile_Flags::Disable_weapon_damage_scaling);
 
@@ -450,7 +441,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$force beam turrets to use normal fov:", AI::Profile_Flags::Force_beam_turret_fov);
 
-				set_flag(profile, "$fix ai class bug:", AI::Profile_Flags::Fix_ai_class_bug);
+				set_flag(profile, "$fix AI class bug:", AI::Profile_Flags::Fix_ai_class_bug);
 
 				set_flag(profile, "$turrets ignore targets radius in range checks:", AI::Profile_Flags::Turrets_ignore_target_radius);
 
@@ -505,13 +496,13 @@ void parse_ai_profiles_tbl(const char *filename)
 						profile->ai_path_mode = j;
 					}
 					else {
-						Warning(LOCATION, "Invalid ai path mode '%s' specified", buf);
+						Warning(LOCATION, "Invalid AI path mode '%s' specified", buf);
 					}
 				}
 
 				set_flag(profile, "$no warp camera:", AI::Profile_Flags::No_warp_camera);
 
-				set_flag(profile, "$fix ai path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
+				set_flag(profile, "$fix AI path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
 
 				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turret_tagged_only_targeting);
 
@@ -622,7 +613,7 @@ void parse_ai_profiles_tbl(const char *filename)
 						profile->ai_range_aware_secondary_select_mode = j;
 					}
 					else {
-						Warning(LOCATION, "Invalid ai secondary range awareness mode '%s' specified", buf);
+						Warning(LOCATION, "Invalid AI secondary range awareness mode '%s' specified", buf);
 					}
 				}
 
@@ -677,7 +668,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
-				set_flag(profile, "$fix target updating with strafe:", AI::Profile_Flags::Fix_target_updating_with_strafe);
+				set_flag(profile, "$fix AI target recovery:", AI::Profile_Flags::Fix_ai_target_recovery);
 
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
@@ -691,6 +682,14 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$strafe stops after time unhit:")) {
 					stuff_float(&profile->strafe_max_unhit_time);
+				}
+
+				if (optional_string("$strafe retreat collide time:")) {
+					stuff_float(&profile->strafe_retreat_collide_time);
+				}
+
+				if (optional_string("$strafe retreat collide distance:")) {
+					stuff_float(&profile->strafe_retreat_collide_distance);
 				}
 
 				if (optional_string("$guard uses big-orbit for target radius above:")) {
@@ -759,6 +758,12 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighter/bomber AI recovers after engines repaired:", AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
 
+				set_flag(profile, "$fix subsystem path randomization on refresh:", AI::Profile_Flags::Fix_model_path_refresh_randomization);
+
+				set_flag(profile, "$fix fighterbay speed ramp:", AI::Profile_Flags::Fix_bay_speed_ramp);
+
+				set_flag(profile, "$fix stale AI order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -795,7 +800,7 @@ void ai_profiles_init()
 	if (Ai_profiles_initted)
 		return;
 
-	Num_ai_profiles = 0;
+	Ai_profiles.clear();
 	Default_ai_profile = 0;
 	Default_profile_name[0] = '\0';
 
@@ -828,7 +833,7 @@ void ai_profiles_init()
 
 int ai_profile_lookup(const char *name)
 {
-	for (int i = 0; i < Num_ai_profiles; i++)
+	for (int i = 0; i < sz2i(Ai_profiles.size()); i++)
 		if (!stricmp(name, Ai_profiles[i].profile_name))
 			return i;
 
@@ -858,6 +863,8 @@ void ai_profile_t::reset()
 	standard_strafe_when_below_speed = 3.0f;
 	strafe_retreat_box_dist = 300.0f;
 	strafe_max_unhit_time = 20.0f;
+	strafe_retreat_collide_time = 2.0f;
+	strafe_retreat_collide_distance = 100.0f;
 
 	guard_big_orbit_above_target_radius = 500.0f;
 	guard_big_orbit_max_speed_percent = 1.0f;
@@ -990,6 +997,9 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
 		flags.set(AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
 		flags.set(AI::Profile_Flags::Fix_standard_strafe);
-		flags.set(AI::Profile_Flags::Fix_target_updating_with_strafe);
+		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
+		flags.set(AI::Profile_Flags::Fix_model_path_refresh_randomization);
+		flags.set(AI::Profile_Flags::Fix_bay_speed_ramp);
+		flags.set(AI::Profile_Flags::Fix_stale_ai_order_state);
 	}
 }

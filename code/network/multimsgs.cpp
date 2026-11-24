@@ -3249,7 +3249,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 		aip->target_objnum = OBJ_INDEX(target_objp);
 
 		if ( (t_subsys != -1) && (target_objp->type == OBJ_SHIP) ) {
-			aip->targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
+			aip->targeted_subsys = multi_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 		}
 	}
 
@@ -3317,7 +3317,7 @@ void process_countermeasure_fired_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating that a turret has been fired
-void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius )
+void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius, float target_forward_speed )
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -3376,6 +3376,8 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	ADD_FLOAT(dist_to_target);
 
 	ADD_FLOAT(target_radius);
+
+	ADD_FLOAT(target_forward_speed);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3398,6 +3400,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	float angle1, angle2;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3415,6 +3418,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_FLOAT( angle2 );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3441,7 +3445,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index );
+	ssp = multi_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -3463,6 +3467,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object
@@ -3470,7 +3475,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, nullptr, -1, -1, launch_curve_data);
 
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
@@ -4522,9 +4527,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	}
 
 	targeted_subsys = NULL;
-	if ( t_subsys != -1 ) {
-		Assert( target_objp != NULL );
-		targeted_subsys = ship_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
+	if ( (t_subsys != -1) && (target_objp->type == OBJ_SHIP) ) {
+		targeted_subsys = multi_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 	}
 
 	// save and restore the target objnum and targeted subsystem so that we don't mess up other things
@@ -4676,9 +4680,9 @@ void process_subsystem_destroyed_packet( ubyte *data, header *hinfo )
 		shipp = &Ships[objp->instance];
 
 		// call to get the pointer to the subsystem we should be working on
-		subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+		subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 		if (subsysp == NULL) {
-			nprintf(("Network", "Could not find subsys %d for ship %s to process as being destroyed\n", (int)uindex, shipp->ship_name ));
+			nprintf(("Network", "Could not find subsystem %d of %d on ship %s (%s) to destroy\n", (int)uindex, ship_get_num_subsys(shipp), shipp->ship_name, Ship_info[shipp->ship_info_index].name));
 			PACKET_SET_SIZE();
 			return;
 		}
@@ -4753,9 +4757,9 @@ void process_subsystem_cargo_revealed_packet( ubyte *data, header *hinfo )
 	shipp = &Ships[objp->instance];
 
 	// call to get the pointer to the subsystem we should be working on
-	subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+	subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 	if (subsysp == NULL) {
-		nprintf(("Network", "Could not find subsys for ship %s for cargo revealed\n", Ships[objp->instance].ship_name ));
+		nprintf(("Network", "Could not find subsystem %d of %d on ship %s (%s) to reveal cargo\n", (int)uindex, ship_get_num_subsys(shipp), shipp->ship_name, Ship_info[shipp->ship_info_index].name));
 		return;
 	}
 
@@ -4822,9 +4826,9 @@ void process_subsystem_cargo_hidden_packet( ubyte *data, header *hinfo )
 	shipp = &Ships[objp->instance];
 
 	// call to get the pointer to the subsystem we should be working on
-	subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+	subsysp = multi_get_indexed_subsys( shipp, (int)uindex );
 	if (subsysp == NULL) {
-		nprintf(("Network", "Could not find subsys for ship %s for cargo hidden\n", Ships[objp->instance].ship_name ));
+		nprintf(("Network", "Could not find subsystem %d of %d on ship %s (%s) to hide cargo\n", (int)uindex, ship_get_num_subsys(shipp), shipp->ship_name, Ship_info[shipp->ship_info_index].name));
 		return;
 	}
 
@@ -5287,7 +5291,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			// special case for destroy subsystem -- get the ai_info pointer to our target ship
 			// so that we can properly set up what subsystem this ship is attacking.
 			if ( (mode == AI_GOAL_DESTROY_SUBSYSTEM ) && (submode >= 0) )
-				aip->targeted_subsys = ship_get_indexed_subsys( &Ships[other_objp->instance], submode);
+				aip->targeted_subsys = multi_get_indexed_subsys( &Ships[other_objp->instance], submode);
 		}
 
 		break;
@@ -7627,9 +7631,8 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	wp->target_sig = homing_object->signature;
 	wp->homing_pos = homing_goal;
 
-	if ( h_subsys != -1 ) {
-		Assert( homing_object->type == OBJ_SHIP );
-		wp->homing_subsys = ship_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
+	if ( (h_subsys != -1) && (homing_object->type == OBJ_SHIP) ) {
+		wp->homing_subsys = multi_get_indexed_subsys( &Ships[homing_object->instance], h_subsys);
 	}
 
 	if (flags & HWIF_BIG_UPDATE) {
@@ -8467,9 +8470,15 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.burst_index = 0;
 
-	if ( fire_info.target && (target_subsys_index >= 0) ) {
+	// the weapon class arrives over the network, so validate it before using it to index Weapon_info
+	if (!Weapon_info.in_bounds(fire_info.beam_info_index)) {
+		nprintf(("Network", "Received invalid weapon class %d for BEAM weapon!\n", fire_info.beam_info_index));
+		return;
+	}
+
+	if ( fire_info.target && (target_subsys_index >= 0) && (fire_info.target->type == OBJ_SHIP) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
-		fire_info.target_subsys = ship_get_indexed_subsys(targetp, target_subsys_index);
+		fire_info.target_subsys = multi_get_indexed_subsys(targetp, target_subsys_index);
 	}
 
 	if ( fire_info.shooter && (fire_info.shooter->type == OBJ_SHIP) ) {
@@ -8479,12 +8488,14 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			Assertion(bank >= 0, "Fighter BEAM bank is invalid!");
 			Assertion(point >= 0, "Fighter BEAM point is invalid!");
 
-			if ( (bank < 0) || (point < 0) ) {
+			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+
+			// the bank and point also arrive over the network, so validate them against the model
+			if ( (bank < 0) || (bank >= pm->n_guns) || (point < 0) || (point >= pm->gun_banks[bank].num_slots) ) {
 				nprintf(("Network", "Couldn't get firing point for fighter BEAM weapon!\n"));
 				return;
 			}
 
-			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
 			fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
@@ -8508,7 +8519,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			fire_info.bank = bank;
 			fire_info.point = point;
 		} else if (shooter_subsys_index >= 0) {
-			fire_info.turret = ship_get_indexed_subsys(shipp, shooter_subsys_index);
+			fire_info.turret = multi_get_indexed_subsys(shipp, shooter_subsys_index);
 		}
 	}
 
@@ -8724,7 +8735,7 @@ void process_weapon_detonate_packet(ubyte *data, header *hinfo)
 }	
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius)
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius, float target_forward_speed)
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -8776,6 +8787,8 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	ADD_FLOAT( dist_to_target );
 
 	ADD_FLOAT( target_radius );
+
+	ADD_FLOAT( target_forward_speed );
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8797,6 +8810,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	float flak_range;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
@@ -8809,6 +8823,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_FLOAT( flak_range );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -8835,7 +8850,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index );
+	ssp = multi_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8856,10 +8871,11 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object	
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, nullptr, -1, -1, launch_curve_data);
 	if (weapon_objnum != -1) {
 		const weapon_info& wip = Weapon_info[wid];
 		if ( wip.launch_snd.isValid() ) {

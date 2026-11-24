@@ -9,6 +9,7 @@ namespace scripting::api
 {
 //**********HANDLE: mission goal
 ADE_OBJ(l_Goal, int, "mission_goal", "Mission goal handle");
+ADE_OBJ_VALIDATOR(l_Goal, idx, Mission_goals.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Goal, nullptr, "The name of the goal", "string", "The goal name")
 {
@@ -127,16 +128,6 @@ ADE_VIRTVAR(isGoalValid, l_Goal, nullptr, "The goal validity", "boolean", "true 
 	}
 
 	return ade_set_args(L, "b", !(Mission_goals[current].type & INVALID_GOAL));
-}
-
-ADE_FUNC(isValid, l_Goal, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
-{
-	int current = -1;
-
-	if (!ade_get_args(L, "o", l_Goal.Get(&current)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", (current >= 0) && (current < (int)Mission_goals.size()));
 }
 
 }

@@ -10,6 +10,7 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
+#include <array>
 #include <csetjmp>
 #include <set>
 
@@ -60,6 +61,7 @@ extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
 extern bool check_for_25_1_data();
+extern bool check_for_26_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -116,7 +118,14 @@ struct support_ship_info
 	bool	disallow_rearm;                      // if true, support ships can only repair and will not rearm weapons
 	bool	allow_rearm_weapon_precedence;       // if true, support ships may swap to precedence weapons when rearm pool is empty
 	bool	rearm_pool_from_loadout;             // initialize rearm pool from mission loadout after filling starting loadout ships
-	int     rearm_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES]; // mission stockpile used to limit support ship rearming
+
+	// mission stockpile used to limit support ship rearming: weapon class -> amount remaining
+	// (-1 = unlimited, 0 = not rearmable, >0 = limited); an absent entry means rearm_pool_default()
+	std::array<SCP_map<int, int>, MAX_TVT_TEAMS> rearm_weapon_pool;
+
+	// the default for weapon classes without a pool entry: normally unlimited, but when the pool
+	// is seeded from the mission loadout, any weapon not in the loadout cannot be rearmed
+	int rearm_pool_default() const { return rearm_pool_from_loadout ? 0 : -1; }
 
 	void reset();
 };
@@ -232,7 +241,8 @@ typedef struct mission {
 	char substitute_briefing_music_name[NAME_LENGTH];
 
 	// Goober5000
-	ai_profile_t *ai_profile;
+	int ai_profile_index;
+	const ai_profile_t *ai_profile() const { return &Ai_profiles[ai_profile_index]; }
 
 	SCP_string lighting_profile_name;
 
@@ -305,11 +315,9 @@ extern int Mission_callsign_count;
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
 	int num_paths;
-	int cached_mask;
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
-extern const char *Ship_class_names[MAX_SHIP_CLASSES];
 extern const char *Ai_behavior_names[MAX_AI_BEHAVIORS];
 extern const char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
@@ -410,21 +418,9 @@ struct alt_class {
 		variable_index = -1;
 		default_to_this_class = false;
 	}
-	alt_class(const alt_class& a) {
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-	}
 	bool operator==(const alt_class& a) const
 	{
 		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
-	}
-	alt_class& operator=(const alt_class& a)
-	{
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-		return *this;
 	}
 };
 
@@ -543,30 +539,32 @@ public:
 
 // Goober5000 - this is now dynamic
 extern SCP_vector<p_object> Parse_objects;
-#define POBJ_INDEX(pobjp) (int)(pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
+#define POBJ_INDEX(pobjp) (static_cast<int>((pobjp)-Parse_objects.data()))
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct team_data {
+// one line of a team loadout: a ship or weapon class (given literally or via a sexp variable)
+// and how many of it are available (likewise literal or via a variable)
+struct loadout_entry
+{
+	int class_index = -1;       // resolved ship or weapon class
+	int count = 0;
+	SCP_string class_variable;  // sexp variable name; empty = class was given literally
+	SCP_string count_variable;  // sexp variable name; empty = count was given literally
+};
+
+struct team_data
+{
 	// ships
-	int		default_ship;  // default ship type for player start point (recommended choice)
-	int		num_ship_choices; // number of ship choices inside ship_list 
-	int		loadout_total;	// Total number of ships available of all classes 
-	int		ship_list[MAX_SHIP_CLASSES];
-	char	ship_list_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
-	int		ship_count[MAX_SHIP_CLASSES];
-	char	ship_count_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
+	int		default_ship = -1;						// default ship type for player start point (recommended choice)
+	SCP_vector<loadout_entry> ship_choices;			// ship classes (and counts) available in the loadout
 
 	// weapons
-	int		num_weapon_choices;
-	bool    do_not_validate;
-	int		weaponry_pool[MAX_WEAPON_TYPES];
-	int		weaponry_count[MAX_WEAPON_TYPES];
-	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
-	char	weaponry_amount_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
-	bool	weapon_required[MAX_WEAPON_TYPES];
-} team_data;
+	bool	do_not_validate = false;
+	SCP_vector<loadout_entry> weapon_choices;		// weapon classes (and counts) available in the loadout
+	SCP_set<int> required_weapons;					// weapon classes that cannot be removed in weapon select
+};
 
 #define MAX_P_WINGS		16
 #define MAX_SHIP_LIST	16
@@ -589,6 +587,9 @@ extern SCP_vector<SCP_string> Parse_names;
 // silently buried. Outside of QtFRED these sites still call Warning(LOCATION, ...).
 extern SCP_vector<SCP_string> Mission_parse_warnings;
 
+// true while a mission is being parsed and post-processed
+extern bool Parsing_mission;
+
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
 extern p_object	*Player_start_pobject;
@@ -603,13 +604,20 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
 void mission_init(mission *pm, bool quick_init = false);
+
+// returns a copy of the mission's AI profile that can be modified for the rest of the mission
+ai_profile_t *mission_get_transient_ai_profile();
+
+// removes flags that are inactive or meaningful only at runtime
+void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags);
+
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_find_parse_object(const char *name);
 int parse_create_object(p_object *objp, bool standalone_ship = false);
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
+void resolve_parse_flags(const flagset<Mission::Parse_Object_Flags> &parse_flags, ship &s, bool no_ship_max_shield);
 
 void mission_parse_close();
 

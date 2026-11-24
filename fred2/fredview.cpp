@@ -188,6 +188,26 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_3, OnUpdateOutlineLod3)
 	ON_COMMAND(ID_OUTLINE_LOD_4, OnOutlineLod4)
 	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_4, OnUpdateOutlineLod4)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_50, OnLabelFontScale50)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_50, OnUpdateLabelFontScale50)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_75, OnLabelFontScale75)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_75, OnUpdateLabelFontScale75)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_100, OnLabelFontScale100)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_100, OnUpdateLabelFontScale100)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_125, OnLabelFontScale125)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_125, OnUpdateLabelFontScale125)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_150, OnLabelFontScale150)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_150, OnUpdateLabelFontScale150)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_200, OnLabelFontScale200)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_200, OnUpdateLabelFontScale200)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_250, OnLabelFontScale250)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_250, OnUpdateLabelFontScale250)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_300, OnLabelFontScale300)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_300, OnUpdateLabelFontScale300)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_350, OnLabelFontScale350)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_350, OnUpdateLabelFontScale350)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_400, OnLabelFontScale400)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_400, OnUpdateLabelFontScale400)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
 	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
@@ -288,10 +308,14 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
+	ON_COMMAND(ID_MISC_ROTATE_SELECTION_MIDPOINT, OnMiscRotateSelectionMidpoint)
+	ON_UPDATE_COMMAND_UI(ID_MISC_ROTATE_SELECTION_MIDPOINT, OnUpdateMiscRotateSelectionMidpoint)
 	ON_COMMAND(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnAlwaysSaveDisplayNames)
 	ON_UPDATE_COMMAND_UI(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnUpdateAlwaysSaveDisplayNames)
 	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
+	ON_COMMAND(ID_CLASSIC_MENU_LAYOUT, OnClassicMenuLayout)
+	ON_UPDATE_COMMAND_UI(ID_CLASSIC_MENU_LAYOUT, OnUpdateClassicMenuLayout)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -466,7 +490,7 @@ void CFREDView::OnDraw(CDC* pDC)
 	CRect clip;
 
 	CFREDDoc* pDoc = GetDocument();
-	ASSERT_VALID(pDoc);
+	Assert(pDoc != nullptr);
 
 	Update_window = 1;
 }
@@ -506,7 +530,7 @@ void CFREDView::Dump(CDumpContext& dc) const
 
 CFREDDoc* CFREDView::GetDocument() // non-debug version is inline
 {
-	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CFREDDoc)));
+	Assert(m_pDocument->IsKindOf(RUNTIME_CLASS(CFREDDoc)));
 	return (CFREDDoc*)m_pDocument;
 }
 #endif //_DEBUG
@@ -1183,6 +1207,10 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
+						char new_name[NAME_LENGTH];
+						wing_bash_ship_name(new_name, Wings[Duped_wing].name, Wings[Duped_wing].wave_count + 1);
+						rename_ship(ship, new_name);
+						// bash it again for the display name
 						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
@@ -1591,7 +1619,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			int id = ID_EDITORS_SHIPS;
 			CMenu* pPopup = menu.GetSubMenu(0);
 
-			ASSERT(pPopup != NULL);
+			Assert(pPopup != nullptr);
 			if (Marked > 1)
 				pPopup->ModifyMenu(ID_EDITORS_SHIPS, MF_BYCOMMAND | MF_STRING, ID_EDITORS_SHIPS, "Edit Marked Ships");
 			else {
@@ -1638,7 +1666,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			CMenu* pPopup = menu.GetSubMenu(0);
 			CMenu shipPopup, player_submenu;
 			CMenu *species_submenu = new CMenu[Species_info.size()];
-			ASSERT(pPopup != NULL);
+			Assert(pPopup != nullptr);
 
 			// create a popup menu based on the ship models read in ship.cpp.
 			// note: the offsets from SHIP_TYPES must correspond to the indexes in the ship type dropdown
@@ -1817,6 +1845,40 @@ void CFREDView::OnUpdateOutlineLod1(CCmdUI* pCmdUI) { OnUpdateOutlineLod(1, pCmd
 void CFREDView::OnUpdateOutlineLod2(CCmdUI* pCmdUI) { OnUpdateOutlineLod(2, pCmdUI); }
 void CFREDView::OnUpdateOutlineLod3(CCmdUI* pCmdUI) { OnUpdateOutlineLod(3, pCmdUI); }
 void CFREDView::OnUpdateOutlineLod4(CCmdUI* pCmdUI) { OnUpdateOutlineLod(4, pCmdUI); }
+
+void CFREDView::OnLabelFontScale(float scale)
+{
+	Fred_label_font_scale = scale;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateLabelFontScale(float scale, CCmdUI* pCmdUI)
+{
+	// tolerant compare, since the value is stored as a float derived from an int percentage
+	pCmdUI->SetCheck(fl_equal(Fred_label_font_scale, scale, 0.001f));
+}
+
+void CFREDView::OnLabelFontScale50() { OnLabelFontScale(0.5f); }
+void CFREDView::OnLabelFontScale75() { OnLabelFontScale(0.75f); }
+void CFREDView::OnLabelFontScale100() { OnLabelFontScale(1.0f); }
+void CFREDView::OnLabelFontScale125() { OnLabelFontScale(1.25f); }
+void CFREDView::OnLabelFontScale150() { OnLabelFontScale(1.5f); }
+void CFREDView::OnLabelFontScale200() { OnLabelFontScale(2.0f); }
+void CFREDView::OnLabelFontScale250() { OnLabelFontScale(2.5f); }
+void CFREDView::OnLabelFontScale300() { OnLabelFontScale(3.0f); }
+void CFREDView::OnLabelFontScale350() { OnLabelFontScale(3.5f); }
+void CFREDView::OnLabelFontScale400() { OnLabelFontScale(4.0f); }
+void CFREDView::OnUpdateLabelFontScale50(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(0.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale75(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(0.75f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale100(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale125(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.25f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale150(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale200(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(2.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale250(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(2.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale300(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(3.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale350(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(3.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale400(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(4.0f, pCmdUI); }
 
 void CFREDView::OnEditorsGoals()
 {
@@ -2245,62 +2307,15 @@ void CFREDView::OnSelectList()
 // position camera to view all objects on the screen at once.  Doesn't change orientation.
 void view_universe(int just_marked)
 {
-	int i, max = 0, obj_flags[MAX_OBJECTS];
-	float dist, largest = 20.0f;
-	vec3d center, p1, p2;		// center of all the objects collectively
+	float dist, radius;
+	vec3d center;
 	vertex v;
 	object *ptr;
 
-	for (i=0; i<MAX_OBJECTS; i++)
-		obj_flags[i] = 0;
+	if (!get_object_bounds(just_marked != 0, &center, &radius))
+		return;
 
-	if (just_marked)
-		ptr = &Objects[cur_object_index];
-	else
-		ptr = GET_FIRST(&obj_used_list);
-
-	p1.xyz.x = p2.xyz.x = ptr->pos.xyz.x;
-	p1.xyz.y = p2.xyz.y = ptr->pos.xyz.y;
-	p1.xyz.z = p2.xyz.z = ptr->pos.xyz.z;
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
-			center = ptr->pos;
-			if (center.xyz.x < p1.xyz.x)
-				p1.xyz.x = center.xyz.x;
-			if (center.xyz.x > p2.xyz.x)
-				p2.xyz.x = center.xyz.x;
-			if (center.xyz.y < p1.xyz.y)
-				p1.xyz.y = center.xyz.y;
-			if (center.xyz.y > p2.xyz.y)
-				p2.xyz.y = center.xyz.y;
-			if (center.xyz.z < p1.xyz.z)
-				p1.xyz.z = center.xyz.z;
-			if (center.xyz.z > p2.xyz.z)
-				p2.xyz.z = center.xyz.z;
-		}
-		
-		ptr = GET_NEXT(ptr);
-	}
-
-	vm_vec_avg(&center, &p1, &p2);
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
-			dist = vm_vec_dist_squared(&center, &ptr->pos);
-			if (dist > largest)
-				largest = dist;
-
-			obj_flags[OBJ_INDEX(ptr)] = 1;  // flag object as needing on-screen check
-			if (OBJ_INDEX(ptr) > max)
-				max = OBJ_INDEX(ptr);
-		}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	dist = fl_sqrt(largest) + 1.0f;
+	dist = std::max(radius, fl_sqrt(20.0f)) + 1.0f;
 	vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
 	g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
 
@@ -3301,9 +3316,32 @@ int CFREDView::global_error_check_player_wings(int multi)
 		}
 	}
 
-//	// player's wing must have a true arrival
-//	free_sexp2(Wings[z].arrival_cue);
-//	Wings[z].arrival_cue = Locked_sexp_true;
+	// The wing containing the player start must be present at mission start, so a custom arrival cue
+	// is only useful for controlling the arrival of subsequent waves.  Flag a single-wave wing with a
+	// custom cue as a potential issue, but never change the cue itself.
+	if (Error_checker_checks_potential_issues || Error_checker_checks_potential_issues_once)
+	{
+		for (i=0; i<MAX_WINGS; i++)
+		{
+			if (!Wings[i].wave_count || Wings[i].num_waves > 1)
+				continue;
+			if (Wings[i].arrival_cue == Locked_sexp_true)
+				continue;
+
+			bool contains_player_start = false;
+			for (z=0; z<Wings[i].wave_count; z++)
+				if (Objects[Ships[Wings[i].ship_index[z]].objnum].type == OBJ_START)
+					contains_player_start = true;
+
+			if (contains_player_start)
+			{
+				SCP_string issue_buf;
+				sprintf(issue_buf, "Potential issue detected in wing %s:\n\nThis wing contains a player start and a custom arrival cue, but only one wave.  The arrival cue must evaluate to true at mission start, or the player will not be created.", Wings[i].name);
+				if (Fred_main_wnd->MessageBox(issue_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+					return 1;
+			}
+		}
+	}
 
 	// Check to be sure that any player wing doesn't have > 1 wave for multiplayer
 	if ( multi )
@@ -4026,6 +4064,19 @@ void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
+void CFREDView::OnMiscRotateSelectionMidpoint()
+{
+	Orbit_selection_midpoint = !Orbit_selection_midpoint;
+	Orbit_active = false;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateMiscRotateSelectionMidpoint(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Orbit_selection_midpoint);
+}
+
 void CFREDView::OnAlwaysSaveDisplayNames()
 {
 	Always_save_display_names = !Always_save_display_names;
@@ -4048,6 +4099,19 @@ void CFREDView::OnErrorCheckerChecksPotentialIssues()
 void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
+}
+
+void CFREDView::OnClassicMenuLayout()
+{
+	Classic_menu_layout = !Classic_menu_layout;
+	if (Fred_main_wnd != nullptr)
+		Fred_main_wnd->apply_menu_layout(Classic_menu_layout);
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateClassicMenuLayout(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Classic_menu_layout);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
@@ -4406,7 +4470,7 @@ void CFREDView::OnLookatObj()
 		vec3d v, loc;
 		matrix m;
 
-		loc = Objects[cur_object_index].pos;
+		loc = selection_midpoint();
 		vm_vec_sub(&v, &loc, &view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {

@@ -33,8 +33,10 @@ private slots:
 	void on_applyAutoCorrections_toggled(bool checked);
 	void on_toolbarIconSizeCombo_currentIndexChanged(int index);
 	void on_outlineLodCombo_currentIndexChanged(int index);
+	void on_labelFontScaleSpin_valueChanged(double value);
 	void on_themeCombo_currentIndexChanged(int index);
 	void on_dataMenuStyleCombo_currentIndexChanged(int index);
+	void on_classicMenuLayout_toggled(bool checked);
 	void on_showSexpHelpMissionEvents_toggled(bool checked);
 	void on_showSexpHelpMissionGoals_toggled(bool checked);
 	void on_showSexpHelpMissionCutscenes_toggled(bool checked);
@@ -55,6 +57,7 @@ private slots:
 	// Controls
 	void on_invertOrbitX_toggled(bool checked);
 	void on_invertOrbitY_toggled(bool checked);
+	void on_orbitSelectionMidpoint_toggled(bool checked);
 	void on_resetDefaultsButton_clicked();
 
 private: // NOLINT(readability-redundant-access-specifiers)

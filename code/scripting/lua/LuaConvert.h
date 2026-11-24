@@ -59,8 +59,8 @@ void pushValue(lua_State* luaState, const bool& value);
 void pushValue(lua_State* luaState, const lua_CFunction& value);
 
 template<typename T>
-void pushValue(lua_State* L, scripting::ade_odata_setter<T>&& value) {
-	using namespace scripting;
+void pushValue(lua_State* L, ::scripting::ade_odata_setter<T>&& value) {
+	using namespace ::scripting;
 
 	//WMC - char must be 1 byte, foo.
 	static_assert(sizeof(char) == 1, "char must be 1 byte!");
@@ -105,7 +105,7 @@ bool popValue(lua_State* luaState, bool& target, int stackposition = -1, bool re
 bool popValue(lua_State* luaState, lua_CFunction& target, int stackposition = -1, bool remove = true);
 
 template <typename T>
-bool popValue(lua_State* L, scripting::ade_odata_getter<T>&& od, int stackposition = -1, bool remove = true)
+bool popValue(lua_State* L, ::scripting::ade_odata_getter<T>&& od, int stackposition = -1, bool remove = true)
 {
 	// Use the helper to reduce the amount of code here
 	if (!internal::ade_odata_helper(L, stackposition, od.idx)) {
@@ -124,7 +124,7 @@ bool popValue(lua_State* L, scripting::ade_odata_getter<T>&& od, int stackpositi
 }
 
 template <typename T>
-bool popValue(lua_State* L, scripting::ade_odata_ptr_getter<T>&& od, int stackposition = -1, bool remove = true)
+bool popValue(lua_State* L, ::scripting::ade_odata_ptr_getter<T>&& od, int stackposition = -1, bool remove = true)
 {
 	// Use the helper to reduce the amount of code here
 	if (!internal::ade_odata_helper(L, stackposition, od.idx)) {

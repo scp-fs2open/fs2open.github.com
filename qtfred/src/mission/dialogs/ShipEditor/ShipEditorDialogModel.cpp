@@ -14,6 +14,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
 #include "missioneditor/common.h"
+#include "missioneditor/sexp_tree_model.h"
 
 #include <globalincs/linklist.h>
 #include <globalincs/utility.h>
@@ -772,21 +773,9 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 	}
 
 	// All validation passed — write the new name
-	char old_name[NAME_LENGTH];
-	strcpy_s(old_name, Ships[_singleShip].ship_name);
-	strcpy_s(Ships[_singleShip].ship_name, new_name.c_str());
+	// (the display name is handled separately in setShipDisplayName)
+	_editor->rename_ship(_singleShip, new_name.c_str(), false);
 	_shipName = new_name;
-
-	if (strcmp(old_name, Ships[_singleShip].ship_name)) {
-		update_sexp_references(old_name, Ships[_singleShip].ship_name);
-		_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, Ships[_singleShip].ship_name);
-		_editor->update_texture_replacements(old_name, Ships[_singleShip].ship_name);
-		int j = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
-		if (j >= 0) {
-			Assert(strlen(Ships[_singleShip].ship_name) < NAME_LENGTH);
-			strcpy_s(Reinforcements[j].name, Ships[_singleShip].ship_name);
-		}
-	}
 
 	setModified();
 	_editor->missionChanged();
@@ -1344,12 +1333,11 @@ bool ShipEditorDialogModel::getArrivalCue() const
 	return _updateArrival;
 }
 
-void ShipEditorDialogModel::setArrivalTreeDirty(int formula)
+void ShipEditorDialogModel::setArrivalTreeDirty(const SexpTreeModel& tree)
 {
 	if (_multiEdit && !_updateArrival)
 		return;
 
-	_arrivalTreeFormula = formula;
 	_updateArrival = true;
 
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -1357,9 +1345,11 @@ void ShipEditorDialogModel::setArrivalTreeDirty(int formula)
 			auto i = ptr->instance;
 			if (Ships[i].wingnum >= 0)
 				continue;
-			if (Ships[i].arrival_cue >= 0 && Ships[i].arrival_cue != formula)
+			if (Ships[i].arrival_cue >= 0)
 				free_sexp2(Ships[i].arrival_cue);
-			Ships[i].arrival_cue = formula;
+			// Each ship owns its cue, so serialize a separate expression for each one.
+			Ships[i].arrival_cue = tree.save_tree();
+			_arrivalTreeFormula = Ships[i].arrival_cue;
 		}
 	}
 
@@ -1506,12 +1496,11 @@ bool ShipEditorDialogModel::getDepartureCue() const
 	return _updateDeparture;
 }
 
-void ShipEditorDialogModel::setDepartureTreeDirty(int formula)
+void ShipEditorDialogModel::setDepartureTreeDirty(const SexpTreeModel& tree)
 {
 	if (_multiEdit && !_updateDeparture)
 		return;
 
-	_departureTreeFormula = formula;
 	_updateDeparture = true;
 
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -1519,9 +1508,11 @@ void ShipEditorDialogModel::setDepartureTreeDirty(int formula)
 			auto i = ptr->instance;
 			if (Ships[i].wingnum >= 0)
 				continue;
-			if (Ships[i].departure_cue >= 0 && Ships[i].departure_cue != formula)
+			if (Ships[i].departure_cue >= 0)
 				free_sexp2(Ships[i].departure_cue);
-			Ships[i].departure_cue = formula;
+			// Each ship owns its cue, so serialize a separate expression for each one.
+			Ships[i].departure_cue = tree.save_tree();
+			_departureTreeFormula = Ships[i].departure_cue;
 		}
 	}
 

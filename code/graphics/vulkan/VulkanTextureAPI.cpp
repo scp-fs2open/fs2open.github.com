@@ -11,13 +11,13 @@
 #include "ddsutils/ddsutils.h"
 #include "ddsutils/bcdec.h"
 #include "globalincs/systemvars.h"
-
+#include "ktxutils/ktxutils.h"  
 
 namespace graphics::vulkan {
 
 // ========== gr_screen function pointer implementations ==========
 
-int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
+int vulkan_preload(int bitmap_num, int is_aabitmap)
 {
 	auto* texManager = getTextureManager();
 
@@ -28,11 +28,11 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 	}
 
 	// Determine lock parameters based on compression type.
-	// For compressed DDS textures, lock with the matching DXT/BC7 flags to get
-	// raw compressed data with all pre-baked mipmap levels.
+	// For compressed DDS/KTX textures, lock with the matching DXT/BC7/ETC2
+	// flags to get raw compressed data with all pre-baked mipmap levels.
 	int compType = bm_is_compressed(bitmap_num);
 	int lockBpp = 32;
-	ubyte lockFlags = BMP_TEX_XPARENT;
+	uint lockFlags = BMP_TEX_XPARENT;
 
 	switch (compType) {
 	case DDS_DXT1:
@@ -60,9 +60,30 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 		lockBpp = 32;
 		lockFlags = BMP_TEX_CUBEMAP;
 		break;
+	case KTX_ETC2_RGB:
+	case KTX_ETC2_SRGB:
+		lockBpp = 24;
+		lockFlags = BMP_TEX_ETC2_RGB8;
+		break;
+	case KTX_ETC2_RGBA_EAC:
+	case KTX_ETC2_SRGBA_EAC:
+		lockBpp = 32;
+		lockFlags = BMP_TEX_ETC2_RGBA8;
+		break;
+	case KTX_ETC2_RGB_A1:
+	case KTX_ETC2_SRGB_A1:
+		lockBpp = 24;
+		lockFlags = BMP_TEX_ETC2_RGBA1;
+		break;
 	default:
-		// Uncompressed — use 32bpp decompressed
+		// AABITMAP art is a palette-index mask. Keep the indices as R8 so
+		// the HUD shader can use them as coverage instead of RGB color data,
+		// matching the draw-time AABITMAP lock in bindMaterialTextures.
 		compType = 0;
+		if (is_aabitmap) {
+			lockBpp = 8;
+			lockFlags = BMP_AABITMAP;
+		}
 		break;
 	}
 
@@ -76,17 +97,24 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 		return 0;
 	}
 
-	// Upload the texture
-	bool success = texManager->bm_data(bitmap_num, bmp, compType);
+	// bm_lock() already uploads through gr_bm_data(). Repeating that call
+	// recreates a resident 2D image and retains another copy until retirement.
+	slot = texManager->getTextureSlot(bitmap_num);
+	bool success = slot != nullptr && slot->imageView;
 
 	// Unlock bitmap
 	bm_unlock(bitmap_num);
 
 	if (success) {
+		texManager->releaseCpuBitmapData(bitmap_num);
 		static int successCount = 0;
-		if (successCount < 10) {
-			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d)\n",
-				bitmap_num, compType));
+		// AABITMAP uploads bypass the cap so a playtest can confirm R8 for HUD handles,
+		// which page in long after the first few textures.
+		if (successCount < 10 || is_aabitmap) {
+			auto* uploaded = texManager->getTextureSlot(bitmap_num);
+			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d, aabitmap=%d, format=%s)\n",
+				bitmap_num, compType, is_aabitmap,
+				uploaded ? vk::to_string(uploaded->format).c_str() : "none"));
 			successCount++;
 		}
 	}
@@ -121,14 +149,12 @@ bool vulkan_bm_data(int handle, bitmap* bm)
 
 void vulkan_bm_page_in_start()
 {
-	// Flush all GPU texture resources so that textures not needed in the next
-	// mission are freed. Matches the OpenGL pattern (opengl_tcache_flush in
-	// opengl_preload_init, currently commented out there). Textures that ARE
-	// needed will be re-uploaded on demand during level load / first use.
-	// Without this, Vulkan VkImage/VMA allocations accumulate across missions
-	// because bm_unload_fast() only frees CPU-side pixel data.
-	auto* texManager = getTextureManager();
-	texManager->flushTextures();
+	VulkanTextureManager::pageInStart();
+}
+
+void vulkan_bm_page_in_prepare()
+{
+	getTextureManager()->pageInPrepare();
 }
 
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)
@@ -141,6 +167,22 @@ int vulkan_bm_set_render_target(int handle, int face)
 {
 	auto* texManager = getTextureManager();
 	return texManager->bm_set_render_target(handle, face);
+}
+
+bool vulkan_screen_layer_begin(int bitmap)
+{
+	auto* ts = getTextureManager()->getTextureSlot(bitmap);
+	if (ts == nullptr || !ts->framebuffer) {
+		return false;
+	}
+
+	getRendererInstance()->beginScreenLayer(ts);
+	return true;
+}
+
+void vulkan_screen_layer_end()
+{
+	getRendererInstance()->endScreenLayer();
 }
 
 void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height)

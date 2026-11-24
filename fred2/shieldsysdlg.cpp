@@ -22,7 +22,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 SCP_vector<int> Shield_sys_teams;
-int Shield_sys_types[MAX_SHIP_CLASSES] = {0};
+SCP_map<int, int> Shield_sys_types;	// ship class -> shield status (0=has, 1=none, 2=mixed); absent = 0
 
 /////////////////////////////////////////////////////////////////////////////
 // shield_sys_dlg dialog
@@ -59,14 +59,11 @@ BOOL shield_sys_dlg::OnInitDialog()
 {
 	int i, z;
 	int* teams = new int[Iff_info.size()]();
-	int types[MAX_SHIP_CLASSES];
+	SCP_set<int> types_seen;		// which ship classes we've encountered this pass
 	CComboBox *box;
 
 	for (i=0; i< (int)Iff_info.size(); i++)
 		teams[i] = 0;
-
-	for (i=0; i<MAX_SHIP_CLASSES; i++)
-		types[i] = 0;
 
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
@@ -76,13 +73,12 @@ BOOL shield_sys_dlg::OnInitDialog()
 			else if (Shield_sys_teams[Ships[i].team] != z)
 				Shield_sys_teams[Ships[i].team] = 2;
 
-			if (!types[Ships[i].ship_info_index])
+			if (types_seen.insert(Ships[i].ship_info_index).second)
 				Shield_sys_types[Ships[i].ship_info_index] = z;
 			else if (Shield_sys_types[Ships[i].ship_info_index] != z)
 				Shield_sys_types[Ships[i].ship_info_index] = 2;
 
 			teams[Ships[i].team]++;
-			types[Ships[i].ship_info_index]++;
 		}
 
 	delete[] teams;
@@ -112,9 +108,10 @@ void shield_sys_dlg::OnOK()
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
 			z = Shield_sys_teams[Ships[i].team];
-			if (!Shield_sys_types[Ships[i].ship_info_index])
+			int type_z = Shield_sys_types.value_or(Ships[i].ship_info_index, 0);
+			if (!type_z)
 				z = 0;
-			else if (Shield_sys_types[Ships[i].ship_info_index] == 1)
+			else if (type_z == 1)
 				z = 1;
 
 			if (!z)
@@ -165,12 +162,14 @@ void shield_sys_dlg::OnSelchangeType()
 
 void shield_sys_dlg::set_type()
 {
-	if (!Shield_sys_types[m_type])
+	int type_z = Shield_sys_types.value_or(m_type, 0);
+
+	if (!type_z)
 		((CButton *) GetDlgItem(IDC_TYPE_YES))->SetCheck(TRUE);
 	else
 		((CButton *) GetDlgItem(IDC_TYPE_YES))->SetCheck(FALSE);
 
-	if (Shield_sys_types[m_type] == 1)
+	if (type_z == 1)
 		((CButton *) GetDlgItem(IDC_TYPE_NO))->SetCheck(TRUE);
 	else
 		((CButton *) GetDlgItem(IDC_TYPE_NO))->SetCheck(FALSE);
