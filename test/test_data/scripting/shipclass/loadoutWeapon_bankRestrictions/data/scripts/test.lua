@@ -19,3 +19,10 @@ local unrestricted = ui.ShipWepSelect.Loadout_Ships[2]
 unrestricted.Weapons[1] = 1
 assert.equals(0, unrestricted.Weapons[1])
 assert.equals(-1, unrestricted.Amounts[1])
+
+local outside_class_list = ui.ShipWepSelect.Loadout_Ships[3]
+outside_class_list.Weapons[1] = 1
+assert.equals(1, outside_class_list.Weapons[1])
+outside_class_list.Weapons[1] = 2
+assert.equals(0, outside_class_list.Weapons[1])
+assert.equals(-1, outside_class_list.Amounts[1])

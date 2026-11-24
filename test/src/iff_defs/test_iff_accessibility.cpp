@@ -1,3 +1,4 @@
+#include "hud/hud.h"
 #include "iff_defs/iff_defs.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
@@ -13,6 +14,14 @@ class IffAccessibilityTest : public test::FSTestFixture {
 	IffAccessibilityTest() : test::FSTestFixture(INIT_CFILE)
 	{
 		pushModDir("iff/tbm_adds_iff");
+	}
+
+  protected:
+	void TearDown() override
+	{
+		iff_close();
+
+		test::FSTestFixture::TearDown();
 	}
 };
 
@@ -31,7 +40,6 @@ namespace {
 }
 } // namespace
 
-// one test: nothing clears Iff_info, so a second iff_init() in the process fails on duplicate IFF names
 TEST_F(IffAccessibilityTest, TbmIffsKeepTheirColorsAndBuiltInsUseAccessibilityColors)
 {
 	iff_init();
@@ -81,6 +89,7 @@ TEST_F(IffAccessibilityTest, TbmIffsKeepTheirColorsAndBuiltInsUseAccessibilityCo
 
 	// the color lookup, with the option on
 	auto* mgr = options::OptionsManager::instance();
+	ASSERT_NE(mgr->getOptionByKey("Game.IffAccessibility"), nullptr);
 	mgr->setOverride("Game.IffAccessibility", "true", "test");
 	mgr->getOptionByKey("Game.IffAccessibility")->loadInitial();
 	mgr->clearOverrides();
@@ -95,8 +104,27 @@ TEST_F(IffAccessibilityTest, TbmIffsKeepTheirColorsAndBuiltInsUseAccessibilityCo
 	EXPECT_EQ(seen_by_pirate->blue, 0);
 
 	// the option binds once, so turn it off explicitly for any later test
+	ASSERT_NE(mgr->getOptionByKey("Game.IffAccessibility"), nullptr);
 	mgr->setOverride("Game.IffAccessibility", "false", "test");
 	mgr->getOptionByKey("Game.IffAccessibility")->loadInitial();
 	mgr->clearOverrides();
 	EXPECT_EQ(iff_get_color_by_team(friendly, -1, 0)->red, 0);
+}
+
+TEST_F(IffAccessibilityTest, CloseThenInitMatchesFirstInit)
+{
+	iff_init();
+	const color first = Iff_colors[IFF_COLOR_SELECTION].first;
+	EXPECT_EQ(radar_target_id_flags, RTIF_CROSSHAIRS);
+
+	iff_close();
+	EXPECT_EQ(radar_target_id_flags, 0);
+
+	iff_init();
+	const color& second = Iff_colors[IFF_COLOR_SELECTION].first;
+	EXPECT_EQ(second.red, first.red);
+	EXPECT_EQ(second.green, first.green);
+	EXPECT_EQ(second.blue, first.blue);
+	EXPECT_EQ(second.alpha, first.alpha);
+	EXPECT_EQ(radar_target_id_flags, RTIF_CROSSHAIRS);
 }
