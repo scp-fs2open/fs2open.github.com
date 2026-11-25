@@ -99,3 +99,70 @@ TEST_F(SubmodelLocalizeTest, submodel_instance_localize_roundtrip_world) {
 	EXPECT_VECMAT_NEAR(roundtrip, local);
 	EXPECT_VECMAT_NEAR(roundtripMat, localMat);
 }
+
+extern void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bool is_turret);
+
+class TurretAxisTest : public test::FSTestFixture {
+public:
+	TurretAxisTest() { pushModDir("model"); }
+
+protected:
+	void SetUp() override {
+		test::FSTestFixture::SetUp();
+
+		pm = new polymodel();
+		pm->n_models = 3;
+		pm->submodel = make_shared<bsp_info[]>(3);
+
+		pm->submodel[0].parent = -1;
+		pm->submodel[0].first_child = 1;
+		pm->submodel[1].parent = 0;
+		pm->submodel[1].first_child = 2;
+		pm->submodel[2].parent = 1;
+
+		// the reader has already switched off the movement of a barrel marked "other" with no $rotation_axis
+		pm->submodel[2].rotation_type = MOVEMENT_TYPE_NONE;
+		pm->submodel[2].rotation_axis_id = MOVEMENT_AXIS_OTHER;
+	}
+
+	void TearDown() override {
+		test::FSTestFixture::TearDown();
+
+		pm->submodel.reset();
+		delete pm;
+	}
+
+	polymodel *pm;
+};
+
+TEST_F(TurretAxisTest, barrel_marked_other_without_axis_gets_default) {
+	do_movement_sanity_checks(pm, 1, true, false);
+	do_movement_sanity_checks(pm, 2, true, true);
+
+	EXPECT_VECMAT_NEAR(pm->submodel[2].rotation_axis, vmd_x_vector);
+	EXPECT_EQ(pm->submodel[2].rotation_axis_id, MOVEMENT_AXIS_X);
+	EXPECT_EQ(pm->submodel[2].rotation_type, MOVEMENT_TYPE_TURRET);
+}
+
+TEST_F(TurretAxisTest, barrel_with_custom_axis_but_no_movement_still_rotates) {
+	pm->submodel[2].rotation_axis = vec3d{ {{0.0f, 0.6f, 0.8f}} };
+
+	do_movement_sanity_checks(pm, 1, true, false);
+	do_movement_sanity_checks(pm, 2, true, true);
+
+	EXPECT_TRUE(vm_vec_is_normalized(&pm->submodel[2].rotation_axis));
+	EXPECT_EQ(pm->submodel[2].rotation_type, MOVEMENT_TYPE_TURRET);
+}
+
+TEST_F(TurretAxisTest, barrel_with_custom_axis_keeps_it) {
+	vec3d custom{ {{0.0f, 0.6f, 0.8f}} };
+	pm->submodel[2].rotation_type = MOVEMENT_TYPE_TURRET;
+	pm->submodel[2].rotation_axis = custom;
+
+	do_movement_sanity_checks(pm, 1, true, false);
+	do_movement_sanity_checks(pm, 2, true, true);
+
+	EXPECT_VECMAT_NEAR(pm->submodel[2].rotation_axis, custom);
+	EXPECT_EQ(pm->submodel[2].rotation_axis_id, MOVEMENT_AXIS_OTHER);
+	EXPECT_EQ(pm->submodel[2].rotation_type, MOVEMENT_TYPE_TURRET);
+}

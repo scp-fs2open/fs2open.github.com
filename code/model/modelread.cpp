@@ -1486,7 +1486,7 @@ void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bo
 		// important compatibility check: if there are multipart turrets without rotation axes defined, define them
 		// also, some of the retail models got the axes wrong, so fix those :-/
 		// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
-		//     and also for turrets which don't have their axes set to "other"
+		//     and also for turrets which don't have their axes set to "other", or whose movement was switched off
 		auto base = parent_sm;
 		auto gun = sm;
 
@@ -1503,7 +1503,8 @@ void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bo
 		}
 
 		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
-			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER)
+			|| (gun->rotation_type == MOVEMENT_TYPE_NONE))
 		{
 			gun->rotation_axis_id = MOVEMENT_AXIS_X;
 			gun->rotation_axis = vmd_x_vector;
