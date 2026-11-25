@@ -11438,7 +11438,8 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		Assertion(repair_objp != nullptr || MULTIPLAYER_CLIENT, "Support ship on its way, but no support ship");
 		// an in-game joiner can lack a support ship that was called before its ship list went out
 		if (repair_objp == nullptr) {
-			nprintf(("Network", "Support ship for %s is unknown here, skipping its on-the-way notice\n",
+			nprintf(("Network",
+				"Support ship for %s is unknown here, skipping its on-the-way notice\n",
 				Ships[repaired_objp->instance].ship_name));
 			break;
 		}
