@@ -911,12 +911,18 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 // create the list of available ships the player can choose
 void multi_ingame_join_calc_avail(bool API_Access)
 {
+	// the list is rebuilt every frame and ships can leave it, so keep the highlight on the same ship, not the same row
+	ushort selected_sig = 0;
+	if (Multi_ingame_ship_selected >= 0 && Multi_ingame_ship_selected < Multi_ingame_num_avail) {
+		selected_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
+	}
+
 	// recalculate this # every frame
 	Multi_ingame_num_avail = 0;
 	Ingame_ship_choices.clear();
 
 	for (auto moveup: list_range(&Ship_obj_list)) {
-		// the picker holds MAX_PLAYERS ships; arrivals reaching a picking joiner could list more
+		// the picker holds MAX_PLAYERS ships; nothing else bounds how many it lists
 		if (Multi_ingame_num_avail >= MAX_PLAYERS)
 			break;
 
@@ -936,6 +942,13 @@ void multi_ingame_join_calc_avail(bool API_Access)
 			
 			// inc the # available
 			Multi_ingame_num_avail++;
+		}
+	}
+
+	for (int idx = 0; idx < Multi_ingame_num_avail; idx++) {
+		if (selected_sig != 0 && Multi_ingame_ship_sigs[idx] == selected_sig) {
+			Multi_ingame_ship_selected = idx;
+			break;
 		}
 	}
 }
@@ -1839,7 +1852,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// try and find the object
 		objp = NULL;
 		objp = multi_get_network_object(sig_request);
-		if(objp == NULL || !(objp->flags[Object::Object_Flags::Could_be_player])){
+		// a ship that is dying or departing is off the picker list, and the joiner may already have deleted it
+		if (objp == nullptr || !(objp->flags[Object::Object_Flags::Could_be_player]) ||
+			Ships[objp->instance].is_dying_or_departing()) {
 			send_ingame_ship_request_packet(INGAME_SR_DENY,0,&Net_players[player_num]);
 			break;
 		}		
@@ -1898,7 +1913,37 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 		// get the object itself
 		objp = multi_get_network_object(Multi_ingame_join_sig);
-		Assert(objp != NULL);
+
+		// the granted ship can be gone here if its kill arrived first; treat that as a denial
+		if (objp == nullptr) {
+			// read past the ship's data: position, orientation, mission time, respawn count, three ets values,
+			// two current banks, the ammo of each bank and the link flags
+			vec3d skip_pos;
+			matrix skip_orient;
+			GET_VECTOR(skip_pos);
+			GET_ORIENT(skip_orient);
+			// read only to move past them
+			(void)skip_pos;
+			(void)skip_orient;
+			GET_INT(mission_time);
+			GET_UINT(respawn_count);
+			for (i = 0; i < 5; i++) {
+				GET_DATA(val);
+			}
+			GET_DATA(num_primary_banks);
+			for (i = 0; i < num_primary_banks; i++) {
+				GET_SHORT(sval);
+			}
+			GET_DATA(num_secondary_banks);
+			for (i = 0; i < num_secondary_banks; i++) {
+				GET_SHORT(sval);
+			}
+			GET_DATA(val);
+			PACKET_SET_SIZE();
+			Multi_ingame_join_sig = 0;
+			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You have been denied the requested ship",686));
+			break;
+		}
 
 		// get its most recent position and orientation
 		GET_VECTOR(objp->pos);

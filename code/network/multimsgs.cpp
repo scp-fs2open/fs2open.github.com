@@ -437,8 +437,6 @@ void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignor
 			continue;
 		}
 
-		// an in-game joiner gets broadcasts from the moment its ship list is sent, so the reliable ones between the
-		// list and its ship being granted all reach it
 		bool joining = (Net_players[i].flags & NETINFO_FLAG_INGAME_JOIN) != 0;
 		if (joining && !(Net_players[i].s_info.ingame_join_flags & INGAME_JOIN_FLAG_SENDING_SHIPS)) {
 			continue;

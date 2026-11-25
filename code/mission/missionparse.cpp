@@ -9315,7 +9315,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->initial_velocity = 100;		// start at 100% velocity
 
-    if (Player_obj != nullptr && Player_obj->flags[Object::Object_Flags::No_shields])  {
+	if (Player_obj != nullptr && Player_obj->flags[Object::Object_Flags::No_shields])  {
 		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
 	}
 

@@ -17748,9 +17748,9 @@ void multi_sexp_deal_with_ship_flag()
 	{
 		if (ship_arrived) {
 			Current_sexp_network_packet.get_ship(shipp);
+			// a ship this client has already deleted (an in-game joiner's copy of a dying ship); the rest still apply
 			if (shipp == nullptr) {
-				WarningEx(LOCATION, "Null ship pointer in multi_sexp_deal_with_ship_flag(), tell a coder.\n");
-				return;
+				continue;
 			}
 
 			// save flags for state change comparisons
@@ -17785,9 +17785,10 @@ void multi_sexp_deal_with_ship_flag()
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
 			}
+			// a joiner without its ship doesn't know its team yet, so it adds the ship as the branches around it do
 			if ((ship_flag == (int)Ship::Ship_Flags::Friendly_stealth_invis) && !set_it &&
-				(shipp->flags[Ship::Ship_Flags::Stealth]) && (Player_ship != nullptr) &&
-				(shipp->team == Player_ship->team)) {
+				(shipp->flags[Ship::Ship_Flags::Stealth]) &&
+				(Player_ship == nullptr || shipp->team == Player_ship->team)) {
 				if (shipp->flags[Ship::Ship_Flags::Escort]) {
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
