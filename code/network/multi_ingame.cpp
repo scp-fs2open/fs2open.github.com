@@ -1393,7 +1393,7 @@ void send_ingame_ships_packet(net_player *player)
 		}
 		p_type = INGAME_SHIP_WING;
 		ADD_DATA(p_type);
-		short wingnum = static_cast<short>(i);
+		auto wingnum = static_cast<short>(i);
 		ADD_SHORT(wingnum);
 		add_wing_membership(data, packet_size, &Wings[i]);
 	}

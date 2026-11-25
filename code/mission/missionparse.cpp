@@ -4647,7 +4647,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			continue;
 		}
 		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
-        else if (skip_mask < 0 && p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
+		else if (skip_mask < 0 && p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
 		{
 			num_to_create--;
 			num_create_save--;
