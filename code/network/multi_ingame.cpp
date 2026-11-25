@@ -1312,13 +1312,10 @@ void send_ingame_ships_packet(net_player *player)
 	// in wings.  The joiner will take the list, create any ships which should be created, and delete all
 	// other ships after the list is sent.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
-		// a dying ship is left out: the joiner can't recreate a death roll in progress
-		if (shipp->flags[Ship::Ship_Flags::Dying])
+		// a ship being deleted or dying is left out: the joiner can't recreate a death roll in progress
+		if (ship_is_leaving(shipp))
 			continue;
 
 		// skip all wings.

@@ -2813,7 +2813,7 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	}
 }
 
-static bool ship_is_leaving(const ship* shipp)
+bool ship_is_leaving(const ship* shipp)
 {
 	return Objects[shipp->objnum].flags[Object::Object_Flags::Should_be_dead] || shipp->flags[Ship::Ship_Flags::Dying];
 }
@@ -6249,10 +6249,13 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	}
 }
 
-// ends the game for a client whose post-sync data can't be read, as a bad in-game join ship list does
+// bad post-sync data leaves the game: an in-game joiner with the same error as a bad join ship list, any other
+// machine (a client at mission start, or the standalone reading the host's data) with the mission load error
 static void post_sync_data_abort(header* hinfo)
 {
-	multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+	bool joining = (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) != 0;
+	int err_code = joining ? MULTI_END_ERROR_INGAME_BOGUS : MULTI_END_ERROR_LOAD_FAIL;
+	multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, err_code);
 
 	// stops multi_process_bigdata from reading the rest of the buffer as more packets
 	hinfo->bytes_processed = 10000;
@@ -6269,6 +6272,16 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	int ship_count;
 	short val_short, sinfo_index;
+
+	// on the master, only the game host sends post-sync data (a standalone routes it on to everyone)
+	if (MULTIPLAYER_MASTER) {
+		int sender = find_player_index(hinfo->id);
+		if (sender < 0 || &Net_players[sender] != Netgame.host) {
+			nprintf(("Network", "Ignoring post sync data that did not come from the game host\n"));
+			hinfo->bytes_processed = 10000;
+			return;
+		}
+	}
 
 	// packet routing information
 	GET_DATA(val);
@@ -6295,11 +6308,16 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		post_sync_data_abort(hinfo);
 		return;
 	}
-	// read every signature, even an unknown one: an in-game joiner never had the ships deleted at team select
+	// every signature is read; an in-game joiner deletes nothing, because its join list already decided which ships
+	// exist and a reused object slot can carry a live ship's signature
+	bool joining = (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) != 0;
 	Multi_ts_num_deleted = 0;
 	for(idx=0;idx<num_listed;idx++){
 		// get the ship's objnum
 		GET_USHORT(sval);
+		if (joining) {
+			continue;
+		}
 		objp = NULL;
 		objp = multi_get_network_object(sval);
 		if (objp != nullptr && objp->type == OBJ_SHIP) {

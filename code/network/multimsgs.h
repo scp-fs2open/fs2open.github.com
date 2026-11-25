@@ -311,6 +311,8 @@ struct wing_membership {
 	int count = 0;
 	ushort leader = 0;
 };
+// a ship that is dying or about to be deleted; member lists, the join list and post-sync data leave it out
+bool ship_is_leaving(const ship* shipp);
 void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp);
 bool get_wing_membership(ubyte* data, int& offset, int bytes_available, wing_membership& members);
 void set_wing_membership(wing* wingp, const wing_membership& members);
