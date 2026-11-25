@@ -78,8 +78,9 @@ class player;
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
 // Version 64 - 11/24/2026 - Wing create packet carries the wing's count of skipped ships and which positions were
-// skipped, and its ship count is the count before skips, so clients create and number the same ships as the server;
-// the in-game join ship list marks each wing's leader
+// skipped, its ship count is the count before skips, and it carries the wing's members and leader, so clients create,
+// number and list the same ships as the server; the in-game join ship list carries each wing's members and leader and
+// leaves out dying ships
 // STANDALONE_ONLY
 
 #define MULTI_FS_SERVER_VERSION							64

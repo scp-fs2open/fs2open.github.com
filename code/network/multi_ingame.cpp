@@ -40,6 +40,7 @@
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "hud/hudwingmanstatus.h"
+#include "object/parseobjectdock.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
@@ -1016,24 +1017,22 @@ static void ingame_ships_packet_abort(header* hinfo)
 	hinfo->bytes_processed = 10000;
 }
 
-// creating a docked group brings its wing ships in through parse_bring_in_docked_wing, and the join list recreates
-// the group once for each member it names, so the list can hold gaps and a count larger than its ships
-static void ingame_compact_wing(wing* wingp)
+// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet
+static void ingame_set_wing_gauge_slots(wing* wingp)
 {
-	int count = 0;
-	for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
-		if (wingp->ship_index[i] < 0) {
+	for (int i = 0; i < wingp->current_count; i++) {
+		ship* shipp = &Ships[wingp->ship_index[i]];
+		if (shipp->wing_status_wing_index >= 0) {
 			continue;
 		}
-		if (wingp->special_ship == i) {
-			wingp->special_ship = count;
+		auto entry = ship_registry_get(shipp->ship_name);
+		p_object* p_objp = entry ? entry->p_objp_or_null() : nullptr;
+		hud_wingman_status_set_index(wingp, shipp, p_objp);
+		if (p_objp != nullptr) {
+			p_objp->wing_status_wing_index = shipp->wing_status_wing_index;
+			p_objp->wing_status_wing_pos = shipp->wing_status_wing_pos;
 		}
-		wingp->ship_index[count++] = wingp->ship_index[i];
 	}
-	for (int i = count; i < MAX_SHIPS_PER_WING; i++) {
-		wingp->ship_index[i] = -1;
-	}
-	wingp->current_count = count;
 }
 
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
@@ -1080,7 +1079,11 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				shipnum = -1;
 			}
 			Wings[i].current_count = 0;
-			Wings[i].special_ship = 0;
+		}
+
+		// the deleted ships' parse objects can be created again
+		for (auto& p_obj : Parse_objects) {
+			p_obj.created_object = nullptr;
 		}
 
 		Ingame_ships_deleted = 1;
@@ -1090,7 +1093,22 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 	// go
 	GET_DATA( p_type );	
-	while ( p_type == INGAME_SHIP_NEXT ) {
+	while ( p_type == INGAME_SHIP_NEXT || p_type == INGAME_SHIP_WING ) {
+		if (p_type == INGAME_SHIP_WING) {
+			short wingnum;
+			wing_membership members;
+			GET_SHORT(wingnum);
+			if (wingnum < 0 || wingnum >= Num_wings || !get_wing_membership(data, offset, members)) {
+				mprintf(("ABORTING in-game join on a bad member list for wing %d!\n", wingnum));
+				ingame_ships_packet_abort(hinfo);
+				return;
+			}
+			set_wing_membership(&Wings[wingnum], members);
+			ingame_set_wing_gauge_slots(&Wings[wingnum]);
+			GET_DATA(p_type);
+			continue;
+		}
+
 		p_object *p_objp;
 		int ship_num, objnum;
 		ubyte flag_size;
@@ -1121,11 +1139,9 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			ingame_ships_packet_abort(hinfo);
 			return;
 		}
-		ubyte wing_leader = 0;
 		if(wing_data >= 0){
 			int current_wave;
 			GET_INT(current_wave);
-			GET_DATA(wing_leader);
 			if (current_wave < 0 || current_wave > Wings[wing_data].num_waves) {
 				mprintf(("ABORTING in-game join on bad wave %d for wing %s!\n", current_wave, Wings[wing_data].name));
 				ingame_ships_packet_abort(hinfo);
@@ -1148,7 +1164,17 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// multi_set_network_signature uncommented by Kazan on 11-04-2004
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
-		objnum = parse_create_object( p_objp );
+
+		// a docked group is created whole, from its leader, so a member listed after another one already exists
+		if (p_objp->created_object == nullptr) {
+			parse_create_object(object_is_docked(p_objp) ? parse_object_find_dock_leader(p_objp) : p_objp);
+		}
+		if (p_objp->created_object == nullptr) {
+			mprintf(("ABORTING in-game join since ship %s was not created with its docked group!\n", ship_name));
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
+		objnum = OBJ_INDEX(p_objp->created_object);
 		ship_num = Objects[objnum].instance;
 		Objects[objnum].flags.reset();
 		Objects[objnum].flags.set_from_vector(object_flags);
@@ -1163,34 +1189,6 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		Ships[ship_num].flags.set_from_vector(ship_flags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;
-
-		if (wing_data >= 0) {
-			wing* wingp = &Wings[wing_data];
-			ingame_compact_wing(wingp);
-
-			auto listed = std::find(std::begin(wingp->ship_index), std::end(wingp->ship_index), ship_num);
-			if (listed == std::end(wingp->ship_index)) {
-				if (wingp->current_count >= MAX_SHIPS_PER_WING) {
-					mprintf(("ABORTING in-game join since wing %s has no room for ship %s!\n", wingp->name, ship_name));
-					ingame_ships_packet_abort(hinfo);
-					return;
-				}
-				listed = &wingp->ship_index[wingp->current_count++];
-				*listed = ship_num;
-			}
-
-			if (wing_leader != 0) {
-				wingp->special_ship = static_cast<int>(listed - std::begin(wingp->ship_index));
-				wingp->special_ship_ship_info_index = Ships[ship_num].ship_info_index;
-			}
-
-			// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet
-			if (Ships[ship_num].wing_status_wing_index < 0) {
-				hud_wingman_status_set_index(wingp, &Ships[ship_num], p_objp);
-				p_objp->wing_status_wing_index = Ships[ship_num].wing_status_wing_index;
-				p_objp->wing_status_wing_pos = Ships[ship_num].wing_status_wing_pos;
-			}
-		}
 
 		GET_DATA( p_type );
 	}
@@ -1262,6 +1260,10 @@ void send_ingame_ships_packet(net_player *player)
 
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
+		// the joiner can't take over a death roll in progress, and the kill packets have already gone out
+		if (shipp->flags[Ship::Ship_Flags::Dying])
+			continue;
+
 		// skip all wings.
 		// if ( shipp->wingnum != -1 ){
 			// continue;
@@ -1309,10 +1311,6 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_SHORT(wing_data);
 		if(wing_data >= 0){
 			ADD_INT(Wings[wing_data].current_wave);
-			const wing* wingp = &Wings[wing_data];
-			bool leader_known = wingp->special_ship >= 0 && wingp->special_ship < MAX_SHIPS_PER_WING;
-			ubyte wing_leader = (leader_known && wingp->ship_index[wingp->special_ship] == SHIP_INDEX(shipp)) ? 1 : 0;
-			ADD_DATA(wing_leader);
 		}
 
 		// don't send anymore data if we are getting close to the maximum size of this packet.  Send it off and
@@ -1323,6 +1321,24 @@ void send_ingame_ships_packet(net_player *player)
 			multi_io_send_reliable(player, data, packet_size);
 			BUILD_HEADER( SHIPS_INGAME_PACKET );
 		}
+	}
+
+	// each wing's members and leader, after its ships, so the joiner can rebuild the wing from them
+	for (int i = 0; i < Num_wings; i++) {
+		if (Wings[i].current_count == 0) {
+			continue;
+		}
+		if (packet_size > (MAX_PACKET_SIZE - INGAME_PACKET_SLOP)) {
+			p_type = INGAME_SHIP_LIST_EOP;
+			ADD_DATA(p_type);
+			multi_io_send_reliable(player, data, packet_size);
+			BUILD_HEADER(SHIPS_INGAME_PACKET);
+		}
+		p_type = INGAME_SHIP_WING;
+		ADD_DATA(p_type);
+		short wingnum = static_cast<short>(i);
+		ADD_SHORT(wingnum);
+		add_wing_membership(data, packet_size, &Wings[i], true);
 	}
 
 	// end of the ship list!!!

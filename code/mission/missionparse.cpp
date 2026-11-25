@@ -7778,6 +7778,23 @@ void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_inf
     pobjp->flags.remove(Mission::Parse_Object_Flags::Already_handled);
 }
 
+static void parse_object_find_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
+{
+	if (pobjp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
+	{
+		infop->maintained_variables.objp_value = pobjp;
+		infop->early_return_condition = true;
+	}
+}
+
+p_object *parse_object_find_dock_leader(p_object *pobjp)
+{
+	p_dock_function_info dfi;
+	dock_evaluate_all_docked_objects(pobjp, &dfi, parse_object_find_dock_leader_helper);
+	parse_object_clear_all_handled_flags();
+	return dfi.maintained_variables.objp_value != nullptr ? dfi.maintained_variables.objp_value : pobjp;
+}
+
 // Goober5000
 void parse_object_clear_all_handled_flags()
 {

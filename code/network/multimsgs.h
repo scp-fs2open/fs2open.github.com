@@ -13,6 +13,7 @@
 #ifndef MULTI_MSGS_H
 #define MULTI_MSGS_H
 
+#include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
 #include <cstdint>
@@ -303,6 +304,16 @@ void send_ship_kill_packet( const object *ship_obj, const object *other_objp, fl
 void send_missile_kill_packet(object* objp);
 
 void process_weapon_kill_packet(ubyte* data, header* hinfo);
+
+// a wing's ships (net signatures, in the server's order) and its leader (0 = none)
+struct wing_membership {
+	ushort sigs[MAX_SHIPS_PER_WING];
+	int count = 0;
+	ushort leader = 0;
+};
+void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp, bool skip_dying);
+bool get_wing_membership(ubyte* data, int& offset, wing_membership& members);
+void set_wing_membership(wing* wingp, const wing_membership& members);
 
 // send a packet indicating a wing of ships should be created
 void send_wing_create_packet( wing *wingp, int num_created, int num_requested, ubyte skipped_positions, int pre_create_count, int pre_create_skipped );

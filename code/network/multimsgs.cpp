@@ -2812,6 +2812,70 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	}
 }
 
+void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp, bool skip_dying)
+{
+	ushort sigs[MAX_SHIPS_PER_WING];
+	ubyte count = 0;
+	ushort leader = 0;
+	for (int i = 0; i < wingp->current_count; i++) {
+		const ship* shipp = &Ships[wingp->ship_index[i]];
+		if (skip_dying && shipp->flags[Ship::Ship_Flags::Dying]) {
+			continue;
+		}
+		sigs[count] = Objects[shipp->objnum].net_signature;
+		if (i == wingp->special_ship) {
+			leader = sigs[count];
+		}
+		count++;
+	}
+
+	ADD_DATA(count);
+	for (int i = 0; i < count; i++) {
+		ADD_USHORT(sigs[i]);
+	}
+	ADD_USHORT(leader);
+}
+
+bool get_wing_membership(ubyte* data, int& offset, wing_membership& members)
+{
+	ubyte count;
+	GET_DATA(count);
+	if (count > MAX_SHIPS_PER_WING) {
+		return false;
+	}
+	members.count = count;
+	for (int i = 0; i < count; i++) {
+		GET_USHORT(members.sigs[i]);
+	}
+	GET_USHORT(members.leader);
+	return true;
+}
+
+void set_wing_membership(wing* wingp, const wing_membership& members)
+{
+	int wingnum = WING_INDEX(wingp);
+	int count = 0;
+	int leader = 0;
+	for (int i = 0; i < members.count; i++) {
+		object* objp = multi_get_network_object(members.sigs[i]);
+		if (objp == nullptr || objp->type != OBJ_SHIP || Ships[objp->instance].wingnum != wingnum) {
+			continue;
+		}
+		if (members.sigs[i] == members.leader) {
+			leader = count;
+		}
+		wingp->ship_index[count++] = objp->instance;
+	}
+	for (int i = count; i < MAX_SHIPS_PER_WING; i++) {
+		wingp->ship_index[i] = -1;
+	}
+	wingp->current_count = count;
+	wingp->special_ship = leader;
+	if (count > 0) {
+		wingp->special_ship_ship_info_index = Ships[wingp->ship_index[leader]].ship_info_index;
+	}
+}
+
 // send a packet indicating a wing of ships should be created
 void send_wing_create_packet( wing *wingp, int num_created, int num_requested, ubyte skipped_positions, int pre_create_count, int pre_create_skipped )
 {
@@ -2839,6 +2903,7 @@ void send_wing_create_packet( wing *wingp, int num_created, int num_requested, u
 	ADD_INT(val);
 	ADD_INT(pre_create_skipped);
 	ADD_DATA(skipped_positions);
+	add_wing_membership(data, packet_size, wingp, false);
 	
 	multi_io_send_to_all_reliable(data, packet_size);	
 }
@@ -2859,8 +2924,16 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	GET_INT(current_wave);
 	GET_INT(red_alert_skipped_ships);
 	GET_DATA(skipped_positions);
+	wing_membership members;
+	bool members_ok = get_wing_membership(data, offset, members);
 
 	PACKET_SET_SIZE();
+
+	if (!members_ok) {
+		nprintf(("Network", "Too many ships in the wing create packet\n"));
+		hinfo->bytes_processed = 10000;
+		return;
+	}
 
 	// do a sanity check on the wing to be sure that we are actually working on a valid wing
 	if ( (index < 0) || (index >= Num_wings) || (Wings[index].num_waves == -1) ) {
@@ -2871,6 +2944,17 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 		nprintf(("Network", "Invalid number of ships to create (%d) for wing %s\n", num_to_create, Wings[index].name));
 		return;
 	}
+
+	// the server is creating this wave, so local red-alert or non-arrival marks don't apply
+	Wings[index].flags.remove(Ship::Wing_Flags::Gone);
+	for (auto& p_obj : Parse_objects) {
+		if (p_obj.wingnum == index) {
+			p_obj.flags.remove(Mission::Parse_Object_Flags::SF_Cannot_arrive);
+		}
+	}
+
+	// keep only the ships the server still has in the wing, so the new wave has room
+	set_wing_membership(&Wings[index], members);
 
 	// bash some info
 	Wings[index].total_arrived_count = total_arrived_count;
@@ -2883,6 +2967,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	// the clients correctly
 	multi_set_network_signature( signature, MULTI_SIG_SHIP );
 	parse_wing_create_ships( &Wings[index], num_to_create, true, false, -1, skipped_positions );
+	set_wing_membership(&Wings[index], members);
 }
 
 // packet indicating a ship is departing

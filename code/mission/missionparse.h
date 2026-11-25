@@ -628,6 +628,8 @@ bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false
 bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);
 
 // used in squadmate messaging stuff to create wings from reinforcements.
+p_object *parse_object_find_dock_leader(p_object *pobjp);
+
 int parse_wing_create_ships(wing *wingp, int num_to_create, bool force_create = false, bool force_arrival = false, int specific_instance = -1, int skip_mask = -1 );
 
 // function for getting basic mission data without loading whole mission
