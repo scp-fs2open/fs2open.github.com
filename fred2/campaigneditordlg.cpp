@@ -529,6 +529,12 @@ void campaign_editor::save_tree(int clear)
 	}
 }
 
+void campaign_editor::mission_renumbered(int old_num, int new_num)
+{
+	if (m_last_mission == old_num)
+		m_last_mission = new_num;
+}
+
 void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	int i, node;
@@ -577,7 +583,7 @@ void campaign_editor::OnMoveUp()
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
-		save_tree();
+		save_tree(0);
 		for (i=0; i<Total_links; i++){
 			if (Links[i].from == Cur_campaign_mission) {
 				if (i == Cur_campaign_link){
@@ -611,7 +617,7 @@ void campaign_editor::OnMoveDown()
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
-		save_tree();
+		save_tree(0);
 		for (i=0; i<Total_links; i++)
 			if (Links[i].from == Cur_campaign_mission)
 				if (i == Cur_campaign_link)

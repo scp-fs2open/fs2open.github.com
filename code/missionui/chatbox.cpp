@@ -737,6 +737,18 @@ void chat_box_add_chat_to_list(brief_chat& chat)
 }
 
 // int Test_color = 0;
+
+// the scripting API joins the lines of a message back together, so keep the space the wrap removed
+static void chatbox_set_line_text(brief_chat& chat, const char* line, int n_chars, bool space_follows)
+{
+	auto len = std::min(static_cast<size_t>(n_chars), sizeof(chat.text) - 2);
+	memcpy(chat.text, line, len);
+	if (space_follows) {
+		chat.text[len++] = ' ';
+	}
+	chat.text[len] = '\0';
+}
+
 void chatbox_add_line(const char *msg, int pid, int add_id)
 {	
 	if(!Chatbox_created){
@@ -761,7 +773,15 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	// split the text up into as many lines as necessary
 	int n_chars[3];	
 	const char* p_str[3]; // for the initial line (unindented)
-	int n_lines = split_str(msg, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
+	// the callsign is drawn in front of the first line, so that line has less room
+	int first_line_w = Chatbox_disp_w;
+	int callsign_w = 0;
+	gr_get_string_size(&callsign_w, nullptr, (SCP_string(chat.callsign) + " ").c_str());
+	if (callsign_w < first_line_w) {
+		first_line_w -= callsign_w;
+	}
+
+	int n_lines = split_str(msg, first_line_w, n_chars, p_str, 3, CHATBOX_LINE_LEN);
 	Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");	
 
 	// will happen if msg is all whitespace, in which case we should ignore it
@@ -769,16 +789,24 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 		return;
 	}
 
-	// copy in the chars
-	strcpy_s(chat.text, p_str[0]);
+	// copy in the chars of the first line only
+	const char* rest = p_str[0] + n_chars[0];
+	chatbox_set_line_text(chat, p_str[0], n_chars[0], (n_lines > 1) && (p_str[1] != rest));
 
 	chat_box_add_chat_to_list(chat);
 	
 	// if we have more than 1 line, re-split everything so that the rest are indented
 	if(n_lines > 1){
 		// split up the string after the first break-marker
-		char msg_extra[CHATBOX_STRING_LEN];
-		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3, CHATBOX_STRING_LEN);
+		// indented lines have no callsign, but the space after it is still drawn
+		int indented_w = Chatbox_disp_w - CHAT_LINE_INDENT;
+		int space_w = 0;
+		gr_get_string_size(&space_w, nullptr, " ");
+		if (space_w < indented_w) {
+			indented_w -= space_w;
+		}
+
+		n_lines = split_str(rest, indented_w, n_chars, p_str, 3, CHATBOX_LINE_LEN);
 		Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");		
 
 		// setup these remaining lines
@@ -786,7 +814,9 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 			brief_chat i_chat;
 			i_chat.player_id = pid;
 			i_chat.indent = true;
-			strcpy_s(i_chat.text, p_str[idx]);
+			i_chat.callsign[0] = '\0';
+			bool space_follows = (idx + 1 < n_lines) && (p_str[idx + 1] != p_str[idx] + n_chars[idx]);
+			chatbox_set_line_text(i_chat, p_str[idx], n_chars[idx], space_follows);
 
 			chat_box_add_chat_to_list(i_chat);
 		}

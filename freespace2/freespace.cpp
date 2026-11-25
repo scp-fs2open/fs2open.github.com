@@ -210,6 +210,7 @@
 
 #include <SDL3/SDL_main.h>
 
+#include <algorithm>
 #include <cinttypes>
 #include <stdexcept>
 
@@ -394,7 +395,37 @@ static auto ShowFpsOption __UNUSED = options::OptionBuilder<bool>("HUD.ShowFPS",
                      .parser(parse_show_fps_func)
                      .finish();
 
+static constexpr int MIN_FRAMERATE_CAP = 15;
+static constexpr int MAX_FRAMERATE_CAP = 120;
 int	Framerate_cap = 120;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto FramerateCapOption = options::OptionBuilder<int>("Graphics.FramerateCap",
+                     std::pair<const char*, int>{"Frame Rate Limit", 1952},
+                     std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1953})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .range(MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP)
+                     .default_func([]() { return Framerate_cap; })
+                     .deserializer([](const json_t* value) {
+                         int saved;
+                         json_error_t err;
+                         if (json_unpack_ex(const_cast<json_t*>(value), &err, 0, "i", &saved) != 0) {
+                             throw json_exception(err);
+                         }
+                         // Clamp saved out-of-range values
+                         return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+                     })
+                     .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1954)) : std::to_string(value); })
+                     .parser([]() {
+                         int value;
+                         stuff_int(&value);
+                         Framerate_cap = std::clamp(value, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+                     })
+                     .bind_to(&Framerate_cap)
+                     .importance(72)
+                     .flags({options::OptionFlags::RangeTypeInteger})
+                     .finish();
 
 // for the model page in system
 extern void model_page_in_start();
@@ -1973,12 +2004,23 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
+	auto* options_manager = options::OptionsManager::instance();
 	// Must be run after mod table is parsed so we know the value of Using_in_game_options
 	// Must be run before everything else inits so we can init those with the correct
 	// default values or user preferences
- 	if (Using_in_game_options) {
+	if (Using_in_game_options) {
 		default_settings_init(); // load in current preferred default options values, if any
-		options::OptionsManager::instance()->loadInitialValues();
+	}
+
+	// Apply the legacy player preference after mod defaults and before saved in-game options.
+	const auto max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0);
+	if (max_fps >= MIN_FRAMERATE_CAP && max_fps <= MAX_FRAMERATE_CAP &&
+		(!Using_in_game_options || !options_manager->isOptionEnforced(FramerateCapOption->getConfigKey()))) {
+		Framerate_cap = static_cast<int>(max_fps);
+	}
+
+	if (Using_in_game_options) {
+		options_manager->loadInitialValues();
 	}
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
@@ -2008,6 +2050,11 @@ void game_init()
 		std_init_standalone();
 	}
 
+	if (Cmdline_NoFPSCap) {
+		options::OptionsManager::instance()->setOverride("Graphics.FramerateCap",
+			std::unique_ptr<json_t>(json_integer(Framerate_cap)), "-no_fps_capping");
+	}
+
 	// verify that he has a valid ships.tbl (will Game_ships_tbl_valid if so)
 	verify_ships_tbl();
 
@@ -2022,15 +2069,7 @@ void game_init()
 	Use_fullscreen_at_startup = os_config_read_uint( nullptr, NOX("ForceFullscreen"), 1 );
 #endif
 
-	// change FPS cap if told to do so (for those who can't use vsync or where vsync isn't enough)
-	uint max_fps = 0;
-	if ( (max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0)) != 0 ) {
-		if ( (max_fps > 15) && (max_fps < 120) ) {
-			Framerate_cap = (int)max_fps;
-		}
-	}
-
-	Asteroids_enabled = 1;		
+	Asteroids_enabled = 1;
 
 /////////////////////////////
 // SOUND INIT START
@@ -3067,7 +3106,7 @@ DCF(framerate_cap, "Sets the framerate cap")
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: framerate_cap [n]\nwhere n is the frames per second to cap framerate at.\n");
 		dc_printf("If n is 0 or omitted, then the framerate cap is removed\n");
-		dc_printf("[n] must be from 1 to 120.\n");
+		dc_printf("[n] must be from 1 to %d.\n", MAX_FRAMERATE_CAP);
 		process = false;
 	}
 
@@ -3089,8 +3128,8 @@ DCF(framerate_cap, "Sets the framerate cap")
 		Framerate_cap = 0;
 	}
 
-	if ((Framerate_cap < 0) || (Framerate_cap > 120)) {
-		dc_printf( "Illegal value for framerate cap. (Must be from 1-120) \n");
+	if ((Framerate_cap < 0) || (Framerate_cap > MAX_FRAMERATE_CAP)) {
+		dc_printf("Illegal value for framerate cap. (Must be from 1-%d) \n", MAX_FRAMERATE_CAP);
 		Framerate_cap = 0;
 	}
 
@@ -5317,7 +5356,7 @@ void game_process_event( int current_state, int event )
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
 
-				if (!(The_mission.ai_profile->flags[AI::Profile_Flags::No_warp_camera])) {
+				if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::No_warp_camera])) {
 					Player->saved_viewer_mode = Viewer_mode;
 					Viewer_mode |= VM_WARP_CHASE;
 					Warp_camera = warp_camera(Player_obj);

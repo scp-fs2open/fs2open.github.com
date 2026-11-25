@@ -58,6 +58,7 @@ public:
 	void update();
 	void load_tree(int save = 1);
 	void save_tree(int clear = 1);
+	void mission_renumbered(int old_num, int new_num);	// keeps save_tree() working when a mission changes slots
 	void initialize( bool init_files, bool clear_path );
 	void load_campaign(const char *filename, const char *full_path);
 	void update_loop_desc_window();

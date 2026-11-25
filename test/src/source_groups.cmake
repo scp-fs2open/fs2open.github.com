@@ -33,6 +33,7 @@ add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
+    globalincs/test_utility.cpp
     globalincs/test_version.cpp
 )
 
@@ -65,6 +66,10 @@ add_file_folder("menuui"
 
 add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
+)
+
+add_file_folder("missionui"
+    missionui/test_chatbox.cpp
 )
 
 add_file_folder("mod"
