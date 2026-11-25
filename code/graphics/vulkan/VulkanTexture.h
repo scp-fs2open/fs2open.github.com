@@ -275,9 +275,13 @@ private:
 
 	/**
 	 * @brief Begin single-time command buffer
-	 * @return a null command buffer if allocating or beginning it fails
 	 */
 	vk::CommandBuffer beginSingleTimeCommands();
+
+	/**
+	 * @brief Begin single-time command buffer, returning a null one instead of throwing if that fails
+	 */
+	vk::CommandBuffer tryBeginSingleTimeCommands();
 
 	/**
 	 * @brief End and submit single-time command buffer (synchronous, blocks on waitIdle)

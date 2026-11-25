@@ -786,7 +786,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy and submit async
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1002,7 +1002,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy and submit async
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1132,7 +1132,7 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	region.imageOffset = vk::Offset3D(0, 0, 0);
 	region.imageExtent = vk::Extent3D(width, height, depth3D);
 
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1439,7 +1439,7 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy (+ optional mipmap generation) and submit async
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1965,7 +1965,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy into a single command buffer and submit async
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -2119,7 +2119,7 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 
 	// ---- record layout-transition + copy command ----
 	const vk::ImageLayout oldLayout = ts->currentLayout;
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
@@ -2509,9 +2509,6 @@ void VulkanTextureManager::transitionImageLayout(vk::Image image, vk::Format for
                                                   uint32_t arrayLayers)
 {
 	vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
-	if (!commandBuffer) {
-		return;
-	}
 
 	ImageBarrier2 barrier;
 	barrier.image = image;
@@ -2829,7 +2826,7 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 		regions.push_back(region);
 	}
 
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
@@ -2896,7 +2893,7 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 	region.imageOffset = vk::Offset3D(0, 0, 0);
 	region.imageExtent = vk::Extent3D(width, height, 1);
 
-	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
@@ -2975,18 +2972,24 @@ vk::CommandBuffer VulkanTextureManager::beginSingleTimeCommands()
 	vk::CommandBufferBeginInfo beginInfo;
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
-	vk::CommandBuffer commandBuffer;
+	vk::CommandBuffer commandBuffer = m_device.allocateCommandBuffers(allocInfo)[0];
 	try {
-		commandBuffer = m_device.allocateCommandBuffers(allocInfo)[0];
 		commandBuffer.begin(beginInfo);
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanTexture: failed to begin a command buffer: %s\n", e.what()));
-		if (commandBuffer) {
-			m_device.freeCommandBuffers(m_commandPool, commandBuffer);
-		}
-		return nullptr;
+	} catch (const vk::SystemError&) {
+		m_device.freeCommandBuffers(m_commandPool, commandBuffer);
+		throw;
 	}
 	return commandBuffer;
+}
+
+vk::CommandBuffer VulkanTextureManager::tryBeginSingleTimeCommands()
+{
+	try {
+		return beginSingleTimeCommands();
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanTexture: failed to begin a command buffer: %s\n", e.what()));
+		return nullptr;
+	}
 }
 
 void VulkanTextureManager::endSingleTimeCommands(vk::CommandBuffer commandBuffer)
