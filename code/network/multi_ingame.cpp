@@ -916,6 +916,10 @@ void multi_ingame_join_calc_avail(bool API_Access)
 	Ingame_ship_choices.clear();
 
 	for (auto moveup: list_range(&Ship_obj_list)) {
+		// the picker holds MAX_PLAYERS ships; arrivals reaching a picking joiner could list more
+		if (Multi_ingame_num_avail >= MAX_PLAYERS)
+			break;
+
 		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
 

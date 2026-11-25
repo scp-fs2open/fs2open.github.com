@@ -437,8 +437,10 @@ void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignor
 			continue;
 		}
 
-		// ingame joiners not waiting to select a ship doesn't get any packets
-		if ( (Net_players[i].flags & NETINFO_FLAG_INGAME_JOIN) && !(Net_players[i].flags & INGAME_JOIN_FLAG_PICK_SHIP) ){
+		// an in-game joiner gets broadcasts from the moment its ship list is sent, so the reliable ones between the
+		// list and its ship being granted all reach it
+		bool joining = (Net_players[i].flags & NETINFO_FLAG_INGAME_JOIN) != 0;
+		if (joining && !(Net_players[i].s_info.ingame_join_flags & INGAME_JOIN_FLAG_SENDING_SHIPS)) {
 			continue;
 		}
 
@@ -525,8 +527,10 @@ void multi_io_send_to_all_reliable(const ubyte* data, int length, const net_play
 			continue;
 		}
 
-		// ingame joiners not waiting to select a ship doesn't get any packets
-		if ( (Net_players[i].flags & NETINFO_FLAG_INGAME_JOIN) && !(Net_players[i].flags & INGAME_JOIN_FLAG_PICK_SHIP) ){
+		// an in-game joiner gets broadcasts from the moment its ship list is sent, so the reliable ones between the
+		// list and its ship being granted all reach it
+		bool joining = (Net_players[i].flags & NETINFO_FLAG_INGAME_JOIN) != 0;
+		if (joining && !(Net_players[i].s_info.ingame_join_flags & INGAME_JOIN_FLAG_SENDING_SHIPS)) {
 			continue;
 		}
 
@@ -2682,6 +2686,8 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
 		ship_hit_kill( sobjp, oobjp, nullptr, percent_killed, sd != 0 );
 	} else {
+		// deleting a docked ship would leave its partners pointing at it
+		dock_undock_all(sobjp);
         sobjp->flags.set(Object::Object_Flags::Should_be_dead);
 		ship_cleanup(sobjp->instance, SHIP_DESTROYED);
 		obj_delete( OBJ_INDEX(sobjp) );
@@ -2799,8 +2805,9 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 			nprintf(("Network", "Ship with sig %d not found on ship arrival list -- not creating!!\n", signature));
 		}
 	} else {
-		Assert( Arriving_support_ship );
+		// a joiner whose ship list went out after the support ship was called never got that call
 		if(Arriving_support_ship == NULL){
+			nprintf(("Network", "Skipping a support ship create that this client has no record of\n"));
 			return;
 		}
 		Arriving_support_ship->pos = pos;
@@ -3721,6 +3728,12 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	// filter out some builtin ones in TvT
 	if((builtin_type >= 0) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL) && (Net_player->p_info.team != multi_team_filter)) {
 		mprintf(("Builtin message of type %d filtered out in process_mission_message_packet()\n", id));
+		return;
+	}
+
+	// a message sent before an in-game joiner has a ship is skipped, as one sent before it joined would be
+	if (Player_ship == nullptr) {
+		nprintf(("Network", "Skipping mission message %d while this client has no ship\n", id));
 		return;
 	}
 
