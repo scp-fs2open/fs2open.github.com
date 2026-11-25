@@ -8140,6 +8140,9 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 void ship_init_cockpit_displays(ship *shipp)
 {
+	// entering gameplay sets the cockpit up again after the loadout may already have done so
+	ship_close_cockpit_displays(shipp);
+
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	int cockpit_model_num = sip->cockpit_model_num;

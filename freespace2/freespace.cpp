@@ -1206,6 +1206,9 @@ void game_level_init()
 
 	Multi_ping_timestamp = UI_TIMESTAMP::invalid();
 
+	// reloading from gameplay doesn't close the level, and entering gameplay set up a cockpit for the old player ship
+	ship_close_cockpit_displays(Player_ship);
+
 	obj_init();						// Must be inited before the other systems
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {

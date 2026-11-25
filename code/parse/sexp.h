@@ -1466,6 +1466,11 @@ extern bool Sexp_actions_stopped;
 // Runs the actions of an event whose operator is when or every-time, without evaluating its condition.  Used to run the
 // event that loaded a checkpoint again once the checkpoint is loaded.
 void sexp_replay_event_actions(int event);
+
+// Persistent nodes (campaign formulas) are set aside while a mission is parsed, so the mission's nodes are where they
+// would be without them; checkpoints rely on that.  Nothing in the game may use them in between.
+void sexp_nodes_set_aside_persistent();
+void sexp_nodes_put_back_persistent();
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;

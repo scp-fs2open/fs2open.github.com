@@ -340,6 +340,7 @@ namespace animation {
 		// The playback state of an animation running on a model instance, for checkpoints
 		struct RunningAnimationState {
 			unsigned int id;
+			unsigned int occurrence;	// which of the set's animations with this id
 			ModelAnimation::instance_data state;
 		};
 

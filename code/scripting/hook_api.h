@@ -128,6 +128,10 @@ class HookBase {
 
 	const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& _conditions;
 
+	// Hooks are suppressed while a checkpoint is loaded, except those the checkpoint system lets through
+	bool runs_during_checkpoint_load = false;
+	bool suppressed() const { return Scripting_hooks_suppressed && !runs_during_checkpoint_load; }
+
   protected:
 	SCP_string _hookName;
 	SCP_string _description;
@@ -152,7 +156,7 @@ class HookImpl : public HookBase {
 	template <typename... Args>
 	int run(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
+		if (!Scripting_game_init_run || this->suppressed())
 			return 0;
 
 		SCP_vector<SCP_string> paramNames;
@@ -186,7 +190,7 @@ class HookImpl<void> : public HookBase {
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
+		if (!Scripting_game_init_run || this->suppressed())
 			return 0;
 
 		SCP_vector<SCP_string> paramNames;
@@ -226,7 +230,7 @@ class Hook : public HookImpl<condition_t> {
 	}
 
 	bool isActive() const override {
-		return !Scripting_hooks_suppressed && Script_system.IsActiveAction(this->_hookId);
+		return !this->suppressed() && Script_system.IsActiveAction(this->_hookId);
 	}
 
 	bool isOverridable() const override {
@@ -245,7 +249,7 @@ class OverridableHookImpl : public Hook<condition_t> {
 	template <typename... Args>
 	bool isOverride(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
+		if (!Scripting_game_init_run || this->suppressed())
 			return false;
 
 		SCP_vector<SCP_string> paramNames;
@@ -279,7 +283,7 @@ protected:
 	template <typename... Args>
 	bool isOverride(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
-		if (!Scripting_game_init_run || Scripting_hooks_suppressed)
+		if (!Scripting_game_init_run || this->suppressed())
 			return false;
 
 		SCP_vector<SCP_string> paramNames;

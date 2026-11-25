@@ -62,6 +62,7 @@ static void player_checkpoint_save(checkpoint::Writer& w)
 static void player_checkpoint_load(checkpoint::Reader& r)
 {
 	checkpoint::load(r, *Player);
+	Player->flags &= ~PLAYER_FLAGS_MSG_MODE;	// the comms menu isn't checkpointed; a mission starts with it closed
 }
 
 CHECKPOINT_GLOBAL_FUNCTIONS(player_checkpoint_save, player_checkpoint_load);

@@ -199,6 +199,12 @@ static int Hud_support_view_active;
 static int Hud_support_view_abort;		// active when we need to display abort message
 static int Hud_support_view_fade;		// timer
 static int Hud_support_obj_sig, Hud_support_objnum, Hud_support_target_sig;
+CHECKPOINT_GLOBAL(Hud_support_view_active);
+CHECKPOINT_GLOBAL(Hud_support_view_abort);
+CHECKPOINT_GLOBAL(Hud_support_view_fade);
+CHECKPOINT_GLOBAL(Hud_support_obj_sig);
+CHECKPOINT_GLOBAL(Hud_support_objnum);
+CHECKPOINT_GLOBAL(Hud_support_target_sig);
 
 // flashing gauges
 #define HUD_GAUGE_FLASH_DURATION		5000

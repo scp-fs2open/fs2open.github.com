@@ -774,6 +774,19 @@ namespace animation {
 		}
 	}
 
+	// Ids aren't unique: a modular table that repeats a class's legacy subsystem animations adds them a second time with
+	// the same id, and an animation requested twice by name is there twice.  Such animations are told apart by their order.
+	template <typename AnimationMap>
+	static SCP_vector<std::shared_ptr<ModelAnimation>> animations_with_id(const AnimationMap& animationSet, unsigned int id) {
+		SCP_vector<std::shared_ptr<ModelAnimation>> found;
+		for (const auto& types : animationSet)
+			for (const auto& named : types.second)
+				for (const auto& anim : named.second)
+					if (anim->id == id)
+						found.push_back(anim);
+		return found;
+	}
+
 	SCP_vector<ModelAnimationSet::RunningAnimationState> ModelAnimationSet::getRunningAnimationStates(const polymodel_instance* pmi) {
 		SCP_vector<RunningAnimationState> states;
 
@@ -785,8 +798,11 @@ namespace animation {
 			if (anim->id == 0)
 				continue;
 			auto instance = anim->m_instances.find(pmi->id);
-			if (instance != anim->m_instances.end())
-				states.push_back({anim->id, instance->second});
+			if (instance == anim->m_instances.end())
+				continue;
+			auto sameId = animations_with_id(anim->m_set->m_animationSet, anim->id);
+			auto occurrence = std::find(sameId.begin(), sameId.end(), anim) - sameId.begin();
+			states.push_back({anim->id, static_cast<unsigned int>(occurrence), instance->second});
 		}
 		return states;
 	}
@@ -796,7 +812,12 @@ namespace animation {
 			auto found = s_animationById.find(saved.id);
 			if (found == s_animationById.end())
 				continue;
-			const auto& anim = found->second;
+			auto sameId = animations_with_id(found->second->m_set->m_animationSet, saved.id);
+			if (saved.occurrence >= sameId.size()) {
+				mprintf(("Checkpoint: animation %s of %s no longer exists; its saved state is dropped\n", found->second->request.c_str(), found->second->m_set->m_SIPname.c_str()));
+				continue;
+			}
+			const auto& anim = sameId[saved.occurrence];
 			auto& running = s_runningAnimations[pmi->id];
 
 			// calculate the animation for this model instance like starting it does, on top of the ones already running

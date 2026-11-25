@@ -23,6 +23,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
+#include "missionui/missionshipchoice.h"
 #include "object/objcollide.h"
 #include "object/waypoint.h"
 #include "parse/sexp.h"
@@ -123,11 +124,19 @@ SCP_string Pending_name;
 // a load in progress: set when the mission reload is started, cleared when the restore is done
 std::optional<Buffer> Pending_restore;
 bool Loading = false;
+int Signature_before_load = 0;	// the reload starts signatures over, see restore_checkpoint()
 
-// While a checkpoint reloads and restores the mission, the mission isn't starting or ending for scripts, so no hooks
-// run until it is restored.
+// While a checkpoint reloads and restores the mission, hooks don't run until it is restored, except those that tell
+// scripts the mission is closed, loaded and entered, where they set up their data for the mission as on a restart.
+// Hooks for single objects stay suppressed: the objects they would report are replaced by the restored ones.
 void set_loading(bool loading)
 {
+	using namespace scripting::hooks;
+	for (scripting::HookBase* hook : std::initializer_list<scripting::HookBase*>{OnStateAboutToEndHook.get(), OnStateEndHook.get(),
+			 OnMissionAboutToEndHook.get(), OnMissionEndHook.get(), OnLoadScreen.get(), OnLoadComplete.get(),
+			 OnMissionStart.get(), OnStateStart.get(), OnGameplayStart.get()})
+		hook->runs_during_checkpoint_load = true;
+
 	Loading = loading;
 	Scripting_hooks_suppressed = loading;
 }
@@ -260,11 +269,12 @@ NameLists mission_structure()
 	lists.emplace_back("Reinforcements", names_of(Reinforcements, [](const reinforcements& e) { return e.name; }));
 
 	// Formulas are saved with the checkpoint, but some holders of node indices aren't (debriefing formulas, for
-	// example), so the shape of the node trees must be the same; texts and numbers in them may differ.
+	// example), so the shape of the node trees must be the same; texts and numbers in them may differ.  The campaign's
+	// persistent nodes don't belong to the mission.
 	uint32_t layout = 2166136261u;
 	for (int i = 0; i < Num_sexp_nodes; ++i) {
 		const auto& node = Sexp_nodes[i];
-		if (node.type == SEXP_NOT_USED)
+		if (node.type == SEXP_NOT_USED || (node.type & SEXP_FLAG_PERSISTENT))
 			continue;
 		int shape[] = {i, node.type, node.subtype, node.first, node.rest};
 		mix(layout, shape, sizeof(shape));
@@ -281,7 +291,6 @@ NameLists mission_structure()
 
 struct Header {
 	SCP_string mission;
-	ushort checksum = 0;
 	uint32_t schema = 0;
 	NameLists tables;
 	NameLists structure;
@@ -324,7 +333,6 @@ void save_header(Writer& w)
 	w.u32(0);	// length and hash, filled in by seal()
 	w.u32(0);
 	save(w, SCP_string(Game_current_mission_filename));
-	w.value(Current_file_checksum);
 	w.u32(schema_fingerprint());
 	save(w, table_names());
 	save(w, Mission_structure);
@@ -337,7 +345,6 @@ bool read_header(Reader& r, Header& header)
 	r.u32();	// length and hash, see is_intact()
 	r.u32();
 	load(r, header.mission);
-	r.value(header.checksum);
 	header.schema = r.u32();
 	load(r, header.tables);
 	load(r, header.structure);
@@ -367,12 +374,9 @@ SCP_string check_header(const Buffer& buffer)
 			return "the entries of " + saved.first + " have changed since it was saved";
 	}
 
-	if (header.checksum != Current_file_checksum) {
-		if (header.structure != Mission_structure)
-			return "the mission has changed since it was saved";
-		mprintf(("Checkpoint: the mission file has changed since the checkpoint was saved, but its structure is the same; "
-				 "the checkpoint's state replaces the mission's\n"));
-	}
+	// texts and numbers in the mission may have changed; the checkpoint's state replaces them
+	if (header.structure != Mission_structure)
+		return "the mission has changed since it was saved";
 	return {};
 }
 
@@ -520,12 +524,12 @@ void restore_player_pointers()
 	}
 }
 
-// Restores a checkpoint into the freshly loaded mission.  Sets mission_changed once it starts changing the mission, so a
-// failure after that point can be told from one that left the mission untouched.
 // Checks the saved object table before anything is changed: every object has a slot of its own, a type that can be
 // restored and an instance in range.
-SCP_string check_objects(Reader objects)
+SCP_string check_objects(const Reader& saved_objects)
 {
+	// without a load context, so checking can't defer fixups or count tolerances
+	Reader objects(saved_objects.position(), saved_objects.position() + saved_objects.remaining());
 	SCP_vector<bool> taken(MAX_OBJECTS, false);
 	auto count = objects.u32();
 	for (uint32_t i = 0; i < count && !objects.failed(); ++i) {
@@ -552,6 +556,8 @@ SCP_string check_objects(Reader objects)
 	return {};
 }
 
+// Restores a checkpoint into the freshly loaded mission.  Sets mission_changed once it starts changing the mission, so a
+// failure after that point can be told from one that left the mission untouched.
 bool restore_checkpoint(const Buffer& buffer, bool& mission_changed)
 {
 	LoadContext context;
@@ -613,6 +619,10 @@ bool restore_checkpoint(const Buffer& buffer, bool& mission_changed)
 			mprintf(("Checkpoint: %d saved globals are unknown to this build\n", static_cast<int>(saved_globals.size() - global_handlers().size())));
 		for (const auto& function : after_globals_functions())
 			function.second();
+
+		// Object handles scripts kept from before the load must not come to name objects created after it, so
+		// signatures handed out since the save are never handed out again.
+		Object_next_signature = std::max(Object_next_signature, Signature_before_load);
 	}
 
 	// objects: each one is put back into its slot, then its type loads the rest and re-acquires its resources
@@ -667,7 +677,6 @@ bool restore_checkpoint(const Buffer& buffer, bool& mission_changed)
 	return true;
 }
 
-// Reads one registered global from a saved checkpoint.
 // The name a checkpoint was saved with; empty for one without a name, or one saved before names existed.
 SCP_string read_name(const Buffer& buffer)
 {
@@ -684,6 +693,7 @@ SCP_string read_name(const Buffer& buffer)
 	return it->second.failed() ? SCP_string() : name;
 }
 
+// Reads one registered global from a saved checkpoint.
 template <typename T>
 bool read_saved_global(const Buffer& buffer, const char* name, T& value)
 {
@@ -754,8 +764,13 @@ void apply_assist()
 void start_load(Buffer buffer)
 {
 	Pending_restore = std::move(buffer);
+	Signature_before_load = Object_next_signature;
 	set_loading(true);
-	gameseq_post_event(GS_EVENT_START_GAME_QUICK);
+
+	// Enter the game directly, like a quick start but without putting the player in the last flown ship class: the
+	// restore sets the player's class, and a pilot with no last flown ship would get an error popup mid-load.
+	Select_default_ship = 0;
+	gameseq_post_event(GS_EVENT_ENTER_GAME);
 }
 
 void handle_request(const Request& request)

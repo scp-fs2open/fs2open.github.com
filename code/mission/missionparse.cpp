@@ -7456,6 +7456,7 @@ void mission_init(mission *pm, bool quick_init)
 	if (quick_init)
 		return;
 
+	sexp_nodes_set_aside_persistent();	// put back by parse_main()
 	init_sexp();
 	mission_goals_and_events_init();
 
@@ -7597,6 +7598,7 @@ bool parse_main(const char *mission_name, int flags)
 	} while (0);
 
 	Parsing_mission = false;
+	sexp_nodes_put_back_persistent();
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);

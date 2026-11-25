@@ -1369,17 +1369,98 @@ static void sexp_nodes_checkpoint_save(checkpoint::Writer& w)
 		checkpoint::save(w, Sexp_nodes[i]);
 }
 
+static void sexp_nodes_grow(int count)
+{
+	int old_size = Num_sexp_nodes;
+	Num_sexp_nodes = count;
+	Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
+	Verify(Sexp_nodes != nullptr);
+	for (int i = old_size; i < Num_sexp_nodes; i++)
+		new (&Sexp_nodes[i]) sexp_node();
+}
+
+// Persistent nodes (the campaign's formulas) are set aside while a mission is loaded, so the mission's nodes are in the
+// same places whatever campaign is loaded, which checkpoints rely on.
+using persistent_sexp_nodes = SCP_vector<std::pair<int, sexp_node>>;
+static persistent_sexp_nodes Persistent_nodes_set_aside;
+static int Locked_sexps_set_aside[2] = {-1, -1};
+
+static persistent_sexp_nodes sexp_nodes_take_persistent()
+{
+	persistent_sexp_nodes persistent;
+	for (int i = 0; i < Num_sexp_nodes; i++) {
+		if (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT) {
+			clear_cache(i);
+			persistent.emplace_back(i, std::move(Sexp_nodes[i]));
+			Sexp_nodes[i].type = SEXP_NOT_USED;
+		}
+	}
+	return persistent;
+}
+
+// Puts persistent nodes into unused nodes, keeping their index where it is free, and updates the references to them.
+// moved can map other nodes they refer to.
+static void sexp_nodes_put_back_persistent(persistent_sexp_nodes& persistent, SCP_unordered_map<int, int> moved)
+{
+	int free_node = 0;
+	for (auto& [old_index, node] : persistent) {
+		int index = old_index;
+		if (index >= Num_sexp_nodes || Sexp_nodes[index].type != SEXP_NOT_USED) {
+			while (free_node < Num_sexp_nodes && Sexp_nodes[free_node].type != SEXP_NOT_USED)
+				++free_node;
+			if (free_node == Num_sexp_nodes)
+				sexp_nodes_grow(Num_sexp_nodes + SEXP_NODE_INCREMENT);
+			index = free_node;
+		}
+		Sexp_nodes[index] = std::move(node);
+		moved[old_index] = index;
+	}
+
+	auto remap = [&moved](int n) {
+		auto it = moved.find(n);
+		return (it == moved.end()) ? n : it->second;
+	};
+	for (const auto& entry : persistent) {
+		auto& node = Sexp_nodes[moved[entry.first]];
+		node.first = remap(node.first);
+		node.rest = remap(node.rest);
+	}
+	for (int i = 0; i < Campaign.num_missions; i++) {
+		Campaign.missions[i].formula = remap(Campaign.missions[i].formula);
+		Campaign.missions[i].mission_loop_formula = remap(Campaign.missions[i].mission_loop_formula);
+	}
+	persistent.clear();
+}
+
+void sexp_nodes_set_aside_persistent()
+{
+	if (Fred_running)
+		return;
+	Persistent_nodes_set_aside = sexp_nodes_take_persistent();
+	Locked_sexps_set_aside[0] = Locked_sexp_true;
+	Locked_sexps_set_aside[1] = Locked_sexp_false;
+}
+
+void sexp_nodes_put_back_persistent()
+{
+	// campaign formulas may be one of the locked nodes, which are made again for the mission
+	SCP_unordered_map<int, int> moved;
+	if (Locked_sexps_set_aside[0] >= 0)
+		moved[Locked_sexps_set_aside[0]] = Locked_sexp_true;
+	if (Locked_sexps_set_aside[1] >= 0)
+		moved[Locked_sexps_set_aside[1]] = Locked_sexp_false;
+	Locked_sexps_set_aside[0] = Locked_sexps_set_aside[1] = -1;
+	sexp_nodes_put_back_persistent(Persistent_nodes_set_aside, std::move(moved));
+}
+
+// The checkpoint's persistent nodes belong to the session that saved it; this session's are kept.
 static void sexp_nodes_checkpoint_load(checkpoint::Reader& r)
 {
+	auto persistent = sexp_nodes_take_persistent();
+
 	auto count = static_cast<int>(r.u32());
-	if (count > Num_sexp_nodes) {
-		int old_size = Num_sexp_nodes;
-		Num_sexp_nodes = count;
-		Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
-		Verify(Sexp_nodes != nullptr);
-		for (int i = old_size; i < Num_sexp_nodes; i++)
-			new (&Sexp_nodes[i]) sexp_node();
-	}
+	if (count > Num_sexp_nodes)
+		sexp_nodes_grow(count);
 
 	for (int i = 0; i < Num_sexp_nodes; i++) {
 		// cached lookups belong to what the node held before
@@ -1387,9 +1468,11 @@ static void sexp_nodes_checkpoint_load(checkpoint::Reader& r)
 		Sexp_nodes[i].op_index = NO_OPERATOR_INDEX_DEFINED;
 		if (i < count)
 			checkpoint::load(r, Sexp_nodes[i]);
-		else
+		if (i >= count || (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT))
 			Sexp_nodes[i].type = SEXP_NOT_USED;
 	}
+
+	sexp_nodes_put_back_persistent(persistent, {});
 }
 
 CHECKPOINT_GLOBAL_FUNCTIONS(sexp_nodes_checkpoint_save, sexp_nodes_checkpoint_load);

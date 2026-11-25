@@ -25,7 +25,7 @@ enum ShieldGaugeType {
 	num_shield_gauge_types
 };
 
-typedef struct shield_hit_info
+typedef struct shield_hit_info	// @checkpoint fields
 {
 	int members;
 	int hull_hit_index; // used to access the members in shield_hit_info that pertain to the hull
