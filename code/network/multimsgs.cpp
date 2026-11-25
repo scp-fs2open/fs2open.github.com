@@ -2957,7 +2957,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();
 
 	if (!members_ok) {
-		nprintf(("Network", "Too many ships in the wing create packet\n"));
+		nprintf(("Network", "Bad member list in the wing create packet\n"));
 		hinfo->bytes_processed = 10000;
 		return;
 	}

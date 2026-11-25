@@ -1023,12 +1023,6 @@ static void ingame_ships_packet_abort(header* hinfo)
 
 static void ingame_forget_ship(ship* shipp)
 {
-	auto entry = ship_registry_get(shipp->ship_name);
-	p_object* p_objp = entry ? entry->p_objp_or_null() : nullptr;
-	if (p_objp != nullptr && p_objp->created_object == &Objects[shipp->objnum]) {
-		p_objp->created_object = nullptr;
-	}
-
 	// ship_create marks the entry present again if the list recreates this ship
 	int entry_index = ship_registry_get_index(shipp->ship_name);
 	if (entry_index >= 0) {
@@ -1056,13 +1050,19 @@ static void ingame_delete_unlisted_ships()
 			continue;
 		}
 		nprintf(("Network", "Deleting %s, which the server did not list\n", Ships[idx].ship_name));
+		int entry_index = ship_registry_get_index(Ships[idx].ship_name);
+		p_object* p_objp = entry_index >= 0 ? Ship_registry[entry_index].p_objp_or_null() : nullptr;
+		if (p_objp != nullptr && p_objp->created_object == &Objects[Ships[idx].objnum]) {
+			p_objp->created_object = nullptr;
+		}
 		ingame_forget_ship(&Ships[idx]);
 		dock_undock_all(&Objects[Ships[idx].objnum]);
 		obj_delete(Ships[idx].objnum);
 	}
 }
 
-// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet
+// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet; a ship
+// that has one keeps it, which assumes each wave-1 slot was set before any later wave copied it
 static void ingame_set_wing_gauge_slots(wing* wingp)
 {
 	for (int i = 0; i < wingp->current_count; i++) {
@@ -1071,7 +1071,7 @@ static void ingame_set_wing_gauge_slots(wing* wingp)
 			continue;
 		}
 		auto entry = ship_registry_get(shipp->ship_name);
-		p_object* p_objp = entry ? entry->p_objp_or_null() : nullptr;
+		p_object* p_objp = entry != nullptr ? entry->p_objp_or_null() : nullptr;
 		hud_wingman_status_set_index(wingp, shipp, p_objp);
 		if (p_objp != nullptr) {
 			p_objp->wing_status_wing_index = shipp->wing_status_wing_index;
