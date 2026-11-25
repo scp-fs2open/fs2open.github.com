@@ -270,7 +270,6 @@ void parse_iff_table(const char* filename)
 	iff_info ifft;
 	iff_info* iffp;
 	int cur_iff;
-	bool create_if_not_found = true;
 
 	try
 	{
@@ -456,6 +455,7 @@ void parse_iff_table(const char* filename)
 		// begin reading data
 		while (required_string_either("#End", "$IFF Name:"))
 		{
+			bool create_if_not_found = true;
 
 			// get the iff name
 			required_string("$IFF Name:");
