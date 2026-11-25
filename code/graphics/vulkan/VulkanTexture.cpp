@@ -317,7 +317,7 @@ void VulkanTextureManager::shutdown()
 	try {
 		m_graphicsQueue.waitIdle();
 	} catch (const vk::DeviceLostError& e) {
-		// the spec treats work on a lost device as complete, so every pending upload can be released
+		// on a lost device the spec counts submitted work as no longer pending, so every pending upload can be released
 		nprintf(("vulkan", "VulkanTexture: device lost while waiting for pending uploads at shutdown: %s\n", e.what()));
 	} catch (const vk::SystemError& e) {
 		queueIdle = false;
