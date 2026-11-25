@@ -6093,7 +6093,8 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	ship_count = 0;
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
 		shipp = &Ships[Objects[so->objnum].instance];
-		// an in-game joiner deletes ships that are leaving, so they are left out here as in its ship list
+		// leaving ships are left out to match the in-game join list, whose joiner deletes ships it doesn't list;
+		// at mission start, when every client gets this packet, they are left out the same way
 		if (ship_is_leaving(shipp))
 			continue;
 
@@ -6248,6 +6249,15 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	}
 }
 
+// ends the game for a client whose post-sync data can't be read, as a bad in-game join ship list does
+static void post_sync_data_abort(header* hinfo)
+{
+	multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+
+	// stops multi_process_bigdata from reading the rest of the buffer as more packets
+	hinfo->bytes_processed = 10000;
+}
+
 void process_post_sync_data_packet(ubyte *data, header *hinfo)
 {
 	ubyte val, ts_index;
@@ -6279,23 +6289,32 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 
 	// add all deleted ships
 	GET_DATA(val);
-	Multi_ts_num_deleted = (int)val;
-	for(idx=0;idx<Multi_ts_num_deleted;idx++){
+	int num_listed = (int)val;
+	if (num_listed > MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS) {
+		mprintf(("Post sync data lists %d deleted ships, more than there are slots\n", num_listed));
+		post_sync_data_abort(hinfo);
+		return;
+	}
+	// read every signature, even an unknown one: an in-game joiner never had the ships deleted at team select
+	Multi_ts_num_deleted = 0;
+	for(idx=0;idx<num_listed;idx++){
 		// get the ship's objnum
 		GET_USHORT(sval);
 		objp = NULL;
 		objp = multi_get_network_object(sval);
-		if(objp != NULL){
+		if (objp != nullptr && objp->type == OBJ_SHIP) {
 			// delete the ship appropriately
 			// mark the object as having been deleted
-			Multi_ts_deleted_objnums[idx] = OBJ_INDEX(objp);
+			Multi_ts_deleted_objnums[Multi_ts_num_deleted] = OBJ_INDEX(objp);
 
 			// delete the ship
 			ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Player_deleted);
-			obj_delete(Multi_ts_deleted_objnums[idx]);			
-			ship_wing_cleanup(objp->instance,&Wings[Ships[objp->instance].wingnum]);
+			obj_delete(Multi_ts_deleted_objnums[Multi_ts_num_deleted]);
+			if (Ships[objp->instance].wingnum >= 0) {
+				ship_wing_cleanup(objp->instance, &Wings[Ships[objp->instance].wingnum]);
+			}
+			Multi_ts_num_deleted++;
 		} else {
-			Multi_ts_num_deleted--;
 			nprintf(("Network","Couldn't find object by net signature for ship delete in post sync data packet\n"));
 		}
 	}
@@ -6341,9 +6360,8 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		GET_DATA(num_secondary);
 		if (num_primary < 0 || num_primary > MAX_SHIP_PRIMARY_BANKS || num_secondary < 0 ||
 			num_secondary > MAX_SHIP_SECONDARY_BANKS) {
-			mprintf(("Post sync data has bad bank counts (%d, %d) for ship %d, ignoring the rest\n", num_primary,
-				num_secondary, net_sig));
-			hinfo->bytes_processed = 10000;
+			mprintf(("Post sync data has bad bank counts (%d, %d) for ship %d\n", num_primary, num_secondary, net_sig));
+			post_sync_data_abort(hinfo);
 			return;
 		}
 

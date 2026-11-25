@@ -80,7 +80,7 @@ class player;
 // Version 64 - 11/24/2026 - Wing create packet carries the wing's count of skipped ships and which positions were
 // skipped, its ship count is the count before skips, and it carries the wing's members and leader, so clients create,
 // number and list the same ships as the server; the in-game join ship list carries each wing's members and leader and
-// leaves out dying ships
+// leaves out dying ships, and post-sync data leaves them out too
 // STANDALONE_ONLY
 
 #define MULTI_FS_SERVER_VERSION							64
