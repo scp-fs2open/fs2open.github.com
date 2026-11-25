@@ -6339,6 +6339,13 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		char num_primary, num_secondary;
 		GET_DATA(num_primary);
 		GET_DATA(num_secondary);
+		if (num_primary < 0 || num_primary > MAX_SHIP_PRIMARY_BANKS || num_secondary < 0 ||
+			num_secondary > MAX_SHIP_SECONDARY_BANKS) {
+			mprintf(("Post sync data has bad bank counts (%d, %d) for ship %d, ignoring the rest\n", num_primary,
+				num_secondary, net_sig));
+			hinfo->bytes_processed = 10000;
+			return;
+		}
 
 		// read past a record for a ship this client doesn't have, using the record's own bank counts
 		if (objp == nullptr || objp->type != OBJ_SHIP) {
@@ -6356,10 +6363,8 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		// get a pointer to the ship
 		shipp = &Ships[objp->instance];
 
-		Assert( num_primary != -1 );
 		shipp->weapons.num_primary_banks = static_cast<int>(num_primary);
 
-		Assert( num_secondary != -1 );
 		shipp->weapons.num_secondary_banks = static_cast<int>(num_secondary);
 
 		// get bank selection info
