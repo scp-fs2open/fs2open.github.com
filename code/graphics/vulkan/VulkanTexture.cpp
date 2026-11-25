@@ -298,7 +298,8 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	mprintf(("VulkanTextureManager: ETC2 Texture Support = %s\n", supportsETC2 ? "YES" : "NO"));
 	mprintf(("VulkanTextureManager: BCn Texture Support = %s\n", supportsBC ? "YES" : "NO"));
 
-	// reserved up front so returning a fence to the list never allocates in the middle of retiring an upload
+	// reserved up front so tracking or retiring an upload never allocates
+	m_pendingCommandBuffers.reserve(MAX_PENDING_UPLOADS);
 	m_freeUploadFences.reserve(MAX_PENDING_UPLOADS);
 
 	m_initialized = true;
@@ -312,16 +313,34 @@ void VulkanTextureManager::shutdown()
 	}
 	// Upload ownership is independent of frame retirement. Complete and reclaim
 	// it before destroying the command pool or allocator during shutdown.
+	bool queueIdle = true;
 	try {
 		m_graphicsQueue.waitIdle();
+	} catch (const vk::DeviceLostError& e) {
+		// the spec treats work on a lost device as complete, so every pending upload can be released
+		nprintf(("vulkan", "VulkanTexture: device lost while waiting for pending uploads at shutdown: %s\n", e.what()));
 	} catch (const vk::SystemError& e) {
-		// a failed wait, e.g. on a lost device, must not stop the rest of the teardown
+		queueIdle = false;
 		nprintf(("vulkan", "VulkanTexture: failed waiting for pending uploads at shutdown: %s\n", e.what()));
 	}
-	for (auto& pending : m_pendingCommandBuffers) {
-		releasePendingUpload(pending);
+	if (queueIdle) {
+		for (auto& pending : m_pendingCommandBuffers) {
+			releasePendingUpload(pending);
+		}
+		m_pendingCommandBuffers.clear();
+	} else {
+		try {
+			processPendingCommandBuffers();
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanTexture: failed checking pending uploads at shutdown: %s\n", e.what()));
+		}
+		// the queue may still be running these, so leak them rather than free them under it
+		if (!m_pendingCommandBuffers.empty()) {
+			nprintf(("vulkan",
+				"VulkanTexture: leaking %zu texture uploads that may still be in use at shutdown\n",
+				m_pendingCommandBuffers.size()));
+		}
 	}
-	m_pendingCommandBuffers.clear();
 	for (auto fence : m_freeUploadFences) {
 		m_device.destroyFence(fence);
 	}
@@ -3020,7 +3039,7 @@ bool VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 		if (m_freeUploadFences.empty()) {
 			fence = m_device.createFence(vk::FenceCreateInfo{});
 		} else {
-			// reset here, not on completion, so a failed reset cannot leave a half-released pending upload
+			// fences in the free list are signaled and must be reset before submit
 			m_device.resetFences(m_freeUploadFences.back());
 			fence = m_freeUploadFences.back();
 			m_freeUploadFences.pop_back();
