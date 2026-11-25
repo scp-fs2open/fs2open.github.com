@@ -173,7 +173,7 @@ void Fred_mission_save::convert_special_tags_to_retail() const
 
 void Fred_mission_save::fout_puts(const char* str)
 {
-	if (cfputs(str, fp) == EOF) {
+	if (cfputs(str, fp) == EOF && err == 0) {
 		err = -19;
 	}
 }

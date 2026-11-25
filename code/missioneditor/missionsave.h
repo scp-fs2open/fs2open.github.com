@@ -572,5 +572,8 @@ class Fred_mission_save {
 	 */
 	void fout_raw_comment(const char* comment_start);
 
+	/**
+	 * @brief Writes str to fp, setting err if the write fails
+	 */
 	void fout_puts(const char* str);
 };
