@@ -134,12 +134,7 @@ ADE_FUNC(rand32f,
 	float _max;
 	int numargs = ade_get_args(L, "|f", &_max);
 
-	// see also frand()
-	int num;
-	do {
-		num = Random::next();
-	} while (num == Random::MAX_VALUE);
-	float result = i2fl(num) * Random::INV_F_MAX_VALUE;
+	float result = frand();
 
 	if (numargs > 0)
 		result *= _max;

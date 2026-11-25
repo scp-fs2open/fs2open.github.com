@@ -36,11 +36,11 @@ float fl_roundoff(float x, int multiple)
  */
 float frand()
 {
-	int i_rval;
+	float rval;
+	// test the float, not the int: the largest ints below MAX_VALUE also round to exactly 1.0
 	do {
-		i_rval = Random::next();
-	} while (i_rval == Random::MAX_VALUE);
-	float rval = i2fl(i_rval) * Random::INV_F_MAX_VALUE;
+		rval = i2fl(Random::next()) * Random::INV_F_MAX_VALUE;
+	} while (rval >= 1.0f);
 	return rval;
 }
 
