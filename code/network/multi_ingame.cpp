@@ -1198,6 +1198,14 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			return;
 		}
 
+		// docked group members hold provisional signatures, so only an already-listed ship counts as a repeat
+		object* existing = multi_get_network_object(net_signature);
+		if (existing != nullptr && existing->type == OBJ_SHIP && Ingame_ship_listed[existing->instance]) {
+			mprintf(("ABORTING in-game join on a repeated ship record for %s!\n", ship_name));
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
+
 		// go ahead and create the parse object.  Set the network signature of this guy before
 		// creation
 
@@ -1215,6 +1223,11 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		}
 		objnum = OBJ_INDEX(p_objp->created_object);
 		ship_num = Objects[objnum].instance;
+		if (Ingame_ship_listed[ship_num]) {
+			mprintf(("ABORTING in-game join on a second record for ship %s!\n", ship_name));
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
 		Objects[objnum].flags.reset();
 		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
