@@ -33,6 +33,7 @@ struct PipelineConfig {
 	primitive_type primitiveType = PRIM_TYPE_TRIS;
 	gr_zbuffer_type depthMode = ZBUFFER_TYPE_NONE;
 	gr_alpha_blend blendMode = ALPHA_BLEND_NONE;
+	bool coverageAlpha = false;  // see createColorBlendAttachment()
 	bool cullEnabled = true;
 	bool frontFaceCW = false;  // Match OpenGL default (CCW); models override to CW
 	bool depthWriteEnabled = true;
@@ -60,6 +61,11 @@ struct PipelineConfig {
 
 	// Color attachment count (for multiple render targets)
 	uint32_t colorAttachmentCount = 1;
+
+	// Motion vector output location on passes that have one (colorAttachmentCount above it). Everything else
+	// must leave it alone: a shader that doesn't write a location leaves the attachment undefined.
+	static constexpr uint32_t VELOCITY_ATTACHMENT = 6;
+	bool writesVelocity = false;
 
 	// MSAA sample count (default e1 = no multisampling)
 	vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
@@ -153,6 +159,11 @@ public:
 	 * @brief Get number of cached pipelines
 	 */
 	size_t getPipelineCount() const { return m_pipelines.size(); }
+
+	/**
+	 * @brief Destroy every cached pipeline built from a shader type; the caller must know the GPU is done with them
+	 */
+	void forgetPipelinesOfShaderType(shader_type type);
 
 	/**
 	 * @brief Check if a draw needs a fallback buffer for a given vertex attribute

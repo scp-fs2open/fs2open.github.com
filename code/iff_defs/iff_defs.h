@@ -72,6 +72,10 @@ extern int iff_init_color(int r, int g, int b);
 // load the iff table
 extern void iff_init();
 
+// free the iff table
+// (call after ship_close(), since ship data holds IFF and color indices)
+extern void iff_close();
+
 // search for iff
 extern int iff_lookup(const char *iff_name);
 

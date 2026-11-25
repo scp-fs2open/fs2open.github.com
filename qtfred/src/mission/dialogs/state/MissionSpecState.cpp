@@ -67,7 +67,7 @@ QByteArray MissionSpecDialogModel::captureState() const
 	ds << static_cast<qint32>(The_mission.contrail_threshold);
 
 	// AI profile index
-	ds << static_cast<qint32>(AI_PROFILES_INDEX(The_mission.ai_profile));
+	ds << static_cast<qint32>(The_mission.ai_profile_index);
 
 	// Music
 	ds << static_cast<qint32>(Current_soundtrack_num);
@@ -179,8 +179,8 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 
 	// AI profile
 	ds >> i32;
-	if (i32 >= 0 && i32 < Num_ai_profiles)
-		The_mission.ai_profile = &Ai_profiles[i32];
+	if (i32 >= 0 && i32 < static_cast<int>(Ai_profiles.size()))
+		The_mission.ai_profile_index = i32;
 
 	// Music
 	ds >> i32; Current_soundtrack_num = i32;

@@ -40,7 +40,7 @@
 			}
 		},
 	},
-	"version": 0
+	"version": 1
  }
 
 
@@ -48,7 +48,7 @@
 namespace io {
 namespace presets {
 
-static const unsigned int PST_VERSION = 0;
+static const unsigned int PST_VERSION = 1;
 static const unsigned int PST_FILE_ID = 0x5f545350;  // "PST_" in file
 
 enum class Section {
@@ -60,7 +60,8 @@ enum class Section {
 
 	// subsections
 	Primary,
-	Secondary
+	Secondary,
+	V1
 };
 
 class PresetFileHandler {
@@ -79,6 +80,11 @@ public:
 	 * @param[in] s    id of the section
 	 */
 	bool beginSectionRead(presets::Section s);
+
+	/**
+	 * @return true if the element being read has a section with this id
+	 */
+	bool sectionExists(presets::Section s);
 
 	/**
 	 * Begins writing to an array using the presets::Section as its name

@@ -87,6 +87,7 @@ QByteArray BackgroundEditorDialogModel::captureState() const
 			ds << s.scale_x << s.scale_y;
 			ds << (qint32)s.div_x << (qint32)s.div_y;
 			ds << s.ang.p << s.ang.b << s.ang.h;
+			ds << s.angular_size;
 		}
 	}
 
@@ -189,6 +190,7 @@ std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteA
 			ds >> i32; s.div_x = i32;
 			ds >> i32; s.div_y = i32;
 			ds >> s.ang.p >> s.ang.b >> s.ang.h;
+			ds >> s.angular_size;
 		}
 	}
 
@@ -948,6 +950,50 @@ void BackgroundEditorDialogModel::setSunScale(float v)
 
 	CLAMP(v, getSunScaleLimit().first, getSunScaleLimit().second);
 	modify(s->scale_x, v);
+	refreshBackgroundPreview();
+}
+
+bool BackgroundEditorDialogModel::getSunAngularSizeEnabled() const
+{
+	auto* s = getActiveSun();
+	if (!s)
+		return false;
+
+	return s->angular_size >= 0.0f;
+}
+
+void BackgroundEditorDialogModel::setSunAngularSizeEnabled(bool enabled)
+{
+	auto* s = getActiveSun();
+	if (!s)
+		return;
+
+	modify(s->angular_size, enabled ? (s->angular_size >= 0.0f ? s->angular_size : SUN_ANGULAR_SIZE_SOL)
+									: SUN_ANGULAR_SIZE_UNSPECIFIED);
+	refreshBackgroundPreview();
+}
+
+float BackgroundEditorDialogModel::getSunAngularSize() const
+{
+	auto* s = getActiveSun();
+	if (!s || s->angular_size < 0.0f)
+		return SUN_ANGULAR_SIZE_SOL;
+
+	return s->angular_size;
+}
+
+void BackgroundEditorDialogModel::setSunAngularSize(float v)
+{
+	auto* s = getActiveSun();
+	if (!s)
+		return;
+
+	// don't let a value edit turn the override on by itself -- that's the checkbox's job
+	if (s->angular_size < 0.0f)
+		return;
+
+	CLAMP(v, getSunAngularSizeLimit().first, getSunAngularSizeLimit().second);
+	modify(s->angular_size, v);
 	refreshBackgroundPreview();
 }
 

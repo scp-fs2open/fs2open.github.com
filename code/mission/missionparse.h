@@ -61,6 +61,7 @@ extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
 extern bool check_for_25_1_data();
+extern bool check_for_26_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -240,7 +241,8 @@ typedef struct mission {
 	char substitute_briefing_music_name[NAME_LENGTH];
 
 	// Goober5000
-	ai_profile_t *ai_profile;
+	int ai_profile_index;
+	const ai_profile_t *ai_profile() const { return &Ai_profiles[ai_profile_index]; }
 
 	SCP_string lighting_profile_name;
 
@@ -313,7 +315,6 @@ extern int Mission_callsign_count;
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
 	int num_paths;
-	int cached_mask;
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
@@ -417,21 +418,9 @@ struct alt_class {
 		variable_index = -1;
 		default_to_this_class = false;
 	}
-	alt_class(const alt_class& a) {
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-	}
 	bool operator==(const alt_class& a) const
 	{
 		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
-	}
-	alt_class& operator=(const alt_class& a)
-	{
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-		return *this;
 	}
 };
 
@@ -615,13 +604,20 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
 void mission_init(mission *pm, bool quick_init = false);
+
+// returns a copy of the mission's AI profile that can be modified for the rest of the mission
+ai_profile_t *mission_get_transient_ai_profile();
+
+// removes flags that are inactive or meaningful only at runtime
+void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags);
+
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_find_parse_object(const char *name);
 int parse_create_object(p_object *objp, bool standalone_ship = false);
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
+void resolve_parse_flags(const flagset<Mission::Parse_Object_Flags> &parse_flags, ship &s, bool no_ship_max_shield);
 
 void mission_parse_close();
 

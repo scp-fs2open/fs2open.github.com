@@ -1035,6 +1035,17 @@ int Fred_mission_save::save_bitmaps()
 			required_string_fred("+Scale:");
 			parse_comments();
 			fout(" %f", sle->scale_x);
+
+			// apparent diameter, only written when this mission actually sets one; see
+			// check_for_26_3_data()
+			fso_comment_push(";;FSO 26.3.0;;");
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+AngularSize:",
+				1,
+				";;FSO 26.3.0;;",
+				SUN_ANGULAR_SIZE_UNSPECIFIED,
+				" %f",
+				sle->angular_size);
+			fso_comment_pop();
 		}
 
 		// save background bitmaps by filename
@@ -2579,7 +2590,9 @@ int Fred_mission_save::save_mission_info()
 		fout("\n+Flags:");
 	}
 
-	fout(" " UINT64_T_ARG, The_mission.flags.to_u64());
+	auto mission_flags = The_mission.flags;
+	mission_clear_inactive_flags(mission_flags);
+	fout(" " UINT64_T_ARG, mission_flags.to_u64());
 
 	// maybe write out Nebula values
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
@@ -3115,15 +3128,14 @@ int Fred_mission_save::save_mission_info()
 	}
 
 	// Goober5000's AI profile stuff
-	int profile_index = AI_PROFILES_INDEX(The_mission.ai_profile);
-	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
+	Assertion(Ai_profiles.in_bounds(The_mission.ai_profile_index), "Mission AI profile index %d is out of range!", The_mission.ai_profile_index);
 
 	fso_comment_push(";;FSO 3.6.9;;");
 	if (optional_string_fred("$AI Profile:")) {
 		parse_comments(2);
-		fout(" %s", The_mission.ai_profile->profile_name);
+		fout(" %s", The_mission.ai_profile()->profile_name);
 	} else {
-		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
+		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile()->profile_name);
 	}
 	fso_comment_pop();
 
@@ -3184,7 +3196,15 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	auto version_24_1 = gameversion::version(24, 1);
 	auto version_24_3 = gameversion::version(24, 3);
 	auto version_25_1 = gameversion::version(25, 1);
-	if (MISSION_VERSION >= version_25_1) {
+	auto version_26_3 = gameversion::version(26, 3);
+	if (MISSION_VERSION >= version_26_3) {
+		Warning(LOCATION,
+			"Notify an SCP coder: now that the required mission version is at least 26.3, the check_for_26_3_data(), "
+			"check_for_25_1_data(), check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can "
+			"be removed");
+	} else if (check_for_26_3_data()) {
+		The_mission.required_fso_version = version_26_3;
+	} else if (MISSION_VERSION >= version_25_1) {
 		Warning(LOCATION,
 			"Notify an SCP coder: now that the required mission version is at least 25.1, the check_for_25_1_data(), "
 			"check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can be removed");

@@ -1172,12 +1172,12 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 			
 		// targeted subsys index
 		if(Player_ai->targeted_subsys != nullptr){
-			t_subsys = (char)ship_get_subsys_index( Player_ai->targeted_subsys );
+			t_subsys = static_cast<ushort>(ship_get_subsys_index( Player_ai->targeted_subsys ));
 		}
 
 		// locked targeted subsys index
 		if(Player->locking_subsys != nullptr){
-			l_subsys = (char)ship_get_subsys_index( Player->locking_subsys );
+			l_subsys = static_cast<ushort>(ship_get_subsys_index( Player->locking_subsys ));
 		}
 	}
 
@@ -1205,7 +1205,7 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 				subsystems.push_back(OOC_INDEX_NULLPTR_SUBSYSEM);
 			} // otherwise, just send the subsystem index.
 			else {
-				subsystems.push_back( (ushort)std::distance( GET_FIRST(&Ships[lock.obj->instance].subsys_list), lock.subsys) );
+				subsystems.push_back( static_cast<ushort>(ship_get_subsys_index(lock.subsys)) );
 			}
 				
 			count++;
@@ -1711,7 +1711,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 				aip->targeted_subsys = nullptr;
 
 				if ((t_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-					aip->targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
+					aip->targeted_subsys = multi_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
 				}
 			}
 
@@ -1719,7 +1719,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 			if (shipp != nullptr) {
 				if ((l_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-					pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
+					pl->m_player->locking_subsys = multi_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
 				}
 			}
 		}
@@ -1758,17 +1758,11 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 		if (temp_lock_info.obj != nullptr && shipp != nullptr) {
 			// if the subsystem is the special null value.
-			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM) {
+			if (subsystem_index == OOC_INDEX_NULLPTR_SUBSYSEM || temp_lock_info.obj->type != OBJ_SHIP) {
 				temp_lock_info.subsys = nullptr;
 			} // otherwise look it up to store the lock onto the subsystem
 			else {
-				ship_subsys* ml_target_subsysp = GET_FIRST(&Ships[temp_lock_info.obj->instance].subsys_list);
-
-				for (int j = 0; j < subsystem_index; j++) {
-					ml_target_subsysp = GET_NEXT(ml_target_subsysp);
-				}
-
-				temp_lock_info.subsys = ml_target_subsysp;
+				temp_lock_info.subsys = multi_get_indexed_subsys(&Ships[temp_lock_info.obj->instance], subsystem_index);
 			}
 			// store the lock.
 			shipp->missile_locks.push_back(temp_lock_info);
@@ -2011,24 +2005,19 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 						Interp_info[objnum].set_subsystem_animation_frame(i, seq_num);						
 					}
 
-					angles prev_angs_1 = vmd_zero_angles;
-					angles prev_angs_2 = vmd_zero_angles;
 					angles angs_1 = vmd_zero_angles;
 					angles angs_2 = vmd_zero_angles;
 
 					if (subsysp->submodel_instance_1) {
-						vm_extract_angles_matrix_alternate(&prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
 						vm_extract_angles_matrix_alternate(&angs_1, &subsysp->submodel_instance_1->canonical_orient);
 					}
 
 					if (subsysp->submodel_instance_2) {
-						vm_extract_angles_matrix_alternate(&prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
 						vm_extract_angles_matrix_alternate(&angs_2, &subsysp->submodel_instance_2->canonical_orient);
 					}
 
 					if (flags[i] & OO_SUBSYS_ROTATION_1b) {
 						if (animations_valid) {
-							prev_angs_1.b = angs_1.b;
 							angs_1.b = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2037,7 +2026,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_1h) {
 						if (animations_valid) {
-							prev_angs_1.h = angs_1.h;
 							angs_1.h = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2046,7 +2034,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_1p) {
 						if (animations_valid) {
-							prev_angs_1.p = angs_1.p;
 							angs_1.p = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2055,7 +2042,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_2b) {
 						if (animations_valid) {
-							prev_angs_2.b = angs_2.b;
 							angs_2.b = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2064,7 +2050,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_2h) {
 						if (animations_valid) {						
-							prev_angs_2.h = angs_2.h;
 							angs_2.h = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2073,7 +2058,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_2p) {
 						if (animations_valid) {						
-							prev_angs_2.p = angs_2.p;
 							angs_2.p = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2082,19 +2066,16 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					// fix up the subsystem orientation matrixes based on received data
 					if (flags[i] & OO_SUBSYS_ROTATION_1) {
-						vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, &prev_angs_1);
 						vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, &angs_1);
 					}
 
 					// fix up the subsystem orientation matrixes based on received data
 					if (flags[i] & OO_SUBSYS_ROTATION_2) {
-						vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, &prev_angs_2);
 						vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, &angs_2);
 					}
 
 					if (flags[i] & OO_SUBSYS_TRANSLATION_x) {
 						if (animations_valid) {
-							subsysp->submodel_instance_1->canonical_prev_offset.xyz.x = subsysp->submodel_instance_1->canonical_offset.xyz.x;
 							subsysp->submodel_instance_1->canonical_offset.xyz.x = subsys_data[data_idx];
 						}
 
@@ -2103,7 +2084,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_TRANSLATION_y) {
 						if (animations_valid) {						
-							subsysp->submodel_instance_1->canonical_prev_offset.xyz.y = subsysp->submodel_instance_1->canonical_offset.xyz.y;
 							subsysp->submodel_instance_1->canonical_offset.xyz.y = subsys_data[data_idx];
 						}
 
@@ -2112,7 +2092,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_TRANSLATION_z) {
 						if (animations_valid) {						
-							subsysp->submodel_instance_1->canonical_prev_offset.xyz.z = subsysp->submodel_instance_1->canonical_offset.xyz.z;
 							subsysp->submodel_instance_1->canonical_offset.xyz.z = subsys_data[data_idx];
 						}
 

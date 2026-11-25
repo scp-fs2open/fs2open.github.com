@@ -11,7 +11,7 @@ ss_wing_info_h::ss_wing_info_h() : ss_wing(-1) {}
 ss_wing_info_h::ss_wing_info_h(int l_wing) : ss_wing(l_wing) {}
 bool ss_wing_info_h::isValid() const
 {
-	return ss_wing >= 0;
+	return ss_wing >= 0 && Ss_wings != nullptr;
 }
 ss_wing_info* ss_wing_info_h::getWing() const
 {
@@ -23,11 +23,11 @@ int ss_wing_info_h::getWingIndex() const
 	return ss_wing;
 }
 
-ss_slot_info_h::ss_slot_info_h() {}
+ss_slot_info_h::ss_slot_info_h() : ss_slots(nullptr), ss_idx(-1), ss_wing(-1) {}
 ss_slot_info_h::ss_slot_info_h(ss_slot_info* l_slots, int l_idx, int l_wing) : ss_slots(l_slots), ss_idx(l_idx), ss_wing(l_wing) {}
 bool ss_slot_info_h::isValid() const
 {
-	return ss_slots != nullptr;
+	return ss_slots != nullptr && Ss_wings != nullptr;
 }
 ss_slot_info* ss_slot_info_h::getSlot() const
 {
@@ -48,7 +48,7 @@ wss_unit_wep_h::wss_unit_wep_h() : ss_unit(-1) {}
 wss_unit_wep_h::wss_unit_wep_h(int l_unit) : ss_unit(l_unit) {}
 bool wss_unit_wep_h::isValid() const
 {
-	return ss_unit >= 0;
+	return ss_unit >= 0 && Wss_slots != nullptr;
 	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
 }
 wss_unit* wss_unit_wep_h::getBank() const
@@ -60,7 +60,7 @@ wss_unit_count_h::wss_unit_count_h() : ss_unit(-1) {}
 wss_unit_count_h::wss_unit_count_h(int l_unit) : ss_unit(l_unit) {}
 bool wss_unit_count_h::isValid() const
 {
-	return ss_unit >= 0;
+	return ss_unit >= 0 && Wss_slots != nullptr;
 	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
 }
 wss_unit* wss_unit_count_h::getBank() const
@@ -74,7 +74,7 @@ ADE_OBJ(l_Loadout_Wing_Slot, ss_slot_info_h, "loadout_wing_slot", "Loadout wing 
 ADE_VIRTVAR(isShipLocked, l_Loadout_Wing_Slot, nullptr, "If the slot's ship is locked", "boolean", "The slot ship status")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -93,7 +93,7 @@ ADE_VIRTVAR(isWeaponLocked,
 	"The slot weapon status")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -107,7 +107,7 @@ ADE_VIRTVAR(isWeaponLocked,
 ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used in the current mission or disabled for the current player in multi", "boolean", "The slot disabled status")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -128,7 +128,7 @@ ADE_VIRTVAR(isFilled, l_Loadout_Wing_Slot, "boolean", "If the slot is empty or f
 {
 	ss_slot_info_h current;
 	bool setv;
-	if (!ade_get_args(L, "o|b", l_Loadout_Wing_Slot.Get(&current), &setv)) {
+	if (!ade_get_args(L, "o|b", l_Loadout_Wing_Slot.Get(&current), &setv) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -156,7 +156,7 @@ ADE_VIRTVAR(isFilled, l_Loadout_Wing_Slot, "boolean", "If the slot is empty or f
 ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player ship", "boolean", "The slot player status")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -176,7 +176,7 @@ ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player shi
 ADE_VIRTVAR(isPlayerAllowed, l_Loadout_Wing_Slot, nullptr, "If the slot is allowed to have player ship. In single player this is functionally the same as isPlayer.", "boolean", "The slot player allowed status")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -202,7 +202,7 @@ ADE_VIRTVAR(ShipClassIndex,
 	"The ship class index")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -221,7 +221,7 @@ ADE_VIRTVAR(Callsign,
 	"the callsign")
 {
 	ss_slot_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 	
@@ -253,6 +253,9 @@ ADE_INDEXER(l_Loadout_Amount,
 	if (!ade_get_args(L, "oi|i", l_Loadout_Amount.Get(&current), &idx, &amount))
 		return ADE_RETURN_NIL;
 
+	if (!current.isValid())
+		return ADE_RETURN_NIL;
+
 	if (idx < 1 || idx > MAX_SHIP_WEAPONS) {
 		return ADE_RETURN_NIL;
 	};
@@ -263,7 +266,6 @@ ADE_INDEXER(l_Loadout_Amount,
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
 		}
-		ship_info* sip = &Ship_info[current.getBank()->ship_class];
 		int widx = current.getBank()->wep[idx];
 		if (widx >= 0 && widx < (int)Weapon_info.size()) {
 			weapon_info* wip = &Weapon_info[widx];
@@ -272,7 +274,12 @@ ADE_INDEXER(l_Loadout_Amount,
 			if (wip->subtype == WP_LASER) {
 				capacity = 1;
 			} else {
-				capacity = wl_calc_missile_fit(widx, sip->secondary_bank_ammo_capacity[idx - MAX_SHIP_PRIMARY_BANKS]);
+				int ship_class = current.getBank()->ship_class;
+				if (!Ship_info.in_bounds(ship_class)) {
+					LuaError(L, "Cannot set a missile amount in a slot with no ship class!");
+					return ADE_RETURN_NIL;
+				}
+				capacity = wl_calc_missile_fit(widx, Ship_info[ship_class].secondary_bank_ammo_capacity[idx - MAX_SHIP_PRIMARY_BANKS]);
 			}
 			if (amount > capacity) {
 				amount = capacity;
@@ -309,22 +316,28 @@ ADE_INDEXER(l_Loadout_Weapon,
 	"index into Weapon Classes, 0 if bank is empty, -1 if the ship cannot carry the weapon, or nil if the ship or index is invalid")
 {
 	wss_unit_wep_h current;
-	int bank = -1;
-	int wepIndex;
+	int bank = 0;
+	int wepIndex = 0;
 	if (!ade_get_args(L, "oi|i", l_Loadout_Weapon.Get(&current), &bank, &wepIndex))
+		return ADE_RETURN_NIL;
+
+	if (!current.isValid())
 		return ADE_RETURN_NIL;
 
 	if (bank < 1 || bank > MAX_SHIP_WEAPONS) {
 		return ADE_RETURN_NIL;
 	};
 
-	ship_info* sip = &Ship_info[current.getBank()->ship_class];
+	int ship_class = current.getBank()->ship_class;
+	ship_info* sip = Ship_info.in_bounds(ship_class) ? &Ship_info[ship_class] : nullptr;
 	int bankType = -1;
 	// Decide if we're setting a valid primary or secondary bank on the current ship class
-	if (bank <= sip->num_primary_banks) {
-		bankType = WP_LASER;
-	} else if (bank <= (sip->num_secondary_banks + MAX_SHIP_PRIMARY_BANKS)) {
-		bankType = WP_MISSILE;
+	if (sip != nullptr) {
+		if (bank <= sip->num_primary_banks) {
+			bankType = WP_LASER;
+		} else if (bank > MAX_SHIP_PRIMARY_BANKS && bank <= (sip->num_secondary_banks + MAX_SHIP_PRIMARY_BANKS)) {
+			bankType = WP_MISSILE;
+		}
 	}
 
 	wepIndex--; // Convert from Lua
@@ -334,32 +347,24 @@ ADE_INDEXER(l_Loadout_Weapon,
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
 		}
-		if (bankType == -1 || wepIndex > weapon_info_size()) {
+		if (bankType == -1 || wepIndex >= weapon_info_size()) {
 			LuaError(L, "The provided bank or weapon index is invalid!");
 		} else {
 			bool valid = false;
 			//First we check that this is a valid bank for the ship and that the script is not trying to empty the bank
 			if (wepIndex > -1) {
 				// Next we check that this is a weapon the ship can carry
-				if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank])) {
-					if (eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][wepIndex])) {
-						valid = true;
-					}
-				} else {
-					if (eval_weapon_flag_for_game_type(sip->allowed_weapons[wepIndex])) {
-						valid = true;
-					}
-				}
+				valid = ship_class_bank_allows_weapon(sip, bank, wepIndex);
 			}
 			if (valid) {
 				//Now we double check that we're putting a primary in a primary slot or secondary in a secondary slot
 				weapon_info* wip = &Weapon_info[wepIndex];
 				if (wip->subtype == bankType) {
 					current.getBank()->wep[bank] = wepIndex;
+					current.getBank()->wep_count[bank] = 0;
 				} else {
 					LuaError(L, "Cannot put a primary in a secondary bank or a secondary in a primary bank!");
 				}
-				current.getBank()->wep_count[bank] = 0;
 			}
 			else {
 				//If the ship cannot carry this weapon in this bank then we set it to -1 and the amount to -1
@@ -379,7 +384,7 @@ ADE_FUNC(__len, l_Loadout_Weapon, nullptr, "The number of weapon banks in the sl
 
 //**********HANDLE: loadout ship
 ADE_OBJ_NO_MULTI(l_Loadout_Ship, int, "loadout_ship", "Loadout handle");
-ADE_OBJ_VALIDATOR_RANGE(l_Loadout_Ship, MAX_WSS_SLOTS);
+ADE_OBJ_VALIDATOR(l_Loadout_Ship, idx, Wss_slots != nullptr && idx >= 0 && idx < MAX_WSS_SLOTS);
 
 ADE_VIRTVAR(ShipClassIndex,
 	l_Loadout_Ship,
@@ -390,9 +395,13 @@ ADE_VIRTVAR(ShipClassIndex,
 	"number",
 	"The index or nil if handle is invalid")
 {
-	int current;
-	int shipIndex;
+	int current = 0;
+	int shipIndex = 0;
 	if (!ade_get_args(L, "o|i", l_Loadout_Ship.Get(&current), &shipIndex)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (Wss_slots == nullptr || current < 0 || current >= MAX_WSS_SLOTS) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -405,7 +414,7 @@ ADE_VIRTVAR(ShipClassIndex,
 		}
 		if (shipIndex > -1) {
 			// If we're not trying to empty the slot then make sure it's a valid ship index
-			if (shipIndex > ship_info_size()) {
+			if (shipIndex >= ship_info_size()) {
 				LuaError(L, "The provided ship index is invalid!");
 			} else {
 				Wss_slots[current].ship_class = shipIndex;
@@ -474,6 +483,8 @@ ADE_INDEXER(l_Loadout_Wing,
 	int idx;
 	if (!ade_get_args(L, "oi", l_Loadout_Wing.Get(&current), &idx))
 		return ade_set_error(L, "s", "");
+	if (!current.isValid() || idx < 1 || idx > MAX_WING_SLOTS)
+		return ade_set_error(L, "o", l_Loadout_Wing_Slot.Set(ss_slot_info_h()));
 	idx--; // Convert to Lua's 1 based index system
 	return ade_set_args(L, "o", l_Loadout_Wing_Slot.Set(ss_slot_info_h(current.getWing()->ss_slots, idx, current.getWingIndex())));
 }
@@ -488,7 +499,7 @@ ADE_FUNC(__len, l_Loadout_Wing, nullptr, "The number of slots in the wing", "num
 ADE_VIRTVAR(Name, l_Loadout_Wing, nullptr, "The name of the wing", "string", "The wing")
 {
 	ss_wing_info_h current;
-	if (!ade_get_args(L, "o", l_Loadout_Wing.Get(&current))) {
+	if (!ade_get_args(L, "o", l_Loadout_Wing.Get(&current)) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 

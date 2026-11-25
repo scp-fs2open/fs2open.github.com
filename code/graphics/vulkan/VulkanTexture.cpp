@@ -148,6 +148,7 @@ void tcache_slot_vulkan::reset()
 	bitmapHandle = -1;
 	arrayIndex = 0;
 	used = false;
+	pendingPageOut = false;
 	framebuffer = nullptr;
 	framebufferView = nullptr;
 	renderPass = nullptr;
@@ -194,11 +195,18 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	// Query device limits
 	auto properties = physicalDevice.getProperties();
 	m_maxTextureSize = properties.limits.maxImageDimension2D;
-	m_maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	// samplers may only enable anisotropy when the device has the samplerAnisotropy feature
+	const float deviceMaxAnisotropy =
+		physicalDevice.getFeatures().samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f;
+	m_maxAnisotropy = std::max(1.0f, std::min(gr_anisotropy_setting(), deviceMaxAnisotropy));
+	m_maxLodBias = properties.limits.maxSamplerLodBias;
+
+	m_trilinearFiltering = gr_texture_filter_setting() != 0;
 
 	nprintf(("vulkan", "Vulkan Texture Manager initialized\n"));
 	nprintf(("vulkan", "  Max texture size: %u\n", m_maxTextureSize));
-	nprintf(("vulkan", "  Max anisotropy: %.1f\n", m_maxAnisotropy));
+	nprintf(("vulkan", "  Max anisotropy: %.1f (device %.1f)\n", m_maxAnisotropy, deviceMaxAnisotropy));
+	nprintf(("vulkan", "  Texture filter: %s\n", m_trilinearFiltering ? "trilinear" : "bilinear"));
 
 	// Create default sampler
 	vk::SamplerCreateInfo samplerInfo;
@@ -299,6 +307,10 @@ void VulkanTextureManager::shutdown()
 	if (!m_initialized) {
 		return;
 	}
+	// Upload ownership is independent of frame retirement. Complete and reclaim
+	// it before destroying the command pool or allocator during shutdown.
+	m_graphicsQueue.waitIdle();
+	processPendingCommandBuffers();
 
 	// Destroy fallback 3D texture
 	if (m_fallback3DView) {
@@ -368,7 +380,7 @@ void VulkanTextureManager::shutdown()
 bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts)
 {
 	// Non-array textures own their image outright — nothing to ref-count.
-	if (ts->arrayLayers <= 1 || ts->bitmapHandle < 0) {
+	if (ts->arrayLayers <= 1 || ts->isCubemap || ts->bitmapHandle < 0) {
 		return true;
 	}
 
@@ -413,54 +425,58 @@ bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts)
 	return true;
 }
 
-void VulkanTextureManager::flushTextures() const
+void VulkanTextureManager::keepTexture(tcache_slot_vulkan& texture)
 {
-	if (!m_initialized) {
+	if (!texture.pendingPageOut) {
+		return;
+	}
+	texture.pendingPageOut = false;
+	if (texture.isCubemap || texture.arrayLayers <= 1) {
 		return;
 	}
 
-	int flushed = 0;
-	auto* deletionQueue = getDeletionQueue();
+	// One marked frame keeps the whole shared image.
+	const int first = texture.bitmapHandle - static_cast<int>(texture.arrayIndex);
+	for (int frame = first; frame < first + static_cast<int>(texture.arrayLayers); ++frame) {
+		auto* other = bm_get_gr_info<tcache_slot_vulkan>(frame, true);
+		if (other && other->image == texture.image) {
+			other->pendingPageOut = false;
+		}
+	}
+}
 
+void VulkanTextureManager::pageInStart()
+{
 	for (auto& block : bm_blocks) {
 		for (auto& slot : block) {
-			if (!slot.gr_info) {
-				continue;
+			if (auto* ts = static_cast<tcache_slot_vulkan*>(slot.gr_info)) {
+				ts->pendingPageOut = ts->imageView && !ts->isRenderTarget &&
+					slot.entry.type != BM_TYPE_USER && slot.entry.type != BM_TYPE_3D;
 			}
+		}
+	}
+}
 
+void VulkanTextureManager::pageInPrepare() const
+{
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block) {
 			auto* ts = static_cast<tcache_slot_vulkan*>(slot.gr_info);
-
-			if (!ts->image) {
-				continue;
+			if (ts && (slot.entry.preloaded || slot.entry.ref_count > 0)) {
+				keepTexture(*ts);
 			}
-
-			// Skip render targets — they are managed by the post-processor
-			// and scene texture system, not by the bitmap paging system
-			if (ts->isRenderTarget) {
-				continue;
-			}
-
-			// For shared animation texture arrays: only destroy the actual image
-			// when no other frame references it (detaches this slot in place and
-			// returns false otherwise).
-			if (!releaseAnimationSlotRef(ts)) {
-				continue;
-			}
-
-			// Queue deferred destruction of GPU resources
-			if (ts->imageView) {
-				deletionQueue->queueImageView(ts->imageView);
-			}
-			if (ts->image) {
-				deletionQueue->queueImage(ts->image, ts->allocation);
-			}
-
-			ts->reset();
-			flushed++;
 		}
 	}
 
-	nprintf(("vulkan", "VulkanTextureManager: Flushed %d textures for level transition\n", flushed));
+	// Retire unused images through the normal deferred deletion path before precaching.
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block) {
+			const auto* ts = static_cast<const tcache_slot_vulkan*>(slot.gr_info);
+			if (ts && ts->pendingPageOut) {
+				bm_free_data(&slot, false);
+			}
+		}
+	}
 }
 
 void VulkanTextureManager::bm_init(bitmap_slot* slot) const
@@ -676,12 +692,15 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	// Build per-layer copy regions and upload each frame's data
 	SCP_vector<vk::BufferImageCopy> copyRegions;
 
-	// Use the same lock parameters that were used for the triggering frame.
-	// bm->flags contains the lock flags (BMP_AABITMAP, BMP_TEX_OTHER, BMP_TEX_DXT*, etc.)
-	// bm->bpp contains the requested bpp. Using these ensures all frames are locked
-	// consistently (e.g., 8bpp for aabitmaps, 32bpp for RGBA textures).
+	// BMPMAN's bitmap flags describe converted pixel data and do not retain the
+	// BMP_AABITMAP lock flag. EFF animations load each frame separately, so an
+	// 8-bit PCX sibling locked with flags 0 would trip the bpp assert in
+	// bm_convert_format. ANI and APNG decode every frame in the triggering lock,
+	// so their sibling locks load nothing. Other 8bpp sources are safe to treat
+	// the same way: the standalone server never runs Vulkan, user bitmaps are
+	// never multi-frame, and the PNG and DDS loaders ignore lock flags.
 	auto lockBpp = bm->bpp;
-	auto lockFlags = bm->flags;
+	auto lockFlags = (lockBpp == 8) ? BMP_AABITMAP : bm->flags;
 
 	// Set guard flag to make recursive bm_data calls no-ops
 	m_uploadingAnimation = true;
@@ -1084,6 +1103,16 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		return true;
 	}
 
+	// A CPU lock can recover file pixels after upload. Reuse the existing image
+	// until the bitmap is explicitly invalidated or released.
+	const auto type = bm_get_entry(handle)->type;
+	if (type != BM_TYPE_USER && type != BM_TYPE_3D) {
+		const auto* ts = getTextureSlot(handle);
+		if (ts && ts->imageView) {
+			return true;
+		}
+	}
+
 	// Detect animated texture arrays
 	int numFrames = 0;
 	int baseFrame = bm_get_base_frame(handle, &numFrames);
@@ -1383,7 +1412,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 
 	bool isCubemapRT = (flags & BMP_FLAG_CUBEMAP) != 0;
 	uint32_t arrayLayers = isCubemapRT ? 6 : 1;
-	vk::Format format = LDR_COLOR_FORMAT;
+	vk::Format format = (flags & BMP_FLAG_RENDER_TARGET_HDR) ? HDR_COLOR_FORMAT : LDR_COLOR_FORMAT;
 
 	// Create image for render target
 	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eColorAttachment |
@@ -1851,7 +1880,7 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 	*width_out = 0;
 	*height_out = 0;
 
-	auto* ts = bm_get_gr_info<tcache_slot_vulkan>(bitmap_num, true);
+	auto* ts = getTextureSlot(bitmap_num);
 	if (!ts) {
 		return nullptr;
 	}
@@ -2157,8 +2186,14 @@ void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format f
 vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter minFilter,
                                               vk::SamplerAddressMode addressMode,
                                               bool enableAnisotropy, float maxAnisotropy,
-                                              bool enableMipmaps)
+                                              bool enableMipmaps, float negativeLodBias,
+                                              bool followTextureFilter)
 {
+	// The bias is quantized to the eighths the key can hold, so that the key always matches the sampler it caches
+	const int maxLodBiasEighths = std::min(static_cast<int>(m_maxLodBias * 8.0f), 63);
+	const int lodBiasEighths = std::clamp(static_cast<int>(std::lround(negativeLodBias * -8.0f)), 0, maxLodBiasEighths);
+	const float lodBias = static_cast<float>(lodBiasEighths) / -8.0f;
+
 	// Create a key from sampler state
 	uint64_t key = 0;
 	key |= static_cast<uint64_t>(magFilter) << 0;
@@ -2166,7 +2201,9 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	key |= static_cast<uint64_t>(addressMode) << 8;
 	key |= static_cast<uint64_t>(enableAnisotropy) << 16;
 	key |= static_cast<uint64_t>(enableMipmaps) << 17;
+	key |= static_cast<uint64_t>(lodBiasEighths & 0x3F) << 18; // 6 bits, in eighths
 	key |= static_cast<uint64_t>(maxAnisotropy * 10) << 24;
+	key |= static_cast<uint64_t>(followTextureFilter) << 32;
 
 	auto it = m_samplerCache.find(key);
 	if (it != m_samplerCache.end()) {
@@ -2186,8 +2223,11 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	samplerInfo.unnormalizedCoordinates = false;
 	samplerInfo.compareEnable = false;
 	samplerInfo.compareOp = vk::CompareOp::eAlways;
-	samplerInfo.mipmapMode = enableMipmaps ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest;
-	samplerInfo.mipLodBias = 0.0f;
+	// only material textures follow the setting; cubemaps, interface art and render targets stay trilinear
+	samplerInfo.mipmapMode = enableMipmaps && (m_trilinearFiltering || !followTextureFilter)
+		? vk::SamplerMipmapMode::eLinear
+		: vk::SamplerMipmapMode::eNearest;
+	samplerInfo.mipLodBias = lodBias;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = enableMipmaps ? VK_LOD_CLAMP_NONE : 0.0f;
 
@@ -2232,7 +2272,25 @@ tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
 	if (!slot || !slot->gr_info) {
 		return nullptr;
 	}
-	return static_cast<tcache_slot_vulkan*>(slot->gr_info);
+	auto* texture = static_cast<tcache_slot_vulkan*>(slot->gr_info);
+	keepTexture(*texture);
+	return texture;
+}
+
+void VulkanTextureManager::releaseCpuBitmapData(int handle)
+{
+	int numFrames = 1;
+	const int baseFrame = bm_get_base_frame(handle, &numFrames);
+	if (baseFrame < 0) {
+		return;
+	}
+	for (int frame = baseFrame; frame < baseFrame + numFrames; ++frame) {
+		const auto* ts = getTextureSlot(frame);
+		if (ts != nullptr && ts->imageView) {
+			// Drawing can reuse the GPU image. A later CPU lock may reread the file.
+			bm_unload_fast(frame);
+		}
+	}
 }
 
 bool VulkanTextureManager::ensureCubemapUploaded(int handle)
@@ -2264,6 +2322,9 @@ bool VulkanTextureManager::ensureCubemapUploaded(int handle)
 			ts = getTextureSlot(handle);
 			uploaded = (ts != nullptr && ts->imageView && ts->isCubemap) || uploadCubemap(handle, bmp, compType);
 			bm_unlock(handle);
+			if (uploaded) {
+				releaseCpuBitmapData(handle);
+			}
 		}
 	}
 
@@ -2528,7 +2589,7 @@ bool VulkanTextureManager::createImage(uint32_t width, uint32_t height, uint32_t
 		return false;
 	}
 
-	if (!m_memoryManager->allocateImageMemory(image, memUsage, allocation)) {
+	if (!m_memoryManager->allocateImageMemory(image, memUsage, allocation, MemoryPurpose::Texture)) {
 		m_device.destroyImage(image);
 		image = nullptr;
 		return false;
@@ -2715,6 +2776,21 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffer,
                                                VulkanAllocation& outAllocation)
 {
+	processPendingCommandBuffers();
+	constexpr size_t maxPendingUploadBytes = 64 * 1024 * 1024;
+	constexpr size_t maxPendingUploads = 64;
+	// A single large upload may exceed this limit, but never accumulate more
+	// uploads behind it. Waiting on an upload fence does not submit or retire
+	// the render command buffer currently being recorded.
+	while (!m_pendingCommandBuffers.empty() &&
+	       (m_pendingCommandBuffers.size() >= maxPendingUploads || m_pendingUploadBytes >= maxPendingUploadBytes ||
+	        size > maxPendingUploadBytes - m_pendingUploadBytes)) {
+		nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
+			m_pendingCommandBuffers.size(), m_pendingUploadBytes));
+		const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
+		Assertion(result == vk::Result::eSuccess, "Failed waiting for a texture upload fence");
+		processPendingCommandBuffers();
+	}
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.size = size;
 	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
@@ -2880,28 +2956,35 @@ void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmd;
 
-	m_graphicsQueue.submit(submitInfo, nullptr);
-
-	// Defer staging buffer destruction (2 frames matches MAX_FRAMES_IN_FLIGHT)
-	auto* deletionQueue = getDeletionQueue();
-	deletionQueue->queueBuffer(stagingBuffer, stagingAllocation);
-
-	// Defer command buffer free
-	m_pendingCommandBuffers.push_back({cmd, VulkanDeletionQueue::FRAMES_TO_WAIT});
+	auto fence = m_device.createFence(vk::FenceCreateInfo{});
+	try {
+		m_graphicsQueue.submit(submitInfo, fence);
+	} catch (...) {
+		m_device.destroyFence(fence);
+		throw;
+	}
+	m_pendingCommandBuffers.push_back({cmd, stagingBuffer, stagingAllocation, fence});
+	m_pendingUploadBytes += static_cast<size_t>(stagingAllocation.size);
 }
 
 void VulkanTextureManager::processPendingCommandBuffers()
 {
-	auto it = m_pendingCommandBuffers.begin();
-	while (it != m_pendingCommandBuffers.end()) {
-		if (it->framesRemaining == 0) {
-			m_device.freeCommandBuffers(m_commandPool, it->cb);
-			it = m_pendingCommandBuffers.erase(it);
-		} else {
-			it->framesRemaining--;
-			++it;
+	size_t completed = 0;
+	for (auto& pending : m_pendingCommandBuffers) {
+		if (m_device.getFenceStatus(pending.fence) != vk::Result::eSuccess) {
+			break;
 		}
+		m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
+		m_device.destroyBuffer(pending.stagingBuffer);
+		m_memoryManager->freeAllocation(pending.stagingAllocation);
+		m_device.freeCommandBuffers(m_commandPool, pending.cb);
+		m_device.destroyFence(pending.fence);
+		++completed;
 	}
+	if (completed != 0) {
+		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin(), m_pendingCommandBuffers.begin() + completed);
+	}
+	Assert(m_pendingCommandBuffers.empty() == (m_pendingUploadBytes == 0));
 }
 
 uint32_t VulkanTextureManager::calculateMipLevels(uint32_t width, uint32_t height)
