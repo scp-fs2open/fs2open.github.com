@@ -275,6 +275,8 @@ private:
 
 	/**
 	 * @brief Begin single-time command buffer
+	 * @note Throws vk::SystemError because transitionImageLayout's callers catch it; use
+	 * tryBeginSingleTimeCommands to get a null command buffer instead.
 	 */
 	vk::CommandBuffer beginSingleTimeCommands();
 

@@ -2969,10 +2969,11 @@ vk::CommandBuffer VulkanTextureManager::beginSingleTimeCommands()
 	allocInfo.commandPool = m_commandPool;
 	allocInfo.commandBufferCount = 1;
 
+	vk::CommandBuffer commandBuffer = m_device.allocateCommandBuffers(allocInfo)[0];
+
 	vk::CommandBufferBeginInfo beginInfo;
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
-	vk::CommandBuffer commandBuffer = m_device.allocateCommandBuffers(allocInfo)[0];
 	try {
 		commandBuffer.begin(beginInfo);
 	} catch (const vk::SystemError&) {
