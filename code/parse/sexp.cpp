@@ -21684,8 +21684,7 @@ void multi_sexp_change_ship_class()
 	Current_sexp_network_packet.get_int(class_num);
 	while (Current_sexp_network_packet.get_bool(ship_arrived)) {
 		if (ship_arrived) {
-			Current_sexp_network_packet.get_ship(ship_num);
-			if ((class_num >= 0) && (ship_num >= 0)) {
+			if (Current_sexp_network_packet.get_ship(ship_num) && (class_num >= 0)) {
 				change_ship_type(ship_num, class_num, 1);
 				if (&Ships[ship_num] == Player_ship) {
 					// update HUD and RTT cockpit gauges if applicable
