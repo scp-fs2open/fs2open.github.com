@@ -10,6 +10,7 @@
 
 
 
+#include <algorithm>
 #include <climits>
 
 #include "globalincs/pstypes.h"
@@ -2817,13 +2818,23 @@ void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp, bool 
 	ushort sigs[MAX_SHIPS_PER_WING];
 	ubyte count = 0;
 	ushort leader = 0;
+
+	// when dying ships are left out, the leader is the one ship_wing_cleanup will move special_ship to once they go
+	int leader_pos = wingp->special_ship;
+	for (int i = wingp->current_count - 1; i >= 0; i--) {
+		bool dying = Ships[wingp->ship_index[i]].flags[Ship::Ship_Flags::Dying];
+		if (skip_dying && dying && leader_pos > 0 && leader_pos >= i) {
+			leader_pos--;
+		}
+	}
+
 	for (int i = 0; i < wingp->current_count; i++) {
 		const ship* shipp = &Ships[wingp->ship_index[i]];
 		if (skip_dying && shipp->flags[Ship::Ship_Flags::Dying]) {
 			continue;
 		}
 		sigs[count] = Objects[shipp->objnum].net_signature;
-		if (i == wingp->special_ship) {
+		if (count == leader_pos) {
 			leader = sigs[count];
 		}
 		count++;
@@ -2856,6 +2867,8 @@ void set_wing_membership(wing* wingp, const wing_membership& members)
 	int wingnum = WING_INDEX(wingp);
 	int count = 0;
 	int leader = 0;
+	int old_ships[MAX_SHIPS_PER_WING];
+	std::copy(std::begin(wingp->ship_index), std::end(wingp->ship_index), std::begin(old_ships));
 	for (int i = 0; i < members.count; i++) {
 		object* objp = multi_get_network_object(members.sigs[i]);
 		if (objp == nullptr || objp->type != OBJ_SHIP || Ships[objp->instance].wingnum != wingnum) {
@@ -2874,6 +2887,12 @@ void set_wing_membership(wing* wingp, const wing_membership& members)
 	}
 	for (int i = count; i < MAX_SHIPS_PER_WING; i++) {
 		wingp->ship_index[i] = -1;
+	}
+	for (int shipnum : old_ships) {
+		bool kept = std::find(wingp->ship_index, wingp->ship_index + count, shipnum) != wingp->ship_index + count;
+		if (shipnum >= 0 && !kept) {
+			nprintf(("Network", "Dropping %s from wing %s\n", Ships[shipnum].ship_name, wingp->name));
+		}
 	}
 	wingp->current_count = count;
 	wingp->special_ship = leader;
@@ -2951,7 +2970,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
-	// the server is creating this wave, so local red-alert or non-arrival marks don't apply
+	// the server is creating this wave, so clear a local Gone mark and cannot-arrive marks on the wing's ships
 	Wings[index].flags.remove(Ship::Wing_Flags::Gone);
 	for (auto& p_obj : Parse_objects) {
 		if (p_obj.wingnum == index) {

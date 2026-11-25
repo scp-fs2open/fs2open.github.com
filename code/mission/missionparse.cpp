@@ -7795,7 +7795,6 @@ p_object *parse_object_find_dock_leader(p_object *pobjp)
 {
 	p_dock_function_info dfi;
 	dock_evaluate_all_docked_objects(pobjp, &dfi, parse_object_find_dock_leader_helper);
-	parse_object_clear_all_handled_flags();
 	return dfi.maintained_variables.objp_value != nullptr ? dfi.maintained_variables.objp_value : pobjp;
 }
 
