@@ -2079,7 +2079,7 @@ static int game_init()
 		snd_init();
 	}
 
-	// the voice list fills without it, and a settings query must not start the speech service
+	// on desktop the voice list fills without it, and a settings query must not start the speech service
 	if (!Cmdline_get_options && !fsspeech_init()) {
 		mprintf(("Failed to init speech\n"));
 	}
@@ -2267,7 +2267,7 @@ static int game_init()
 		gr_close();
 		threading::shut_down_task_pool();
 #ifdef __ANDROID__
-		// Return to SDL so the activity can deliver the queued JNI result.
+		// exit() would end the process before the activity sends the reply it queued
 		return printed ? 0 : 1;
 #else
 		exit(printed ? 0 : 1);

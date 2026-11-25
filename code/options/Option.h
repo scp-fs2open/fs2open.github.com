@@ -124,13 +124,11 @@ class OptionBase {
 
 	virtual ValueDescription getCurrentValueDescription() const = 0;
 
-	virtual ValueDescription getDefaultValueDescription() const = 0;
-
 	// value only, and only for options that load: serializers and some defaults need systems that start later
 	virtual void rememberDefaultBeforeLoad() const = 0;
 	virtual void forgetDefaultBeforeLoad() const = 0;
 
-	// the remembered default if there is one, else the current one, as stored in a settings file
+	// the remembered default if there is one, else the default as computed now, as stored in a settings file
 	virtual SCP_string getDescribedDefault() const = 0;
 
 	virtual void setValueDescription(const ValueDescription& desc) const = 0;
@@ -309,10 +307,6 @@ class Option : public OptionBase {
 	{
 		auto val = getValue();
 		return toDescription(val);
-	}
-	ValueDescription getDefaultValueDescription() const override
-	{
-		return toDescription(_defaultValueFunc());
 	}
 	void rememberDefaultBeforeLoad() const override
 	{

@@ -875,7 +875,7 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsKeepWhatTheyWereBeforeLo
 	auto* mgr = OptionsManager::instance();
 	auto* lighting = mgr->getOptionByKey("Graphics.Lighting");
 	ASSERT_NE(lighting, nullptr);
-	SCP_string saved_default = lighting->getDefaultValueDescription().serialized;
+	SCP_string saved_default = lighting->getDescribedDefault();
 	SCP_string other;
 	for (const auto& value : lighting->getValidValues()) {
 		if (value.serialized != saved_default) {

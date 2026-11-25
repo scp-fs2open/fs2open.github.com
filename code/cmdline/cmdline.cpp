@@ -1740,7 +1740,7 @@ bool SetCmdlineParams()
 
 	if (get_options_arg.found() && !Fred_running) {
 		if (get_options_arg.has_param() && strcmp(get_options_arg.str(), "json_v1") != 0) {
-			// the same reply as -get_flags, so a launcher can recognize an output type this build lacks
+			// the marker -get_flags prints, so a launcher can recognize an output type this build lacks
 #ifdef __ANDROID__
 			os_android_set_flags_string("OUTPUT TYPE NOT SUPPORTED!");
 #else
