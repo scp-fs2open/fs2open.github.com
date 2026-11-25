@@ -2813,24 +2813,23 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	}
 }
 
-void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp, bool skip_dying)
+void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp)
 {
 	ushort sigs[MAX_SHIPS_PER_WING];
 	ubyte count = 0;
 	ushort leader = 0;
 
-	// when dying ships are left out, the leader is the one ship_wing_cleanup will move special_ship to once they go
+	// dying ships are left out, so the leader is the one ship_wing_cleanup will move special_ship to once they go
 	int leader_pos = wingp->special_ship;
 	for (int i = wingp->current_count - 1; i >= 0; i--) {
-		bool dying = Ships[wingp->ship_index[i]].flags[Ship::Ship_Flags::Dying];
-		if (skip_dying && dying && leader_pos > 0 && leader_pos >= i) {
+		if (Ships[wingp->ship_index[i]].flags[Ship::Ship_Flags::Dying] && leader_pos > 0 && leader_pos >= i) {
 			leader_pos--;
 		}
 	}
 
 	for (int i = 0; i < wingp->current_count; i++) {
 		const ship* shipp = &Ships[wingp->ship_index[i]];
-		if (skip_dying && shipp->flags[Ship::Ship_Flags::Dying]) {
+		if (shipp->flags[Ship::Ship_Flags::Dying]) {
 			continue;
 		}
 		sigs[count] = Objects[shipp->objnum].net_signature;
@@ -2847,11 +2846,14 @@ void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp, bool 
 	ADD_USHORT(leader);
 }
 
-bool get_wing_membership(ubyte* data, int& offset, wing_membership& members)
+bool get_wing_membership(ubyte* data, int& offset, int bytes_available, wing_membership& members)
 {
 	ubyte count;
+	if (offset + static_cast<int>(sizeof(count)) > bytes_available) {
+		return false;
+	}
 	GET_DATA(count);
-	if (count > MAX_SHIPS_PER_WING) {
+	if (count > MAX_SHIPS_PER_WING || offset + (count + 1) * static_cast<int>(sizeof(ushort)) > bytes_available) {
 		return false;
 	}
 	members.count = count;
@@ -2928,7 +2930,7 @@ void send_wing_create_packet( wing *wingp, int num_created, int num_requested, u
 	ADD_INT(val);
 	ADD_INT(pre_create_skipped);
 	ADD_DATA(skipped_positions);
-	add_wing_membership(data, packet_size, wingp, false);
+	add_wing_membership(data, packet_size, wingp);
 	
 	multi_io_send_to_all_reliable(data, packet_size);	
 }
@@ -2950,7 +2952,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	GET_INT(red_alert_skipped_ships);
 	GET_DATA(skipped_positions);
 	wing_membership members;
-	bool members_ok = get_wing_membership(data, offset, members);
+	bool members_ok = get_wing_membership(data, offset, hinfo->bytes_available, members);
 
 	PACKET_SET_SIZE();
 

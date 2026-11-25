@@ -402,6 +402,7 @@ typedef struct header {
 	ubyte		addr[sizeof(in6_addr)];														// obtained from network-layer header
 	uint16_t	port;															// obtained from network-layer header
 	short		id;															// will be stuffed with player_id (short)
+	int		bytes_available = 0;									// bytes from this packet to the buffer's end
 } header;
 
 // NETPLAYER INFORMATION THE SERVER AND THE INDIVIDUAL CLIENT MUST HAVE

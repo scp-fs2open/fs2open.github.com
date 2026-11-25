@@ -311,8 +311,8 @@ struct wing_membership {
 	int count = 0;
 	ushort leader = 0;
 };
-void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp, bool skip_dying);
-bool get_wing_membership(ubyte* data, int& offset, wing_membership& members);
+void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp);
+bool get_wing_membership(ubyte* data, int& offset, int bytes_available, wing_membership& members);
 void set_wing_membership(wing* wingp, const wing_membership& members);
 
 // send a packet indicating a wing of ships should be created

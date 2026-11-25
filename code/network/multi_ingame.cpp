@@ -1023,6 +1023,12 @@ static void ingame_ships_packet_abort(header* hinfo)
 
 static void ingame_forget_ship(ship* shipp)
 {
+	auto entry = ship_registry_get(shipp->ship_name);
+	p_object* p_objp = entry ? entry->p_objp_or_null() : nullptr;
+	if (p_objp != nullptr && p_objp->created_object == &Objects[shipp->objnum]) {
+		p_objp->created_object = nullptr;
+	}
+
 	// ship_create marks the entry present again if the list recreates this ship
 	int entry_index = ship_registry_get_index(shipp->ship_name);
 	if (entry_index >= 0) {
@@ -1036,8 +1042,8 @@ static void ingame_forget_ship(ship* shipp)
 	}
 }
 
-// creating a docked group from its leader also brings back members the server no longer has (destroyed, departed or
-// in their death roll); the server sends a ship record for every ship it has, so anything without one goes
+// creating a docked group from its leader also brings back members the server doesn't list (destroyed, departed or
+// dying), so every ship without a record of its own is deleted
 static void ingame_delete_unlisted_ships()
 {
 	if (Ingame_unlisted_deleted) {
@@ -1045,7 +1051,6 @@ static void ingame_delete_unlisted_ships()
 	}
 	Ingame_unlisted_deleted = true;
 
-	obj_merge_created_list();
 	for (int idx = 0; idx < MAX_SHIPS; idx++) {
 		if (Ships[idx].objnum < 0 || Ingame_ship_listed[idx]) {
 			continue;
@@ -1128,11 +1133,14 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			short wingnum;
 			wing_membership members;
 			GET_SHORT(wingnum);
-			if (wingnum < 0 || wingnum >= Num_wings || !get_wing_membership(data, offset, members)) {
+			bool members_ok = wingnum >= 0 && wingnum < Num_wings &&
+				get_wing_membership(data, offset, hinfo->bytes_available, members);
+			if (!members_ok) {
 				mprintf(("ABORTING in-game join on a bad member list for wing %d!\n", wingnum));
 				ingame_ships_packet_abort(hinfo);
 				return;
 			}
+			obj_merge_created_list();
 			ingame_delete_unlisted_ships();
 			set_wing_membership(&Wings[wingnum], members);
 			ingame_set_wing_gauge_slots(&Wings[wingnum]);
@@ -1197,7 +1205,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 
 		// docked ships are created as a group from the dock leader; the group may already exist from an earlier record
-		if (p_objp->created_object == nullptr) {
+		if (!object_is_docked(p_objp) || p_objp->created_object == nullptr) {
 			parse_create_object(object_is_docked(p_objp) ? parse_object_find_dock_leader(p_objp) : p_objp);
 		}
 		if (p_objp->created_object == nullptr) {
@@ -1293,7 +1301,7 @@ void send_ingame_ships_packet(net_player *player)
 
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
-		// the joiner can't take over a death roll in progress, and the kill packets have already gone out
+		// a dying ship is left out: the joiner can't recreate a death roll in progress
 		if (shipp->flags[Ship::Ship_Flags::Dying])
 			continue;
 
@@ -1371,7 +1379,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA(p_type);
 		short wingnum = static_cast<short>(i);
 		ADD_SHORT(wingnum);
-		add_wing_membership(data, packet_size, &Wings[i], true);
+		add_wing_membership(data, packet_size, &Wings[i]);
 	}
 
 	// end of the ship list!!!
