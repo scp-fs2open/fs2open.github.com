@@ -33,6 +33,7 @@ add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
+    globalincs/test_utility.cpp
     globalincs/test_version.cpp
 )
 

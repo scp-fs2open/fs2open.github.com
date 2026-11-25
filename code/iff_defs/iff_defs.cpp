@@ -267,10 +267,10 @@ void parse_iff_table(const char* filename)
 {
 	int i, j, k;
 
-	iff_info ifft;
+	iff_info ifft{};
+	ifft.hotkey_team = IFF_hotkey_team::Default;
 	iff_info* iffp;
 	int cur_iff;
-	bool create_if_not_found = true;
 
 	try
 	{
@@ -456,6 +456,7 @@ void parse_iff_table(const char* filename)
 		// begin reading data
 		while (required_string_either("#End", "$IFF Name:"))
 		{
+			bool create_if_not_found = true;
 
 			// get the iff name
 			required_string("$IFF Name:");
@@ -545,7 +546,6 @@ void parse_iff_table(const char* filename)
 			}
 
 			// get F3 override
-			iffp->hotkey_team = IFF_hotkey_team::Default;
 			if (optional_string("+Hotkey Team:"))
 			{
 				char temp[NAME_LENGTH];
@@ -558,16 +558,16 @@ void parse_iff_table(const char* filename)
 				else if (!stricmp(temp, "None"))
 					iffp->hotkey_team = IFF_hotkey_team::None;
 				else
-					Warning(LOCATION, "Unrecognized +Hotkey Tean: %s\n", temp);
+					Warning(LOCATION, "Unrecognized +Hotkey Team: %s\n", temp);
 			}
 
 
 			// get flags ----------------------------------------------------------
 
 			// get iff flags
-			iffp->flags = 0;
 			if (optional_string("$Flags:"))
 			{
+				iffp->flags = 0;
 				SCP_vector<SCP_string> flag_strings;
 				stuff_string_list(flag_strings);
 
