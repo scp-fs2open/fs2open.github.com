@@ -1,5 +1,7 @@
 #IFFs
 
+$Radar Target ID Flags: ( "crosshairs" )
+
 ; Pirate follows this +nocreate override to check that +nocreate applies only to its own entry.
 $IFF Name: Unknown
 +nocreate

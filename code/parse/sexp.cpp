@@ -3830,6 +3830,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 				break;
 
+			case OPF_PROP_CLASS_NAME:
+				if ( node_subtype != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (prop_info_lookup(CTEXT(node)) < 0)
+					return SEXP_CHECK_INVALID_PROP_CLASS_NAME;
+
+				break;
+
 			case OPF_SKYBOX_MODEL_NAME:
 				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -4234,7 +4243,7 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 			case OP_IS_DESTROYED:
 			case OP_TIME_WING_DESTROYED:
 			{
-				if (!The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship])
+				if (!The_mission.ai_profile()->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship])
 				{
 					for (int n = first_arg_node; n >= 0; n = CDR(n))
 					{
@@ -5866,7 +5875,12 @@ const prop *eval_prop(int node)
 		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
 			return nullptr;
 
-		return prop_id_lookup(Sexp_nodes[node].cache->ship_registry_index);
+		// props can be removed mid-mission, so the cache also holds the object signature to catch that
+		auto objp = &Objects[Sexp_nodes[node].cache->ship_registry_index];
+		if (objp->signature == Sexp_nodes[node].cache->numeric_literal)
+			return prop_id_lookup(objp->instance);
+
+		Sexp_nodes[node].cache.reset();
 	}
 
 	// maybe forward to a special-arg node
@@ -5882,11 +5896,13 @@ const prop *eval_prop(int node)
 	auto prop_idx = prop_name_lookup(CTEXT(node));
 	if (prop_idx >= 0)
 	{
+		auto propp = prop_id_lookup(prop_idx);
+
 		// cache the value if it can't change later and we're in-game
 		if (!Fred_running && !is_node_value_dynamic(node))
-			Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_PROP, -1, prop_idx);
+			Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_PROP, Objects[propp->objnum].signature, propp->objnum);
 
-		return prop_id_lookup(prop_idx);
+		return propp;
 	}
 
 	// we know nothing about this prop, apparently
@@ -13940,7 +13956,7 @@ void sexp_player_use_ai(bool use_ai)
 void sexp_set_friendly_damage_caps(int n) {
 	bool is_nan;
 	bool is_nan_forever;
-	ai_profile_t& aip = *The_mission.ai_profile;
+	ai_profile_t& aip = *mission_get_transient_ai_profile();
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
 	if (!is_nan && !is_nan_forever) {
@@ -16104,14 +16120,16 @@ void multi_sexp_destroy_subsys_instantly()
 	int subsys_index;
 	ship_subsys *ss;
 
-	Current_sexp_network_packet.get_ship(shipp);
+	if (!Current_sexp_network_packet.get_ship(shipp))
+		return;
 
 	// destroy subsystems
 	while (Current_sexp_network_packet.get_int(subsys_index))
 	{
 		// find subsystem
-		Assert(subsys_index >= 0);
-		ss = ship_get_indexed_subsys(shipp, subsys_index);
+		ss = multi_get_indexed_subsys(shipp, subsys_index);
+		if (ss == nullptr)
+			continue;
 
 		// do destruction stuff
 		ss->current_hits = 0;
@@ -19794,7 +19812,8 @@ void sexp_prop_create(int n)
 		new_prop_ori = vmd_identity_matrix;
 
 	int objnum = prop_create(&new_prop_ori, &new_prop_pos, new_prop_class, new_ship_name);
-	Assert(objnum != -1);
+	if (objnum < 0)
+		return;
 
 	// note: model_page_in_textures was called via the sexp preloader
 }
@@ -35587,6 +35606,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
 
+		case SEXP_CHECK_INVALID_PROP_CLASS_NAME:
+			return "Invalid prop class name";
+
 		case SEXP_CHECK_INVALID_SKYBOX_NAME:
 			return "Invalid skybox name";
 
@@ -38157,7 +38179,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe Ship's Name (ship must be in-mission)\r\n" },
 
 	{ OP_NAV_DEL, "del-nav\r\n"
-		"Deletes a nav point. Takes 1 Argument...\r\n"
+		"Deletes a nav point. Deleting the selected nav point clears the selection and ends autopilot if it is engaged.\r\n"
+		"Takes 1 Argument...\r\n"
 		"\t1:\tNavPoint Name" },
 
 	{ OP_NAV_HIDE, "hide-nav\r\n"
@@ -38216,13 +38239,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 1 boolean argument.\r\n"
 		"\t1:\tSet to true to enable autopilot, set to false to disable autopilot." },
 
-	{ OP_NAV_SELECT, "nav-select (Action operator)\r\n"
-		"\tSelects a nav point.\r\n\r\n"
+	{ OP_NAV_SELECT, "select-nav (Action operator)\r\n"
+		"\tSelects a nav point. Selecting a different nav point ends autopilot if it is engaged.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the nav point." },
 
-	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
-		"\tDeselects any navpoint selected.\r\n\r\n"
+	{ OP_NAV_UNSELECT, "unselect-nav (Action operator)\r\n"
+		"\tLeaves no nav point selected. Ends autopilot if it is engaged.\r\n\r\n"
 		"Takes no arguments..." },
 
 	{ OP_NAV_SET_COLOR, "nav-set-color (Action operator)\r\n"

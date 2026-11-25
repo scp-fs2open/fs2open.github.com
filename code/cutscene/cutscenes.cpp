@@ -169,7 +169,8 @@ void parse_cutscene_table(const char* filename)
 				csnp->flags.reset();
 			}
 
-			if (Cutscenes.empty())
+			// The entry was already added above, so the first cutscene is the only one in the list
+			if (csn_new && Cutscenes.size() == 1)
 			{
 				// The original code assumes the first movie is the intro, so make it viewable
 				csnp->flags.set(Cutscene::Cutscene_Flags::Viewable);
@@ -354,6 +355,11 @@ static const char* Text_lines[MAX_TEXT_LINES];
 
 void cutscenes_screen_play()
 {
+	// The list is empty while the pilot has no viewable cutscene, and Enter or Play still lands here.
+	if (Cutscene_list.empty()) {
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		return;
+	}
 	Assertion(SCP_vector_inbounds(Cutscene_list, Selected_line), "Selected line %d is out of range!", Selected_line);
 	int which_cutscene = Cutscene_list[Selected_line];
 
