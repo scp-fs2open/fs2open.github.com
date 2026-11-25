@@ -277,8 +277,11 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 				} else {
 					// make other fireballs at random positions, but try to keep on the surface
 					vm_vec_rand_vec_quick(&rand_vec);
-					float dot = vm_vec_dot(&center_to_subsys, &rand_vec);
-					vm_vec_scale_add2(&rand_vec, &center_to_subsys, -dot/vm_vec_mag_squared(&center_to_subsys));
+					// a subsystem at the ship's center has no surface direction to keep to
+					if (!IS_VEC_NULL(&center_to_subsys)) {
+						float dot = vm_vec_dot(&center_to_subsys, &rand_vec);
+						vm_vec_scale_add2(&rand_vec, &center_to_subsys, -dot/vm_vec_mag_squared(&center_to_subsys));
+					}
 					vm_vec_scale_add(&temp_vec, &g_subobj_pos, &rand_vec, 0.5f*psub->radius);
 				}
 
