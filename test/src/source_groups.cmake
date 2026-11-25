@@ -13,6 +13,10 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("Autopilot"
+    autopilot/test_nav_deselect.cpp
+)
+
 add_file_folder("Bmpman"
     bmpman/test_eff.cpp
 )
@@ -21,10 +25,15 @@ add_file_folder("CFile"
     cfile/cfile.cpp
 )
 
+add_file_folder("Controlconfig"
+    controlconfig/test_bindings.cpp
+)
+
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
+    globalincs/test_utility.cpp
     globalincs/test_version.cpp
 )
 
@@ -56,6 +65,10 @@ add_file_folder("menuui"
 
 add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
+)
+
+add_file_folder("missionui"
+    missionui/test_chatbox.cpp
 )
 
 add_file_folder("mod"
@@ -119,6 +132,7 @@ add_file_folder("Scripting\\\\Lua"
 
 add_file_folder("Ship"
     ship/ship_info.cpp
+    ship/test_bank_allows_weapon.cpp
 )
 
 add_file_folder("Starfield"

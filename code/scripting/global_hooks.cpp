@@ -353,7 +353,7 @@ const std::shared_ptr<Hook<ShipDepartConditions>> OnShipDepart = Hook<ShipDepart
 	{
 		{"Ship", "ship", "The ship departing the mission"},
 		{"JumpNode", "string", "The name of the jump node the ship was in when it departed. Can be nil."},
-		{"Method", "ship", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
+		{"Method", "string", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
 	});
 
 const std::shared_ptr<Hook<WeaponDeathConditions>> OnWeaponDelete = Hook<WeaponDeathConditions>::Factory("On Weapon Delete",
@@ -590,7 +590,7 @@ const std::shared_ptr<Hook<>> FredOnMissionSpecsSave = Hook<>::Factory("FRED On 
 const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
 	"Will be called once when the splash screen shows for the first time.",
 	{},
-	HookDeprecationOptions(gameversion::version(23, 0), HookDeprecationOptions::DeprecationLevel::LEVEL_WARN, HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR),
+	HookDeprecationOptions(gameversion::version(23, 2), HookDeprecationOptions::DeprecationLevel::LEVEL_WARN, HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR),
 	CHA_SPLASHSCREEN);
 
 const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = OverridableHook<ObjectDeathConditions>::Factory("On Death",
@@ -603,7 +603,7 @@ const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = Overrida
 			"vector",
 			"The position of the hit that caused the death (only set for ships and only if available)"},
 	},
-	HookDeprecationOptions(gameversion::version(23, 0)));
+	HookDeprecationOptions(gameversion::version(23, 2)));
 
 } // namespace hooks
 } // namespace scripting

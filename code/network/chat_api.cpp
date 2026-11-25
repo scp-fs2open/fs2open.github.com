@@ -503,8 +503,11 @@ char *ChatGetString(void)
 				
 				return p;
 			}
-			Assert(strlen(Input_chat_buffer) < MAXCHATBUFFER-1);
-			strcat_s(Input_chat_buffer,ch);
+			// a chat server line can outgrow this buffer: keep what fits rather than hit the fatal string error
+			if (strlen(Input_chat_buffer) < MAXCHATBUFFER-1)
+			{
+				strcat_s(Input_chat_buffer,ch);
+			}
 		}
 		else
 		{

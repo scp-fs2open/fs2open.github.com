@@ -1316,6 +1316,7 @@ void campaign_tree_view::remove_mission(int m)
 	}
 
 	Campaign_modified = 1;
+	Campaign_tree_formp->mission_renumbered(z, m);
 }
 
 void campaign_tree_view::OnDeleteRow() 

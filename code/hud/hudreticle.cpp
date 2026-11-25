@@ -369,6 +369,8 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 		if (!fp.empty()) {
 
 			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
+				const bool filled = (fpi->active >= 1);
+
 				if (fpi->active == 2)
 					setGaugeColor(HUD_C_BRIGHT, config);
 				else if (fpi->active == 1)
@@ -378,7 +380,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 
 				int centerX = x + (bitmap_size_x / 2);
 				int centerY = y + (bitmap_size_y / 2);
-				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, false, config);
+				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, filled, config);
 			}
 		}
 	}
