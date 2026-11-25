@@ -287,9 +287,12 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.set_view_orient(_viewport->camera.view_orient);
 		save.set_fred_alt_names(Fred_alt_names);
 		save.set_fred_callsigns(Fred_callsigns);
-		if (save.save_autosave_file(savePath.toUtf8().constData()) != 0)
+		// shown for one interval, so a later successful autosave clears it and a persistent failure shows it again
+		if (save.save_autosave_file(savePath.toUtf8().constData()) != 0) {
 			statusBar()->showMessage(
-				tr("Autosave failed at %1").arg(QDateTime::currentDateTime().toString(QStringLiteral("h:mm:ss AP"))));
+				tr("Autosave failed at %1").arg(QDateTime::currentDateTime().toString(QStringLiteral("h:mm:ss AP"))),
+				_viewport->autosave_interval_seconds * 1000);
+		}
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
