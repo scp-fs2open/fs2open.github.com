@@ -558,7 +558,7 @@ void parse_iff_table(const char* filename)
 				else if (!stricmp(temp, "None"))
 					iffp->hotkey_team = IFF_hotkey_team::None;
 				else
-					Warning(LOCATION, "Unrecognized +Hotkey Tean: %s\n", temp);
+					Warning(LOCATION, "Unrecognized +Hotkey Team: %s\n", temp);
 			}
 
 
