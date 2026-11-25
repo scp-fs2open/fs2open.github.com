@@ -2960,6 +2960,12 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
+	int sender = find_player_index(hinfo->id);
+	if (MULTIPLAYER_MASTER || sender < 0 || !(Net_players[sender].flags & NETINFO_FLAG_AM_MASTER)) {
+		nprintf(("Network", "Ignoring a wing create packet that did not come from the server\n"));
+		return;
+	}
+
 	// do a sanity check on the wing to be sure that we are actually working on a valid wing
 	if ( (index < 0) || (index >= Num_wings) || (Wings[index].num_waves == -1) ) {
 		nprintf(("Network", "Invalid index %d for wing create packet\n", index));
