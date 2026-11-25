@@ -2861,6 +2861,12 @@ void set_wing_membership(wing* wingp, const wing_membership& members)
 		if (objp == nullptr || objp->type != OBJ_SHIP || Ships[objp->instance].wingnum != wingnum) {
 			continue;
 		}
+		if (objp->flags[Object::Object_Flags::Should_be_dead] || Ships[objp->instance].flags[Ship::Ship_Flags::Dying]) {
+			continue;
+		}
+		if (std::find(wingp->ship_index, wingp->ship_index + count, objp->instance) != wingp->ship_index + count) {
+			continue;
+		}
 		if (members.sigs[i] == members.leader) {
 			leader = count;
 		}
