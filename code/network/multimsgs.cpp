@@ -6276,7 +6276,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 	// on the master, only the game host sends post-sync data (a standalone routes it on to everyone)
 	if (MULTIPLAYER_MASTER) {
 		int sender = find_player_index(hinfo->id);
-		if (sender < 0 || &Net_players[sender] != Netgame.host) {
+		if (sender < 0 || !MULTI_HOST(Net_players[sender])) {
 			nprintf(("Network", "Ignoring post sync data that did not come from the game host\n"));
 			hinfo->bytes_processed = 10000;
 			return;
@@ -6372,7 +6372,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		// attempt to get the object
 		objp = multi_get_network_object(net_sig);
 
-		// get number of primary and secondary banks;
+		// get number of primary and secondary banks
 		char num_primary, num_secondary;
 		GET_DATA(num_primary);
 		GET_DATA(num_secondary);
