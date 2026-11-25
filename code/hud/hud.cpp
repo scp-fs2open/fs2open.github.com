@@ -3607,7 +3607,7 @@ void hud_gauge_popup_start(int gauge_index, int time)
 	if ( !hud_gauge_is_popup(gauge_index) ) {
 		return;
 	}
-	// an in-game joiner picking its ship has no HUD to pop up yet
+	// no player ship (e.g. an in-game joiner on the picker)
 	if (Player_ship == nullptr) {
 		return;
 	}
@@ -3641,7 +3641,6 @@ void hud_gauge_start_flash(int gauge_index)
 
 	size_t num_gauges, i; 
 
-	// an in-game joiner picking its ship has no HUD to flash yet
 	if (Player_ship == nullptr) {
 		return;
 	}

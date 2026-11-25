@@ -13326,6 +13326,9 @@ void multi_sexp_change_ai_class()
 	char subsystem[TOKEN_LENGTH];
 
 	Current_sexp_network_packet.get_ship(shipp); 
+	if (shipp == nullptr) {
+		return;
+	}
 	Current_sexp_network_packet.get_int(new_ai_class);
 
 	// subsystem?
@@ -21320,6 +21323,9 @@ void multi_sexp_set_ammo(bool for_turret, bool primary)
 	int rearm_limit = -1;
 
 	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
 	if (for_turret)
 		Current_sexp_network_packet.get_string(turret_name);
 	Current_sexp_network_packet.get_int(requested_bank);
@@ -21443,6 +21449,9 @@ void multi_sexp_set_weapon()
 	bool primary;
 
 	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
 	Current_sexp_network_packet.get_bool(primary);
 	Current_sexp_network_packet.get_int(requested_bank);
 	Current_sexp_network_packet.get_int(windex);
