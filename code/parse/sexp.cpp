@@ -23710,6 +23710,9 @@ void multi_sexp_add_remove_escort()
 	int flag;
 
 	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
 	if (!(Current_sexp_network_packet.get_int(flag))) {
 		return;
 	}
