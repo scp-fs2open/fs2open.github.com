@@ -2444,6 +2444,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				char props[MAX_PROP_LEN];
 
 				int gpb_num = pof_read_count(fp, filename, "glow point banks");
+				int invalid_glow_points = 0;
+				int first_bad_bank = -1;
 
 				pm->n_glow_point_banks = gpb_num;
 				pm->glow_point_banks = nullptr;
@@ -2527,6 +2529,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
+						if (!is_valid_vec(&p->pnt) || !is_valid_vec(&temp_vec)) {
+							invalid_glow_points++;
+							if (first_bad_bank < 0)
+								first_bad_bank = gpb;
+						}
 						if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
 							vm_vec_normalize(&temp_vec);
 						else
@@ -2535,6 +2542,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						p->radius = cfread_float( fp);
 					}
 				}
+				if (invalid_glow_points > 0)
+					Warning(LOCATION, "Model %s has glow points with an invalid position or normal (%d, first in bank %d).", pm->filename, invalid_glow_points, first_bad_bank);
 				break;					
 			 }
 
@@ -2812,6 +2821,22 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						} 
 						
 					}
+				}
+
+				{
+					int invalid_verts = 0;
+					int first_bad_path = -1;
+					for (i = 0; i < pm->n_paths; i++) {
+						for (j = 0; j < pm->paths[i].nverts; j++) {
+							if (!is_valid_vec(&pm->paths[i].verts[j].pos)) {
+								invalid_verts++;
+								if (first_bad_path < 0)
+									first_bad_path = i;
+							}
+						}
+					}
+					if (invalid_verts > 0)
+						Warning(LOCATION, "Model %s has path vertices with an invalid position (%d, first in path '%s').", pm->filename, invalid_verts, pm->paths[first_bad_path].name);
 				}
 				break;
 
@@ -3656,6 +3681,15 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		auto* tree = model_get_bsp_collision_tree(sm->collision_tree_index);
 		model_collide_parse_bsp(tree, bsp_data, pm->version);
 		Macro_ubyte_bounds = nullptr;
+
+		int invalid_normals = 0;
+		for (int k = 0; k < tree->n_leaves; ++k) {
+			if (!is_valid_vec(&tree->leaf_list[k].plane_norm))
+				invalid_normals++;
+		}
+		// a log line, not a Warning: degenerate polygons are common, MediaVPs models included
+		if (invalid_normals > 0)
+			mprintf(("Submodel '%s' of model %s has polygons with an invalid normal (%d).\n", sm->name, pm->filename, invalid_normals));
 	}
 
 	// clear bsp_data cache
