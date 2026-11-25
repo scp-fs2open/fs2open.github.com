@@ -4457,7 +4457,7 @@ int find_wing_name(char *name)
 *								have been met yet.
 * @param[in] force_arrival		If true, the wing will assume its arrival cue is true
 * @param[in] specific_instance	Set this to create a specific ship from this wing
-* @param[in] skip_mask			Multiplayer clients: the wing positions the server skipped, instead of deciding locally
+* @param[in] skip_mask			Multiplayer clients: the wing positions the server skipped; -1 decides locally
 * @returns						Number of ships created
 */
 int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, bool force_arrival, int specific_instance, int skip_mask )
@@ -4670,6 +4670,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if we have the maximum number of ships in the wing, we must bail as well
 		if (wingp->current_count >= MAX_SHIPS_PER_WING)
 		{
+			mprintf(("Wing %s is full (%d ships); the rest of wave %d is not created\n",
+				wingp->name,
+				wingp->current_count,
+				wingp->current_wave));
 			Int3();					// this is bogus -- we should always allow all ships to be created
 			num_to_create = 0;
 			break;
