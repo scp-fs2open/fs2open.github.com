@@ -57,6 +57,8 @@ public:
 		const auto* o = static_cast<const BackgroundEditCommand*>(other);
 		if (o->_fieldId != _fieldId) return false;
 		_after = o->_after;
+		// an edit that ends where it began (a box ticked then unticked) leaves no step
+		setObsolete(_before == _after);
 		return true;
 	}
 
