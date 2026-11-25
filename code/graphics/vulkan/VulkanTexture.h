@@ -275,6 +275,7 @@ private:
 
 	/**
 	 * @brief Begin single-time command buffer
+	 * @return a null command buffer if allocating or beginning it fails
 	 */
 	vk::CommandBuffer beginSingleTimeCommands();
 
