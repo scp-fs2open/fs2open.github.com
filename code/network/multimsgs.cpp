@@ -2813,6 +2813,11 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	}
 }
 
+static bool wing_member_leaving(const ship* shipp)
+{
+	return Objects[shipp->objnum].flags[Object::Object_Flags::Should_be_dead] || shipp->flags[Ship::Ship_Flags::Dying];
+}
+
 void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp)
 {
 	ushort sigs[MAX_SHIPS_PER_WING];
@@ -2822,14 +2827,14 @@ void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp)
 	// dying ships are left out, so the leader is the one ship_wing_cleanup will move special_ship to once they go
 	int leader_pos = wingp->special_ship;
 	for (int i = wingp->current_count - 1; i >= 0; i--) {
-		if (Ships[wingp->ship_index[i]].flags[Ship::Ship_Flags::Dying] && leader_pos > 0 && leader_pos >= i) {
+		if (wing_member_leaving(&Ships[wingp->ship_index[i]]) && leader_pos > 0 && leader_pos >= i) {
 			leader_pos--;
 		}
 	}
 
 	for (int i = 0; i < wingp->current_count; i++) {
 		const ship* shipp = &Ships[wingp->ship_index[i]];
-		if (shipp->flags[Ship::Ship_Flags::Dying]) {
+		if (wing_member_leaving(shipp)) {
 			continue;
 		}
 		sigs[count] = Objects[shipp->objnum].net_signature;
@@ -2876,7 +2881,7 @@ void set_wing_membership(wing* wingp, const wing_membership& members)
 		if (objp == nullptr || objp->type != OBJ_SHIP || Ships[objp->instance].wingnum != wingnum) {
 			continue;
 		}
-		if (objp->flags[Object::Object_Flags::Should_be_dead] || Ships[objp->instance].flags[Ship::Ship_Flags::Dying]) {
+		if (wing_member_leaving(&Ships[objp->instance])) {
 			continue;
 		}
 		if (std::find(wingp->ship_index, wingp->ship_index + count, objp->instance) != wingp->ship_index + count) {

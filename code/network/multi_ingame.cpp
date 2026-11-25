@@ -1061,8 +1061,8 @@ static void ingame_delete_unlisted_ships()
 	}
 }
 
-// a joiner never created a wing that arrived after the mission started, so its ships have no gauge slot yet; a ship
-// that has one keeps it, which assumes each wave-1 slot was set before any later wave copied it
+// the joiner never created wings that arrived after the mission started, so their ships get gauge slots here; a ship
+// that already has a slot keeps it, which is right only while no later wave has reused a first-wave slot
 static void ingame_set_wing_gauge_slots(wing* wingp)
 {
 	for (int i = 0; i < wingp->current_count; i++) {
@@ -1200,7 +1200,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// docked group members hold provisional signatures, so only an already-listed ship counts as a repeat
 		object* existing = multi_get_network_object(net_signature);
-		if (existing != nullptr && existing->type == OBJ_SHIP && Ingame_ship_listed[existing->instance]) {
+		bool sig_listed = existing != nullptr && existing->type == OBJ_SHIP && Ingame_ship_listed[existing->instance];
+		bool name_listed =
+			entry->status == ShipStatus::PRESENT && entry->shipnum >= 0 && Ingame_ship_listed[entry->shipnum];
+		if (sig_listed || name_listed) {
 			mprintf(("ABORTING in-game join on a repeated ship record for %s!\n", ship_name));
 			ingame_ships_packet_abort(hinfo);
 			return;
@@ -1377,7 +1380,7 @@ void send_ingame_ships_packet(net_player *player)
 		}
 	}
 
-	// each wing's members and leader, after its ships, so the joiner can rebuild the wing from them
+	// each wing's members and leader, after every ship record, so the joiner can rebuild the wing from them
 	for (int i = 0; i < Num_wings; i++) {
 		if (Wings[i].current_wave == 0) {
 			continue;
