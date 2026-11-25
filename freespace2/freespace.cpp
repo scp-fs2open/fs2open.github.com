@@ -1933,7 +1933,7 @@ static const char *get_cpu_type()
 /**
  * Game initialisation
  */
-void game_init()
+static int game_init()
 {
 	int s1 __UNUSED, e1 __UNUSED;
 	const char *ptr;
@@ -2097,7 +2097,6 @@ void game_init()
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
-		return;
 	}
 
 	hud_vr_init();
@@ -2261,13 +2260,18 @@ void game_init()
 	techroom_intel_init();			// parse species.tbl, load intel info  
 	hud_positions_init();		//Setup hud positions
 
-	// exits before the network starts (psnet_init opens the multiplayer port)
+	// stops before the network starts (psnet_init opens the multiplayer port)
 	if (Cmdline_get_options) {
 		bool printed = cmdline_print_options();
 		// static teardown would free text textures after bmpman, and joinable worker threads abort
 		gr_close();
 		threading::shut_down_task_pool();
+#ifdef __ANDROID__
+		// Return to SDL so the activity can deliver the queued JNI result.
+		return printed ? 0 : 1;
+#else
 		exit(printed ? 0 : 1);
+#endif
 	}
 	
 	// initialize psnet
@@ -2356,6 +2360,7 @@ void game_init()
 	io::mouse::CursorManager::get()->showCursor(true);
 
 	mouse_set_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
+	return 0;
 }
 
 char transfer_text[128];
@@ -7118,7 +7123,10 @@ int game_main(int argc, char *argv[])
 		get_exe_name(argv[0]);
 	}
 
-	game_init();
+	const int init_result = game_init();
+	if (Cmdline_get_options) {
+		return init_result;
+	}
 
 	// if networking is unavailable then standalone is useless, so just fail
 	if (Is_standalone && !psnet_is_active()) {

@@ -1439,6 +1439,19 @@ static void json_add_flags(json_t* root) {
 	json_object_set_new(root, "flags", flags_array);
 }
 
+static void json_add_caps(json_t* root) {
+	auto caps_array = json_array();
+
+	json_array_append_new(caps_array, json_string("OpenAL"));
+	json_array_append_new(caps_array, json_string("No D3D"));
+	json_array_append_new(caps_array, json_string("New Sound"));
+	json_array_append_new(caps_array, json_string("SDL"));
+	json_array_append_new(caps_array, json_string("Multijoy"));
+	json_array_append_new(caps_array, json_string("GetOptions"));
+
+	json_object_set_new(root, "caps", caps_array);
+}
+
 static json_t* json_get_v1() {
 	auto root = json_object();
 
@@ -1446,18 +1459,7 @@ static json_t* json_get_v1() {
 	json_add_easy_flags(root);
 	json_add_flags(root);
 
-	{
-		auto caps_array = json_array();
-
-		json_array_append_new(caps_array, json_string("OpenAL"));
-		json_array_append_new(caps_array, json_string("No D3D"));
-		json_array_append_new(caps_array, json_string("New Sound"));
-		json_array_append_new(caps_array, json_string("SDL"));
-		json_array_append_new(caps_array, json_string("Multijoy"));
-		json_array_append_new(caps_array, json_string("GetOptions"));
-
-		json_object_set_new(root, "caps", caps_array);
-	}
+	json_add_caps(root);
 	{
 		auto voices_array = json_array();
 
@@ -1557,7 +1559,7 @@ static json_t* json_get_v1() {
 	return root;
 }
 
-// json_v2 reports version, supported flags, and the preferences path for launchers,
+// json_v2 reports version, supported flags, build capabilities, and the preferences path
 // without querying graphics, audio, or joystick devices.
 static json_t* json_get_v2() {
 	auto root = json_object();
@@ -1565,6 +1567,7 @@ static json_t* json_get_v2() {
 	json_add_version(root);
 	json_add_easy_flags(root);
 	json_add_flags(root);
+	json_add_caps(root);
 	json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
 
 	return root;
@@ -1637,6 +1640,17 @@ static flag_output_type get_flags_output_type() {
 	}
 }
 
+#ifdef __ANDROID__
+static bool send_json_to_android(json_t* root, size_t flags) {
+	// NewStringUTF takes modified UTF-8, so the reply is sent as plain ASCII
+	char* dumped = json_dumps(root, flags | JSON_ENSURE_ASCII);
+	const bool written = dumped != nullptr;
+	os_android_set_flags_string(dumped);
+	free(dumped);
+	return written;
+}
+#endif
+
 static void write_flags() {
 	auto type = get_flags_output_type();
 
@@ -1648,9 +1662,7 @@ static void write_flags() {
 	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
 
 #ifdef __ANDROID__
-	char* dumped = json_dumps(root, JSON_INDENT(4));
-	os_android_set_flags_string(dumped ? dumped : "");
-	free(dumped);
+	(void)send_json_to_android(root, JSON_INDENT(4));
 #else
 	json_dumpf(root, stdout, JSON_INDENT(4));
 #endif
@@ -1693,9 +1705,14 @@ bool cmdline_print_options()
 	}
 	io::joystick::shutdown();
 	// compact: the speech voice list alone runs to thousands of entries
-	bool written = json_dumpf(root, stdout, JSON_COMPACT | JSON_PRESERVE_ORDER) == 0;
+	constexpr size_t json_flags = JSON_COMPACT | JSON_PRESERVE_ORDER;
+#ifdef __ANDROID__
+	const bool written = send_json_to_android(root, json_flags);
+#else
+	const bool written = json_dumpf(root, stdout, json_flags) == 0 && fflush(stdout) == 0;
+#endif
 	json_decref(root);
-	return written && fflush(stdout) == 0;
+	return written;
 }
 
 bool SetCmdlineParams()
@@ -1724,7 +1741,11 @@ bool SetCmdlineParams()
 	if (get_options_arg.found() && !Fred_running) {
 		if (get_options_arg.has_param() && strcmp(get_options_arg.str(), "json_v1") != 0) {
 			// the same reply as -get_flags, so a launcher can recognize an output type this build lacks
+#ifdef __ANDROID__
+			os_android_set_flags_string("OUTPUT TYPE NOT SUPPORTED!");
+#else
 			printf("OUTPUT TYPE NOT SUPPORTED!\n");
+#endif
 			return false;
 		}
 		// the HUD tables that lock some options load only after graphics start, so start as a standalone server would:
