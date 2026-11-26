@@ -1895,8 +1895,6 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		return ai_achievability::NOT_KNOWN;
 	}
 
-	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Team_check_for_restricted_chase])
-
 	return_val = ai_achievability::SATISFIED;
 
 	// next, determine if the goal has been completed successfully
