@@ -54,11 +54,12 @@ TEST_F(CFileInitTest, right_data_case) {
 	ASSERT_TRUE(cf_exists("ships.tbl", CF_TYPE_TABLES));
 }
 
-TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
+TEST_F(CFileInitTest, bootstrap_preserves_root_order_and_marks_the_primary_by_id)
 {
 	namespace fs = std::filesystem;
 	const auto base = (fs::path(TEST_DATA_PATH) / "cfile").lexically_normal();
-	const auto primary = base / "right_data_case";
+	const auto first = base / "right_data_case";
+	const auto primary = base / "wrong_data_case";
 	const auto manifest = fs::temp_directory_path() / ("fso-bootstrap-" + std::to_string(SDL_GetTicksNS()) + ".json");
 	const auto original_title = Mod_title;
 	auto cleanup = util::finally([&] {
@@ -72,9 +73,13 @@ TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
 	EXPECT_EQ("cfile", get_primary_mod_id());
 	EXPECT_EQ("cfile::gauge", create_custom_gauge_id("gauge"));
 
-	const std::unique_ptr<json_t> json(json_pack("{s:i,s:s,s:s,s:[s,s,s]}",
-		"version", 1, "mod_id", "test-mod", "workfolder", base.u8string().c_str(),
-		"roots", primary.u8string().c_str(), "wrong_data_case", "list_files_in_vps_and_dirs"));
+	const std::unique_ptr<json_t> json(json_pack("{s:i,s:s,s:s,s:[{s:s,s:{s:s,s:s}},{s:s,s:{s:s,s:s,s:s,s:s}},{s:s},{s:s,s:{s:s}}]}",
+		"version", 1, "mod_id", "test-mod", "workfolder", base.u8string().c_str(), "roots",
+		"path", first.u8string().c_str(), "metadata", "id", "dependency", "type", "dlc",
+		"path", "wrong_data_case", "metadata", "id", "test-mod", "type", "tc", "version", "2.1.0", "title", "Test Mod",
+		"path", "list_files_in_vps_and_dirs",
+		"path", "override_default_file", "metadata", "id", "test-mod"));
+	ASSERT_NE(nullptr, json);
 	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json_dump_string(json.get(), 0));
 	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str(), base.parent_path().string().c_str()));
 	ASSERT_NE(nullptr, mod_bootstrap_get());
@@ -82,8 +87,21 @@ TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
 	EXPECT_EQ("test-mod::gauge", create_custom_gauge_id("gauge"));
 	Mod_title = "Display Title";
 	EXPECT_EQ("Display_Title::gauge", create_custom_gauge_id("gauge"));
-	EXPECT_EQ(base, fs::path(mod_bootstrap_get()->workfolder));
-	EXPECT_TRUE(mod_bootstrap_contains_path((primary / "data" / "tables" / "ships.tbl").string()));
+	const auto& bootstrap = *mod_bootstrap_get();
+	EXPECT_EQ(1, bootstrap.version);
+	EXPECT_EQ(base, fs::path(bootstrap.workfolder));
+	ASSERT_EQ(4U, bootstrap.roots.size());
+	ASSERT_TRUE(bootstrap.roots[0].metadata);
+	EXPECT_EQ("dlc", bootstrap.roots[0].metadata->type.value_or(""));
+	EXPECT_FALSE(bootstrap.roots[0].metadata->version);
+	EXPECT_FALSE(bootstrap.roots[0].metadata->title);
+	ASSERT_TRUE(bootstrap.roots[1].metadata);
+	EXPECT_EQ("test-mod", bootstrap.roots[1].metadata->id.value_or(""));
+	EXPECT_EQ("tc", bootstrap.roots[1].metadata->type.value_or(""));
+	EXPECT_EQ("2.1.0", bootstrap.roots[1].metadata->version.value_or(""));
+	EXPECT_EQ("Test Mod", bootstrap.roots[1].metadata->title.value_or(""));
+	EXPECT_FALSE(bootstrap.roots[2].metadata);
+	EXPECT_TRUE(mod_bootstrap_contains_path((first / "data" / "tables" / "ships.tbl").string()));
 	EXPECT_FALSE(mod_bootstrap_contains_path((base.parent_path() / "cfile-other" / "mission.fs2").string()));
 
 	ASSERT_EQ(0, json_object_del(json.get(), "workfolder"));
@@ -95,9 +113,15 @@ TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
 
 	const auto winning_table = cf_find_file_location("ships.tbl", CF_TYPE_TABLES);
 	ASSERT_TRUE(winning_table.found);
-	EXPECT_EQ(primary / "data" / "tables" / "ships.tbl", fs::path(winning_table.full_name));
-	EXPECT_TRUE(cf_find_file_location("ships.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_SECONDARY_MODS).found);
-	EXPECT_TRUE(cf_find_file_location("test.tbl", CF_TYPE_TABLES).offset);
+	EXPECT_EQ(first / "data" / "tables" / "ships.tbl", fs::path(winning_table.full_name));
+	const auto primary_table = cf_find_file_location("ships.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_PRIMARY_MOD);
+	ASSERT_TRUE(primary_table.found);
+	EXPECT_TRUE(fs::equivalent(primary / "Data" / "tables" / "ships.tbl", fs::path(primary_table.full_name)));
+	const auto secondary_table = cf_find_file_location("ships.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_SECONDARY_MODS);
+	EXPECT_EQ(winning_table.full_name, secondary_table.full_name);
+	EXPECT_TRUE(cf_find_file_location("controlconfigdefaults.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_PRIMARY_MOD).found);
+	EXPECT_TRUE(cf_find_file_location("test.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_SECONDARY_MODS).offset);
+	EXPECT_FALSE(cf_find_file_location("test.tbl", CF_TYPE_TABLES, CF_LOCATION_TYPE_PRIMARY_MOD).found);
 
 	SCP_string output;
 	ASSERT_TRUE(cf_create_default_path_string(output, CF_TYPE_TABLES, "output.tbl", static_cast<uint32_t>(CF_LOCATION_ALL), true));

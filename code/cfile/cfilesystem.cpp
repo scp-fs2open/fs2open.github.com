@@ -722,10 +722,10 @@ void cf_build_root_list(const char *cdrom_dir)
 
 	//now that the _override root is finished(or not), handle all mods
 	if (bootstrap) {
-		auto mod_type = CF_LOCATION_TYPE_PRIMARY_MOD;
-		for (const auto& path : bootstrap->roots) {
-			cf_add_mod_root(path, CF_LOCATION_ROOT_GAME | mod_type, true);
-			mod_type = CF_LOCATION_TYPE_SECONDARY_MODS;
+		for (const auto& mod_root : bootstrap->roots) {
+			const auto primary = mod_root.metadata && mod_root.metadata->id == bootstrap->mod_id;
+			const auto mod_type = primary ? CF_LOCATION_TYPE_PRIMARY_MOD : CF_LOCATION_TYPE_SECONDARY_MODS;
+			cf_add_mod_root(mod_root.path, CF_LOCATION_ROOT_GAME | mod_type, true);
 		}
 	} else {
 		cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);

@@ -40,6 +40,45 @@ SCP_string resolve_directory(fs::path path, const fs::path& base, const SCP_stri
 	return result;
 }
 
+std::optional<SCP_string> read_metadata_string(const json_t* metadata, const char* key, const SCP_string& field)
+{
+	const auto value = json_object_get(metadata, key);
+	if (!value || json_is_null(value)) {
+		return std::nullopt;
+	}
+	if (!json_is_string(value)) {
+		throw std::runtime_error(field + "." + key + " must be a string");
+	}
+	return SCP_string(json_string_value(value));
+}
+
+ModBootstrapRoot read_root(const json_t* root, const fs::path& base, size_t index)
+{
+	const auto field = "roots[" + std::to_string(index) + "]";
+	if (!json_is_object(root)) {
+		throw std::runtime_error(field + " must be an object");
+	}
+	const auto path = json_object_get(root, "path");
+	if (!json_is_string(path) || json_string_length(path) == 0) {
+		throw std::runtime_error(field + ".path must be a nonempty directory path");
+	}
+
+	ModBootstrapRoot result{resolve_directory(fs::u8path(json_string_value(path)), base, field + ".path"), std::nullopt};
+	const auto metadata = json_object_get(root, "metadata");
+	if (metadata && !json_is_null(metadata)) {
+		const auto metadata_field = field + ".metadata";
+		if (!json_is_object(metadata)) {
+			throw std::runtime_error(metadata_field + " must be an object");
+		}
+		result.metadata = ModBootstrapRootMetadata{
+			read_metadata_string(metadata, "id", metadata_field),
+			read_metadata_string(metadata, "type", metadata_field),
+			read_metadata_string(metadata, "version", metadata_field),
+			read_metadata_string(metadata, "title", metadata_field)};
+	}
+	return result;
+}
+
 ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 {
 	if (!fs::u8path(filename).is_absolute()) {
@@ -69,7 +108,7 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 	}
 	const auto roots = json_object_get(document.get(), "roots");
 	if (!roots || json_typeof(roots) != JSON_ARRAY) {
-		throw std::runtime_error("roots must be an array of directory paths");
+		throw std::runtime_error("roots must be an array of root objects");
 	}
 
 	ModBootstrap result;
@@ -115,11 +154,7 @@ ModBootstrap read_bootstrap(const char* filename, const char* launch_directory)
 	size_t index;
 	json_t* root;
 	json_array_foreach(roots, index, root) {
-		const auto field = "roots[" + std::to_string(index) + "]";
-		if (!root || json_typeof(root) != JSON_STRING || json_string_length(root) == 0) {
-			throw std::runtime_error(field + " must be a nonempty directory path");
-		}
-		result.roots.push_back(resolve_directory(fs::u8path(json_string_value(root)), base, field));
+		result.roots.push_back(read_root(root, base, index));
 	}
 	return result;
 }
@@ -156,7 +191,7 @@ void mod_bootstrap_log()
 		mprintf(("Bootstrap: '%s' (version %d, mod '%s', workfolder '%s')\n", bootstrap->filename.c_str(),
 			bootstrap->version, bootstrap->mod_id.c_str(), bootstrap->workfolder.c_str()));
 		for (size_t i = 0; i < bootstrap->roots.size(); ++i) {
-			mprintf(("  roots[%zu]: '%s'\n", i, bootstrap->roots[i].c_str()));
+			mprintf(("  roots[%zu]: '%s'\n", i, bootstrap->roots[i].path.c_str()));
 		}
 	}
 }
@@ -209,5 +244,6 @@ bool mod_bootstrap_contains_path(const SCP_string& filename)
 	};
 
 	return in_directory(bootstrap->workfolder) ||
-		std::any_of(bootstrap->roots.begin(), bootstrap->roots.end(), in_directory);
+		std::any_of(bootstrap->roots.begin(), bootstrap->roots.end(),
+			[&](const ModBootstrapRoot& root) { return in_directory(root.path); });
 }

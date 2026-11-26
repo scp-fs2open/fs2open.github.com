@@ -2,7 +2,21 @@
 
 #include "globalincs/pstypes.h"
 
+#include <optional>
+
 inline constexpr int MOD_BOOTSTRAP_VERSION = 1;
+
+struct ModBootstrapRootMetadata {
+	std::optional<SCP_string> id;
+	std::optional<SCP_string> type;
+	std::optional<SCP_string> version;
+	std::optional<SCP_string> title;
+};
+
+struct ModBootstrapRoot {
+	SCP_string path;
+	std::optional<ModBootstrapRootMetadata> metadata;
+};
 
 struct ModBootstrap {
 	int version = 0;
@@ -10,7 +24,7 @@ struct ModBootstrap {
 	SCP_string launch_directory;
 	SCP_string mod_id;
 	SCP_string workfolder;
-	SCP_vector<SCP_string> roots;
+	SCP_vector<ModBootstrapRoot> roots;
 };
 
 const char* cmdline_bootstrap_path();
