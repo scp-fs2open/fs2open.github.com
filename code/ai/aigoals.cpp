@@ -29,6 +29,7 @@
 #include "ship/ship.h"
 #include "ship/awacs.h"
 #include "weapon/weapon.h"
+#include "iff_defs/iff_defs.h"
 
 // Just a reference to this struct being for looking up a ship's team in TVT
 struct ship_registry_entry;
@@ -1867,6 +1868,9 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			auto class_objp = &Objects[so->objnum];
 			if (class_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Team_check_for_restricted_chase]
+				&& !iff_matches_mask(obj_team(class_objp), iff_get_attackee_mask(obj_team(objp))))
+				continue;
 			if ((class_objp->type == OBJ_SHIP) && !strcmp(aigp->target_name, Ship_info[Ships[class_objp->instance].ship_info_index].name)) {
 				return ai_achievability::ACHIEVABLE;
 			}
@@ -1879,6 +1883,9 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			auto type_objp = &Objects[so->objnum];
 			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Team_check_for_restricted_chase]
+				&& !iff_matches_mask(obj_team(type_objp), iff_get_attackee_mask(obj_team(objp))))
+				continue;
 			int ship_info_idx = Ships[type_objp->instance].ship_info_index;
 			int class_type = Ship_info[ship_info_idx].class_type;
 			if (class_type >= 0 && !strcmp(aigp->target_name, Ship_types[class_type].name)) {
@@ -1887,6 +1894,8 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		return ai_achievability::NOT_KNOWN;
 	}
+
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Team_check_for_restricted_chase])
 
 	return_val = ai_achievability::SATISFIED;
 

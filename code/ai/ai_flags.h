@@ -148,6 +148,7 @@ namespace AI {
 		Better_combat_collision_avoidance,
 		Better_combat_collision_avoid_includes_target,
 		Better_guard_collision_avoidance,
+		Team_check_for_restricted_chase,
 		Require_exact_los,
 		Improved_missile_avoidance,
 		Unify_usage_countermeasure_firechance,

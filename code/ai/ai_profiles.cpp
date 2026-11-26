@@ -591,6 +591,8 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_float(&profile->better_collision_avoid_aggression_guard);
 				}
 
+				set_flag(profile, "$check team when determining achievability for restricted chase orders:", AI::Profile_Flags::Team_check_for_restricted_chase);
+
 				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
 
 				if (optional_string_either("$friendly ships use AI profile countermeasure chance:", "$unify usage of AI profile countermeasure chance:", true) >= 0) {
