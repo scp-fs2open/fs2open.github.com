@@ -901,10 +901,8 @@ void os_init_registry_stuff(const char* company, const char* app)
 	if (bootstrap) {
 		mod_id = bootstrap->mod_id;
 	} else if (!Fred_running && Cmdline_mod != nullptr) {
-		SCP_string str = Cmdline_mod;
-		// Trim any trailing folders so we get just the name of the root mod folder
-		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
-		
+		auto str = get_primary_mod_id();
+
 		// Now trim off any Knossos versioning details so that settings are not mod version specific
 		// This is a little silly because Knossos and KNet sometimes append other stuff to the mod folder
 		// like "-DevEnv". So what we do here is go section by section across the string using "-" as a

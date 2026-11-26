@@ -11,7 +11,7 @@
 
 
 #include "cfile/cfile.h"
-#include "cmdline/cmdline.h"
+#include "cfile/mod_bootstrap.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -2043,15 +2043,7 @@ void hud_config_select_all_toggle(bool toggle, bool API_Access)
 SCP_string create_custom_gauge_id(const SCP_string& gauge_name) {
 	Assertion(!gauge_name.empty(), "Custom gauge has no name!");
 
-	SCP_string id;
-	if (Mod_title.empty() && Cmdline_mod != nullptr) {
-		id = Cmdline_mod;
-
-		// Basic cleanup attempt
-		id = id.substr(0, id.find_first_of(DIR_SEPARATOR_CHAR));
-	} else {
-		id = Mod_title;
-	}
+	auto id = Mod_title.empty() ? get_primary_mod_id() : Mod_title;
 
 	if (!id.empty()) {
 		std::replace(id.begin(), id.end(), ' ', '_');

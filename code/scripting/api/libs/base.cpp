@@ -25,6 +25,7 @@
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
 #include "utils/Random.h"
+#include "cfile/mod_bootstrap.h"
 #include "cmdline/cmdline.h"
 
 
@@ -693,19 +694,11 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 }
 
 ADE_FUNC(getModRootName, l_Base, nullptr,
-	"Returns the name of the current mod's root folder.", "string", "The mod root or empty string if the mod runs without a -mod line")
+	"Returns the primary mod ID when launched with -bootstrap, or the first -mod folder name.",
+	"string", "The primary mod ID, folder name, or an empty string if there is none")
 {
-	const char* mod = Cmdline_mod;
-	if (mod == nullptr) {
-		mod = "";
-	}
-	
-	SCP_string str = mod;
-
-	// Trim any trailing folders so we get just the name of the root mod folder
-	str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
-
-	return ade_set_args(L, "s", str.c_str());
+	const auto id = get_primary_mod_id();
+	return ade_set_args(L, "s", id.c_str());
 }
 
 ADE_FUNC(getModTitle, l_Base, nullptr,

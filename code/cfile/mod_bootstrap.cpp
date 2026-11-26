@@ -1,5 +1,6 @@
 #include "cfile/mod_bootstrap.h"
 
+#include "cmdline/cmdline.h"
 #include "libs/jansson.h"
 #include "osapi/dialogs.h"
 #include "osapi/osapi.h"
@@ -163,6 +164,19 @@ void mod_bootstrap_log()
 const ModBootstrap* mod_bootstrap_get()
 {
 	return Active_bootstrap ? &*Active_bootstrap : nullptr;
+}
+
+SCP_string get_primary_mod_id()
+{
+	if (const auto bootstrap = mod_bootstrap_get()) {
+		return bootstrap->mod_id;
+	}
+	if (Cmdline_mod == nullptr) {
+		return {};
+	}
+
+	const SCP_string name = Cmdline_mod;
+	return name.substr(0, name.find(DIR_SEPARATOR_CHAR));
 }
 
 bool mod_bootstrap_contains_path(const SCP_string& filename)

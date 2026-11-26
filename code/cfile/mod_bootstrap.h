@@ -18,4 +18,6 @@ void mod_bootstrap_init(const char* filename, const char* launch_directory = nul
 bool mod_bootstrap_init_from_cmdline(const char* launch_directory = nullptr);
 void mod_bootstrap_log();
 const ModBootstrap* mod_bootstrap_get();
+// Returns the bootstrap ID or the first legacy -mod folder name.
+SCP_string get_primary_mod_id();
 bool mod_bootstrap_contains_path(const SCP_string& filename);

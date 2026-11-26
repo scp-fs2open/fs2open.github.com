@@ -4,8 +4,10 @@
 #include <cfile/mod_bootstrap.h>
 #include <globalincs/systemvars.h>
 #include <graphics/font.h>
+#include <hud/hudconfig.h>
 #include <gtest/gtest.h>
 #include <libs/jansson.h>
+#include <mod_table/mod_table.h>
 #include <osapi/dialogs.h>
 #include <utils/finally.h>
 
@@ -58,11 +60,17 @@ TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
 	const auto base = (fs::path(TEST_DATA_PATH) / "cfile").lexically_normal();
 	const auto primary = base / "right_data_case";
 	const auto manifest = fs::temp_directory_path() / ("fso-bootstrap-" + std::to_string(SDL_GetTicksNS()) + ".json");
+	const auto original_title = Mod_title;
 	auto cleanup = util::finally([&] {
+		Mod_title = original_title;
 		mod_bootstrap_init(nullptr);
 		std::error_code error;
 		fs::remove(manifest, error);
 	});
+
+	Mod_title.clear();
+	EXPECT_EQ("cfile", get_primary_mod_id());
+	EXPECT_EQ("cfile::gauge", create_custom_gauge_id("gauge"));
 
 	const std::unique_ptr<json_t> json(json_pack("{s:i,s:s,s:s,s:[s,s,s]}",
 		"version", 1, "mod_id", "test-mod", "workfolder", base.u8string().c_str(),
@@ -70,6 +78,10 @@ TEST_F(CFileInitTest, bootstrap_resolves_relative_roots_in_order)
 	ASSERT_TRUE(std::ofstream(manifest, std::ios::binary) << json_dump_string(json.get(), 0));
 	ASSERT_NO_THROW(mod_bootstrap_init(manifest.u8string().c_str(), base.parent_path().string().c_str()));
 	ASSERT_NE(nullptr, mod_bootstrap_get());
+	EXPECT_EQ("test-mod", get_primary_mod_id());
+	EXPECT_EQ("test-mod::gauge", create_custom_gauge_id("gauge"));
+	Mod_title = "Display Title";
+	EXPECT_EQ("Display_Title::gauge", create_custom_gauge_id("gauge"));
 	EXPECT_EQ(base, fs::path(mod_bootstrap_get()->workfolder));
 	EXPECT_TRUE(mod_bootstrap_contains_path((primary / "data" / "tables" / "ships.tbl").string()));
 	EXPECT_FALSE(mod_bootstrap_contains_path((base.parent_path() / "cfile-other" / "mission.fs2").string()));
