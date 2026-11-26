@@ -15344,16 +15344,12 @@ int ship_find_num_turrets(object *objp)
 	return n;
 }
 
-bool turret_has_weapon(const ship_subsys *ssp, int wi_index)
+static bool turret_has_weapon(const ship_subsys *ssp, int wi_index)
 {
 	const ship_weapon *swp = &ssp->weapons;
-	if ( std::any_of(std::begin(swp->primary_bank_weapons), std::end(swp->primary_bank_weapons), [wi_index](int i) { return i == wi_index; } ) ) {
-		return true;
-	} else if ( std::any_of(std::begin(swp->secondary_bank_weapons), std::end(swp->secondary_bank_weapons), [wi_index](int i) { return i == wi_index; } ) ) {
-		return true;
-	} else {
-		return false;
-	}
+	auto matches = [wi_index](int i) { return i == wi_index; };
+	return std::any_of(swp->primary_bank_weapons, swp->primary_bank_weapons + swp->num_primary_banks, matches)
+		|| std::any_of(swp->secondary_bank_weapons, swp->secondary_bank_weapons + swp->num_secondary_banks, matches);
 }
 
 float ship_get_turret_type_aggregate_hits(const ship *shipp, int wi_index)
@@ -15534,7 +15530,7 @@ ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *atta
 		// next, scan the list of subsystems and search for the first subsystem of the particular
 		// type which has > 0 hits remaining.
 		for (auto ss : list_range(&sp->subsys_list)) {
-			if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) )
+			if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) && (wip_index < 0 || turret_has_weapon(ss, wip_index)) )
 				return ss;
 		}
 	}
@@ -17648,9 +17644,9 @@ int bitmask_2_bitnum(int num)
 	return -1;
 }
 
-static const char* ship_get_ai_target_display_name(int goal, const char* name)
+static const char* ship_get_ai_target_display_name(const ai_goal* aigp)
 {
-	switch (goal) {
+	switch (aigp->ai_mode) {
 	// These goals refer to ships so we need to retrieve their display name
 	case AI_GOAL_FORM_ON_WING:
 	case AI_GOAL_CHASE:
@@ -17666,23 +17662,24 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 	case AI_GOAL_FLY_TO_SHIP:
 	case AI_GOAL_DESTROY_SUBSYSTEM:
 	case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP: {
-		auto ship = ship_name_lookup(name);
+		auto ship = ship_name_lookup(aigp->target_name);
 		if (ship < 0) {
-			return name;
+			return aigp->target_name;
 		}
 		return Ships[ship].get_display_name();
 	}
 
 		// These goals need no special handling
+	case AI_GOAL_DESTROY_TURRET_TYPE:
+		return Weapon_info[aigp->int_data].get_display_name();
 	case AI_GOAL_CHASE_WING:
 	case AI_GOAL_CHASE_SHIP_CLASS:
 	case AI_GOAL_CHASE_SHIP_TYPE:
 	case AI_GOAL_GUARD_WING:
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
-	case AI_GOAL_DESTROY_TURRET_TYPE:
 	default:
-		return name;
+		return aigp->target_name;
 	}
 }
 
@@ -17717,7 +17714,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	const char *target_name;
 	if (aigp->target_name) {
-		target_name = ship_get_ai_target_display_name(aigp->ai_mode, aigp->target_name);
+		target_name = ship_get_ai_target_display_name(aigp);
 	} else {
 		target_name = "";
 	}

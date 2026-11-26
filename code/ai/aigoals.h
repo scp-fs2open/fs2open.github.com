@@ -106,7 +106,7 @@ inline bool ai_goal_is_disable_or_disarm(ai_goal_mode ai_mode)
 }
 inline bool ai_goal_is_specific_chase(ai_goal_mode ai_mode)
 {
-	return ai_mode == AI_GOAL_CHASE || ai_mode == AI_GOAL_CHASE_WING || ai_mode == AI_GOAL_CHASE_SHIP_CLASS || ai_mode == AI_GOAL_CHASE_SHIP_TYPE;
+	return ai_mode == AI_GOAL_CHASE || ai_mode == AI_GOAL_CHASE_WING || ai_mode == AI_GOAL_CHASE_SHIP_CLASS || ai_mode == AI_GOAL_CHASE_SHIP_TYPE || ai_mode == AI_GOAL_DESTROY_TURRET_TYPE;
 }
 inline bool ai_goal_is_standing_chase(ai_goal_mode ai_mode)
 {

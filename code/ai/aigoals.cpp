@@ -87,37 +87,37 @@ char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 // Used in objecttypes.tbl to define custom ship types
 ai_goal_list Ai_goal_names[] =
 {
-	{ "Attack ship",			   AI_GOAL_CHASE,					   0 },
-	{ "Dock",					   AI_GOAL_DOCK,					   0 },
-	{ "Waypoints",				   AI_GOAL_WAYPOINTS,				   0 },
-	{ "Waypoints once",			   AI_GOAL_WAYPOINTS_ONCE,			   0 },
-	{ "Depart",					   AI_GOAL_WARP,					   0 },
-	{ "Attack subsys",			   AI_GOAL_DESTROY_SUBSYSTEM,		   0 },
-	{ "Form on wing",			   AI_GOAL_FORM_ON_WING,			   0 },
-	{ "Undock",					   AI_GOAL_UNDOCK,					   0 },
-	{ "Attack wing",			   AI_GOAL_CHASE_WING,				   0 },
-	{ "Guard ship",				   AI_GOAL_GUARD,					   0 },
-	{ "Disable ship",			   AI_GOAL_DISABLE_SHIP,			   0 },
-	{ "Disable ship (tactical)",   AI_GOAL_DISABLE_SHIP_TACTICAL,	   0 },
-	{ "Disarm ship",			   AI_GOAL_DISARM_SHIP,			       0 },
-	{ "Disarm ship (tactical)",	   AI_GOAL_DISARM_SHIP_TACTICAL,	   0 },
-	{ "Attack any",				   AI_GOAL_CHASE_ANY,				   0 },
-	{ "Ignore ship",			   AI_GOAL_IGNORE,					   0 },
-	{ "Ignore ship (new)",		   AI_GOAL_IGNORE_NEW,				   0 },
-	{ "Guard wing",				   AI_GOAL_GUARD_WING,				   0 },
-	{ "Evade ship",				   AI_GOAL_EVADE_SHIP,				   0 },
-	{ "Stay near ship",			   AI_GOAL_STAY_NEAR_SHIP,			   0 },
-	{ "Keep safe dist",			   AI_GOAL_KEEP_SAFE_DISTANCE,		   0 },
-	{ "Rearm ship",				   AI_GOAL_REARM_REPAIR,			   0 },
-	{ "Stay still",				   AI_GOAL_STAY_STILL,				   0 },
-	{ "Play dead",				   AI_GOAL_PLAY_DEAD,				   0 },
-	{ "Play dead (persistent)",	   AI_GOAL_PLAY_DEAD_PERSISTENT,	   0 },
-	{ "Attack weapon",			   AI_GOAL_CHASE_WEAPON,			   0 },
-	{ "Fly to ship",			   AI_GOAL_FLY_TO_SHIP,			       0 },
-	{ "Attack ship class",		   AI_GOAL_CHASE_SHIP_CLASS,		   0 },
-	{ "Attack ship type",		   AI_GOAL_CHASE_SHIP_TYPE,		       0 },
-	{ "Attack turret type",        AI_GOAL_DESTROY_TURRET_TYPE,        0 },
-	{ "Attack turret type on ship",AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP,0 },
+	{ "Attack ship",			   	AI_GOAL_CHASE,					   0 },
+	{ "Dock",					   	AI_GOAL_DOCK,					   0 },
+	{ "Waypoints",				   	AI_GOAL_WAYPOINTS,				   0 },
+	{ "Waypoints once",			   	AI_GOAL_WAYPOINTS_ONCE,			   0 },
+	{ "Depart",					   	AI_GOAL_WARP,					   0 },
+	{ "Attack subsys",			   	AI_GOAL_DESTROY_SUBSYSTEM,		   0 },
+	{ "Form on wing",			   	AI_GOAL_FORM_ON_WING,			   0 },
+	{ "Undock",					   	AI_GOAL_UNDOCK,					   0 },
+	{ "Attack wing",			   	AI_GOAL_CHASE_WING,				   0 },
+	{ "Guard ship",				   	AI_GOAL_GUARD,					   0 },
+	{ "Disable ship",			   	AI_GOAL_DISABLE_SHIP,			   0 },
+	{ "Disable ship (tactical)",   	AI_GOAL_DISABLE_SHIP_TACTICAL,	   0 },
+	{ "Disarm ship",			   	AI_GOAL_DISARM_SHIP,			       0 },
+	{ "Disarm ship (tactical)",	   	AI_GOAL_DISARM_SHIP_TACTICAL,	   0 },
+	{ "Attack any",				   	AI_GOAL_CHASE_ANY,				   0 },
+	{ "Ignore ship",			   	AI_GOAL_IGNORE,					   0 },
+	{ "Ignore ship (new)",		   	AI_GOAL_IGNORE_NEW,				   0 },
+	{ "Guard wing",				   	AI_GOAL_GUARD_WING,				   0 },
+	{ "Evade ship",				   	AI_GOAL_EVADE_SHIP,				   0 },
+	{ "Stay near ship",			   	AI_GOAL_STAY_NEAR_SHIP,			   0 },
+	{ "Keep safe dist",			   	AI_GOAL_KEEP_SAFE_DISTANCE,		   0 },
+	{ "Rearm ship",				   	AI_GOAL_REARM_REPAIR,			   0 },
+	{ "Stay still",				   	AI_GOAL_STAY_STILL,				   0 },
+	{ "Play dead",				   	AI_GOAL_PLAY_DEAD,				   0 },
+	{ "Play dead (persistent)",	   	AI_GOAL_PLAY_DEAD_PERSISTENT,	   0 },
+	{ "Attack weapon",			   	AI_GOAL_CHASE_WEAPON,			   0 },
+	{ "Fly to ship",			   	AI_GOAL_FLY_TO_SHIP,			       0 },
+	{ "Attack ship class",		   	AI_GOAL_CHASE_SHIP_CLASS,		   0 },
+	{ "Attack ship type",		   	AI_GOAL_CHASE_SHIP_TYPE,		       0 },
+	{ "Attack turret type",        	AI_GOAL_DESTROY_TURRET_TYPE,        0 },
+	{ "Attack turret type on ship",	AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP,0 },
 };
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
@@ -577,7 +577,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// ignore goals should get rid of any kind of attack goal
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
-				if (ai_goal_is_disable_or_disarm(purge_ai_mode) || ai_goal_is_specific_chase(purge_ai_mode) || (purge_ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
+				if (ai_goal_is_disable_or_disarm(purge_ai_mode) || ai_goal_is_specific_chase(purge_ai_mode) || (purge_ai_mode == AI_GOAL_DESTROY_SUBSYSTEM) || (purge_ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP))
 					purge_goal->flags.set(AI::Goal_Flags::Purge);
 				break;
 
@@ -1089,13 +1089,19 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		
 	case OP_AI_DESTROY_TURRET_TYPE:
 		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE;
-		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
+		aigp->int_data = weapon_info_lookup( CTEXT(CDR(node)));
+		if (aigp->int_data < 0) {
+			Warning(LOCATION, "Weapon type %s (for 'AI destroy turret type' goal) not found!.\n", CTEXT(CDR(node)));
+		}
 		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 		
 	case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
 		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP;
-		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
+		aigp->int_data = weapon_info_lookup( CTEXT(CDR(node)));
+		if (aigp->int_data < 0) {
+			Warning(LOCATION, "Weapon type %s (for 'AI destroy turret type on ship' goal) not found!.\n", CTEXT(CDR(node)));
+		}
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDDR(node)), &aigp->target_name_index );
 		aigp->priority = eval_num(CDDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;

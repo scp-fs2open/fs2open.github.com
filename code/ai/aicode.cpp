@@ -2241,7 +2241,6 @@ typedef struct eval_nearest_objnum {
 	int enemy_ship_info_index;
 	int enemy_class_type;
 	int enemy_turret_wip_index;
-	int	attacker_class_type;
 	int	enemy_wing;
 	float	range;
 	int	max_attackers;
@@ -2392,7 +2391,6 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	eno.enemy_ship_info_index = ship_info_index;
 	eno.enemy_class_type = class_type;
 	eno.enemy_turret_wip_index = turret_wip_index;
-	eno.attacker_class_type = Ship_info[Ships[Objects[objnum].instance].ship_info_index].class_type;
 	eno.enemy_wing = enemy_wing;
 	eno.max_attackers = max_attackers;
 	eno.for_pursuit = for_pursuit;
@@ -2585,12 +2583,12 @@ int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int
 				if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 					if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
 						if (class_type < 0 || class_type == Ship_info[target_shipp->ship_info_index].class_type) {
-              if (turret_wip_index < 0 || (ship_get_turret_type_aggregate_hits(target_shipp, turret_wip_index) > 0.0f)) {
-							  if (!(target_objp->flags[Object::Object_Flags::Protected])) {
-								  // same as get_nearest_objnum: only skip an unpursued target for unconstrained searches
-								  if (!for_pursuit || ship_info_index >= 0 || class_type >= 0 || !ai_declines_pursuit(objp, target_objp)) {
-									  return target_objnum;
-                  }
+							if (turret_wip_index < 0 || (ship_get_turret_type_aggregate_hits(target_shipp, turret_wip_index) > 0.0f)) {
+								if (!(target_objp->flags[Object::Object_Flags::Protected])) {
+									// same as get_nearest_objnum: only skip an unpursued target for unconstrained searches
+									if (!for_pursuit || ship_info_index >= 0 || class_type >= 0 || !ai_declines_pursuit(objp, target_objp)) {
+										return target_objnum;
+									}
 								}
 							}
 						}
@@ -8300,12 +8298,10 @@ int ai_set_attack_subsystem(object *objp, int subnum, int wip_index)
 	shipp = &Ships[attacked_objp->instance];		//  need to get our target's ship pointer!!!
 
 	// When subnum is >= 0, it indicates a specific subsystem.  Otherwise it is a subsystem type.  See ai_submode
-	if (wip_index >= 0) {
-		ssp = ship_find_first_subsys(shipp, SUBSYSTEM_TURRET, &objp->pos, wip_index);
-	} else if (subnum >= 0)
+	if (subnum >= 0)
 		ssp = ship_get_indexed_subsys(shipp, subnum);
 	else
-		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos);
+		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos, wip_index);
 	if (ssp == NULL)
 		return 0;
 
