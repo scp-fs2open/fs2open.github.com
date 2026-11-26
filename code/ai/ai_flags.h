@@ -148,7 +148,6 @@ namespace AI {
 		Better_combat_collision_avoidance,
 		Better_combat_collision_avoid_includes_target,
 		Better_guard_collision_avoidance,
-		Team_check_for_restricted_chase,
 		Require_exact_los,
 		Improved_missile_avoidance,
 		Unify_usage_countermeasure_firechance,
@@ -178,11 +177,11 @@ namespace AI {
 		Guards_ignore_protected_attackers,
 		Fix_standard_strafe,
 		Fix_ai_target_recovery,	// a) strafing ships that lose their target re-process their orders, like chasing ships already do
-								// b) ships parked in AIM_NONE while holding a standing chase order (attack-any etc.) re-process their orders;
-								// c) target selection for pursuit (chasing, guard reactions, retaliation) skips ships outside the attacker's
-								//    actively-pursues list; targets held while not chasing are unaffected, and explicitly ordered targets are
-								//    still assigned but not chased or strafed;
-								// d) enemy_wing is reset when a new order takes over (shared with Fix_stale_ai_order_state)
+		// b) ships parked in AIM_NONE while holding a standing chase order (attack-any etc.) re-process their orders;
+		// c) target selection for pursuit (chasing, guard reactions, retaliation) skips ships outside the attacker's
+		//    actively-pursues list; targets held while not chasing are unaffected, and explicitly ordered targets are
+		//    still assigned but not chased or strafed;
+		// d) enemy_wing is reset when a new order takes over (shared with Fix_stale_ai_order_state)
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Fix_AI_shield_management_bug,
@@ -200,11 +199,12 @@ namespace AI {
 		Fix_ignore_if_dead_flag,
 		Kamikaze_no_collision_avoidance,
 		Fix_big_ship_waypoint_completion,	// a) big ships complete a waypoint within their radius rather than sqrt(radius);
-											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
+		// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
 		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 		Fix_model_path_refresh_randomization,	// a subsystem path keeps its randomized point when the path is refreshed because the target moved
 		Fix_bay_speed_ramp,		// the fighterbay speed ramp covers only the bay path itself, not points that route a departing ship around the carrier, and never exceeds max speed
+		Fix_filtered_chase_achievability, // when checking achievability of restricted chase orders like chase-ship-class and chase-ship-type, treat ships which are protected or not on hostile teams as invalid
 		Fix_stale_ai_order_state,	// a) enemy_wing, guard_*, previous_mode, resume_goal_time, and the targeted subsystem (with its path) are reset when a new order takes over (enemy_wing is also reset under Fix_ai_target_recovery);
 									// b) a dynamic chase saves previous_mode/previous_submode; it and strafe entry leave them alone during an ongoing dynamic goal (evading a weapon still overwrites them, which is harmless since the evade resume re-processes orders);
 									// c) resuming guard duty discards any subsystem target and path left over from the interruption;

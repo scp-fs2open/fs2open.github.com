@@ -1866,12 +1866,12 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	if ( aigp->ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
 		for (auto so: list_range(&Ship_obj_list)) {
 			auto class_objp = &Objects[so->objnum];
-			if (class_objp->flags[Object::Object_Flags::Should_be_dead])
+			if (class_objp->type != OBJ_SHIP && class_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
-			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Team_check_for_restricted_chase]
-				&& !iff_matches_mask(obj_team(class_objp), iff_get_attackee_mask(obj_team(objp))))
+			bool enemy_iff = iff_matches_mask(obj_team(class_objp), iff_get_attackee_mask(obj_team(objp)));
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_filtered_chase_achievability] && (class_objp->flags[Object::Object_Flags::Protected] || !enemy_iff))
 				continue;
-			if ((class_objp->type == OBJ_SHIP) && !strcmp(aigp->target_name, Ship_info[Ships[class_objp->instance].ship_info_index].name)) {
+			if (!strcmp(aigp->target_name, Ship_info[Ships[class_objp->instance].ship_info_index].name)) {
 				return ai_achievability::ACHIEVABLE;
 			}
 		}
@@ -1883,8 +1883,8 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			auto type_objp = &Objects[so->objnum];
 			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
-			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Team_check_for_restricted_chase]
-				&& !iff_matches_mask(obj_team(type_objp), iff_get_attackee_mask(obj_team(objp))))
+			bool enemy_iff = iff_matches_mask(obj_team(type_objp), iff_get_attackee_mask(obj_team(objp)));
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_filtered_chase_achievability] && (type_objp->flags[Object::Object_Flags::Protected] || !enemy_iff))
 				continue;
 			int ship_info_idx = Ships[type_objp->instance].ship_info_index;
 			int class_type = Ship_info[ship_info_idx].class_type;
