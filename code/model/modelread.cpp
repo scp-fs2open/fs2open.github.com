@@ -1461,7 +1461,7 @@ void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
 	}
 }
 
-void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bool is_turret)
+void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bool is_turret_barrel)
 {
 	auto sm = &pm->submodel[submodel];
 	auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
@@ -1472,7 +1472,16 @@ void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bo
 
 	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
-	// make sure this is a validly normalized axis - also catch axes that are unspecified or 0,0,0
+	// make sure the axis is actually valid
+	if (!is_valid_vec(movement_axis))
+	{
+		auto str = is_rotation ? "rotation" : "translation";
+
+		Warning(LOCATION, "In %s, submodel '%s' has a %s axis that is not a valid vector!", filename, sm->name, str);
+		*movement_axis = vmd_zero_vector;
+	}
+
+	// make sure this is a normalized axis - also catch axes that are unspecified or 0,0,0
 	// (it would be nice to warn here, but the signal to noise ratio is extremely poor)
 	if (!vm_vec_is_normalized(movement_axis))
 		*movement_type = MOVEMENT_TYPE_NONE;
@@ -1481,34 +1490,43 @@ void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bo
 	// (do this before the compatibility check below to prevent doing it twice)
 	maybe_adjust_movement_axis(is_rotation, sm);
 
-	if (is_rotation && is_turret)
+	if (is_rotation && is_turret_barrel)
 	{
+		// note: this block is only reached on the gun part of multipart turrets, not the base; the base submodel runs this function but skips this block
+		Assertion(parent_sm != nullptr, "Unexpected call to do_movement_sanity_checks for a multipart turret barrel with no parent submodel!");
+
 		// important compatibility check: if there are multipart turrets without rotation axes defined, define them
 		// also, some of the retail models got the axes wrong, so fix those :-/
 		// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
 		//     and also for turrets which don't have their axes set to "other"
+		//     furthermore, if the turret's rotation was reset due to having an invalid axis, we should set it properly
 		auto base = parent_sm;
 		auto gun = sm;
 
 		if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
-			|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+			|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER)
+			|| (base->rotation_type == MOVEMENT_TYPE_NONE))
 		{
 			base->rotation_axis_id = MOVEMENT_AXIS_Y;
 			base->rotation_axis = vmd_y_vector;
 			base->rotation_type = MOVEMENT_TYPE_TURRET;
 			maybe_adjust_movement_axis(true, base);
 
-			// the base was already checked before this barrel, so its branch, including children checked since, wasn't flagged then
+			// in this code block, the base is the parent submodel, whose `Can_move` may not have been set during its own iteration;
+			// so we need to set the flag now, and this also sets the flag on descendants
 			model_set_submodel_can_move(pm, sm->parent);
 		}
 
 		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
-			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER)
+			|| (gun->rotation_type == MOVEMENT_TYPE_NONE))
 		{
 			gun->rotation_axis_id = MOVEMENT_AXIS_X;
 			gun->rotation_axis = vmd_x_vector;
 			gun->rotation_type = MOVEMENT_TYPE_TURRET;
 			maybe_adjust_movement_axis(true, gun);
+
+			// in this code block, the gun is the current submodel, whose `Can_move` is set at the bottom of the function (or by the previous block)
 		}
 	}
 
@@ -3023,16 +3041,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					auto sm = &pm->submodel[submodel];
 
-					bool is_turret = false;
+					bool is_turret_barrel = false;
 					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
 						if (submodel == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
-							is_turret = true;
+							is_turret_barrel = true;
 							break;
 						}
 					}
 
-					do_movement_sanity_checks(pm, submodel, true, is_turret);
-					do_movement_sanity_checks(pm, submodel, false, is_turret);
+					do_movement_sanity_checks(pm, submodel, true, is_turret_barrel);
+					do_movement_sanity_checks(pm, submodel, false, is_turret_barrel);
 				});
 		}
 	}
