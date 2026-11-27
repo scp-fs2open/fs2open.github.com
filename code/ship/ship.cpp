@@ -5503,7 +5503,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_string context;
-		sprintf(context, "ship type '%s' in %s", stp->name, filename);
+		sprintf(context, "ship type '%s'", stp->name);
 		parse_target_priority_groups(&ai_target_priority::ship_type, ship_type_name_lookup(name_buf), context.c_str());
 	}
 
