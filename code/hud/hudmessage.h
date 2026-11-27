@@ -120,7 +120,7 @@ public:
 
 	void clearMessages();
 	void processMessageBuffer();
-	void addPending(const char *text, int source, int x = 0);
+	void addPending(const char *text, size_t len, int source, int x = 0);
 	void scrollMessages();
 	void preprocess() override;
 	void render(float frametime, bool config = false) override;
