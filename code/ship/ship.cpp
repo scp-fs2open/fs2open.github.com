@@ -1579,6 +1579,21 @@ ubyte allowed_weapon_bank::operator[](size_t index) const
 }
 
 
+/**
+ * Removes an erased ship class or ship type index from every target priority group, shifting the indexes above it down to match.
+ */
+static void target_priority_groups_remove_index(SCP_vector<int> ai_target_priority::*members, int index)
+{
+	for (auto &group : Ai_tp_list)
+	{
+		auto &list = group.*members;
+		list.erase(std::remove(list.begin(), list.end(), index), list.end());
+		for (auto &idx : list)
+			if (idx > index)
+				--idx;
+	}
+}
+
 static SCP_vector<SCP_string> Removed_ships;
 
 /**
@@ -1636,16 +1651,7 @@ static void parse_ship(const char *filename, bool replace)
 		if (ship_id >= 0) {
 			mprintf(("Removing previously parsed ship '%s'\n", fname));
 			Ship_info.erase(Ship_info.begin() + ship_id);
-
-			// group memberships store Ship_info indexes, which shift down after the erase
-			for (auto &group : Ai_tp_list)
-			{
-				auto &list = group.ship_class;
-				list.erase(std::remove(list.begin(), list.end(), ship_id), list.end());
-				for (auto &idx : list)
-					if (idx > ship_id)
-						--idx;
-			}
+			target_priority_groups_remove_index(&ai_target_priority::ship_class, ship_id);
 		}
 
 		if (!skip_to_start_of_string_either("$Name:", "#End")) {
@@ -6008,6 +6014,7 @@ void ship_init()
 		{
 			Warning(LOCATION, "A ship type \"stealth\" was found in objecttypes.tbl or *-obt.tbm.  This ship type will be removed since it will conflict with the \"stealth\" ship class flag.  Please update your mod files.");
 			Ship_types.erase(Ship_types.begin() + idx);
+			target_priority_groups_remove_index(&ai_target_priority::ship_type, idx);
 		}
 
 		Fighter_bomber_valid = false;
