@@ -1,0 +1,28 @@
+// Depth of field, first pass: the largest near CoC and the nearest view z of the near texels of each
+// DOF_TILE x DOF_TILE tile of the screen. OpenGL only.
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2D;
+#endif
+
+layout(location = 0) out vec4 fragOut0;
+
+#include "dof-common.sdr"
+
+void main()
+{
+	ivec2 size = textureSize(depth_tex, 0);
+	ivec2 base = ivec2(gl_FragCoord.xy) * DOF_TILE;
+	float largest = 0.0;
+	float nearest = DOF_NO_NEAR_Z;
+	for (int y = 0; y < DOF_TILE; y++) {
+		for (int x = 0; x < DOF_TILE; x++) {
+			vec2 cz = coc_z_at(min(base + ivec2(x, y), size - 1));
+			if (cz.x > 0.0) {
+				largest = max(largest, cz.x);
+				nearest = min(nearest, cz.y);
+			}
+		}
+	}
+	fragOut0 = vec4(largest, nearest, 0.0, 1.0);
+}

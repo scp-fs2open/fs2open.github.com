@@ -102,11 +102,12 @@ int shadows_map_resolution();
 // of which method is currently selected -- use this to decide whether to offer the choice.
 bool shadows_raytracing_supported();
 
-// Removes the raytraced-shadow options (method selector, light counts, bias) from the
-// options menu when the current renderer/hardware can't do raytraced shadows, so they don't
-// clutter the UI with settings that have no effect. Call once after the renderer is up
-// (gr_init), when shadows_raytracing_supported() is meaningful.
-void shadows_remove_unsupported_options();
+// Records the requirement of the raytraced-shadow options (method selector, light counts, bias) when the current
+// renderer/hardware can't do raytraced shadows, so that the options menu and a launcher grey them out with the reason.
+// Call once after the renderer is up (gr_init), when shadows_raytracing_supported() is meaningful.
+void shadows_mark_unsupported_options();
+// What the options menu and a launcher show as the reason these ray-traced shadow options are greyed
+void shadows_mark_launcher_requirements(bool card_has_raytracing);
 
 // Whether shading should actually sample the raytraced-shadow TLAS right now, i.e. both
 // the user has selected it AND the hardware supports it. This is the single source of

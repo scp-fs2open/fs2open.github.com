@@ -1,0 +1,147 @@
+// Near-field depth of field: one full-resolution gather on the HDR scene colour, before bloom and
+// tonemapping. The focus is at infinity, so only what is nearer than nearDist blurs (dof.h has the
+// model). The sky and the cockpit stay sharp. OpenGL only.
+//
+// The gather follows the two-layer scatter-as-gather of Jimenez, "Next Generation Post Processing in Call of
+// Duty: Advanced Warfare" (SIGGRAPH 2014). The two tile passes before this one (dof-tile-f.sdr,
+// dof-neighbor-f.sdr) give the largest near CoC and the nearest view z around each tile. Each tap spreads over
+// its own CoC disc and goes to the foreground or the background layer by its depth against that nearest z. The
+// background is an average; the foreground has an alpha, and grows outwards from the outline of a near object,
+// so the background hidden behind it is needed only where a near feature covers less than half of its pixel.
+// Limits:
+// - The layers come from the nearest z of the tiles around a pixel (up to DOF_TILE_REACH tiles away), not of the
+//   pixel's own disc. Where a nearer object is in that neighbourhood, a less near object falls in the
+//   background layer: it still blurs inside its outline, but spreads little over sharper pixels outside it,
+//   and the change can follow the tile grid.
+// - An effect that writes no depth (a laser bolt, a particle, a thruster) takes the CoC of what is
+//   behind it.
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2D;
+#endif
+
+layout(location = 0) out vec4 fragOut0;
+
+in vec4 fragTexCoord;
+
+uniform sampler2D tex;      // HDR scene colour
+uniform sampler2D tile_tex; // the largest near CoC and nearest view z of the tiles around each tile (dof-neighbor-f.sdr)
+#include "dof-common.sdr"
+
+const int MAX_SAMPLES = 512; // DOF_MAX_SAMPLES in dof.h
+const float GOLDEN_ANGLE = 2.39996323;
+// A tap this far behind the nearest z, as a part of nearDist, is all background; nearer taps blend between the
+// layers. Jimenez uses 100 inches for people; a space ship needs a scale that follows the blur distance.
+const float LAYER_DEPTH = 0.25;
+
+// Colour and depth must come from the same texel. Bilinear colour next to nearest depth
+// lets a sharp ship's edge colour into the sky blur as a dark outline.
+vec2 snap_uv(vec2 suv, vec2 texel)
+{
+	return (floor(suv / texel) + 0.5) * texel;
+}
+
+vec4 fg = vec4(0.0);   // foreground layer: colour times weight, and the weight
+vec4 bg = vec4(0.0);   // background layer
+vec4 hole = vec4(0.0); // background-layer taps near the centre, by how far each is in the background
+float spacing;         // distance between neighbouring spiral taps, in pixels
+
+// How far a view z is in the background layer, from 0 (foreground) to 1.
+float background(float z, float nearest)
+{
+	return smoothstep(0.0, 1.0, (z - nearest) / (LAYER_DEPTH * nearDist));
+}
+
+// One tap at distance r from this pixel. As in Jimenez (SampleAlpha and SpreadCmp), it spreads evenly over its own
+// CoC disc, so that a near outline fades over the whole CoC outside it. The edge of the disc fades over one tap
+// spacing, so that the outline does not step from one ring of taps to the next; below one spacing of CoC the disc
+// is a cone. The fade lies inside the disc and the share is divided by its area, so every tap adds up to 1
+// whatever its CoC and the tile radius, and a small near object does not grow past its blur.
+// A spiral tap stands for pi tap_area pixels, so pi cancels in the foreground alpha and is left out; the centre
+// is one pixel, so it comes with weight 1 / (pi tap_area).
+void add_tap(vec3 col, vec2 suv, float r, float nearest, float hole_radius, float weight)
+{
+	if (in_cockpit(suv)) {
+		return;
+	}
+	float d = textureLod(depth_tex, suv, 0.0).x;
+	float coc = coc_of_depth(d);
+	float back = background(linear_z(d), nearest);
+	// What a foreground centre hides: a thin near feature or the corner of a near object covers less than
+	// half of its own pixel, and this is what shows through it. The centre itself is not behind itself.
+	if (r > 0.0 && r <= hole_radius) {
+		hole += vec4(col, 1.0) * back;
+	}
+	// A pixel with less than a pixel of blur covers only itself.
+	if (coc < 1.0 && r > 0.0) {
+		return;
+	}
+	float reach = max(coc, 1.0);
+	float fade = min(spacing, reach);
+	float spread = clamp((reach - r) / fade, 0.0, 1.0);
+	// The area of the disc with its fade, over pi.
+	float share = spread / (reach * reach - reach * fade + fade * fade / 3.0) * weight;
+	fg += vec4(col, 1.0) * share * (1.0 - back);
+	bg += vec4(col, 1.0) * share * back;
+}
+
+void main()
+{
+	vec2 uv = fragTexCoord.xy;
+	vec2 texel = 1.0 / vec2(textureSize(depth_tex, 0));
+	vec3 centre = texture(tex, uv).rgb;
+
+	// The cockpit is nearer than any scene object, so nothing spreads over it.
+	if (in_cockpit(uv)) {
+		fragOut0 = vec4(centre, 1.0);
+		return;
+	}
+	vec2 tile = texelFetch(tile_tex, ivec2(gl_FragCoord.xy) / DOF_TILE, 0).xy;
+	// Less than a pixel of blur within reach: no tap spreads over this pixel.
+	if (tile.x < 1.0) {
+		fragOut0 = vec4(centre, 1.0);
+		return;
+	}
+	// The taps cover the largest CoC that can reach this pixel. Their count follows the area of that disc at the
+	// density of 96 taps on 16 px (dof_samples() in dof.cpp), with a floor of 32.
+	float radius = max(tile.x, 1.0);
+	int n = clamp(int(96.0 * (radius / 16.0) * (radius / 16.0)), 32, MAX_SAMPLES);
+	float tap_area = radius * radius / float(n);
+	spacing = sqrt(3.14159265 * tap_area);
+
+	// This pixel is a tap too; without it a near feature of one pixel can vanish at its own place.
+	float centre_d = textureLod(depth_tex, uv, 0.0).x;
+	// What the centre hides is within its own CoC; at least wide enough to hold about 6 spiral taps
+	// (n (r / radius)^2 = 6, 4 px at radius 16), so that it does not turn into per-pixel noise.
+	float hole_radius = max(coc_of_depth(centre_d), min(radius, max(4.0, radius * sqrt(6.0 / float(n)))));
+	add_tap(centre, uv, 0.0, tile.y, hole_radius, 1.0 / (3.14159265 * tap_area));
+	// Each pixel turns the spiral by its own angle (interleaved gradient noise, as in Jimenez 2014), so the
+	// gaps between taps do not line up from pixel to pixel into a visible pattern.
+	float spin = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+	vec2 centre_uv = snap_uv(uv, texel);
+	for (int i = 0; i < n; i++) {
+		float r = radius * sqrt((float(i) + 0.5) / float(n));
+		float a = float(i) * GOLDEN_ANGLE + spin;
+		vec2 suv = snap_uv(uv + vec2(cos(a), sin(a)) * r * texel, texel);
+		// At a small radius the inner taps fall on this pixel, which the centre tap already counts.
+		if (suv == centre_uv) {
+			continue;
+		}
+		// Level 0 always, here and in add_tap(): the loop is not uniform across pixels, so derivatives are undefined.
+		add_tap(textureLod(tex, suv, 0.0).rgb, suv, r, tile.y, hole_radius, 1.0);
+	}
+
+	// The sum of the foreground shares times tap_area is its coverage: 0.5 on the outline of a near object. Twice
+	// that is the alpha, so the foreground is opaque up to its outline and fades out over its CoC outside it (Jimenez's
+	// near-field shift). Where a foreground centre is not opaque (a thin feature, a corner), the background
+	// taps around it stand for what it hides: fully once they add up to one tap, and less as the centre itself
+	// moves into the background layer, so that no step follows a depth line.
+	float alpha = clamp(2.0 * tap_area * fg.a, 0.0, 1.0);
+	vec3 front = fg.a > 0.0 ? fg.rgb / fg.a : centre;
+	vec3 back = bg.a > 0.0 ? bg.rgb / bg.a : centre;
+	if (hole.a > 0.0) {
+		float use_hole = min(hole.a, 1.0) * (1.0 - background(linear_z(centre_d), tile.y));
+		back = mix(back, hole.rgb / hole.a, use_hole);
+	}
+	fragOut0 = vec4(mix(back, front, alpha), 1.0);
+}

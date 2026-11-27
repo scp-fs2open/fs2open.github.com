@@ -413,6 +413,13 @@ struct volumetric_fog_data {
 	float pad[2];
 };
 
+struct dof_data {
+	float nearDist;
+	float maxBlur;
+	float zNear;
+	float zFar;
+};
+
 struct msaa_data {
 	int samples;
 	float fov;

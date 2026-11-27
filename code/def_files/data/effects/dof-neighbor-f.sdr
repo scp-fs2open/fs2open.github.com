@@ -1,0 +1,29 @@
+// Depth of field, second pass: for each tile, the largest near CoC and the nearest view z of the tiles within
+// maxBlur of it, so that a pixel knows every near disc that can reach it and the depth of the nearest one.
+// OpenGL only.
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2D;
+#endif
+
+layout(location = 0) out vec4 fragOut0;
+
+#include "dof-common.sdr"
+
+uniform sampler2D tile_tex; // the largest near CoC and nearest view z of each tile (dof-tile-f.sdr)
+
+void main()
+{
+	ivec2 tiles = textureSize(tile_tex, 0);
+	ivec2 here = ivec2(gl_FragCoord.xy);
+	// A disc of maxBlur pixels reaches this many tiles, DOF_TILE_REACH at most.
+	int reach = min(int(ceil(maxBlur / float(DOF_TILE))), DOF_TILE_REACH);
+	vec2 best = vec2(0.0, DOF_NO_NEAR_Z);
+	for (int y = -reach; y <= reach; y++) {
+		for (int x = -reach; x <= reach; x++) {
+			vec2 t = texelFetch(tile_tex, clamp(here + ivec2(x, y), ivec2(0), tiles - 1), 0).xy;
+			best = vec2(max(best.x, t.x), min(best.y, t.y));
+		}
+	}
+	fragOut0 = vec4(best, 0.0, 1.0);
+}

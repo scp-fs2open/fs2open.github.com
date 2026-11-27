@@ -281,6 +281,30 @@ bool shadows_raytracing_supported()
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
 }
 
+static SCP_vector<std::shared_ptr<const options::OptionBase>> raytracing_options()
+{
+	return {ShadowRenderMethodOption,
+		MaxRtShadowLightsOption,
+		RTShadowQualityOption,
+		MaxRtShadowLocalLightsOption,
+		RtShadowBiasMinOption,
+		RtShadowBiasMaxOption};
+}
+
+void shadows_mark_launcher_requirements(bool card_has_raytracing)
+{
+	auto* mgr = options::OptionsManager::instance();
+	for (const auto& option : raytracing_options()) {
+		if (card_has_raytracing) {
+			mgr->setRequirement(option->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
+		} else {
+			mgr->setRequirement(option->getConfigKey(),
+				"raytracing",
+				XSTR("Needs the Vulkan renderer and a graphics card with ray tracing; stays off on other hardware", -1));
+		}
+	}
+}
+
 bool shadow_contact_hardening_supported()
 {
 	return gr_is_capable(gr_capability::CAPABILITY_SHADOW_CONTACT_HARDENING);
@@ -395,7 +419,7 @@ static float shadow_clamp_smoothness(float smoothness)
 	return std::clamp(smoothness, min_smoothness, max_smoothness);
 }
 
-void shadows_remove_unsupported_options()
+void shadows_mark_unsupported_options()
 {
 	rtao_remove_unsupported_options();
 
@@ -411,17 +435,11 @@ void shadows_remove_unsupported_options()
 		return;
 	}
 
-	// No raytracing support (e.g. the OpenGL renderer): the render-method selector
-	// degenerates to a single value and every raytraced-shadow tuning option is inert, so
-	// drop them all. The bound globals keep their defaults, so shadow-map rendering is
-	// unaffected. Graphics.Shadows (base shadow quality) is deliberately kept.
-	auto* mgr = options::OptionsManager::instance();
-	mgr->removeOption(ShadowRenderMethodOption);
-	mgr->removeOption(MaxRtShadowLightsOption);
-	mgr->removeOption(RTShadowQualityOption);
-	mgr->removeOption(MaxRtShadowLocalLightsOption);
-	mgr->removeOption(RtShadowBiasMinOption);
-	mgr->removeOption(RtShadowBiasMaxOption);
+	// No raytracing support (e.g. the OpenGL renderer): every raytraced-shadow option is inert. The options stay
+	// in the list, greyed out with this reason in the options menu and in a launcher (-get_options may relax it
+	// after asking Vulkan). A saved value reaches the bound globals, but every use of them goes through
+	// shadows_use_raytracing(), which checks the hardware, so shadow-map rendering is unaffected.
+	shadows_mark_launcher_requirements(false);
 }
 
 bool shadows_use_raytracing()
