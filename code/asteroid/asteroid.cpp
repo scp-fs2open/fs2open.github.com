@@ -40,6 +40,7 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "stats/scoring.h"
+#include "utils/Random.h"
 #include "weapon/weapon.h"
 
 #include <algorithm>
@@ -1900,8 +1901,8 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 								roids_to_create.push_back(split->asteroid_type);
 					}
 
-					std::random_device rd;
-					std::shuffle(roids_to_create.begin(), roids_to_create.end(), std::mt19937(rd()));
+					std::mt19937 shuffle_rng(util::Random::shuffle_seed());
+					std::shuffle(roids_to_create.begin(), roids_to_create.end(), shuffle_rng);
 
 					size_t total_roids = roids_to_create.size();
 					for (size_t i = 0; i < total_roids; i++) {
