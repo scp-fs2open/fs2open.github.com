@@ -339,6 +339,11 @@ class VulkanDrawManager {
 	void clearPendingUniformBindings();
 
 	/**
+	 * @brief Drop pending uniform bindings that name a buffer being deleted
+	 */
+	void forgetUniformBuffer(gr_buffer_handle bufferHandle);
+
+	/**
 	 * @brief Get a pending uniform binding by block type index
 	 */
 	const PendingUniformBinding& getPendingUniformBinding(size_t index) const
@@ -620,6 +625,8 @@ class VulkanDrawManager {
 // Global draw manager access
 VulkanDrawManager* getDrawManager();
 void setDrawManager(VulkanDrawManager* manager);
+// safe to call when the draw manager is already gone (buffers are still deleted during shutdown)
+void forgetPendingUniformBuffer(gr_buffer_handle bufferHandle);
 
 // ========== gr_screen function pointer implementations ==========
 // These free functions implement gr_screen.gf_* function pointers.
