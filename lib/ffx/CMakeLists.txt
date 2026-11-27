@@ -84,7 +84,7 @@ set(arm_asr_root "${FFX_PORTABLE_ARM_ASR_ROOT}")
 if(NOT arm_asr_root AND ANDROID AND PREBUILT_PATH)
     set(arm_asr_root "${PREBUILT_PATH}/arm-asr")
 endif()
-if(ANDROID AND ANDROID_ABI STREQUAL "arm64-v8a" AND arm_asr_root
+if(ANDROID AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64") AND arm_asr_root
     AND EXISTS "${arm_asr_root}/include/host/backends/vk/ffxm_vk.h"
     AND EXISTS "${arm_asr_root}/include/host/ffxm_fsr2.h"
     AND EXISTS "${arm_asr_root}/lib/libArm_ASR_api.a"
@@ -147,7 +147,7 @@ elseif(FFX_PORTABLE_SELECTED STREQUAL "SHIM")
     ffx_portable_fetch(amd_fidelityfx_upscaler_vk.dll ${FFX_PORTABLE_UPSCALER_SHA256} FFX_PORTABLE_RUNTIME)
 elseif(FFX_PORTABLE_SELECTED STREQUAL "ARM_ASR")
     if(NOT arm_asr_available)
-        message(FATAL_ERROR "FFX_PORTABLE_BACKEND=ARM_ASR requires the Arm ASR prebuilt for Android arm64-v8a")
+        message(FATAL_ERROR "FFX_PORTABLE_BACKEND=ARM_ASR requires matching Arm ASR prebuilts for Android arm64-v8a or x86_64")
     endif()
     add_library(ffx_portable STATIC src/android/arm_asr.cpp)
     target_include_directories(ffx_portable SYSTEM PRIVATE "${arm_asr_root}/include")
