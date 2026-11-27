@@ -38,6 +38,9 @@ public:
 	 * @returns The file index of the loaded Undo item
 	 */
 	bool autoload();
+	void recreate_event_editors();
+	BOOL SaveModified() override;
+	void reopen_closed_editors();
 
 	/**
 	 * @brief Read in a new mission file from disk
@@ -183,6 +186,14 @@ private:
 	 * @details Recreates the child dialogs that would be affected by a mission load. (Briefing dialog)
 	 */
 	void recreate_dialogs();
+	void close_write_back_editors();
+
+	bool m_reopen_event_editor = false;
+	bool m_reopen_message_editor = false;
+	bool m_reopen_debriefing_editor = false;
+	bool m_reopen_briefing_editor = false;
+	bool m_reopen_background_editor = false;
+	bool m_autosave_suppressed = false;
 };
 
 extern int Local_modified;      //!< Flag. Nonzero if the FREDDoc object is modified

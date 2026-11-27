@@ -147,10 +147,12 @@ void campaign_tree_wnd::OnDestroy()
 	Fred_main_wnd->EnableWindow(TRUE);
 
 	str = FREDDoc_ptr->GetPathName();
-	if (str.IsEmpty())
+	if (str.IsEmpty()) {
 		create_new_mission();
-	else
+		FREDDoc_ptr->reopen_closed_editors();
+	} else {
 		FREDDoc_ptr->OnOpenDocument(str);
+	}
 
 	CFrameWnd::OnDestroy();
 	Campaign_wnd = NULL;

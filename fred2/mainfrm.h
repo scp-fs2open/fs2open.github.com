@@ -215,6 +215,11 @@ protected:
 	afx_msg void OnClose();
 
 	/**
+	 * @brief Handler for the end of a Windows log-off or shutdown request. Called by ON_WM_ENDSESSION()
+	 */
+	afx_msg void OnEndSession(BOOL bEnding);
+
+	/**
 	 * @brief Handler for menu intialiation
 	 */
 	afx_msg void OnInitMenu(CMenu* pMenu);

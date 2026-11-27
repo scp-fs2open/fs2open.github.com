@@ -25,6 +25,9 @@ bool FictionViewerDialogModel::apply() {
 
 	// Commit working copy to mission
 	Fiction_viewer_stages = _fictionViewerStages;
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

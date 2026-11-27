@@ -45,6 +45,7 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 #include "scripting/global_hooks.h"
+#include "utils/finally.h"
 
 extern int Num_objects;
 
@@ -90,11 +91,40 @@ void CFREDDoc::AssertValid() const {
 }
 #endif //_DEBUG
 
+// an editor showing a question or a window of its own is mid-close; closing or rebuilding it from outside crashes
+static bool refuse_while_an_editor_is_busy()
+{
+	const char* busy = nullptr;
+	if (Event_editor_dlg != nullptr && !Event_editor_dlg->IsWindowEnabled()) {
+		busy = "Event Editor";
+	} else if (Message_editor_dlg != nullptr && !Message_editor_dlg->IsWindowEnabled()) {
+		busy = "Message Editor";
+	} else if (Debriefing_dialog != nullptr && !Debriefing_dialog->IsWindowEnabled()) {
+		busy = "Debriefing Editor";
+	} else if (Briefing_dialog != nullptr && !Briefing_dialog->IsWindowEnabled()) {
+		busy = "Briefing Editor";
+	} else if (Bg_bitmap_dialog != nullptr && !Bg_bitmap_dialog->IsWindowEnabled()) {
+		busy = "Background Editor";
+	}
+	if (busy == nullptr) {
+		return false;
+	}
+
+	// a refusal with no word looks like FRED ignoring the command
+	SCP_string msg = SCP_string("The ") + busy + " has a question or window open. Answer or close it first.";
+	Fred_main_wnd->MessageBox(msg.c_str(), "FRED", MB_OK | MB_ICONINFORMATION);
+	return true;
+}
+
 bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
 	int i;
 	bool r;
 	FILE *fp;
+
+	if (refuse_while_an_editor_is_busy()) {
+		return 0;
+	}
 
 	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
 		return 0;
@@ -114,6 +144,7 @@ bool CFREDDoc::autoload() {
 
 	// Load Backup.002
 	r = load_mission(name, MPF_FAST_RELOAD);
+	recreate_event_editors();
 	Update_window = 1;
 
 	// Delete Backup.001
@@ -153,7 +184,7 @@ int CFREDDoc::autosave(char *desc) {
 
 	CWaitCursor wait;
 
-	if (Autosave_disabled) {
+	if (Autosave_disabled || m_autosave_suppressed) {
 		return 0;
 	}
 
@@ -460,7 +491,7 @@ void CFREDDoc::OnFileImportFSM() {
 	// if mission has been modified, offer to save before continuing.
 	if (!SaveModified())
 		return;
-
+	auto reopen_editors = util::finally([this]() { reopen_closed_editors(); });
 
 	// get location to import from
 	CFileDialog dlgFile(TRUE, "fsm", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_ALLOWMULTISELECT, "FreeSpace Missions (*.fsm)|*.fsm|All files (*.*)|*.*||");
@@ -600,6 +631,7 @@ void CFREDDoc::OnFileImportFSM() {
 		{
 			// these aren't done automatically for imports
 			theApp.AddToRecentFileList((LPCTSTR)dest_path);
+			SetPathName((LPCTSTR)dest_path, FALSE);
 			SetTitle((LPCTSTR)Mission_filename);
 		}
 	}
@@ -608,6 +640,7 @@ void CFREDDoc::OnFileImportFSM() {
 }
 
 BOOL CFREDDoc::OnNewDocument() {
+	auto reopen_editors = util::finally([this]() { reopen_closed_editors(); });
 	if (!CDocument::OnNewDocument())
 		return FALSE;
 
@@ -619,6 +652,8 @@ BOOL CFREDDoc::OnNewDocument() {
 
 BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 {
+	auto reopen_editors = util::finally([this]() { reopen_closed_editors(); });
+
 	// don't process any objects if the window focus is lost and reacquired
 	clean_up_selections();
 
@@ -799,23 +834,102 @@ void CFREDDoc::Serialize(CArchive& ar) {
 	*/
 }
 
+// Undo replaces the mission with no save prompt before it, so the open editor is rebuilt here.
+void CFREDDoc::recreate_event_editors() {
+	if (Event_editor_dlg) {
+		Event_editor_dlg->close_discarding_changes();
+		Fred_view_wnd->show_event_editor();
+	}
+
+	if (Message_editor_dlg) {
+		Message_editor_dlg->OnCancel();
+		Fred_view_wnd->show_message_editor();
+	}
+}
+
+// on TRUE the open editor stays closed until the caller's reopen_closed_editors(); FRED's exit never calls it
+BOOL CFREDDoc::SaveModified()
+{
+	if (refuse_while_an_editor_is_busy()) {
+		return FALSE;
+	}
+
+	m_reopen_event_editor = Event_editor_dlg != nullptr;
+	m_reopen_message_editor = Message_editor_dlg != nullptr;
+
+	if (m_reopen_event_editor) {
+		Event_editor_dlg->close_offering_changes();
+	}
+	if (m_reopen_message_editor) {
+		Message_editor_dlg->close_offering_changes();
+	}
+
+	// an editor's own close prompt deletes it on Yes and No, so a pointer still set means the user chose Cancel
+	if (Event_editor_dlg != nullptr || Message_editor_dlg != nullptr) {
+		reopen_closed_editors();
+		return FALSE;
+	}
+
+	close_write_back_editors();
+
+	if (!CDocument::SaveModified()) {
+		reopen_closed_editors();
+		return FALSE;
+	}
+	return TRUE;
+}
+
+// These editors have no Cancel: their close writes their fields into the mission, so it must happen before the
+// mission is replaced, or the fields land in the next mission.
+void CFREDDoc::close_write_back_editors()
+{
+	m_reopen_debriefing_editor = Debriefing_dialog != nullptr;
+	m_reopen_briefing_editor = Briefing_dialog != nullptr;
+	m_reopen_background_editor = Bg_bitmap_dialog != nullptr;
+
+	// each close takes an undo snapshot; one taken here would make FRED offer it as a crash recovery on the next open
+	m_autosave_suppressed = true;
+	auto restore_autosave = util::finally([this]() { m_autosave_suppressed = false; });
+
+	if (m_reopen_debriefing_editor) {
+		Debriefing_dialog->SendMessage(WM_CLOSE);
+	}
+	if (m_reopen_briefing_editor) {
+		Briefing_dialog->OnCancel();
+	}
+	if (m_reopen_background_editor) {
+		Bg_bitmap_dialog->OnClose();
+	}
+}
+
+void CFREDDoc::reopen_closed_editors()
+{
+	if (std::exchange(m_reopen_event_editor, false)) {
+		Fred_view_wnd->show_event_editor();
+	}
+	if (std::exchange(m_reopen_message_editor, false)) {
+		Fred_view_wnd->show_message_editor();
+	}
+	if (std::exchange(m_reopen_debriefing_editor, false)) {
+		Fred_view_wnd->show_debriefing_editor();
+	}
+	if (std::exchange(m_reopen_briefing_editor, false)) {
+		Fred_view_wnd->show_briefing_editor();
+	}
+	if (std::exchange(m_reopen_background_editor, false)) {
+		Fred_view_wnd->show_background_editor();
+	}
+}
+
 void CFREDDoc::recreate_dialogs() {
 	if (Briefing_dialog) {
 		Briefing_dialog->OnCancel();
-		Briefing_dialog = new briefing_editor_dlg;
-		Briefing_dialog->create();
-		Briefing_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
-									  SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Briefing_dialog->ShowWindow(SW_RESTORE);
+		Fred_view_wnd->show_briefing_editor();
 	}
 
 	if (Bg_bitmap_dialog) {
 		Bg_bitmap_dialog->OnClose();
-		Bg_bitmap_dialog = new bg_bitmap_dlg;
-		Bg_bitmap_dialog->create();
-		Bg_bitmap_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
-									   SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
-		Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
+		Fred_view_wnd->show_background_editor();
 	}
 }
 

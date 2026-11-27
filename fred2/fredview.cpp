@@ -2541,6 +2541,11 @@ void CFREDView::OnEditorsEvents()
 		return;
 	}
 
+	show_event_editor();
+}
+
+void CFREDView::show_event_editor()
+{
 	if (!Event_editor_dlg) {
 		Event_editor_dlg = new event_editor;
 		Event_editor_dlg->Create(event_editor::IDD);
@@ -2562,6 +2567,11 @@ void CFREDView::OnEditorsMessage()
 		return;
 	}
 
+	show_message_editor();
+}
+
+void CFREDView::show_message_editor()
+{
 	if (!Message_editor_dlg) {
 		Message_editor_dlg = new CMessageEditorDlg;
 		Message_editor_dlg->Create(CMessageEditorDlg::IDD);
@@ -2583,6 +2593,11 @@ void CFREDView::place_background_bitmap(vec3d v)
 }
 
 void CFREDView::OnEditorsBgBitmaps()
+{
+	show_background_editor();
+}
+
+void CFREDView::show_background_editor()
 {
 	if (!Bg_bitmap_dialog) {
 		Bg_bitmap_dialog = new bg_bitmap_dlg;
@@ -4160,7 +4175,8 @@ void CFREDView::OnRunFreeSpace()
 	PROCESS_INFORMATION pi;
 	char *lpMsgBuf;
 
-	if (!FREDDoc_ptr->SaveModified())
+	// running does not replace the mission, so open editors keep their unapplied edits
+	if (!FREDDoc_ptr->CDocument::SaveModified())
 		return;
 
 	ZeroMemory(&si, sizeof(si));
@@ -4307,13 +4323,15 @@ void CFREDView::OnRevert()
 	if (!FREDDoc_ptr->SaveModified())
 		return;
 
+	const CString path = FREDDoc_ptr->GetPathName();
 	FREDDoc_ptr->DeleteContents();
-	FREDDoc_ptr->OnOpenDocument(NULL);
+	FREDDoc_ptr->OnOpenDocument(path);
 }
 
 void CFREDView::OnUpdateRevert(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(*Mission_filename);
+	// New clears only the path; a multi-file import or a failed load clears only the name
+	pCmdUI->Enable(*Mission_filename && !FREDDoc_ptr->GetPathName().IsEmpty());
 }
 
 BOOL CFREDView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
@@ -4409,6 +4427,11 @@ void CFREDView::OnUpdateEditUndo(CCmdUI* pCmdUI)
 
 void CFREDView::OnEditorsBriefing() 
 {
+	show_briefing_editor();
+}
+
+void CFREDView::show_briefing_editor()
+{
 	if (!Briefing_dialog) {
 		Briefing_dialog = new briefing_editor_dlg;
 		Briefing_dialog->create();
@@ -4420,6 +4443,11 @@ void CFREDView::OnEditorsBriefing()
 }
 
 void CFREDView::OnEditorsDebriefing() 
+{
+	show_debriefing_editor();
+}
+
+void CFREDView::show_debriefing_editor()
 {
 	if (!Debriefing_dialog) {
 		Debriefing_dialog = new debriefing_editor_dlg;

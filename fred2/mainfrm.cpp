@@ -51,6 +51,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(IDR_MENU_POPUP_TOGGLE1, OnUpdateMenuPopupToggle1)
 	ON_WM_RBUTTONDOWN()
 	ON_WM_CLOSE()
+	ON_WM_ENDSESSION()
 	ON_WM_INITMENU()
 	ON_COMMAND(ID_HELP_FINDER, OnFredHelp)
 	ON_COMMAND(ID_HELP, OnFredHelp)
@@ -199,7 +200,7 @@ void CMainFrame::OnClose()
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
 
-	// any changes still pending in these editors are discarded
+	// SaveModified has already closed these editors; this only matters if one is ever left open
 	destroy_modeless_editor(Event_editor_dlg);
 	destroy_modeless_editor(Message_editor_dlg);
 	destroy_modeless_editor(Briefing_dialog);
@@ -208,6 +209,16 @@ void CMainFrame::OnClose()
 
 	CFrameWnd::OnClose();
 	fred_shutdown();
+}
+
+void CMainFrame::OnEndSession(BOOL bEnding)
+{
+	// a cancelled log-off leaves FRED running, with the editors SaveModified closed for it
+	if (!bEnding) {
+		FREDDoc_ptr->reopen_closed_editors();
+	}
+
+	CFrameWnd::OnEndSession(bEnding);
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {

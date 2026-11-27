@@ -5,6 +5,17 @@
 
 namespace fso::fred::dialogs {
 
+namespace {
+SCP_vector<bool> noShieldFlags()
+{
+	SCP_vector<bool> flags;
+	for (const auto& ship : Ships) {
+		flags.push_back(ship.objnum >= 0 && Objects[ship.objnum].flags[Object::Object_Flags::No_shields]);
+	}
+	return flags;
+}
+} // namespace
+
 ShieldSystemDialogModel::ShieldSystemDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport), _teams(Iff_info.size(), GlobalShieldStatus::HasShields) {
 
@@ -76,14 +87,22 @@ void ShieldSystemDialogModel::applyTeam(bool hasShields)
 	// apply), so importShieldSysData is a no-op for them. Mixed entries
 	// stay Mixed, Has/No entries already match each ship's flag.
 	_teams[_currTeam] = hasShields ? GlobalShieldStatus::HasShields : GlobalShieldStatus::NoShields;
+	const auto before = noShieldFlags();
 	_editor->importShieldSysData(_teams, _types);
+	if (noShieldFlags() != before) {
+		_editor->missionChanged();
+	}
 	refresh();
 }
 
 void ShieldSystemDialogModel::applyType(bool hasShields)
 {
 	_types[_currType] = hasShields ? GlobalShieldStatus::HasShields : GlobalShieldStatus::NoShields;
+	const auto before = noShieldFlags();
 	_editor->importShieldSysData(_teams, _types);
+	if (noShieldFlags() != before) {
+		_editor->missionChanged();
+	}
 	refresh();
 }
 

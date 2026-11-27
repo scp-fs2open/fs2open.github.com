@@ -87,6 +87,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_voice_id = -1;
 	m_cur_stage = 0;
 	m_last_stage = m_cur_icon = m_last_icon = -1;
+	modified = 0;
 	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	// copy view initialization
@@ -354,7 +355,9 @@ void briefing_editor_dlg::update_data(int update)
 	// save off current data before we update over it with new briefing stage/team stuff
 	Briefing = save_briefing;
 
-	Mission_music[SCORE_BRIEFING] = m_briefing_music - 1;
+	MODIFY(Mission_music[SCORE_BRIEFING], m_briefing_music - 1);
+	if (strcmp(The_mission.substitute_briefing_music_name, m_substitute_briefing_music) != 0)
+		set_modified();
 	strcpy_s(The_mission.substitute_briefing_music_name, m_substitute_briefing_music);
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
@@ -377,12 +380,12 @@ void briefing_editor_dlg::update_data(int update)
 		else
 			i &= ~BS_FORWARD_CUT;
 
-		if (m_no_grid)
-			ptr->draw_grid = false;
-		else
-			ptr->draw_grid = true;
+		MODIFY(ptr->draw_grid, !m_no_grid);
 
 		MODIFY(ptr->flags, i);
+		if (modified)
+			set_modified();
+		modified = 0;
 		ptr->formula = m_tree._model.save_tree();
 		switch (m_lines.GetCheck()) {
 			case 1:
