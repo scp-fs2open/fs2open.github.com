@@ -151,6 +151,10 @@ Section pilot::BinaryFileHandler::nextSection() {
 	if (size == 0) {
 		return Section::Invalid;
 	}
+	if (size > static_cast<size_t>(cfilelength(_cfp)) - static_cast<size_t>(cftell(_cfp))) {
+		mprintf(("PLR => WARNING: Section runs past the end of the file.\n"));
+		return Section::Invalid;
+	}
 
 	_section_start_pos = (size_t)cftell(_cfp);
 	_section_end_pos = _section_start_pos + size;
@@ -167,11 +171,10 @@ size_t pilot::BinaryFileHandler::startArrayRead(const char*, bool short_index) {
 	Assertion(!_in_array, "Array nesting is not supported!");
 
 	_in_array = true;
-	if (short_index) {
-		return (size_t) cfread_short(_cfp);
-	} else {
-		return (size_t) cfread_int(_cfp);
-	}
+	auto count = short_index ? (size_t)cfread_short(_cfp) : (size_t)cfread_int(_cfp);
+
+	// every array element takes at least one byte, so a larger count has no data behind it
+	return std::min(count, static_cast<size_t>(cfilelength(_cfp)) - static_cast<size_t>(cftell(_cfp)));
 }
 void pilot::BinaryFileHandler::nextArraySection() {
 	Assertion(_in_array, "nextArraySection() may only be called in an array!");
@@ -181,4 +184,7 @@ void pilot::BinaryFileHandler::endArrayRead() {
 	Assertion(_in_array, "Array ended while not reading array!");
 
 	_in_array = false;
+}
+bool pilot::BinaryFileHandler::atEndOfFile() {
+	return cfeof(_cfp) != 0;
 }
