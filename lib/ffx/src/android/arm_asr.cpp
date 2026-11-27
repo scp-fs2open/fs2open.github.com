@@ -34,9 +34,11 @@ struct Context {
 
 ffxReturnCode_t translateResult(arm::FfxmErrorCode result)
 {
-    if (result == arm::FFXM_OK)
+    // Arm returns int32_t but defines its error constants as unsigned 32-bit values.
+    const auto code = static_cast<uint32_t>(result);
+    if (code == arm::FFXM_OK)
         return FFX_API_RETURN_OK;
-    if (result == arm::FFXM_ERROR_OUT_OF_MEMORY || result == arm::FFXM_ERROR_INSUFFICIENT_MEMORY)
+    if (code == arm::FFXM_ERROR_OUT_OF_MEMORY || code == arm::FFXM_ERROR_INSUFFICIENT_MEMORY)
         return FFX_API_RETURN_ERROR_MEMORY;
     return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 }
