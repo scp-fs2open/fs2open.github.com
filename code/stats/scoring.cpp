@@ -1420,8 +1420,14 @@ void scoring_eval_hit(const object *hit_obj, const object *other_obj, int from_b
 			is_bonehead = 0;
 		}
 
-		// set the flag indicating that we've already applied a "stats" hit for this weapon
-		// Weapons[other_obj->instance].weapon_flags |= WF_ALREADY_APPLIED_STATS;
+		// a laser counts once per shot, and an instant blast is scored before the ship the laser hit,
+		// so splash on the shooter's own side must not claim the shot
+		if (sub_type == WP_LASER) {
+			if (from_blast && is_bonehead) {
+				return;
+			}
+			Weapons[other_obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Already_applied_stats);
+		}
 
 		// in multiplayer -- only the server records the stats
 		if( Game_mode & GM_MULTIPLAYER ) {
