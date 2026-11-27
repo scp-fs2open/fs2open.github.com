@@ -304,11 +304,15 @@ void LabUi::build_options_menu()
 	with_Menu("Options")
 	{
 		bool show_widget_menu = getLabManager()->Renderer->getShowOrientationWidget();
+		bool hide_ui = getLabManager()->Renderer->getHideUI();
 		MenuItem("Render options", nullptr, &show_render_options_dialog);
 		MenuItem("Object selector", nullptr, &show_object_selection_dialog);
 		MenuItem("Background selector", nullptr, &show_background_selection_dialog);
 		MenuItem("Object options", nullptr, &show_object_options_dialog);
 		MenuItem("Controls reference", nullptr, &show_controls_reference_dialog);
+		if (MenuItem("Hide UI", "H", hide_ui)) {
+			getLabManager()->Renderer->setHideUI(!hide_ui);
+		}
 		if (MenuItem("Show orientation cube widget", nullptr, show_widget_menu)) {
 			getLabManager()->Renderer->setShowOrientationWidget(!show_widget_menu);
 		}
@@ -365,6 +369,9 @@ void LabUi::show_object_selector() const
 
 void LabUi::create_ui()
 {
+	if (getLabManager()->Renderer->getHideUI())
+		return;
+
 	build_toolbar_entries();
 
 	if (show_render_options_dialog)
@@ -402,6 +409,7 @@ void LabUi::show_controls_reference()
 		controls_reference_entry("R", "Cycle object orientation (LMB) axis mode (Yaw, Pitch, Roll, or Both).");
 		controls_reference_entry("S", "Cycle object orientation (LMB) speed.");
 		controls_reference_entry("V", "Reset camera view.");
+		controls_reference_entry("H", "Hide or show the lab UI.");
 		controls_reference_entry("T / Y", "Cycle team color presets.");
 		controls_reference_entry("1-9", "Switch anti-aliasing presets.");
 		controls_reference_entry("M", "Export an environment map.");
