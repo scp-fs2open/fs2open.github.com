@@ -25,6 +25,7 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+#include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "tgautils/tgautils.h"
 #include "tracing/tracing.h"
@@ -348,6 +349,9 @@ void parse_nebula_table(const char* filename)
 // initialize neb2 stuff at game startup
 void neb2_init()
 {
+	// the generated (FS1-style) background nebula's patterns and colors: generated_nebula.tbl
+	generated_nebula_init();
+
 	// first parse the default table
 	parse_nebula_table("nebula.tbl");
 

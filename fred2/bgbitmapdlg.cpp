@@ -45,6 +45,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_envmap = _T("");
 	m_nebula_color = -1;
 	m_nebula_index = -1;
+	m_fs1_neb_mission = 0;
 	m_bank = 0;
 	m_heading = 0;
 	m_pitch = 0;
@@ -97,6 +98,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_NEB2_INTENSITY, m_neb_intensity);
 	DDX_CBIndex(pDX, IDC_NEBCOLOR, m_nebula_color);
 	DDX_CBIndex(pDX, IDC_NEBPATTERN, m_nebula_index);
+	DDX_CBIndex(pDX, IDC_FS1_NEB_MISSION, m_fs1_neb_mission);
 	DDX_Text(pDX, IDC_BANK, m_bank);
 	DDX_Text(pDX, IDC_HEADING, m_heading);
 	DDX_Text(pDX, IDC_PITCH, m_pitch);
@@ -169,6 +171,7 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_WM_CLOSE()	
 	ON_CBN_SELCHANGE(IDC_NEBCOLOR, OnSelchangeNebcolor)
 	ON_CBN_SELCHANGE(IDC_NEBPATTERN, OnSelchangeNebpattern)
+	ON_CBN_SELCHANGE(IDC_FS1_NEB_MISSION, OnSelchangeFs1NebMission)
 	ON_BN_CLICKED(IDC_FULLNEB, OnFullNeb)
 	ON_BN_CLICKED(IDC_NEB2_PALETTE_OVERRIDE, OnNeb2PaletteOverride)
 	ON_CBN_SELCHANGE(IDC_NEB2_TEXTURE, OnSelchangeNeb2Texture)
@@ -267,9 +270,14 @@ void bg_bitmap_dlg::create()
 	GetDlgItem(IDC_SUN1_B_SPIN)->EnableWindow(FALSE);
 	
 	box = (CComboBox *) GetDlgItem(IDC_NEBCOLOR);
-	for (int i=0; i<NUM_NEBULA_COLORS; i++){
-		box->AddString(Nebula_colors[i]);
-	}	
+	for (int i=0; i<(int)Generated_nebula_colors.size(); i++){
+		box->AddString(Generated_nebula_colors[i].name.c_str());
+	}
+
+	box = (CComboBox *) GetDlgItem(IDC_FS1_NEB_MISSION);
+	box->AddString("Default");
+	box->AddString("On");
+	box->AddString("Off");
 
 	m_slider.SetRange(0, MAX_STARS);
 	m_slider.SetPos(Num_stars);
@@ -346,8 +354,10 @@ void bg_bitmap_dlg::create()
 		m_nebula_index = Nebula_index + 1;		
 	
 		m_nebula_color = Mission_palette;
-		if (Nebula_index < 0){
+		m_fs1_neb_mission = Nebula_mission_switch < 0 ? 0 : (Nebula_mission_switch == 1 ? 1 : 2);
+		if (Nebula_index < 0 && Nebula_unknown_pattern.empty()){
 			GetDlgItem(IDC_NEBCOLOR)->EnableWindow(FALSE);
+			GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(FALSE);
 		}
 
 		m_pitch = Nebula_pitch;
@@ -459,6 +469,7 @@ void bg_bitmap_dlg::OnClose()
 {
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;
+	Nebula_mission_switch = m_fs1_neb_mission == 0 ? -1 : (m_fs1_neb_mission == 1 ? 1 : 0);
 	
 	if(m_fullneb){		
 		The_mission.flags.set(Mission::Mission_Flags::Fullneb);
@@ -608,7 +619,9 @@ void bg_bitmap_dlg::OnSelchangeNebcolor()
 
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;
-	
+	Nebula_unknown_color.clear();
+	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
+
 	Update_window = 1;
 }
 
@@ -619,12 +632,20 @@ void bg_bitmap_dlg::OnSelchangeNebpattern()
 	UpdateData(TRUE);
 
 	// fullneb indexes differently	
-	Nebula_index = m_nebula_index - 1;			
+	Nebula_index = m_nebula_index - 1;
+	Nebula_unknown_pattern.clear();
 
 	GetDlgItem(IDC_NEBCOLOR)->EnableWindow(m_nebula_index ? TRUE : FALSE);
+	GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(m_nebula_index ? TRUE : FALSE);
 	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
 	Update_window = 1;
+}
+
+void bg_bitmap_dlg::OnSelchangeFs1NebMission()
+{
+	UpdateData(TRUE);
+	Nebula_mission_switch = m_fs1_neb_mission == 0 ? -1 : (m_fs1_neb_mission == 1 ? 1 : 0);
 }
 
 void bg_bitmap_dlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar) 
@@ -685,6 +706,7 @@ void bg_bitmap_dlg::OnFullNeb()
 		// disable non-fullneb controls
 		GetDlgItem(IDC_NEBPATTERN)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEBCOLOR)->EnableWindow(FALSE);
+		GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(FALSE);
 		GetDlgItem(IDC_PITCH)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BANK)->EnableWindow(FALSE);
 		GetDlgItem(IDC_HEADING)->EnableWindow(FALSE);
@@ -692,6 +714,7 @@ void bg_bitmap_dlg::OnFullNeb()
 		// enable all non-fullneb controls
 		GetDlgItem(IDC_NEBPATTERN)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEBCOLOR)->EnableWindow(TRUE);
+		GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(m_nebula_index ? TRUE : FALSE);
 		GetDlgItem(IDC_PITCH)->EnableWindow(TRUE);
 		GetDlgItem(IDC_BANK)->EnableWindow(TRUE);
 		GetDlgItem(IDC_HEADING)->EnableWindow(TRUE);		
@@ -761,11 +784,11 @@ void bg_bitmap_dlg::build_nebfile_list()
 	// clear the box
 	box->ResetContent();
 
-	// add all necessary strings		
+	// add all necessary strings
 	box->AddString("None");
-	for (i=0; i<NUM_NEBULAS; i++){
-		box->AddString(Nebula_filenames[i]);
-	}	
+	for (i=0; i<(int)Generated_nebula_patterns.size(); i++){
+		box->AddString(Generated_nebula_patterns[i].name.c_str());
+	}
 
 	// select the first elementccombobox
 	box->SetCurSel(0);
