@@ -2239,6 +2239,7 @@ typedef struct eval_nearest_objnum {
 	int	enemy_team_mask;
 	int enemy_ship_info_index;
 	int enemy_class_type;
+	int enemy_turret_wip_index;
 	int	enemy_wing;
 	float	range;
 	int	max_attackers;
@@ -2274,6 +2275,10 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 			//	If only supposed to attack ships of a certain ship type, don't attack other ships.
 			if ((eno->enemy_class_type >= 0) && (Ship_info[shipp->ship_info_index].class_type != eno->enemy_class_type))
+				return;
+
+			// If only supposed to attack turrets carrying a certain weapon, don't attack ships without any such live turrets.
+			if ((eno->enemy_turret_wip_index >= 0) && (ship_get_turret_type_aggregate_hits(shipp, eno->enemy_turret_wip_index) <= 0.0f))
 				return;
 
 			//	Don't keep firing at a ship that is in its death throes.
@@ -2373,7 +2378,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
  * @param ship_info_index	If >=0, the enemy object must be of the specified ship class
  * @param class_type		If >=0, the enemy object must be of the specified ship type
  */
-int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type)
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type, int turret_wip_index)
 {
 	object	*danger_weapon_objp;
 	ai_info	*aip;
@@ -2384,6 +2389,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	eno.enemy_team_mask = enemy_team_mask;
 	eno.enemy_ship_info_index = ship_info_index;
 	eno.enemy_class_type = class_type;
+	eno.enemy_turret_wip_index = turret_wip_index;
 	eno.enemy_wing = enemy_wing;
 	eno.max_attackers = max_attackers;
 	eno.for_pursuit = for_pursuit;
@@ -2429,7 +2435,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 
 	//	If no wing member can be pursued, hold one anyway rather than leave the wing, as an explicit order to attack an unpursued ship does
 	if ((eno.nearest_objnum == -1) && (enemy_wing != -1) && for_pursuit && The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_ai_target_recovery]) {
-		int held_objnum = get_nearest_objnum(objnum, enemy_team_mask, enemy_wing, range, max_attackers, false, ship_info_index, class_type);
+		int held_objnum = get_nearest_objnum(objnum, enemy_team_mask, enemy_wing, range, max_attackers, false, ship_info_index, class_type, turret_wip_index);
 		if (held_objnum >= 0 && Objects[held_objnum].type == OBJ_SHIP && Ships[Objects[held_objnum].instance].wingnum == enemy_wing)
 			return held_objnum;
 	}
@@ -2437,7 +2443,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	//	If only looking for target in certain wing and couldn't find anything in
 	//	that wing, look for any object.
 	if ((eno.nearest_objnum == -1) && (enemy_wing != -1)) {
-		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, for_pursuit, ship_info_index, class_type);
+		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, for_pursuit, ship_info_index, class_type, turret_wip_index);
 	}
 
 	return eno.nearest_objnum;
@@ -2548,7 +2554,7 @@ int get_enemy_timestamp()
  * @param ship_info_index  If specified, restrict the search to enemies with this ship class
  * @param class_type     If specified, restrict the search to enemies with this ship type
  */
-int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type)
+int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type, int turret_wip_index)
 {
 	int enemy_team_mask;
 
@@ -2576,10 +2582,12 @@ int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int
 				if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 					if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
 						if (class_type < 0 || class_type == Ship_info[target_shipp->ship_info_index].class_type) {
-							if (!(target_objp->flags[Object::Object_Flags::Protected])) {
-								// same as get_nearest_objnum: only skip an unpursued target for unconstrained searches
-								if (!for_pursuit || ship_info_index >= 0 || class_type >= 0 || !ai_declines_pursuit(objp, target_objp)) {
-									return target_objnum;
+							if (turret_wip_index < 0 || (ship_get_turret_type_aggregate_hits(target_shipp, turret_wip_index) > 0.0f)) {
+								if (!(target_objp->flags[Object::Object_Flags::Protected])) {
+									// same as get_nearest_objnum: only skip an unpursued target for unconstrained searches
+									if (!for_pursuit || ship_info_index >= 0 || class_type >= 0 || !ai_declines_pursuit(objp, target_objp)) {
+										return target_objnum;
+									}
 								}
 							}
 						}
@@ -2591,7 +2599,7 @@ int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int
 			}
 		}
 
-		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, for_pursuit, ship_info_index, class_type);
+		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, for_pursuit, ship_info_index, class_type, turret_wip_index);
 	} else {
 		aip->target_objnum = -1;
 		aip->target_signature = -1;
@@ -2632,7 +2640,7 @@ void force_avoid_player_check(object *objp, ai_info *aip)
  * If attacked == NULL, then attack any enemy object.
  * Attack point *rel_pos on object.  This is for supporting attacking subsystems.
  */
-void ai_attack_object(object* attacker, object* attacked, int ship_info_index, int class_type)
+void ai_attack_object(object* attacker, object* attacked, int ship_info_index, int class_type, int turret_wip_index)
 {
 	int temp;
 	ai_info* aip;
@@ -2665,7 +2673,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index, i
 	if (attacked == nullptr) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
-		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, true, ship_info_index, class_type));
+		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, true, ship_info_index, class_type, turret_wip_index));
 	} else {
 		// check if we can see attacked in nebula
 		if (aip->target_objnum != OBJ_INDEX(attacked)) {
@@ -8262,7 +8270,7 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 //	Make object *objp attack subsystem with ID = subnum.
 //	Return true if found a subsystem to attack, else return false.
 //	Note, can fail if subsystem exists, but has no hits.
-int ai_set_attack_subsystem(object *objp, int subnum)
+int ai_set_attack_subsystem(object *objp, int subnum, int wip_index)
 {
 	int temp;
 	ship			*shipp, *attacker_shipp;
@@ -8292,8 +8300,8 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 	if (subnum >= 0)
 		ssp = ship_get_indexed_subsys(shipp, subnum);
 	else
-		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos);
-	if (ssp == NULL)
+		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos, wip_index);
+	if (ssp == nullptr)
 		return 0;
 
 	set_targeted_subsys(aip, ssp, aip->target_objnum);
@@ -15626,32 +15634,39 @@ void ai_frame(int objnum)
 
 	// check if targeted subsystem has been destroyed, if so, move onto another subsystem
 	// if trying to disable or disarm the target
-	if ((En_objp != NULL) && ( aip->targeted_subsys != NULL )) {
+	if ((En_objp != nullptr) && ( aip->targeted_subsys != nullptr )) {
 		Assert(En_objp->type == OBJ_SHIP);
 		if ( aip->targeted_subsys->current_hits <= 0.0f ) {
 			int subsys_type;
+			int turret_wip_index = -1;
 
 			if ( aip->goals[0].ai_mode == AI_GOAL_DISABLE_SHIP || aip->goals[0].ai_mode == AI_GOAL_DISABLE_SHIP_TACTICAL ) {
 				subsys_type = SUBSYSTEM_ENGINE;
 			} else if ( aip->goals[0].ai_mode == AI_GOAL_DISARM_SHIP || aip->goals[0].ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL ) {
 				subsys_type = SUBSYSTEM_TURRET;
+			} else if (aip->goals[0].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE || aip->goals[0].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP) {
+				subsys_type = SUBSYSTEM_TURRET;
+				turret_wip_index = aip->goals[0].int_data;
 			} else {
 				subsys_type = -1;
 			}
 
 			if ( subsys_type != -1 ) {
 				ship_subsys *new_subsys;
-				new_subsys = ship_return_next_subsys(&Ships[En_objp->instance], subsys_type, &Pl_objp->pos);
-				if ( new_subsys != NULL ) {
+				new_subsys = ship_return_next_subsys(&Ships[En_objp->instance], subsys_type, &Pl_objp->pos, turret_wip_index);
+				if ( new_subsys != nullptr ) {
 					set_targeted_subsys(aip, new_subsys, aip->target_objnum);
 				} else {
 					// AL 12-16-97: no more subsystems to attack... reset targeting info
 					aip->target_objnum = -1;
-					set_targeted_subsys(aip, NULL, -1);
+					set_targeted_subsys(aip, nullptr, -1);
+					if (aip->goals[0].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
+						aip->active_goal = -1;
+					}
 				}
 			} else {
 				// targeted subsys is destroyed, so stop attacking it
-				set_targeted_subsys(aip, NULL, -1);
+				set_targeted_subsys(aip, nullptr, -1);
 			}
 		}
 	}

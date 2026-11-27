@@ -599,6 +599,34 @@ void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 		} else if (goalp[i].ai_mode == AI_GOAL_WARP) {
 			fout("( ai-warp-out %d ) ", goalp[i].priority);
 
+		} else if (goalp[i].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
+			if (Weapon_info.in_bounds(goalp[i].int_data)) {
+				fout( "( ai-destroy-turret-type \"%s\" %d ) ", Weapon_info[goalp[i].int_data].name, goalp[i].priority );
+			} else {
+				auto shipname = "a wing";
+				if (ship >= 0) {
+					shipname = Ships[ship].ship_name;
+				}
+				Warning(LOCATION,
+					"AI destroy turret type goal for \"%s\" has invalid weapon index %i\n",
+					shipname,
+					goalp[i].int_data);
+			}
+
+		} else if (goalp[i].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP) {
+			if (!Weapon_info.in_bounds(goalp[i].int_data)) {
+				auto shipname = "a wing";
+				if (ship >= 0) {
+					shipname = Ships[ship].ship_name;
+				}
+				Warning(LOCATION,
+					"AI destroy turret type on ship goal for \"%s\" has invalid weapon index %i\n",
+					shipname,
+					goalp[i].int_data);
+			} else {
+				fout( "( ai-destroy-turret-type-on-ship \"%s\" \"%s\" %d ) ", Weapon_info[goalp[i].int_data].name, goalp[i].target_name, goalp[i].priority );
+			}
+
 		} else {
 			valid = 1;
 			if (!goalp[i].target_name) {

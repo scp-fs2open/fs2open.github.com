@@ -177,6 +177,12 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_CHASE_SHIP_TYPE:
 			eh_idx = LE_ORDER_ATTACK_SHIP_TYPE;
 			break;
+		case AI_GOAL_DESTROY_TURRET_TYPE:
+			eh_idx = LE_ORDER_DESTROY_TURRET_TYPE;
+			break;
+		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
+			eh_idx = LE_ORDER_DESTROY_TURRET_TYPE_ON_SHIP;
+			break;
 		case AI_GOAL_LUA:
 			eh_idx = LE_ORDER_LUA;
 			break;
@@ -233,6 +239,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_STAY_NEAR_SHIP:
 				case AI_GOAL_FLY_TO_SHIP:
 				case AI_GOAL_STAY_STILL:
+				case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 					if ((newh->objp()->type == OBJ_SHIP) && stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)) {
 						ohp->aigp->target_name = ai_get_goal_target_name(Ships[newh->objp()->instance].ship_name, &ohp->aigp->target_name_index);
 						ohp->aigp->time = (ohp->odx == 0) ? Missiontime : 0;
@@ -364,7 +371,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_STAY_STILL:
 		case AI_GOAL_REARM_REPAIR:
 		case AI_GOAL_DOCK:
-		case AI_GOAL_UNDOCK: {
+		case AI_GOAL_UNDOCK:
+		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP: {
 			auto target_entry = ship_registry_get(ohp->aigp->target_name);
 			if (target_entry && target_entry->has_shipp()) {
 				shipnum = target_entry->shipnum;
