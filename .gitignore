@@ -267,3 +267,6 @@ CMakeCache.txt
 test/test_data/**/*_settings.ini
 test/test_data/data/players/presets/asdf.json
 test/test_data/pilotfile/data/asdf.hdp
+
+# Git patch files
+*.patch
