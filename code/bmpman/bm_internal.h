@@ -11,6 +11,8 @@
 
 #include "bmpman/bmpman.h"
 
+struct texture_material;
+
 #include <array>
 
 /**
@@ -62,6 +64,8 @@ struct bitmap_entry {
 	signed char ref_count;  //!< Number of locks on bitmap.  Can't unload unless ref_count is 0.
 
 	int dir_type;           //!< which directory this was loaded from (to skip other locations with same name)
+
+	const texture_material* material;  //!< settings from the texture's .mat file, or nullptr
 
 	// compressed bitmap stuff (.dds) - RT please take a look at this and tell me if we really need it
 	size_t mem_taken;          //!< How much memory does this bitmap use? - UnknownPlayer

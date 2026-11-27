@@ -488,6 +488,8 @@ add_file_folder("Graphics"
 	graphics/rtao.h
 	graphics/shadows.cpp
 	graphics/shadows.h
+	graphics/texture_material.cpp
+	graphics/texture_material.h
 	graphics/tmapper.h
 	graphics/uniforms.cpp
 	graphics/uniforms.h
