@@ -537,7 +537,11 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		pos,
 		model_get_radius(pip->model_num),
 		default_prop_object_flags);
-	Assert(objnum >= 0);
+	if (objnum < 0) {
+		mprintf(("Couldn't create prop %s -- out of object slots\n", propp->prop_name));
+		Props[new_id] = std::nullopt;
+		return -1;
+	}
 
 	propp->objnum = objnum;
 

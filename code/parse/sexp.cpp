@@ -1854,7 +1854,11 @@ int dup_sexp_chain(int node)
 	// TODO - CASE OF SEXP VARIABLES - ONLY 1 COPY OF VARIABLE
 	first = dup_sexp_chain(Sexp_nodes[node].first);
 	rest = dup_sexp_chain(Sexp_nodes[node].rest);
-	cur = alloc_sexp(Sexp_nodes[node].text, Sexp_nodes[node].type, Sexp_nodes[node].subtype, first, rest);
+
+	// copy the text, since alloc_sexp may reallocate Sexp_nodes before reading it
+	char text[TOKEN_LENGTH];
+	strcpy_s(text, Sexp_nodes[node].text);
+	cur = alloc_sexp(text, Sexp_nodes[node].type, Sexp_nodes[node].subtype, first, rest);
 
 	if (cur == -1) {
 		if (first != -1){
@@ -3961,6 +3965,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 				break;
 
+			case OPF_PROP_CLASS_NAME:
+				if ( node_subtype != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (prop_info_lookup(CTEXT(node)) < 0)
+					return SEXP_CHECK_INVALID_PROP_CLASS_NAME;
+
+				break;
+
 			case OPF_SKYBOX_MODEL_NAME:
 				if ( node_subtype != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -5997,7 +6010,12 @@ const prop *eval_prop(int node)
 		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
 			return nullptr;
 
-		return prop_id_lookup(Sexp_nodes[node].cache->ship_registry_index);
+		// props can be removed mid-mission, so the cache also holds the object signature to catch that
+		auto objp = &Objects[Sexp_nodes[node].cache->ship_registry_index];
+		if (objp->signature == Sexp_nodes[node].cache->numeric_literal)
+			return prop_id_lookup(objp->instance);
+
+		Sexp_nodes[node].cache.reset();
 	}
 
 	// maybe forward to a special-arg node
@@ -6013,11 +6031,13 @@ const prop *eval_prop(int node)
 	auto prop_idx = prop_name_lookup(CTEXT(node));
 	if (prop_idx >= 0)
 	{
+		auto propp = prop_id_lookup(prop_idx);
+
 		// cache the value if it can't change later and we're in-game
 		if (!Fred_running && !is_node_value_dynamic(node))
-			Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_PROP, -1, prop_idx);
+			Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_PROP, Objects[propp->objnum].signature, propp->objnum);
 
-		return prop_id_lookup(prop_idx);
+		return propp;
 	}
 
 	// we know nothing about this prop, apparently
@@ -19935,7 +19955,8 @@ void sexp_prop_create(int n)
 		new_prop_ori = vmd_identity_matrix;
 
 	int objnum = prop_create(&new_prop_ori, &new_prop_pos, new_prop_class, new_ship_name);
-	Assert(objnum != -1);
+	if (objnum < 0)
+		return;
 
 	// note: model_page_in_textures was called via the sexp preloader
 }
@@ -35933,6 +35954,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
+
+		case SEXP_CHECK_INVALID_PROP_CLASS_NAME:
+			return "Invalid prop class name";
 
 		case SEXP_CHECK_INVALID_SKYBOX_NAME:
 			return "Invalid skybox name";

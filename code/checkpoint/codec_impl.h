@@ -153,7 +153,7 @@ struct FieldSaver {
 	const T& object;
 
 	template <auto Member>
-	void field(const char* name)
+	void field([[maybe_unused]] const char* name)
 	{
 		using F = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<const T&>().*Member)>>;
 		if constexpr (is_transient_field<F>::value) {
@@ -223,7 +223,7 @@ struct FieldLoader {
 	int found = 0;
 
 	template <auto Member>
-	void field(const char* name)
+	void field([[maybe_unused]] const char* name)
 	{
 		using F = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<T&>().*Member)>>;
 		if constexpr (is_transient_field<F>::value) {

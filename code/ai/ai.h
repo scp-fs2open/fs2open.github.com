@@ -490,8 +490,6 @@ typedef struct {
 #define MAX_BURST_DAMAGE	20.0f		// max damage that can be done in BURST_DURATION
 #define BURST_DURATION		500	// decay time over which Player->damage_this_burst falls from MAX_BURST_DAMAGE to 0
 
-extern int Mission_all_attack;	//	!0 means all teams attack all teams.
-
 extern ai_info Ai_info[];
 extern ai_info *Player_ai;
 

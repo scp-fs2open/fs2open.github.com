@@ -7,15 +7,27 @@ namespace fso::fred::dialogs {
 
 SCP_vector<SCP_string> MissionEventsDialogModel::s_extra_head_anis;
 
+static void maybe_add_head(SCP_vector<SCP_string>& list, const char* name)
+{
+	if (!SCP_vector_contains_lcase(list, name)) {
+		list.emplace_back(name);
+	}
+}
+
+// the first entry is "<None>", which stays at the top
+static void sort_heads(SCP_vector<SCP_string>& list)
+{
+	if (list.size() > 1) {
+		std::sort(list.begin() + 1, list.end(), lcase_lessthan);
+	}
+}
+
 void MissionEventsDialogModel::addExtraHeadAni(const SCP_string& name)
 {
 	if (name.empty() || lcase_equal(name, "<none>") || lcase_equal(name, "none")) {
 		return;
 	}
-	auto it = std::find(s_extra_head_anis.begin(), s_extra_head_anis.end(), name);
-	if (it == s_extra_head_anis.end()) {
-		s_extra_head_anis.push_back(name);
-	}
+	maybe_add_head(s_extra_head_anis, name.c_str());
 }
 
 void MissionEventsDialogModel::clearBrowsedHeadAnis()
@@ -244,46 +256,50 @@ void MissionEventsDialogModel::initializeHeadAniList()
 	m_head_ani_list.emplace_back("<None>");
 
 	if (!Disable_hc_message_ani) {
-		m_head_ani_list.emplace_back("Head-TP2");
-		m_head_ani_list.emplace_back("Head-TP3");
-		m_head_ani_list.emplace_back("Head-TP4");
-		m_head_ani_list.emplace_back("Head-TP5");
-		m_head_ani_list.emplace_back("Head-TP6");
-		m_head_ani_list.emplace_back("Head-TP7");
-		m_head_ani_list.emplace_back("Head-TP8");
-		m_head_ani_list.emplace_back("Head-VP1");
-		m_head_ani_list.emplace_back("Head-VP2");
-		m_head_ani_list.emplace_back("Head-CM1");
-		m_head_ani_list.emplace_back("Head-CM2");
-		m_head_ani_list.emplace_back("Head-CM3");
-		m_head_ani_list.emplace_back("Head-CM4");
-		m_head_ani_list.emplace_back("Head-CM5");
-		m_head_ani_list.emplace_back("Head-VC");
-		m_head_ani_list.emplace_back("Head-VC2");
-		m_head_ani_list.emplace_back("Head-BSH");
+		maybe_add_head(m_head_ani_list, "Head-TP1");
+		maybe_add_head(m_head_ani_list, "Head-TP2");
+		maybe_add_head(m_head_ani_list, "Head-TP3");
+		maybe_add_head(m_head_ani_list, "Head-TP4");
+		maybe_add_head(m_head_ani_list, "Head-TP5");
+		maybe_add_head(m_head_ani_list, "Head-TP6");
+		maybe_add_head(m_head_ani_list, "Head-TP7");
+		maybe_add_head(m_head_ani_list, "Head-TP8");
+		maybe_add_head(m_head_ani_list, "Head-VP1");
+		maybe_add_head(m_head_ani_list, "Head-VP2");
+		maybe_add_head(m_head_ani_list, "Head-CM1");
+		maybe_add_head(m_head_ani_list, "Head-CM2");
+		maybe_add_head(m_head_ani_list, "Head-CM3");
+		maybe_add_head(m_head_ani_list, "Head-CM4");
+		maybe_add_head(m_head_ani_list, "Head-CM5");
+		maybe_add_head(m_head_ani_list, "Head-VC");
+		maybe_add_head(m_head_ani_list, "Head-VC2");
+		maybe_add_head(m_head_ani_list, "Head-BSH");
+	}
+
+	// Include the heads used by the built-in messages from messages.tbl
+	for (int i = 0; i < Num_builtin_messages; i++) {
+		if (Messages[i].avi_info.name) {
+			maybe_add_head(m_head_ani_list, Messages[i].avi_info.name);
+		}
 	}
 
 	for (auto& thisHead : Custom_head_anis) {
-		m_head_ani_list.emplace_back(thisHead);
+		maybe_add_head(m_head_ani_list, thisHead.c_str());
+	}
+
+	// Scan the current mission's messages. Any head ANI not already in the list is added to the session list
+	for (auto& msg : m_messages) {
+		if (msg.avi_info.name && !SCP_vector_contains_lcase(m_head_ani_list, msg.avi_info.name)) {
+			addExtraHeadAni(msg.avi_info.name);
+		}
 	}
 
 	// Include any anis discovered during this session
 	for (const auto& extra : s_extra_head_anis) {
-		auto it = std::find(m_head_ani_list.begin(), m_head_ani_list.end(), extra);
-		if (it == m_head_ani_list.end()) {
-			m_head_ani_list.emplace_back(extra);
-		}
+		maybe_add_head(m_head_ani_list, extra.c_str());
 	}
 
-	// Scan the current mission's messages. Any head ANI not already in the list is added to the list
-	for (auto& msg : m_messages) {
-		if (msg.avi_info.name) {
-			auto it = std::find(m_head_ani_list.begin(), m_head_ani_list.end(), msg.avi_info.name);
-			if (it == m_head_ani_list.end()) {
-				addExtraHeadAni(msg.avi_info.name);
-			}
-		}
-	}
+	sort_heads(m_head_ani_list);
 }
 
 void MissionEventsDialogModel::initializeWaveList()
@@ -1276,12 +1292,8 @@ void MissionEventsDialogModel::setMessageAni(const SCP_string& ani)
 	set_modified();
 
 	// Possibly add to list of known anis
-	auto it = std::find_if(m_head_ani_list.begin(), m_head_ani_list.end(), [&](const SCP_string& s) {
-		return lcase_equal(s, ani);
-	});
-	if (it == m_head_ani_list.end()) {
-		m_head_ani_list.emplace_back(ani);
-	}
+	maybe_add_head(m_head_ani_list, ani.c_str());
+	sort_heads(m_head_ani_list);
 }
 
 SCP_string MissionEventsDialogModel::getMessageWave() const
