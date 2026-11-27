@@ -6,6 +6,7 @@
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "starfield/starfield.h"
+#include "hud/hudparse.h"
 
 std::unique_ptr<star[]> Stars_XRBuffer;
 
