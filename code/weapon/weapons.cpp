@@ -7168,7 +7168,7 @@ static void weapon_acquire_resources(int weapon_num)
 	if (wip->wi_flags[Weapon::Info_Flags::Trail] && wp->lssm_stage != 3 /*&& !(wip->wi_flags[Weapon::Info_Flags::Corkscrew]) */) {
 		wp->trail_ptr = trail_create(&wip->tr_info, objp->phys_info.flags & PF_CONST_VEL);
 
-		if ( wp->trail_ptr != NULL )	{
+		if ( wp->trail_ptr != nullptr )	{
 			// Add two segments.  One to stay at launch pos, one to move.
 			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
 			if (wip->render_type == WRT_LASER) {
@@ -7183,7 +7183,7 @@ static void weapon_acquire_resources(int weapon_num)
 	else
 	{
 		//If a weapon has no trails, make sure we don't try to do anything with them.
-		wp->trail_ptr = NULL;
+		wp->trail_ptr = nullptr;
 	}
 
 	if (wip->ambient_snd.isValid()) {

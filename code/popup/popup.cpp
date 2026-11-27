@@ -28,8 +28,8 @@
 #include "ui/ui.h"
 
 
-#define POPUP_MAX_CHOICES			6					// max number of buttons allowed on popup
-#define POPUP_ROWS					3					// rows of buttons; with more choices, a second column is used
+constexpr int POPUP_MAX_CHOICES = 6;				// max number of buttons allowed on popup
+constexpr int POPUP_ROWS = 3;						// rows of buttons; with more choices, a second column is used
 
 #define POPUP_MAX_LINE_CHARS		256				// max chars of msg text allowed per line
 #define POPUP_MAX_LINES				30					// max lines of text allowed
@@ -1203,7 +1203,7 @@ int popup(int flags, const SCP_vector<SCP_string>& choices, const char *text)
 	Popup_info.nchoices = MIN((int)choices.size(), POPUP_MAX_CHOICES);
 
 	for (int i = 0; i < Popup_info.nchoices; i++) {
-		Popup_info.button_text[i] = NULL;
+		Popup_info.button_text[i] = nullptr;
 		popup_maybe_assign_keypress(&Popup_info, i, const_cast<char *>(choices[i].c_str()));
 	}
 

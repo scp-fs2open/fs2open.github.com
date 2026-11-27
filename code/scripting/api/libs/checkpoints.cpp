@@ -3,8 +3,7 @@
 #include "checkpoint/checkpoint.h"
 #include "scripting/api/libs/mission.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 namespace {
 
@@ -157,5 +156,4 @@ ADE_FUNC(getData, l_Mission_Checkpoints, "string key",
 	return ade_set_args(L, "s", value.c_str());
 }
 
-} // namespace api
-} // namespace scripting
+} // namespace scripting::api

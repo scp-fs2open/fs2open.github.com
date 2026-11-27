@@ -694,7 +694,9 @@ int main(int argc, char** argv)
 	std::map<string, string> defined_in;	// marked name -> header
 
 	for (const auto& header : header_paths) {
-		auto path = (header.find(':') != string::npos || header[0] == '/') ? header : root + "/" + header;
+		auto path = header;
+		if (header.find(':') == string::npos && header[0] != '/')
+			path = string(root).append("/").append(header);
 		string raw;
 		if (!read_file(path, raw)) {
 			std::cerr << "fieldscan: cannot read " << path << "\n";
