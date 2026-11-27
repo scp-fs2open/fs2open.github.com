@@ -51,6 +51,10 @@ if (FSO_BUILD_WITH_VULKAN)
 	)
 endif()
 
+add_file_folder("IO"
+    io/test_timer.cpp
+)
+
 add_file_folder("IffDefs"
     iff_defs/test_iff_accessibility.cpp
 )
@@ -80,6 +84,7 @@ add_file_folder("model"
 )
 
 add_file_folder("network"
+    network/test_multi_turret_manager.cpp
     network/test_multiutil.cpp
     network/test_psnet2.cpp
 )
