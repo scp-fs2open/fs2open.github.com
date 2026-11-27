@@ -14,6 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "graphics/generic.h"
+#include "io/timer.h"
 
 #define NUM_TRAIL_SECTIONS 128
 

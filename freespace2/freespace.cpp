@@ -506,10 +506,10 @@ struct death_checkpoint_state {
 };
 CHECKPOINT_LOCAL_RAW(death_checkpoint_state);
 
+extern int Show_viewing_from_self;
+
 static death_checkpoint_state death_checkpoint_capture()
 {
-	extern int Show_viewing_from_self;
-
 	death_checkpoint_state state;
 	state.game_state = gameseq_get_state();
 	state.target_objnum = (Player_ai != nullptr) ? Player_ai->target_objnum : -1;
@@ -522,8 +522,6 @@ static death_checkpoint_state death_checkpoint_capture()
 
 static void death_checkpoint_apply(const death_checkpoint_state& state)
 {
-	extern int Show_viewing_from_self;
-
 	if (state.game_state != GS_STATE_DEATH_DIED && state.game_state != GS_STATE_DEATH_BLEW_UP)
 		return;
 

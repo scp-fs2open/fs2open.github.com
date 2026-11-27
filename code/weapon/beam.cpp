@@ -2186,7 +2186,7 @@ int beam_get_model(object *objp)
 	int pof;
 
 	// a beam keeps pointing at a target that has died
-	if (objp == NULL || objp->type == OBJ_NONE) {
+	if (objp == nullptr || objp->type == OBJ_NONE) {
 		return -1;
 	}
 

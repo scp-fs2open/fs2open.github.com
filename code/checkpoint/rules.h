@@ -102,7 +102,7 @@ template <> struct is_transient<htarget_list*> : std::true_type {};					// hotke
 
 template <>
 struct Factory<ship_registry_entry> {
-	static ship_registry_entry make() { return ship_registry_entry(""); }
+	static ship_registry_entry make() { return {""}; }
 };
 CHECKPOINT_FACTORY(ship_registry_entry);
 

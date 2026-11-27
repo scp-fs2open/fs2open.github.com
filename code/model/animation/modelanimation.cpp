@@ -779,11 +779,14 @@ namespace animation {
 	template <typename AnimationMap>
 	static SCP_vector<std::shared_ptr<ModelAnimation>> animations_with_id(const AnimationMap& animationSet, unsigned int id) {
 		SCP_vector<std::shared_ptr<ModelAnimation>> found;
-		for (const auto& types : animationSet)
-			for (const auto& named : types.second)
-				for (const auto& anim : named.second)
+		for (const auto& types : animationSet) {
+			for (const auto& named : types.second) {
+				for (const auto& anim : named.second) {
 					if (anim->id == id)
 						found.push_back(anim);
+				}
+			}
+		}
 		return found;
 	}
 

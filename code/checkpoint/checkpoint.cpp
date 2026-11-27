@@ -310,7 +310,7 @@ uint32_t payload_hash(const Buffer& buffer)
 
 void seal(Buffer& buffer)
 {
-	uint32_t length = static_cast<uint32_t>(buffer.size() - INTEGRITY_END);
+	auto length = static_cast<uint32_t>(buffer.size() - INTEGRITY_END);
 	uint32_t hash = payload_hash(buffer);
 	memcpy(buffer.data() + 8, &length, sizeof(length));
 	memcpy(buffer.data() + 12, &hash, sizeof(hash));

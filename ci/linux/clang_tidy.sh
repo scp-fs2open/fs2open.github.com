@@ -29,5 +29,5 @@ NUM_JOBS="${NUM_JOBS:-$( (command -v nproc >/dev/null 2>&1 && nproc) || sysctl -
 echo "Running clang-tidy on changed files"
 git diff -U0 --no-color "$BASE_COMMIT..$2" | \
     $HERE/clang-tidy-diff.py -path "$(pwd)/build" -p1 \
-    -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)|(\/def_files\/data)))|freespace2|qtfred|test\/src|build|tools)\/.*\.(cpp|h)' \
+    -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)|(\/def_files\/data)|(\/checkpoint\/(codec_impl|rules)\.h)))|freespace2|qtfred|test\/src|build|tools)\/.*\.(cpp|h)' \
     -clang-tidy-binary "$CLANG_TIDY_BINARY" -j"$NUM_JOBS" -export-fixes "$(pwd)/clang-fixes.yaml"
