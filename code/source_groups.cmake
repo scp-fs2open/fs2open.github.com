@@ -681,6 +681,11 @@ if(WIN32)
 		headtracking/trackirpublic.h
 		headtracking/trackirpublic.cpp
 	)
+else()
+	add_file_folder("HeadTracking"
+		headtracking/udp.h
+		headtracking/udp.cpp
+	)
 endif()
 
 # Hud files

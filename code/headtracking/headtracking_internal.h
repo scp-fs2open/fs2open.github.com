@@ -26,6 +26,17 @@ namespace headtracking
 			}
 
 			virtual bool query(HeadTrackingStatus* statusOut) = 0;
+
+			/**
+			 * @brief Whether the provider currently has a live tracking source.
+			 *
+			 * Providers that may be initialized without a tracker actually running (e.g. a
+			 * network listener) can return false so the normal view controls stay usable.
+			 */
+			virtual bool isActive()
+			{
+				return true;
+			}
 		};
 	}
 }
