@@ -276,6 +276,11 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 		}
 
+		float reach = other->radius;
+		if (wip->wi_flags[Weapon::Info_Flags::Use_radius_for_ship_collisions] && other->type == OBJ_SHIP) {
+			reach += obj_weapon->radius;
+		}
+
 		// check weapon that does not turn against sphere expanding at ship maxvel
 		// compare (weapon) ray with expanding sphere (ship) to find earliest possible collision time
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
@@ -294,7 +299,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
-			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
+			delta_t = (reach + 10.0f) / max_vel_other; // time to get from center to radius of other obj
 			delta_x_dot_vl = vm_vec_dot( &delta_x, &obj_weapon->phys_info.vel);
 
 			a = max_vel_weapon * max_vel_weapon - max_vel_other*max_vel_other;
@@ -367,7 +372,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			const float max_vel = max_vel_weapon + max_vel_other;
 
 			// suggest that fudge factor for other radius be changed to other_radius + const (~10)
-			const float dist = vm_vec_dist( &other->pos, &obj_weapon->pos ) - (other->radius + 10.0f);
+			const float dist = vm_vec_dist(&other->pos, &obj_weapon->pos) - (reach + 10.0f);
 			if ( dist > 0.0f )	{
 				const float time = (dist*1000.0f) / max_vel;
 				int time_ms = fl2i(time);
