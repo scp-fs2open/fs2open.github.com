@@ -573,6 +573,8 @@ public:
 	int get_variable_count(const char* var_name) const;
 	// Count how many times a variable is used in player loadout data (Team_data)
 	static int get_loadout_variable_count(int var_index);
+	// Point every sexp node and loadout entry naming a renamed variable (old name -> new name) at its new name
+	static void rename_variable_references(const SCP_unordered_map<SCP_string, SCP_string>& new_names);
 	// Count how many tree nodes reference the given container name
 	int get_container_usage_count(const SCP_string& container_name) const;
 	// Check if a specific node is a valid, matching container reference for the given name
