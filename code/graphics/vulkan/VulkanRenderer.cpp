@@ -240,6 +240,9 @@ vk::Format VulkanRenderer::findDepthFormat()
 	for (auto format : candidates) {
 		auto props = m_physicalDevice.getFormatProperties(format);
 		if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+			if (Gr_reversed_depth_active && format == vk::Format::eD24UnormS8Uint) {
+				mprintf(("  Reversed depth on a 24-bit depth buffer gains little precision\n"));
+			}
 			return format;
 		}
 	}

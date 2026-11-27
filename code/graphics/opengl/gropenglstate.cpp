@@ -573,7 +573,7 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 			break;
 
 		case ZBUFFER_TYPE_READ:
-			GL_state.DepthFunc(GL_LESS);
+			GL_state.DepthFunc(Gr_reversed_depth_active ? GL_GREATER : GL_LESS);
 			GL_state.DepthMask(GL_FALSE);
 			break;
 
@@ -583,7 +583,7 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 			break;
 
 		case ZBUFFER_TYPE_FULL:
-			GL_state.DepthFunc(GL_LESS);
+			GL_state.DepthFunc(Gr_reversed_depth_active ? GL_GREATER : GL_LESS);
 			GL_state.DepthMask(GL_TRUE);
 			break;
 

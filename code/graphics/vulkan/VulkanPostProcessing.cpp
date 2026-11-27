@@ -737,9 +737,9 @@ std::array<vk::ClearValue, 3> VulkanPostProcessor::sceneClearValues() const
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 	if (m_velocityActive) {
 		clearValues[1].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
-		clearValues[2].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[2].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 	} else {
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 	}
 	return clearValues;
 }
