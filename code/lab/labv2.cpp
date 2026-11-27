@@ -2,6 +2,7 @@
 #include "lab/labv2_internal.h"
 #include "lab/manager/lab_manager.h"
 #include "gamesequence/gamesequence.h"
+#include "graphics/gtao.h"
 #include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "starfield/starfield.h"
@@ -30,6 +31,9 @@ struct LabSavedSettings {
 	float sun_angular_size_override;
 	int rtao_samples;
 	bool shadow_contact_hardening_enabled;
+	int gtao_quality;
+	float gtao_radius_scale;
+	float gtao_intensity;
 };
 
 bool Lab_settings_saved = false;
@@ -48,7 +52,10 @@ void lab_init() {
 		Rt_shadow_samples_override,
 		Sun_angular_size_override,
 		Rtao_samples,
-		Shadow_contact_hardening_enabled};
+		Shadow_contact_hardening_enabled,
+		Gtao_quality,
+		Gtao_radius_scale,
+		Gtao_intensity};
 	Lab_settings_saved = true;
 }
 
@@ -64,8 +71,13 @@ void lab_close(bool reset) {
 		Sun_angular_size_override = Lab_saved_settings.sun_angular_size_override;
 		Rtao_samples = Lab_saved_settings.rtao_samples;
 		Shadow_contact_hardening_enabled = Lab_saved_settings.shadow_contact_hardening_enabled;
+		Gtao_quality = Lab_saved_settings.gtao_quality;
+		Gtao_radius_scale = Lab_saved_settings.gtao_radius_scale;
+		Gtao_intensity = Lab_saved_settings.gtao_intensity;
 		Lab_settings_saved = false;
 	}
+	// A lab-only debug view; the lab render flags are not reset elsewhere, so the game would keep it.
+	Gtao_show_buffer = false;
 
 	if (reset) {
 		LMGR.reset();

@@ -94,6 +94,7 @@ void LabRenderer::renderModel(float frametime) {
 	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
 	Glowpoint_override = renderFlags[LabRenderFlag::NoGlowpoints];
 	PostProcessing_override = renderFlags[LabRenderFlag::HidePostProcessing];
+	Gtao_show_buffer = renderFlags[LabRenderFlag::ShowSsaoBuffer];
 
 	if (obj->type == OBJ_SHIP) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Subsystem_movement_locked, !renderFlags[LabRenderFlag::MoveSubsystems]);

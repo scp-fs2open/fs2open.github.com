@@ -1,0 +1,166 @@
+// Ground-truth ambient occlusion (GTAO, Jimenez et al. 2016, structure follows XeGTAO),
+// computed from the deferred position and normal buffers at half resolution, plus a
+// depth-aware separable blur (BLUR_H / BLUR_V variants). See graphics/gtao.h.
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+#endif
+
+#include "z-compress.sdr" //! #include "z-compress.sdr"
+
+layout(location = 0) out vec4 fragOut0;
+
+in vec4 fragTexCoord;
+
+uniform sampler2D PositionBuffer; // full res: view-space xy, compressed z, baked ao
+uniform sampler2D NormalBuffer;   // full res: view-space normal, gloss
+uniform sampler2D AOInput;        // half res: raw AO (blur passes only)
+
+layout(std140) uniform genericData {
+	float pixelRadius;    // sample radius in full-res pixels, the same at every depth
+	float radiusPerDepth; // world radius = radiusPerDepth * view depth, see gtao_pixel_radius()
+	float power;
+	int sliceCount;
+
+	int stepCount;        // per side of each slice
+	// Three scalars, not an array: std140 gives each array element 16 bytes,
+	// which would not match gtao_data in uniform_structs.h.
+	float pad0;
+	float pad1;
+	float pad2;
+};
+
+const float PI = 3.14159265;
+const float HALF_PI = 1.57079633;
+// The G-buffer is full resolution, this pass runs at half resolution.
+const int DOWNSCALE = 2;
+
+bool is_empty(vec4 p)
+{
+	return p.z <= EMPTY_PIXEL_COMPRESSED_Z;
+}
+
+vec3 fetch_pos(ivec2 fullResTexel)
+{
+	vec4 p = texelFetch(PositionBuffer, fullResTexel, 0);
+	// An empty pixel acts as a point at the far plane: too far to occlude anything.
+	return vec3(p.xy, is_empty(p) ? -GLOBAL_FAR_Z : uncompress_depth_value(p.z));
+}
+
+#if defined(BLUR_H) || defined(BLUR_V)
+
+void main()
+{
+	ivec2 c = ivec2(gl_FragCoord.xy);
+	ivec2 aoSize = textureSize(AOInput, 0);
+	float centerZ = fetch_pos(c * DOWNSCALE).z;
+	// The tolerance grows with distance, so that a far hull is still one surface.
+	float tolerance = 0.02 * abs(centerZ) + 0.05;
+
+	float sum = 0.0;
+	float wsum = 0.0;
+	for (int i = -3; i <= 3; i++) {
+#ifdef BLUR_H
+		ivec2 t = c + ivec2(i, 0);
+#else
+		ivec2 t = c + ivec2(0, i);
+#endif
+		t = clamp(t, ivec2(0), aoSize - 1);
+		float z = fetch_pos(t * DOWNSCALE).z;
+		float w = exp(-abs(z - centerZ) / tolerance);
+		sum += texelFetch(AOInput, t, 0).r * w;
+		wsum += w;
+	}
+	fragOut0 = vec4(sum / wsum);
+}
+
+#else
+
+// Interleaved gradient noise (Jimenez 2014)
+float ign(vec2 p)
+{
+	return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715))));
+}
+
+void main()
+{
+	ivec2 c = ivec2(gl_FragCoord.xy);
+	ivec2 full = c * DOWNSCALE;
+	ivec2 fullSize = textureSize(PositionBuffer, 0);
+
+	if (is_empty(texelFetch(PositionBuffer, full, 0))) {
+		fragOut0 = vec4(1.0);
+		return;
+	}
+	vec3 P = fetch_pos(full);
+
+	vec3 N = normalize(texelFetch(NormalBuffer, full, 0).xyz);
+	vec3 V = normalize(-P);
+	float radius = radiusPerDepth * -P.z;
+
+	float noiseSlice = ign(vec2(c));
+	float noiseStep = ign(vec2(c) + vec2(37.0, 17.0));
+
+	// falloff over the outer 60% of the radius
+	float falloffRange = 0.6 * radius;
+	float falloffMul = -1.0 / falloffRange;
+	float falloffAdd = (radius - falloffRange) / falloffRange + 1.0;
+
+	float visibility = 0.0;
+	for (int s = 0; s < sliceCount; s++) {
+		float phi = (float(s) + noiseSlice) / float(sliceCount) * PI;
+		vec2 omega = vec2(cos(phi), sin(phi));
+
+		vec3 dir3 = vec3(omega, 0.0);
+		vec3 ortho = dir3 - dot(dir3, V) * V;
+		vec3 axis = normalize(cross(ortho, V));
+		vec3 projN = N - axis * dot(N, axis);
+		float projNLen = length(projN);
+		float signN = sign(dot(ortho, projN));
+		float cosN = clamp(dot(projN, V) / max(projNLen, 1e-5), 0.0, 1.0);
+		float n = signN * acos(cosN);
+
+		float lowHorizonCos0 = cos(n + HALF_PI);
+		float lowHorizonCos1 = cos(n - HALF_PI);
+		float horizonCos0 = lowHorizonCos0;
+		float horizonCos1 = lowHorizonCos1;
+
+		for (int st = 0; st < stepCount; st++) {
+			float sf = (float(st) + noiseStep) / float(stepCount);
+			sf = sf * sf; // more samples near the center
+			sf += 1.5 / pixelRadius; // never sample the center texel
+			ivec2 off = ivec2(round(omega * sf * pixelRadius));
+
+			vec3 S0 = fetch_pos(clamp(full + off, ivec2(0), fullSize - 1));
+			vec3 S1 = fetch_pos(clamp(full - off, ivec2(0), fullSize - 1));
+
+			vec3 d0 = S0 - P;
+			vec3 d1 = S1 - P;
+			float dist0 = length(d0);
+			float dist1 = length(d1);
+			// At the screen edge the clamp can return the center texel itself (dist = 0).
+			// Give such a sample no weight, and keep the division away from 0/0 = NaN.
+			float w0 = dist0 > 1e-4 ? clamp(dist0 * falloffMul + falloffAdd, 0.0, 1.0) : 0.0;
+			float w1 = dist1 > 1e-4 ? clamp(dist1 * falloffMul + falloffAdd, 0.0, 1.0) : 0.0;
+			float shc0 = mix(lowHorizonCos0, dot(d0 / max(dist0, 1e-4), V), w0);
+			float shc1 = mix(lowHorizonCos1, dot(d1 / max(dist1, 1e-4), V), w1);
+			horizonCos0 = max(horizonCos0, shc0);
+			horizonCos1 = max(horizonCos1, shc1);
+		}
+
+		float h0 = -acos(clamp(horizonCos1, -1.0, 1.0));
+		float h1 = acos(clamp(horizonCos0, -1.0, 1.0));
+		h0 = n + clamp(h0 - n, -HALF_PI, HALF_PI);
+		h1 = n + clamp(h1 - n, -HALF_PI, HALF_PI);
+
+		float iarc0 = (cosN + 2.0 * h0 * sin(n) - cos(2.0 * h0 - n)) * 0.25;
+		float iarc1 = (cosN + 2.0 * h1 * sin(n) - cos(2.0 * h1 - n)) * 0.25;
+		visibility += projNLen * (iarc0 + iarc1);
+	}
+	visibility = clamp(visibility / float(sliceCount), 0.0, 1.0);
+	// A visible pixel is never fully occluded; XeGTAO floors the visibility at 0.03 too.
+	fragOut0 = vec4(max(pow(visibility, power), 0.03));
+}
+
+#endif

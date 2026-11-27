@@ -268,6 +268,21 @@ static bool openal_device_sort_func(const OALdevice &d1, const OALdevice &d2)
 	return false;
 }
 
+void openal_fill_device_lists()
+{
+	auto info = openal_get_platform_information();
+	if (PlaybackDeviceList.empty()) {
+		for (auto& device : info.playback_devices) {
+			PlaybackDeviceList.push_back(OALdevice(device.c_str()).device_name);
+		}
+	}
+	if (CaptureDeviceList.empty()) {
+		for (auto& device : info.capture_devices) {
+			CaptureDeviceList.push_back(OALdevice(device.c_str()).device_name);
+		}
+	}
+}
+
 static void find_playback_device(OpenALInformation* info)
 {
 	// First, build a list of device names for the in-game option to use and pull from

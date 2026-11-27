@@ -14,6 +14,7 @@
 #define BMPMAN_INTERNAL
 #include "gropenglstate.h"
 #include "gropengltexture.h"
+#include "gropengldeferred.h"
 #include "gropengldraw.h"
 #include "gropenglpostprocessing.h"
 #include "gropengltnl.h"
@@ -1736,9 +1737,10 @@ void gr_opengl_get_memory_stats(gr_memory_stats& stats)
 
 	// The render target group holds the resources of the backend itself: the depth/stencil
 	// renderbuffers of the bitmap render targets, the scene and backbuffer textures, the
-	// post-processing textures, and the shadow map.
+	// post-processing textures, the shadow map, and the screen-space AO buffers.
 	stats.gpu_render_target_bytes = GL_renderbuffer_bytes_used + opengl_get_scene_render_target_bytes() +
-									opengl_get_postprocessing_render_target_bytes() + opengl_get_shadow_map_bytes();
+									opengl_get_postprocessing_render_target_bytes() + opengl_get_shadow_map_bytes() +
+									opengl_get_deferred_render_target_bytes();
 }
 
 void opengl_kill_all_render_targets()

@@ -25,6 +25,9 @@ void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix 
 
 void gr_opengl_deferred_shutdown();
 
+// Bytes of the render targets that the deferred lighting owns (the GTAO buffers), for the GPU memory report
+size_t opengl_get_deferred_render_target_bytes();
+
 void gr_opengl_override_fog(bool set_override);
 
 void opengl_draw_sphere();

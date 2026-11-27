@@ -265,6 +265,8 @@ enum shader_type {
 
 	SDR_TYPE_MOTION_VECTORS,
 
+	SDR_TYPE_GTAO,
+
 	NUM_SHADER_TYPES
 };
 
@@ -296,6 +298,10 @@ enum shader_type {
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
 #define SDR_FLAG_DEFERRED_RTAO (1 << 2)
+#define SDR_FLAG_DEFERRED_GTAO (1 << 3)
+
+#define SDR_FLAG_GTAO_BLUR_H (1 << 0)
+#define SDR_FLAG_GTAO_BLUR_V (1 << 1)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
@@ -1157,6 +1163,16 @@ extern GraphicsAPI gr_get_configured_render_api();
 // The display name of a render API, e.g. "OpenGL". Returns "Unknown???" for GraphicsAPI values that are not
 // a real backend, such as GraphicsAPI::Stub.
 extern const char* gr_render_api_name(GraphicsAPI api);
+
+// Whether a renderer meets an option requirement given to OptionsManager::setRequirement(). "opengl", "vulkan" and
+// "raytracing" (Vulkan with ray-traced shadows) are checked; any other requirement counts as met, so the options UI
+// never greys out what it cannot judge.
+extern bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api, bool raytracing_supported);
+
+// gr_option_requirement_met() for the running renderer and hardware. The in-game options dialog and the Lua
+// options API both call this, so that the two UIs grey out the same options. It needs a renderer: call it after
+// gr_init(). fs2_open, fred2 and qtfred start Lua only after gr_init(), and -get_options exits before Lua starts.
+extern bool gr_option_requirement_met_now(const SCP_string& requirement);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);

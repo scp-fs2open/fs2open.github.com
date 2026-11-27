@@ -39,6 +39,7 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_gtao.cpp
 	   graphics/test_material.cpp
 	   graphics/test_post_processing.cpp
 	   graphics/test_shader_types.cpp
@@ -46,6 +47,7 @@ add_file_folder("Graphics"
 
 if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/test_vulkan_device_support.cpp
 		graphics/vulkan/test_vulkan_post_processing.cpp
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
@@ -116,6 +118,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
     scripting/api/hookvars.cpp
+    scripting/api/options.cpp
     scripting/api/shipclass.cpp
 )
 

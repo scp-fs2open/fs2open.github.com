@@ -34,6 +34,9 @@ struct OpenALInformation {
 
 OpenALInformation openal_get_platform_information();
 
+// Fills the device lists the audio device options offer, for a process that did not start sound (-get_options)
+void openal_fill_device_lists();
+
 int openal_find_playback_device_by_name(const SCP_string& device);
 int openal_find_capture_device_by_name(const SCP_string& device);
 

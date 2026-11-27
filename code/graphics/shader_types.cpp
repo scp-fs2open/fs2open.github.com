@@ -120,6 +120,10 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	// Vulkan-only
 	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
+
+	// OpenGL-only
+	{ SDR_TYPE_GTAO, "post-v.sdr", "gtao-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Screen-space ambient occlusion", false },
 };
 // clang-format on
 
@@ -138,6 +142,12 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RTAO, "RTAO", {}, "Trace raytraced ambient occlusion in the ambient light pass"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_GTAO, "GTAO", {}, "Darken the ambient light with the screen-space ambient occlusion buffer"},
+
+	{SDR_TYPE_GTAO, false, SDR_FLAG_GTAO_BLUR_H, "BLUR_H", {}, "Depth-aware blur of the ambient occlusion buffer, horizontal"},
+
+	{SDR_TYPE_GTAO, false, SDR_FLAG_GTAO_BLUR_V, "BLUR_V", {}, "Depth-aware blur of the ambient occlusion buffer, vertical"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 

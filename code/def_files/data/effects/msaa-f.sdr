@@ -215,8 +215,10 @@ void main()
 	float velocityWeight = 0.0;
 #endif
 
+	bool allEmpty = true;
 	for(int i = 0; i < SAMPLE_CNT; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
+		allEmpty = allEmpty && localPos.z <= EMPTY_PIXEL_COMPRESSED_Z;
 		localPos.z = uncompress_depth_value(localPos.z);
 		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive
 		//However, if the median distance is 0, only deal with current texel if it's local distance is 0 as well
@@ -244,6 +246,14 @@ void main()
 
     pos /= weight;
     pos.z = compress_depth_value(pos.z);
+	// Keep an empty pixel empty. The round trip through uncompress/compress does not return
+	// the empty marker when $Max draw distance is short, and then later passes (screen-space
+	// AO) take the pixel for geometry. Write the whole vector: the averaged xy and w can be
+	// NaN when a sample is -inf. EMPTY_PIXEL_COMPRESSED_Z is finite, unlike -1000000 in
+	// RGBA16F, so soft particles still get a finite far depth here.
+	if (allEmpty) {
+		pos = vec4(0.0, 0.0, EMPTY_PIXEL_COMPRESSED_Z, 0.0);
+	}
 
 	fragOut0 = color / weight;
 	fragOut1 = pos;

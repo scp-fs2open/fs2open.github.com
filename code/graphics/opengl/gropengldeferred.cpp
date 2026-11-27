@@ -9,6 +9,7 @@
 #include "gropengltnl.h"
 
 #include "graphics/2d.h"
+#include "graphics/gtao.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
@@ -35,7 +36,25 @@ void gr_opengl_deferred_init()
 	gr_opengl_deferred_light_cylinder_init(16);
 	gr_opengl_deferred_light_sphere_init(16, 16);
 }
-void gr_opengl_deferred_shutdown() {}
+static GLuint Gtao_framebuffer = 0;
+static GLuint Gtao_textures[2] = {0, 0};
+static int Gtao_width = 0;
+static int Gtao_height = 0;
+
+size_t opengl_get_deferred_render_target_bytes()
+{
+	// Two GL_R8 textures (1 byte per pixel), made at the first frame with GTAO
+	return Gtao_framebuffer != 0 ? 2 * static_cast<size_t>(Gtao_width) * static_cast<size_t>(Gtao_height) : 0;
+}
+
+void gr_opengl_deferred_shutdown()
+{
+	if (Gtao_framebuffer != 0) {
+		glDeleteFramebuffers(1, &Gtao_framebuffer);
+		glDeleteTextures(2, Gtao_textures);
+		Gtao_framebuffer = 0;
+	}
+}
 
 void opengl_clear_deferred_buffers()
 {
@@ -216,6 +235,94 @@ prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner,
 	return light_data;
 }
 
+// The scene textures keep their size for the whole session, so the AO targets are made
+// once, at the first frame that needs them.
+static void opengl_gtao_setup()
+{
+	Gtao_width = Scene_texture_width / 2;
+	Gtao_height = Scene_texture_height / 2;
+
+	glGenFramebuffers(1, &Gtao_framebuffer);
+	glGenTextures(2, Gtao_textures);
+	for (auto tex : Gtao_textures) {
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, Gtao_width, Gtao_height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+		// Linear for the lab's debug view of the buffer; the passes read it with texelFetch
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	opengl_set_object_label(GL_TEXTURE, Gtao_textures[0], "GTAO texture 0");
+	opengl_set_object_label(GL_TEXTURE, Gtao_textures[1], "GTAO texture 1");
+	opengl_set_object_label(GL_FRAMEBUFFER, Gtao_framebuffer, "GTAO framebuffer");
+}
+
+// Writes the blurred AO into Gtao_textures[0]: raw AO, then a horizontal and a vertical blur.
+static void opengl_gtao_pass()
+{
+	GR_DEBUG_SCOPE("GTAO");
+
+	if (Gtao_framebuffer == 0) {
+		opengl_gtao_setup();
+	}
+
+	// The light passes after this one draw with the viewport that gr_set_proj_matrix() set
+	// (the clip rectangle), so give it back unchanged.
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	// An active clip rect would leave part of the AO buffer stale; bloom and DoF disable the scissor the same way.
+	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
+
+	GL_state.BindFrameBuffer(Gtao_framebuffer);
+	glViewport(0, 0, Gtao_width, Gtao_height);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+	GL_state.ColorMask(true, true, true, true);
+
+	opengl_set_generic_uniform_data<graphics::generic_data::gtao_data>([](graphics::generic_data::gtao_data* data) {
+		const float proj11 = gr_projection_matrix.a2d[1][1];
+		const auto samples = gtao_samples(Gtao_quality);
+		data->pixelRadius = gtao_pixel_radius(Gtao_radius_scale, proj11, Scene_texture_height);
+		data->radiusPerDepth = data->pixelRadius / (proj11 * 0.5f * static_cast<float>(Scene_texture_height));
+		data->power = Gtao_intensity;
+		data->sliceCount = samples.slices;
+		data->stepCount = samples.steps;
+	});
+
+	struct gtao_step {
+		int flags;
+		GLuint input;
+		GLuint output;
+	};
+	const gtao_step steps[] = {
+		{0, 0, Gtao_textures[0]},
+		{SDR_FLAG_GTAO_BLUR_H, Gtao_textures[0], Gtao_textures[1]},
+		{SDR_FLAG_GTAO_BLUR_V, Gtao_textures[1], Gtao_textures[0]},
+	};
+	for (const auto& step : steps) {
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GTAO, step.flags));
+		Current_shader->program->Uniforms.setTextureUniform("PositionBuffer", 0);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_position_texture);
+		if (step.input == 0) {
+			Current_shader->program->Uniforms.setTextureUniform("NormalBuffer", 1);
+			GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
+		} else {
+			Current_shader->program->Uniforms.setTextureUniform("AOInput", 2);
+			GL_state.Texture.Enable(2, GL_TEXTURE_2D, step.input);
+		}
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, step.output, 0);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+	}
+
+	GL_state.BindFrameBuffer(Scene_framebuffer);
+	glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+	GL_state.ScissorTest(scissor_test);
+	GL_state.ColorMask(true, true, true, false);
+}
+
 void gr_opengl_deferred_lighting_finish()
 {
 	GR_DEBUG_SCOPE("Deferred lighting finish");
@@ -225,13 +332,21 @@ void gr_opengl_deferred_lighting_finish()
 		return;
 	}
 
+	// False in the deferred cockpit pass, so that pass also uses the shader variant without
+	// GTAO and does not read the scene pass's AO buffer.
+	const bool gtao = gtao_enabled();
+	if (gtao) {
+		opengl_gtao_pass();
+	}
+
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	// GL_state.DepthFunc(GL_GREATER);
 	// GL_state.DepthMask(GL_FALSE);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
+	const int deferred_flags = (ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0) | (gtao ? SDR_FLAG_DEFERRED_GTAO : 0);
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, deferred_flags));
 	
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
@@ -256,6 +371,10 @@ void gr_opengl_deferred_lighting_finish()
 		if (Shadow_map_raw_sampler) {
 			GL_state.Texture.Enable(SHADOW_MAP_RAW_TEXTURE_UNIT, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture, Shadow_map_raw_sampler);
 		}
+	}
+	if (gtao) {
+		Current_shader->program->Uniforms.setTextureUniform("AOBuffer", 7);
+		GL_state.Texture.Enable(7, GL_TEXTURE_2D, Gtao_textures[0]);
 	}
 
 	if (ENVMAP > 0) {
@@ -677,6 +796,16 @@ void gr_opengl_deferred_lighting_finish()
 						  GL_COLOR_BUFFER_BIT,
 						  GL_NEAREST);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
+	}
+
+	if (gtao && Gtao_show_buffer) {
+		// Lab debug view: the blurred AO buffer (in the red channel) in place of the lit scene
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY, 0));
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Gtao_textures[0]);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
