@@ -4,6 +4,8 @@
 #include "option.h"
 #include "enums.h"
 
+#include "graphics/2d.h"
+
 namespace scripting {
 namespace api {
 
@@ -294,6 +296,60 @@ ADE_VIRTVAR(OverrideSource,
 		return ADE_RETURN_NIL;
 	}
 	return ade_set_args(L, "s", (*source == options::OverrideSource::Mod) ? "Mod" : "CommandLine");
+}
+
+static std::optional<std::pair<SCP_string, SCP_string>> option_requirement(lua_State* L)
+{
+	option_h* opt;
+	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt)) || !opt->isValid()) {
+		return std::nullopt;
+	}
+	return options::OptionsManager::instance()->getRequirement(opt->get()->getConfigKey());
+}
+ADE_VIRTVAR(Requirement,
+	l_Option,
+	nullptr,
+	"What this option needs in order to work: \"opengl\", \"vulkan\" or \"raytracing\" (Vulkan with ray tracing "
+	"hardware). Other values can appear in later versions, and they count as met. The value can be set also when the "
+	"running renderer meets it, so use RequirementMet to decide whether to grey out the option. nil if the option has "
+	"no requirement. (read-only)",
+	"string",
+	"The requirement, or nil if there is none or on error")
+{
+	auto requirement = option_requirement(L);
+	if (!requirement.has_value()) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", requirement->first.c_str());
+}
+ADE_VIRTVAR(RequirementText,
+	l_Option,
+	nullptr,
+	"A human-readable explanation of Requirement, for example \"Needs the Vulkan renderer\". nil if the option has "
+	"no requirement. (read-only)",
+	"string",
+	"The explanation, or nil if there is none or on error")
+{
+	auto requirement = option_requirement(L);
+	if (!requirement.has_value()) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", requirement->second.c_str());
+}
+ADE_VIRTVAR(RequirementMet,
+	l_Option,
+	nullptr,
+	"Whether the running renderer and hardware meet Requirement. true if the option has no requirement. The in-game "
+	"options dialog greys out an option when this is false, and shows RequirementText in its tooltip. (read-only)",
+	"boolean",
+	"true if the requirement is met or there is none, false if it is not met, nil on error")
+{
+	option_h* opt;
+	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt)) || !opt->isValid()) {
+		return ADE_RETURN_NIL;
+	}
+	auto requirement = options::OptionsManager::instance()->getRequirement(opt->get()->getConfigKey());
+	return ade_set_args(L, "b", !requirement.has_value() || gr_option_requirement_met_now(requirement->first));
 }
 ADE_FUNC(persistChanges, l_Option, nullptr,
          "Immediately persists any changes made to this specific option.", "boolean",

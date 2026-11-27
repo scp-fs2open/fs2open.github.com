@@ -243,6 +243,25 @@ const char* gr_render_api_name(GraphicsAPI api)
 	}
 }
 
+bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api, bool raytracing_supported)
+{
+	if (requirement == "opengl") {
+		return api == GraphicsAPI::OpenGL;
+	}
+	if (requirement == "vulkan") {
+		return api == GraphicsAPI::Vulkan;
+	}
+	if (requirement == "raytracing") {
+		return api == GraphicsAPI::Vulkan && raytracing_supported;
+	}
+	return true;
+}
+
+bool gr_option_requirement_met_now(const SCP_string& requirement)
+{
+	return gr_option_requirement_met(requirement, gr_screen.mode, shadows_raytracing_supported());
+}
+
 // The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
 // In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
 // with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.
@@ -2705,10 +2724,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GraphicsAPI::Stub;
-		width = 640;
-		height = 480;
-		depth = 16;
-		center_aspect_ratio = -1.0f;
+		// the HUD tables keep only the gauge settings for this resolution, and -get_options reports their locks
+		if (!Cmdline_get_options) {
+			width = 640;
+			height = 480;
+			depth = 16;
+			center_aspect_ratio = -1.0f;
+		} else if (width <= 0 || height <= 0) {
+			// no saved resolution and no display to ask: use the game's own default size
+			width = 1024;
+			height = 768;
+		}
 	}
 
 	// FRED doesn't support Vulkan yet (see qtfred/README.md for what's needed to change that), so it always
@@ -2738,7 +2764,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		}
 	}
 
-	if (Cmdline_enable_vr) {
+	// a settings query must not start a VR runtime
+	if (Cmdline_enable_vr && !Cmdline_get_options) {
 		float user_ar = i2fl(width) / i2fl(height);
 		float xr_ar = openxr_preinit(user_ar);
 
@@ -2812,7 +2839,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 
 	mprintf(("Checking mod required rendering features...\n"));
 	for (gr_capability ext : Required_render_ext) {
-		if (!gr_is_capable(ext)) {
+		// the stub renderer used by -get_options supports nothing, which says nothing about the player's GPU
+		if (!gr_is_capable(ext) && !Cmdline_get_options) {
 			Error(LOCATION, "Feature %s required by mod not supported by system.\n",
 				gr_capability_to_human_readable_string(ext).c_str());
 		}
@@ -2867,17 +2895,19 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		Shadow_quality = ShadowQuality::Disabled;
 	}
 
-	// Drop options that have no meaning for the renderer we ended up with, so they don't
-	// appear in the options menu. HDR10 output is Vulkan-only; the raytraced-shadow options
-	// are gated on raytracing support (removed below). The bound globals keep their
-	// defaults, so nothing about the rendering path changes.
-	if (gr_screen.mode != GraphicsAPI::Vulkan) {
+	// HDR10 output is Vulkan-only. The options stay in the list, so that the options menu greys them out with
+	// the reason and a launcher (-get_options) shows the same reason. Their saved values reach the bound globals,
+	// which only the Vulkan renderer and the HDR calibration window read.
+	{
 		auto* options_mgr = options::OptionsManager::instance();
-		options_mgr->removeOption(HDROption);
-		options_mgr->removeOption(HDRPaperWhiteOption);
-		options_mgr->removeOption(HDRPeakOption);
+		const SCP_vector<std::shared_ptr<const options::OptionBase>> hdr_options = {HDROption,
+			HDRPaperWhiteOption,
+			HDRPeakOption};
+		for (const auto& option : hdr_options) {
+			options_mgr->setRequirement(option->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
+		}
 	}
-	shadows_remove_unsupported_options();
+	shadows_mark_unsupported_options();
 
 	if(Cmdline_enable_vr)
 		openxr_init();

@@ -5,6 +5,7 @@
 
 #include "options/Ingame_Options_internal.h"
 #include "graphics/2d.h"
+#include "graphics/shadows.h"
 
 #include <cmath>
 
@@ -40,7 +41,10 @@ void OptUi::build_options_list(const char* category) const
 			auto overrideReason = options::OptionsManager::instance()->getOverrideReason(thisOpt->getConfigKey());
 			bool setByMod = options::OptionsManager::instance()->getOverrideSource(thisOpt->getConfigKey()) ==
 							options::OverrideSource::Mod;
-			ImGui::BeginDisabled(overrideReason.has_value());
+			// An option whose requirement the running renderer does not meet is greyed out too.
+			auto requirement = options::OptionsManager::instance()->getRequirement(thisOpt->getConfigKey());
+			const bool requirementUnmet = requirement.has_value() && !gr_option_requirement_met_now(requirement->first);
+			ImGui::BeginDisabled(overrideReason.has_value() || requirementUnmet);
 
 			// Selectors
 			if (thisOpt->getType() == options::OptionType::Selection) {
@@ -148,6 +152,8 @@ void OptUi::build_options_list(const char* category) const
 				} else if (overrideReason.has_value()) {
 					ImGui::SetTooltip(XSTR("%s\n\nSet on the command line by %s; it cannot be changed here.", 1934),
 						thisOpt->getDescription().c_str(), overrideReason->c_str());
+				} else if (requirementUnmet) {
+					ImGui::SetTooltip("%s\n\n%s", thisOpt->getDescription().c_str(), requirement->second.c_str());
 				} else {
 					ImGui::SetTooltip("%s", thisOpt->getDescription().c_str());
 				}
