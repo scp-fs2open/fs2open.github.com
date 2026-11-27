@@ -3,16 +3,14 @@
 
 #include "texture.h"
 #include "bmpman/bmpman.h"
-#define BMPMAN_INTERNAL
-#include "bmpman/bm_internal.h"
 
 namespace scripting {
 namespace api {
 
 texture_h::texture_h() = default;
-texture_h::texture_h(int bm, bool refcount, int parent_bm) : handle(bm), parent_handle(parent_bm) {
+texture_h::texture_h(int bm, bool refcount) : handle(bm) {
 	if (refcount && isValid())
-		bm_get_entry(parent_bm != -1 ? parent_bm : bm)->load_count++;
+		bm_add_ref(bm);
 }
 texture_h::~texture_h()
 {
@@ -31,7 +29,8 @@ texture_h::~texture_h()
 	//Otherwise it is possible (and has been observed in practice) that the parent texture get's deleted before all dependent objects,
 	//causing this release of the dependent object to clear unrelated textures that were assigned the previously freed spots.
 	//So instead, both lock and later unlock the parent texture rather than this child texture. -Lafiel
-	bm_release(parent_handle != -1 ? parent_handle : handle);
+	//(bm_add_ref() and bm_release_ref() take care of that: both count on the first frame of an animation.)
+	bm_release_ref(handle);
 }
 bool texture_h::isValid() const { return bm_is_valid(handle) != 0; }
 
@@ -41,7 +40,6 @@ texture_h::texture_h(texture_h&& other) noexcept {
 texture_h& texture_h::operator=(texture_h&& other) noexcept {
 	if (this != &other) {
 		std::swap(handle, other.handle);
-		std::swap(parent_handle, other.parent_handle);
 	}
 	return *this;
 }
@@ -98,7 +96,7 @@ ADE_INDEXER(l_Texture, "number",
 	//Get actual texture handle
 	frame = first + frame;
 
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(frame, true, first)));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(frame)));
 }
 
 ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
@@ -111,7 +109,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	if (!th->isValid())
 		return ADE_RETURN_NIL;
 
-	bm_release(th->handle);
+	bm_release_ref(th->handle);
 
 	//WMC - invalidate this handle
 	th->handle = -1;

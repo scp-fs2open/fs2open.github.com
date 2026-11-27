@@ -7,6 +7,7 @@
 #include "object.h"
 #include "prop.h"
 #include "propclass.h"
+#include "texturemap.h"
 
 #include "prop/prop.h"
 
@@ -88,10 +89,35 @@ ADE_VIRTVAR(Textures,
 	polymodel_instance* dest = model_get_instance(propp->model_instance_num);
 
 	if (ADE_SETTING_VAR && sh && sh->isValid()) {
-		dest->texture_replace = model_get_instance(propp->model_instance_num)->texture_replace;
+		dest->texture_replace = model_get_instance(prop_id_lookup(sh->objp()->instance)->model_instance_num)->texture_replace;
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
+}
+
+ADE_VIRTVAR(TextureMaps,
+	l_Prop,
+	"modelinstancetexturemaps",
+	"Gets the prop's materials.  Assigning another prop's TextureMaps makes this prop share that prop's replacement textures, exactly as assigning Textures does.",
+	"modelinstancetexturemaps",
+	"Array of the prop's materials, or invalid modelinstancetexturemaps handle if prop handle is invalid")
+{
+	object_h* sh = nullptr;
+	object_h* dh;
+	if (!ade_get_args(L, "o|o", l_Prop.GetPtr(&dh), l_Prop.GetPtr(&sh)))
+		return ade_set_error(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h()));
+
+	if (!dh->isValid())
+		return ade_set_error(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h()));
+
+	prop* propp = prop_id_lookup(dh->objp()->instance);
+
+	polymodel_instance* dest = model_get_instance(propp->model_instance_num);
+
+	if (ADE_SETTING_VAR && sh && sh->isValid())
+		dest->texture_replace = model_get_instance(prop_id_lookup(sh->objp()->instance)->model_instance_num)->texture_replace;
+
+	return ade_set_args(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h(dest)));
 }
 
 } // namespace scripting::api
