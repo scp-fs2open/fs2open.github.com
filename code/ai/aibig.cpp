@@ -1416,12 +1416,12 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		//	Compute position of gun in absolute space and use that as fire position.
 		if (po->n_guns > 0 && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Ai_aims_from_ship_center])) {
 			pnt = po->gun_banks[0].pnt[0];
-			vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
-			vm_vec_add2(&gun_pos, &Pl_objp->pos);
 		} else {
 			//Use the convergence offset, if there is one
 			vm_vec_copy_scale(&pnt, &Ship_info[shipp->ship_info_index].convergence_offset, 1.0f);	
 		}
+		vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
+		vm_vec_add2(&gun_pos, &Pl_objp->pos);
 		weapon_speed = ai_get_weapon_speed(&shipp->weapons);
 		
 		set_predicted_enemy_pos_turret(&predicted_enemy_pos, &gun_pos, Pl_objp, enemy_pos, &En_objp->phys_info.vel, weapon_speed, aip->time_enemy_in_range);
