@@ -102,6 +102,25 @@ float gr_anisotropy_setting();
 
 int gr_texture_filter_setting();
 
+// true when OpenGL scales the final frame to the window with nearest filtering (Graphics.UpscaleFilter). Never with
+// Gr_native_res_hud.
+bool gr_upscale_nearest();
+
+// Where the final frame goes in the window, in window pixels with y from the top. Needs -window_res. Smaller than the
+// window only for Graphics.KeepAspectRatio in OpenGL without Gr_native_res_hud; then the rest is black.
+void gr_present_rect(int& x, int& y, int& w, int& h);
+
+// The rectangle that the pointer must stay in, for a window in the given state: the frame while black bars show in
+// exclusive fullscreen, unless -nograb is set. Returns false when the pointer is free.
+bool gr_pointer_confine_rect(os::ViewportState state, int& x, int& y, int& w, int& h);
+
+// The bottom edge of a gr_present_rect() rectangle in a window of height window_h, with y from the bottom as
+// glBlitFramebuffer counts it. This is the height of the bottom bar.
+inline int gr_present_rect_bottom(int y, int h, int window_h)
+{
+	return window_h - y - h;
+}
+
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
@@ -1162,20 +1181,23 @@ extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
 /**
- * @brief Converts a position or delta from OS window pixels into internal render-target pixels
+ * @brief Converts a position from OS window pixels into internal render-target pixels
  *
  * @details When -window_res is in effect the frame is rendered into an offscreen buffer sized
  * gr_screen.max_w/max_h and only stretched to the window when we flip, so everything the engine
- * draws lives in render space while SDL reports input in window space. These are pure scale
- * factors with no offset, so they are equally valid for absolute positions and for deltas.
+ * draws lives in render space while SDL reports input in window space. Positions also remove the
+ * black bars of gr_present_rect(), so a delta must use gr_window_to_render_delta() instead.
  *
  * Note that this is unrelated to the gr_resize_screen_pos() family, which handles the retail
  * 640/1024 menu coordinate system.
  */
 void gr_window_to_render_pos(float& x, float& y);
 
+// Converts a mouse delta from window pixels into render pixels: the scale of gr_window_to_render_pos(), no offset
+void gr_window_to_render_delta(float& dx, float& dy);
+
 /**
- * @brief Converts a position or delta from internal render-target pixels into OS window pixels
+ * @brief Converts a position from internal render-target pixels into OS window pixels
  *
  * @see gr_window_to_render_pos
  */

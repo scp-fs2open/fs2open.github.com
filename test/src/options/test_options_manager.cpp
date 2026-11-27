@@ -15,6 +15,10 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
+#include <type_traits>
+
 using namespace options;
 
 // OptionsManager is a process-wide singleton, so overrides and pending edits set by one test would
@@ -612,6 +616,242 @@ TEST_F(TextureFilterSetting, OverrideBeatsAnEnforcedModValue)
 	const int filter = gr_texture_filter_setting();
 	OptionsManager::instance()->unenforceOption("Graphics.TextureFilter");
 	ASSERT_EQ(filter, 1);
+}
+
+// valueChanged() writes the bound variable, which clearOverrides() does not touch; put back the configured value.
+// getValue(), not getCurrentValueDescription(): the display functions call XSTR(), which this fixture never initializes.
+template <typename T>
+static void restore_bound_value(const char* key)
+{
+	auto* opt = static_cast<const Option<T>*>(OptionsManager::instance()->getOptionByKey(key));
+	ASSERT_NE(opt, nullptr) << key;
+	const T configured = opt->getValue();
+	std::unique_ptr<json_t> value(std::is_same<T, bool>::value ? json_boolean(configured) : json_integer(configured));
+	EXPECT_TRUE(opt->valueChanged(value.get())) << key << " was not restored";
+}
+
+TEST_F(OptionsManagerOverride, UpscaleFilterAppliesWithoutARestart)
+{
+	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.UpscaleFilter");
+	ASSERT_NE(opt, nullptr);
+	const bool saved = Using_in_game_options;
+	Using_in_game_options = true;
+
+	std::unique_ptr<json_t> nearest(json_integer(1));
+	std::unique_ptr<json_t> linear(json_integer(0));
+	const bool applied_nearest = opt->valueChanged(nearest.get());
+	const bool is_nearest = gr_upscale_nearest();
+	Using_in_game_options = false;
+	const bool without_ingame = gr_upscale_nearest();
+	Using_in_game_options = true;
+	const bool saved_native_res_hud = Gr_native_res_hud;
+	Gr_native_res_hud = true;
+	const bool with_native_res_hud = gr_upscale_nearest();
+	Gr_native_res_hud = saved_native_res_hud;
+	const bool applied_linear = opt->valueChanged(linear.get());
+	const bool is_linear = !gr_upscale_nearest();
+	Using_in_game_options = saved;
+	restore_bound_value<int>("Graphics.UpscaleFilter");
+
+	EXPECT_TRUE(applied_nearest);
+	EXPECT_TRUE(is_nearest);
+	EXPECT_FALSE(without_ingame);
+	EXPECT_FALSE(with_native_res_hud);
+	EXPECT_TRUE(applied_linear);
+	EXPECT_TRUE(is_linear);
+}
+
+// The menu sort is not stable, so the two options need their own importance, after the window mode
+TEST_F(OptionsManagerOverride, UpscaleOptionsFollowTheWindowMode)
+{
+	SCP_vector<SCP_string> keys;
+	for (const auto& opt : OptionsManager::instance()->getOptions()) {
+		keys.push_back(opt->getConfigKey());
+	}
+	auto at = [&keys](const char* key) { return std::find(keys.begin(), keys.end(), key) - keys.begin(); };
+	EXPECT_LT(at("Graphics.Resolution"), at("Graphics.WindowMode"));
+	EXPECT_EQ(at("Graphics.WindowMode") + 1, at("Graphics.UpscaleFilter"));
+	EXPECT_EQ(at("Graphics.UpscaleFilter") + 1, at("Graphics.KeepAspectRatio"));
+}
+
+// 640x480 on a 1920x1080 OpenGL window: the frame fills 1440x1080 in the middle
+class KeepAspectRatio : public OptionsManagerOverride {
+  protected:
+	void SetUp() override
+	{
+		saved_window_res = Cmdline_window_res;
+		saved_mode = gr_screen.mode;
+		saved_w = gr_screen.max_w;
+		saved_h = gr_screen.max_h;
+		saved_ingame = Using_in_game_options;
+		saved_vr = Cmdline_enable_vr;
+		saved_fred = Fred_running;
+		saved_native_res_hud = Gr_native_res_hud;
+		saved_nograb = Cmdline_nograb;
+
+		Cmdline_window_res.emplace(static_cast<uint16_t>(1920), static_cast<uint16_t>(1080));
+		gr_screen.mode = GraphicsAPI::OpenGL;
+		gr_screen.max_w = 640;
+		gr_screen.max_h = 480;
+		Using_in_game_options = true;
+	}
+
+	void TearDown() override
+	{
+		restore_bound_value<bool>("Graphics.KeepAspectRatio");
+		Cmdline_window_res = saved_window_res;
+		gr_screen.mode = saved_mode;
+		gr_screen.max_w = saved_w;
+		gr_screen.max_h = saved_h;
+		Using_in_game_options = saved_ingame;
+		Cmdline_enable_vr = saved_vr;
+		Fred_running = saved_fred;
+		Gr_native_res_hud = saved_native_res_hud;
+		Cmdline_nograb = saved_nograb;
+		OptionsManagerOverride::TearDown();
+	}
+
+	static void setKeep(bool keep)
+	{
+		auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.KeepAspectRatio");
+		ASSERT_NE(opt, nullptr);
+		std::unique_ptr<json_t> value(keep ? json_true() : json_false());
+		EXPECT_TRUE(opt->valueChanged(value.get()));
+	}
+
+	static std::array<int, 4> rect()
+	{
+		std::array<int, 4> r{};
+		gr_present_rect(r[0], r[1], r[2], r[3]);
+		return r;
+	}
+
+	std::optional<std::pair<uint16_t, uint16_t>> saved_window_res;
+	GraphicsAPI saved_mode{};
+	int saved_w = 0, saved_h = 0;
+	bool saved_ingame = false;
+	bool saved_vr = false;
+	int saved_fred = 0;
+	bool saved_native_res_hud = false;
+	bool saved_nograb = false;
+};
+
+TEST_F(KeepAspectRatio, StretchesWhenOff)
+{
+	setKeep(false);
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+}
+
+TEST_F(KeepAspectRatio, StretchesWithoutTheInGameOptions)
+{
+	setKeep(true);
+	Using_in_game_options = false;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+}
+
+TEST_F(KeepAspectRatio, ConfinesThePointerOnlyInFullscreenWithBars)
+{
+	setKeep(true);
+	std::array<int, 4> r{};
+	EXPECT_TRUE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
+	EXPECT_EQ(r, (std::array<int, 4>{240, 0, 1440, 1080}));
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Windowed, r[0], r[1], r[2], r[3]));
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Borderless, r[0], r[1], r[2], r[3]));
+	Cmdline_nograb = true;
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
+	Cmdline_nograb = false;
+	setKeep(false);
+	EXPECT_FALSE(gr_pointer_confine_rect(os::ViewportState::Fullscreen, r[0], r[1], r[2], r[3]));
+}
+
+TEST_F(KeepAspectRatio, PillarboxesAndMapsTheMouse)
+{
+	setKeep(true);
+	EXPECT_EQ(rect(), (std::array<int, 4>{240, 0, 1440, 1080}));
+
+	float x = 240.0f + 720.0f, y = 540.0f;
+	gr_window_to_render_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 320.0f);
+	EXPECT_FLOAT_EQ(y, 240.0f);
+	gr_render_to_window_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 960.0f);
+	EXPECT_FLOAT_EQ(y, 540.0f);
+
+	float dx = 225.0f, dy = 225.0f;
+	gr_window_to_render_delta(dx, dy);
+	EXPECT_FLOAT_EQ(dx, 100.0f);
+	EXPECT_FLOAT_EQ(dy, 100.0f);
+}
+
+TEST_F(KeepAspectRatio, LetterboxesATallerScreen)
+{
+	setKeep(true);
+	Cmdline_window_res.emplace(static_cast<uint16_t>(1280), static_cast<uint16_t>(1024));
+	gr_screen.max_w = 1920;
+	gr_screen.max_h = 1080;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 152, 1280, 720}));
+
+	float x = 640.0f, y = 152.0f + 360.0f;
+	gr_window_to_render_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 960.0f);
+	EXPECT_FLOAT_EQ(y, 540.0f);
+	gr_render_to_window_pos(x, y);
+	EXPECT_FLOAT_EQ(x, 640.0f);
+	EXPECT_FLOAT_EQ(y, 512.0f);
+
+	float dx = 128.0f, dy = 128.0f;
+	gr_window_to_render_delta(dx, dy);
+	EXPECT_FLOAT_EQ(dx, 192.0f);
+	EXPECT_FLOAT_EQ(dy, 192.0f);
+}
+
+// 1720x720 on 1920x1080 leaves 277 rows; the odd row goes to the bottom bar, where the blit puts it
+TEST_F(KeepAspectRatio, OddBarTotalPutsTheExtraRowAtTheBottom)
+{
+	setKeep(true);
+	gr_screen.max_w = 1720;
+	gr_screen.max_h = 720;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 138, 1920, 803}));
+	EXPECT_EQ(gr_present_rect_bottom(138, 803, 1080), 139);
+
+	float x = 0.0f, y = 138.0f;
+	gr_window_to_render_pos(x, y);
+	EXPECT_FLOAT_EQ(y, 0.0f);
+	gr_render_to_window_pos(x, y);
+	EXPECT_FLOAT_EQ(y, 138.0f);
+}
+
+// 1280x720 fits a 1366x768 window as 1365x768; the one-pixel rest is rounding
+TEST_F(KeepAspectRatio, FillsTheWindowWithinOnePixel)
+{
+	setKeep(true);
+	Cmdline_window_res.emplace(static_cast<uint16_t>(1366), static_cast<uint16_t>(768));
+	gr_screen.max_w = 1280;
+	gr_screen.max_h = 720;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1366, 768}));
+	gr_screen.max_w = 1366;
+	gr_screen.max_h = 767;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1366, 768}));
+}
+
+TEST_F(KeepAspectRatio, StretchesInVulkanVRAndFRED)
+{
+	setKeep(true);
+	gr_screen.mode = GraphicsAPI::Vulkan;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+	gr_screen.mode = GraphicsAPI::OpenGL;
+	Cmdline_enable_vr = true;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+	Cmdline_enable_vr = false;
+	Fred_running = 1;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
+}
+
+TEST_F(KeepAspectRatio, StretchesWithTheHUDAtOutputResolution)
+{
+	setKeep(true);
+	Gr_native_res_hud = true;
+	EXPECT_EQ(rect(), (std::array<int, 4>{0, 0, 1920, 1080}));
 }
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)

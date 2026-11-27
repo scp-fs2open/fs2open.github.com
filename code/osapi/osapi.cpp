@@ -822,7 +822,7 @@ static SDL_Event scale_imgui_mouse_event(const SDL_Event& event)
 	switch (event.type) {
 	case SDL_EVENT_MOUSE_MOTION:
 		gr_window_to_render_pos(scaled.motion.x, scaled.motion.y);
-		gr_window_to_render_pos(scaled.motion.xrel, scaled.motion.yrel);
+		gr_window_to_render_delta(scaled.motion.xrel, scaled.motion.yrel);
 		break;
 
 	case SDL_EVENT_MOUSE_BUTTON_DOWN:

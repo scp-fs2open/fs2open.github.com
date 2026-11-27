@@ -142,7 +142,7 @@ namespace
 
 		float dx = e.motion.xrel;
 		float dy = e.motion.yrel;
-		gr_window_to_render_pos(dx, dy);
+		gr_window_to_render_delta(dx, dy);
 
 		mouse_event(x, y, dx, dy);
 
@@ -560,6 +560,28 @@ void mouse_reset_deltas()
 {
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 	Mouse_wheel_dx = Mouse_wheel_dy = 0;
+}
+
+void mouse_confine_to_frame()
+{
+	auto* viewport = os::getMainViewport();
+	auto* window = os::getSDLMainWindow();
+	if (viewport == nullptr || window == nullptr) {
+		return;
+	}
+
+	// The state of the window, not the configured one: a mode change applies later, or not at all
+	SDL_Rect rect{};
+	if (!gr_pointer_confine_rect(viewport->getState(), rect.x, rect.y, rect.w, rect.h)) {
+		rect = {};
+	}
+
+	static SDL_Rect confined{};
+	if (SDL_RectsEqual(&rect, &confined)) {
+		return;
+	}
+	SDL_SetWindowMouseRect(window, SDL_RectEmpty(&rect) ? nullptr : &rect);
+	confined = rect;
 }
 
 void mouse_event(float x, float y, float dx, float dy)
