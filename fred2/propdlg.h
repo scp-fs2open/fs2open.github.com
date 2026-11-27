@@ -30,6 +30,7 @@ class prop_dlg : public CDialog {
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnPropNext();
 	afx_msg void OnPropPrev();
+	afx_msg void OnTextures();
 	DECLARE_MESSAGE_MAP()
 };
 

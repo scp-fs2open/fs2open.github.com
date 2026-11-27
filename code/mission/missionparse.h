@@ -405,6 +405,15 @@ typedef struct texture_replace {
 
 extern SCP_vector<texture_replace> Fred_texture_replacements;
 
+/**
+ * @brief Parses the "+old:" / "+new:" pairs that follow a "$Texture Replace:" key
+ *
+ * @param[in,out] replacements List the parsed pairs are appended to
+ * @param[in] owner_name Name of the ship, prop or class the pairs belong to
+ * @param[in] from_table true for a class (table) entry, false for a mission entry
+ */
+void parse_texture_replacements(SCP_vector<texture_replace>& replacements, const char* owner_name, bool from_table);
+
 // which ships have had the "immobile" flag migrated to "don't-change-position" and "don't-change-orientation"
 extern SCP_unordered_set<int> Fred_migrated_immobile_ships;
 

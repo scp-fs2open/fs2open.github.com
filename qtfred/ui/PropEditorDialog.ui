@@ -39,6 +39,16 @@
     </layout>
    </item>
    <item>
+    <widget class="QPushButton" name="textureReplacementButton">
+     <property name="toolTip">
+      <string>Changes this prop's textures</string>
+     </property>
+     <property name="text">
+      <string>Texture Replacement</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="fso::fred::FlagListWidget" name="propFlagsListWidget" native="true">
      <property name="filterVisible" stdset="0">
       <bool>true</bool>

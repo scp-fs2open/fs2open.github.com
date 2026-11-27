@@ -165,6 +165,10 @@ bool PropEditorDialogModel::hasMultipleSelection() const {
 	return _selectedPropObjects.size() > 1;
 }
 
+int PropEditorDialogModel::getSingleSelectedPropObject() const {
+	return _selectedPropObjects.size() == 1 ? _selectedPropObjects.front() : -1;
+}
+
 bool PropEditorDialogModel::hasAnyPropsInMission() {
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (ptr->type == OBJ_PROP) {

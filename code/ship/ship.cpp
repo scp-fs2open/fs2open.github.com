@@ -2643,40 +2643,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	// don't clear the vector because we could be parsing a TBM
 	if (optional_string("$Texture Replace:"))
 	{
-		texture_replace tr;
-		char *p;
-
-		tr.from_table = true;
-
-		while (optional_string("+old:"))
-		{
-			strcpy_s(tr.ship_name, sip->name);
-			tr.new_texture_id = -1;
-
-			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
-			required_string("+new:");
-			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
-
-			// get rid of extensions
-			p = strchr(tr.old_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
-				*p = 0;
-			}
-			p = strchr(tr.new_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
-				*p = 0;
-			}
-
-			// add it if we aren't over the limit
-			if (sip->replacement_textures.size() < MAX_MODEL_TEXTURES)
-				sip->replacement_textures.push_back(tr);
-			else
-				mprintf(("Too many replacement textures specified for ship '%s'!\n", sip->name));
-		}
+		parse_texture_replacements(sip->replacement_textures, sip->name, true);
 	}
 
 	// optional hud targeting model
@@ -6819,21 +6786,7 @@ void ship::apply_replacement_textures(const SCP_vector<texture_replace> &replace
 
 	pmi->texture_replace = std::make_shared<model_texture_replace>();
 
-	auto pm = model_get(Ship_info[ship_info_index].model_num);
-
-	// now fill them in
-	for (const auto& tr : replacements)
-	{
-		// look for textures
-		for (auto j = 0; j < pm->n_textures; j++)
-		{
-			texture_map *tmap = &pm->maps[j];
-
-			int tnum = tmap->FindTexture(tr.old_texture);
-			if (tnum > -1)
-				(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
-		}
-	}
+	modelinstance_replace_textures(pmi, replacements);
 }
 
 void ship_weapon::clear() 

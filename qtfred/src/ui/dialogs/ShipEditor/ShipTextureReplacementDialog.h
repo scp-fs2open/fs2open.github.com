@@ -28,7 +28,10 @@ class ShipTextureReplacementDialog : public QDialog {
 	Q_OBJECT
 
   public:
-	explicit ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport, bool multiEdit);
+	explicit ShipTextureReplacementDialog(QDialog* parent,
+		EditorViewport* viewport,
+		bool multiEdit,
+		int propObjnum = -1);
 	~ShipTextureReplacementDialog() override;
 
 	void accept() override;

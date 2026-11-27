@@ -23,6 +23,7 @@ class PropEditorDialog : public QDialog {
 	void on_nextButton_clicked();
 	void on_prevButton_clicked();
 	void on_layerCombo_currentIndexChanged(int index);
+	void on_textureReplacementButton_clicked();
 
  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<::Ui::PropEditorDialog> ui;

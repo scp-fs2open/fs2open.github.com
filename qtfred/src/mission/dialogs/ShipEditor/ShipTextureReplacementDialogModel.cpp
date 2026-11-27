@@ -39,10 +39,23 @@ void remove_ship_entries(const char* ship_name)
 
 namespace fso::fred::dialogs {
 
-ShipTextureReplacementDialogModel::ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi)
-	: AbstractDialogModel(parent, viewport)
+ShipTextureReplacementDialogModel::ShipTextureReplacementDialogModel(QObject* parent,
+	EditorViewport* viewport,
+	bool multi,
+	int propObjnum)
+	: AbstractDialogModel(parent, viewport), _propObjnum(propObjnum)
 {
 	initializeData(multi);
+}
+
+prop* ShipTextureReplacementDialogModel::getProp() const
+{
+	if (_propObjnum < 0) {
+		return nullptr;
+	}
+
+	Assertion(Objects[_propObjnum].type == OBJ_PROP, "Object %d is not a prop", _propObjnum);
+	return prop_id_lookup(Objects[_propObjnum].instance);
 }
 
 void ShipTextureReplacementDialogModel::initializeData(bool multi)
@@ -51,7 +64,9 @@ void ShipTextureReplacementDialogModel::initializeData(bool multi)
 	char texture_file[MAX_FILENAME_LEN];
 	char* p = nullptr;
 	int duplicate;
-	polymodel* pm = model_get(Ship_info[Ships[_editor->cur_ship].ship_info_index].model_num);
+	const prop* propp = getProp();
+	polymodel* pm = model_get(propp != nullptr ? Prop_info[propp->prop_info_index].model_num
+											   : Ship_info[Ships[_editor->cur_ship].ship_info_index].model_num);
 	_defaultTextures.clear();
 	_defaultTextures.resize(pm->n_textures);
 	_currentTextures.clear();
@@ -115,10 +130,10 @@ void ShipTextureReplacementDialogModel::initializeData(bool multi)
 		};
 		SCP_vector<DeferredSubtype> deferred;
 
-		for (const auto& tr : Fred_texture_replacements) {
+		for (const auto& tr : (propp != nullptr ? propp->replacement_textures : Fred_texture_replacements)) {
 			if (tr.from_table)
 				continue;
-			if (stricmp(Ships[_editor->cur_ship].ship_name, tr.ship_name) != 0)
+			if (propp == nullptr && stricmp(Ships[_editor->cur_ship].ship_name, tr.ship_name) != 0)
 				continue;
 
 			SCP_string oldName = tr.old_texture;
@@ -228,7 +243,10 @@ bool ShipTextureReplacementDialogModel::apply()
 		// Remove all existing non-table entries for affected ships before writing new ones.
 		// This ensures that each save operation is a simple append rather than a remove-and-add,
 		// which was causing each type's save to clobber the previous type's entry.
-		if (!_multi) {
+		prop* propp = getProp();
+		if (propp != nullptr) {
+			_propReplacements.clear();
+		} else if (!_multi) {
 			remove_ship_entries(Ships[_editor->cur_ship].ship_name);
 		} else {
 			object* objp = GET_FIRST(&obj_used_list);
@@ -242,39 +260,13 @@ bool ShipTextureReplacementDialogModel::apply()
 		}
 
 		for (size_t i = 0; i < getSize(); i++) {
-			if ((!_currentTextures[i]["main"].empty()) && (_currentTextures[i]["main"] != _defaultTextures[i])) {
+			// for a prop, naming the original texture is a real entry: it cancels the class's replacement
+			if ((!_currentTextures[i]["main"].empty()) &&
+				((_currentTextures[i]["main"] != _defaultTextures[i]) || (propp != nullptr))) {
 				_mainChanged = true;
 				SCP_string name = _currentTextures[i]["main"];
 				if (testTexture(name)) {
-					if (!_multi) {
-						texture_replace tr;
-						strcpy_s(tr.old_texture, _defaultTextures[i].c_str());
-						strcpy_s(tr.new_texture, name.c_str());
-						strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
-						tr.new_texture_id = -1;
-						tr.from_table = false;
-						Fred_texture_replacements.push_back(tr);
-						_editor->missionChanged();
-					}
-					else {
-						object* objp = GET_FIRST(&obj_used_list);
-						while (objp != END_OF_LIST(&obj_used_list)) {
-							if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
-								(objp->flags[Object::Object_Flags::Marked])) {
-								Assertion((objp->type == OBJ_SHIP) || (objp->type == OBJ_START), "Expected ship or start object"); // NOLINT(readability-simplify-boolean-expr)
-								auto shipp = &Ships[get_ship_from_obj(objp)];
-								texture_replace tr;
-								strcpy_s(tr.old_texture, _defaultTextures[i].c_str());
-								strcpy_s(tr.new_texture, name.c_str());
-								strcpy_s(tr.ship_name, shipp->ship_name);
-								tr.new_texture_id = -1;
-								tr.from_table = false;
-								Fred_texture_replacements.push_back(tr);
-								_editor->missionChanged();
-							}
-							objp = GET_NEXT(objp);
-						}
-					}
+					addReplacement(_defaultTextures[i], name);
 				}
 				else {
 					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Missing Texture", "FRED was unable to find Main Texture %s \n Aborting at this point",
@@ -287,7 +279,15 @@ bool ShipTextureReplacementDialogModel::apply()
 			for (const auto& type : get_replaceable_texture_types()) {
 				saveSubMap(i, type);
 			}
+			if (propp == nullptr) {
+				_editor->missionChanged();
+			}
+		}
+		if (propp != nullptr) {
+			propp->replacement_textures = std::move(_propReplacements);
+			prop_apply_replacement_textures(propp);
 			_editor->missionChanged();
+			return true;
 		}
 		_editor->missionChanged();
 
@@ -428,32 +428,40 @@ void ShipTextureReplacementDialogModel::saveSubMap(size_t index, const SCP_strin
 		return;
 	}
 
-	// Existing entries for this ship were already removed at the start of apply(),
-	// so just append the new entry for each affected ship.
-	auto push_entry = [&](const char* ship_name) {
-		texture_replace tr;
-		strcpy_s(tr.old_texture, (_defaultTextures[index] + "-" + type).c_str());
-		strcpy_s(tr.new_texture, fullName.c_str());
-		strcpy_s(tr.ship_name, ship_name);
-		tr.new_texture_id = -1;
-		tr.from_table = false;
-		Fred_texture_replacements.push_back(tr);
-		_editor->missionChanged();
-	};
+	addReplacement(_defaultTextures[index] + "-" + type, fullName);
+}
+
+// Existing entries were already removed at the start of apply(), so this only appends.
+void ShipTextureReplacementDialogModel::addReplacement(const SCP_string& oldTexture, const SCP_string& newTexture)
+{
+	texture_replace tr;
+	strcpy_s(tr.old_texture, oldTexture.c_str());
+	strcpy_s(tr.new_texture, newTexture.c_str());
+	tr.new_texture_id = -1;
+	tr.from_table = false;
+
+	if (getProp() != nullptr) {
+		// nothing has changed in the mission until apply() hands the list to the prop
+		tr.ship_name[0] = '\0';
+		_propReplacements.push_back(tr);
+		return;
+	}
 
 	if (!_multi) {
-		push_entry(Ships[_editor->cur_ship].ship_name);
+		strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
+		Fred_texture_replacements.push_back(tr);
 	} else {
 		object* objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				(objp->flags[Object::Object_Flags::Marked])) {
-				Assertion((objp->type == OBJ_SHIP) || (objp->type == OBJ_START), "Expected ship or start object"); // NOLINT(readability-simplify-boolean-expr)
-				push_entry(Ships[get_ship_from_obj(objp)].ship_name);
+				strcpy_s(tr.ship_name, Ships[get_ship_from_obj(objp)].ship_name);
+				Fred_texture_replacements.push_back(tr);
 			}
 			objp = GET_NEXT(objp);
 		}
 	}
+	_editor->missionChanged();
 }
 
 bool ShipTextureReplacementDialogModel::testTexture(const SCP_string& fullName)

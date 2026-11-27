@@ -26,6 +26,9 @@ SCP_vector<prop_category> Prop_categories;
 
 static SCP_vector<SCP_string> Removed_props;
 
+// so a missing replacement texture is logged once per mission, not once per prop that names it
+static SCP_unordered_set<SCP_string> Missing_replacement_textures;
+
 flag_def_list_new<Prop::Info_Flags> Prop_flags[] = {
     { "no_collide",					Prop::Info_Flags::No_collide,				true, false },
     { "no_fred",					Prop::Info_Flags::No_fred,				true, false },
@@ -327,6 +330,11 @@ void parse_prop_table(const char* filename)
 			}
 		}
 
+		// don't clear the list because we could be parsing a TBM
+		if (optional_string("$Texture Replace:")) {
+			parse_texture_replacements(pip->replacement_textures, pip->name.c_str(), true);
+		}
+
 		if (optional_string("$Custom data:")) {
 			parse_string_map(pip->custom_data, "$end_custom_data", "+Val:");
 		}
@@ -519,6 +527,7 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 	propp->objnum = objnum;
 
 	propp->model_instance_num = model_create_instance(objnum, pip->model_num);
+	prop_apply_replacement_textures(propp);
 
 	object* objp = &Objects[objnum];
 	objp->hull_strength = 0.0f;
@@ -703,6 +712,7 @@ void change_prop_type(int n, int prop_type)
 	// point to new prop data
 	prop_model_change(n, prop_type);
 	sp->prop_info_index = prop_type;
+	prop_apply_replacement_textures(sp);
 
 	// check class-specific flags
 
@@ -710,6 +720,46 @@ void change_prop_type(int n, int prop_type)
 		obj_set_flags(objp, objp->flags - Object::Object_Flags::Collides);
 	else if (pip_orig->flags[Prop::Info_Flags::No_collide])						// changing FROM a no-collision prop class
 		obj_set_flags(objp, objp->flags + Object::Object_Flags::Collides);
+}
+
+void prop_apply_replacement_textures(prop* propp)
+{
+	polymodel_instance* pmi = model_get_instance(propp->model_instance_num);
+	pmi->texture_replace = nullptr;
+
+	for (const auto* list : {&Prop_info[propp->prop_info_index].replacement_textures, &propp->replacement_textures}) {
+		SCP_vector<texture_replace> loaded;
+		for (auto tr : *list) {
+			tr.new_texture_id = model_load_replacement_texture(tr.new_texture);
+
+			// leave out a texture that did not load, so whatever it would have replaced stays visible
+			if (tr.new_texture_id == -1) {
+				if (Missing_replacement_textures.insert(tr.new_texture).second) {
+					if (tr.from_table) {
+						mprintf(("Could not load replacement texture %s for prop class %s\n",
+							tr.new_texture,
+							Prop_info[propp->prop_info_index].name.c_str()));
+					} else {
+						mprintf(("Could not load replacement texture %s, first seen on prop %s\n",
+							tr.new_texture,
+							propp->prop_name));
+					}
+				}
+				continue;
+			}
+
+			loaded.push_back(tr);
+		}
+		modelinstance_replace_textures(pmi, loaded);
+	}
+
+	if (!Fred_running && pmi->texture_replace != nullptr) {
+		for (const auto& texture : *pmi->texture_replace) {
+			if (texture >= 0) {
+				bm_page_in_texture(texture);
+			}
+		}
+	}
 }
 
 void prop_render(object* obj, model_draw_list* scene)
@@ -826,6 +876,7 @@ void prop_render(object* obj, model_draw_list* scene)
 void props_level_init()
 {
 	Props.clear();
+	Missing_replacement_textures.clear();
 }
 
 void props_level_close()

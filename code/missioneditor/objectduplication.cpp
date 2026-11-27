@@ -254,6 +254,9 @@ void clone_prop_instance_data(int src_prop_id, int dest_prop_id)
 	// fred view layer
 	dest->fred_layer = src->fred_layer;
 
+	dest->replacement_textures = src->replacement_textures;
+	prop_apply_replacement_textures(dest);
+
 	// object flag the prop editor exposes (see save_props)
 	if (Objects[src->objnum].flags[Object::Object_Flags::Collides]) {
 		Objects[dest->objnum].flags.set(Object::Object_Flags::Collides);

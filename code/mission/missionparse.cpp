@@ -3905,40 +3905,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// texture replacement - Goober5000
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
-		texture_replace tr;
-		char *p;
-
-		tr.from_table = false;
-
-		while (optional_string("+old:"))
-		{
-			strcpy_s(tr.ship_name, p_objp->name);
-			tr.new_texture_id = -1;
-
-			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
-			required_string("+new:");
-			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
-
-			// get rid of extensions
-			p = strchr(tr.old_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
-				*p = 0;
-			}
-			p = strchr(tr.new_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
-				*p = 0;
-			}
-
-			// add it if we aren't over the limit
-			if (p_objp->replacement_textures.size() < MAX_MODEL_TEXTURES)
-				p_objp->replacement_textures.push_back(tr);
-			else
-				mprintf(("Too many replacement textures specified for ship '%s'!\n", p_objp->name));
-		}
+		parse_texture_replacements(p_objp->replacement_textures, p_objp->name, false);
 	}
 
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
@@ -5281,6 +5248,10 @@ void parse_prop(mission* /*pm*/)
 		}
 	}
 
+	if (optional_string("$Texture Replace:")) {
+		parse_texture_replacements(p.replacement_textures, p.name, false);
+	}
+
 	// if idx is still -1 then we have an empty props.tbl so we parse
 	// everything here and just discard it. A warning has already been generated above.
 	if (idx < 0) {
@@ -5457,6 +5428,11 @@ void post_process_mission_props()
 			auto createdProp = prop_id_lookup(obj.instance);
 			if (createdProp != nullptr) {
 				createdProp->fred_layer = propp.fred_layer;
+
+				if (!propp.replacement_textures.empty()) {
+					createdProp->replacement_textures = propp.replacement_textures;
+					prop_apply_replacement_textures(createdProp);
+				}
 			}
 		}
 	}
@@ -5531,17 +5507,7 @@ void post_process_ships_wings()
 		// also load any replacement textures (do this outside the parse loop because we may have ship class replacements too)
 		for (SCP_vector<texture_replace>::iterator tr = p_obj.replacement_textures.begin(); tr != p_obj.replacement_textures.end(); ++tr)
 		{
-			// load the texture
-			if (!stricmp(tr->new_texture, "invisible"))
-			{
-				// invisible is a special case
-				tr->new_texture_id = REPLACE_WITH_INVISIBLE;
-			}
-			else
-			{
-				// try to load texture or anim as normal
-				tr->new_texture_id = bm_load_either(tr->new_texture);
-			}
+			tr->new_texture_id = model_load_replacement_texture(tr->new_texture);
 
 			// not found?
 			if (tr->new_texture_id < 0)
@@ -9590,9 +9556,38 @@ void convertFSMtoFS2()
 	conv_fix_punctuation();
 }
 
-void clear_texture_replacements() 
+void clear_texture_replacements()
 {
 	Fred_texture_replacements.clear();
+}
+
+void parse_texture_replacements(SCP_vector<texture_replace>& replacements, const char* owner_name, bool from_table)
+{
+	texture_replace tr;
+	tr.from_table = from_table;
+
+	while (optional_string("+old:")) {
+		strcpy_s(tr.ship_name, owner_name);
+		tr.new_texture_id = -1;
+
+		stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
+		required_string("+new:");
+		stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
+
+		for (char* texture : {tr.old_texture, tr.new_texture}) {
+			char* p = strchr(texture, '.');
+			if (p != nullptr) {
+				mprintf(("Extraneous extension found on replacement texture %s!\n", texture));
+				*p = 0;
+			}
+		}
+
+		if (replacements.size() < MAX_MODEL_TEXTURES) {
+			replacements.push_back(tr);
+		} else {
+			mprintf(("Too many replacement textures specified for '%s'!\n", owner_name));
+		}
+	}
 }
 
 bool check_for_23_3_data()
@@ -9756,5 +9751,8 @@ bool check_for_26_3_data()
 		}
 	}
 
-	return false;
+	// a prop's texture replacements ($Texture Replace:) can't be represented in an older mission file
+	return std::any_of(Props.begin(), Props.end(), [](const std::optional<prop>& p) {
+		return p.has_value() && !p->replacement_textures.empty();
+	});
 }

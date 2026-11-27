@@ -1507,6 +1507,20 @@ void model_page_out_textures(polymodel* pm, bool release = false, const SCP_set<
 
 void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name);
 
+struct texture_replace;
+
+/**
+ * @brief Loads the bitmap or animation for a replacement texture
+ *
+ * @return The bitmap handle, REPLACE_WITH_INVISIBLE for "invisible", or -1 if nothing could be loaded
+ */
+int model_load_replacement_texture(const char* filename);
+
+/**
+ * @brief Sets each replacement's new_texture_id on every texture of the instance's model that uses its old_texture
+ */
+void modelinstance_replace_textures(polymodel_instance* pmi, const SCP_vector<texture_replace>& replacements);
+
 void model_do_intrinsic_motions(object *objp);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);

@@ -3120,12 +3120,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 
 	if (final_index >= 0)
 	{
-		int texture;
-
-		if (!stricmp(new_name, "invisible"))
-			texture = REPLACE_WITH_INVISIBLE;
-		else
-			texture = bm_load_either(new_name);
+		int texture = model_load_replacement_texture(new_name);
 
 		if (pmi->texture_replace == nullptr) {
 			pmi->texture_replace = std::make_shared<model_texture_replace>();
@@ -3134,6 +3129,37 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 		(*pmi->texture_replace)[final_index] = texture;
 	} else
 		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
+}
+
+int model_load_replacement_texture(const char* filename)
+{
+	if (!stricmp(filename, "invisible")) {
+		return REPLACE_WITH_INVISIBLE;
+	}
+
+	return bm_load_either(filename);
+}
+
+void modelinstance_replace_textures(polymodel_instance* pmi, const SCP_vector<texture_replace>& replacements)
+{
+	if (replacements.empty()) {
+		return;
+	}
+
+	if (pmi->texture_replace == nullptr) {
+		pmi->texture_replace = std::make_shared<model_texture_replace>();
+	}
+
+	polymodel* pm = model_get(pmi->model_num);
+
+	for (const auto& tr : replacements) {
+		for (int i = 0; i < pm->n_textures; i++) {
+			int tnum = pm->maps[i].FindTexture(tr.old_texture);
+			if (tnum > -1) {
+				(*pmi->texture_replace)[i * TM_NUM_TYPES + tnum] = tr.new_texture_id;
+			}
+		}
+	}
 }
 
 // renders a model as if in the tech room or briefing UI

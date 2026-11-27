@@ -36,11 +36,18 @@ QVariant MapModel::data(const QModelIndex& index, int role) const
 	return {};
 }
 
-ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport, bool multiEdit)
+ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent,
+	EditorViewport* viewport,
+	bool multiEdit,
+	int propObjnum)
 	: QDialog(parent), ui(new Ui::ShipTextureReplacementDialog()),
-	  _model(new ShipTextureReplacementDialogModel(this, viewport, multiEdit)), _viewport(viewport)
+	  _model(new ShipTextureReplacementDialogModel(this, viewport, multiEdit, propObjnum)), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	if (propObjnum >= 0) {
+		setWindowTitle(tr("Prop Texture Replace"));
+	}
 
 	ui->newTextureLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
