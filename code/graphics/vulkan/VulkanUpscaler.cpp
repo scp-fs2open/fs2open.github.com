@@ -113,7 +113,8 @@ void log_ffx_message(uint32_t type, const wchar_t* message)
 	mprintf(("FSR %s: %ls\n", type == FFX_API_MESSAGE_TYPE_ERROR ? "error" : "warning", message));
 }
 
-FfxApiResource ffx_image(const RenderTarget& target, FfxApiResourceState state, uint32_t usage = FFX_API_RESOURCE_USAGE_READ_ONLY)
+FfxApiResource ffx_image(const RenderTarget& target, VkImage& image, FfxApiResourceState state,
+	uint32_t usage = FFX_API_RESOURCE_USAGE_READ_ONLY)
 {
 	FfxApiResourceDescription description{};
 	description.type = FFX_API_RESOURCE_TYPE_TEXTURE2D;
@@ -123,7 +124,13 @@ FfxApiResource ffx_image(const RenderTarget& target, FfxApiResourceState state, 
 	description.depth = 1;
 	description.mipCount = 1;
 	description.usage = usage;
-	return ffxApiGetResourceVK(static_cast<VkImage>(target.image), description, state);
+	image = static_cast<VkImage>(target.image);
+#if VK_USE_64_BIT_PTR_DEFINES
+	return ffxApiGetResourceVK(image, description, state);
+#else
+	// A VkImage is a 64-bit integer here. Keep it in caller-owned storage through ffxDispatch.
+	return ffxApiGetResourceVK(image != VK_NULL_HANDLE ? &image : nullptr, description, state);
+#endif
 }
 
 } // namespace
@@ -429,13 +436,14 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	ffxDispatchDescUpscale desc{};
 	desc.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 	desc.commandList = static_cast<VkCommandBuffer>(cmd);
+	VkImage colorImage, depthImage, motionImage, outputImage;
 	constexpr auto inputState = fragmentOutput ? FFX_API_RESOURCE_STATE_PIXEL_COMPUTE_READ : FFX_API_RESOURCE_STATE_COMPUTE_READ;
-	desc.color = ffx_image(color, inputState);
-	desc.depth = ffx_image(depth, inputState);
-	desc.motionVectors = ffx_image(motion, inputState);
+	desc.color = ffx_image(color, colorImage, inputState);
+	desc.depth = ffx_image(depth, depthImage, inputState);
+	desc.motionVectors = ffx_image(motion, motionImage, inputState);
 	desc.output = fragmentOutput
-		? ffx_image(view.output, FFX_API_RESOURCE_STATE_RENDER_TARGET, FFX_API_RESOURCE_USAGE_RENDERTARGET)
-		: ffx_image(view.output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, FFX_API_RESOURCE_USAGE_UAV);
+		? ffx_image(view.output, outputImage, FFX_API_RESOURCE_STATE_RENDER_TARGET, FFX_API_RESOURCE_USAGE_RENDERTARGET)
+		: ffx_image(view.output, outputImage, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, FFX_API_RESOURCE_USAGE_UAV);
 	desc.jitterOffset = {view.jitterX, view.jitterY};
 	desc.renderSize = {color.width, color.height};
 	desc.upscaleSize = {view.output.width, view.output.height};

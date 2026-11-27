@@ -94,7 +94,12 @@ arm::FfxmResource image(const FfxApiResource& resource)
     desc.mipCount = resource.description.mipCount;
     const bool output = resource.state == FFX_API_RESOURCE_STATE_RENDER_TARGET;
     desc.usage = output ? arm::FFXM_RESOURCE_USAGE_RENDERTARGET : arm::FFXM_RESOURCE_USAGE_READ_ONLY;
-    return arm::ffxmGetResourceVK(resource.resource, desc, nullptr,
+#if VK_USE_64_BIT_PTR_DEFINES
+    const auto handle = resource.resource;
+#else
+    const auto handle = *static_cast<const VkImage*>(resource.resource);
+#endif
+    return arm::ffxmGetResourceVK(handle, desc, nullptr,
         output ? arm::FFXM_RESOURCE_STATE_PIXEL_WRITE : arm::FFXM_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 }
 
