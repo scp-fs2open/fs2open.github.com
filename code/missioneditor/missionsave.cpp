@@ -171,6 +171,13 @@ void Fred_mission_save::convert_special_tags_to_retail() const
 	}
 }
 
+void Fred_mission_save::fout_puts(const char* str)
+{
+	if (cfputs(str, fp) == EOF && err == 0) {
+		err = -19;
+	}
+}
+
 int Fred_mission_save::fout(const char* format, ...)
 {
 	// don't output anything if we're saving in retail and have version-specific comments active
@@ -189,7 +196,7 @@ int Fred_mission_save::fout(const char* format, ...)
 	vsprintf(str, format, args);
 	va_end(args);
 
-	cfputs(str.c_str(), fp);
+	fout_puts(str.c_str());
 	return 0;
 }
 
@@ -256,23 +263,23 @@ int Fred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs(fso_ver_comment.back().c_str(), fp);
-						cfputs(" ", fp);
+						fout_puts(fso_ver_comment.back().c_str());
+						fout_puts(" ");
 					}
 
-					cfputs(str_p, fp);
-					cfputc('\n', fp);
+					fout_puts(str_p);
+					fout_puts("\n");
 
 					str_p = ch + 1;
 				} else {
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs(fso_ver_comment.back().c_str(), fp);
-						cfputs(" ", fp);
+						fout_puts(fso_ver_comment.back().c_str());
+						fout_puts(" ");
 					}
 
-					cfputs(str_p, fp);
+					fout_puts(str_p);
 
 					str_p = ch + 1;
 
@@ -282,9 +289,9 @@ int Fred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
 
 			// be sure to account for any ending elements too
 			if (strlen(str_p)) {
-				cfputs(fso_ver_comment.back().c_str(), fp);
-				cfputs(" ", fp);
-				cfputs(str_p, fp);
+				fout_puts(fso_ver_comment.back().c_str());
+				fout_puts(" ");
+				fout_puts(str_p);
 			}
 
 			vm_free(str_out_c);
@@ -292,7 +299,7 @@ int Fred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
 		}
 	}
 
-	cfputs(str_out_c, fp);
+	fout_puts(str_out_c);
 
 	vm_free(str_out_c);
 	return 0;
@@ -324,7 +331,7 @@ int Fred_mission_save::fout_version(const char* format, ...)
 		str_scp.append(fso_ver_comment.back().c_str());
 		str_scp.append(" ");
 
-		cfputs(str_scp.c_str(), fp);
+		fout_puts(str_scp.c_str());
 
 		str_scp = "";
 	}
@@ -351,23 +358,23 @@ int Fred_mission_save::fout_version(const char* format, ...)
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs(fso_ver_comment.back().c_str(), fp);
-						cfputs(" ", fp);
+						fout_puts(fso_ver_comment.back().c_str());
+						fout_puts(" ");
 					}
 
-					cfputs(str_p, fp);
-					cfputc('\n', fp);
+					fout_puts(str_p);
+					fout_puts("\n");
 
 					str_p = ch + 1;
 				} else {
 					if (first_line) {
 						first_line = false;
 					} else {
-						cfputs(fso_ver_comment.back().c_str(), fp);
-						cfputs(" ", fp);
+						fout_puts(fso_ver_comment.back().c_str());
+						fout_puts(" ");
 					}
 
-					cfputs(str_p, fp);
+					fout_puts(str_p);
 
 					str_p = ch + 1;
 
@@ -377,9 +384,9 @@ int Fred_mission_save::fout_version(const char* format, ...)
 
 			// be sure to account for any ending elements too
 			if (strlen(str_p)) {
-				cfputs(fso_ver_comment.back().c_str(), fp);
-				cfputs(" ", fp);
-				cfputs(str_p, fp);
+				fout_puts(fso_ver_comment.back().c_str());
+				fout_puts(" ");
+				fout_puts(str_p);
 			}
 
 			vm_free(str_c);
@@ -387,7 +394,7 @@ int Fred_mission_save::fout_version(const char* format, ...)
 		}
 	}
 
-	cfputs(str_c, fp);
+	fout_puts(str_c);
 
 	vm_free(str_c);
 	return 0;
@@ -3290,9 +3297,14 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 		fout("\n");
 	}
 
-	cfclose(fp);
-	if (err)
+	// the last buffered bytes are written out only here
+	if (cfclose(fp) != 0 && err == 0)
+		err = -19;
+	if (err) {
 		mprintf(("Mission saving error code #%d\n", err));
+		// a cut-off file must not be left where autosave recovery or Undo would load it
+		cf_delete(pathname, CF_TYPE_MISSIONS);
+	}
 }
 
 int Fred_mission_save::save_music()

@@ -305,11 +305,9 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 	parse_comments();
 	fout("\n");
 
-	cfclose(fp);
+	if (cfclose(fp) != 0 && err == 0)
+		err = -19;
 	fso_comment_pop(true);
-
-	// Mission editor should run the error checker *before* calling the save function
-	Assertion(!err, "Nothing in here should have a side effect to raise the mission error saving flag.");
 
 	return err;
 }
