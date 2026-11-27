@@ -1781,7 +1781,8 @@ void game_process_keys()
 		int i;
 		for (i=0; i<NUM_BUTTON_FIELDS; i++)
 			Player->bi.status[i] |= Player->lua_bi.status[i];
-		Player->lua_bi = Player->bi;		
+		// clear after merging so a scripted press acts once, like a key press, instead of repeating every frame
+		button_info_clear(&Player->lua_bi);
 	} else {
 		// just copy over the values
 		Player->lua_bi = Player->bi;
