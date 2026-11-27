@@ -1,0 +1,16 @@
+{
+  "engine": "C:/path/to/fs2_open_x64.exe",
+  "base_workspace": "C:/path/to/portable-workspace",
+  "output_dir": "C:/path/to/batch-output",
+  "mods": ["mymod"],
+  "mission": "my-mission",
+  "pilot": "Tester",
+  "max_sim_time": 120,
+  "seed_start": 1000,
+  "repeats": 4,
+  "workers": 2,
+  "fixed_dt": 0.03333333333333333,
+  "timeout_seconds": 600,
+  "base_port": 39000,
+  "extra_args": []
+}
