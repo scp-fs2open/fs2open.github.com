@@ -205,6 +205,11 @@ void parse_nebula_table(const char* filename)
 
 		// background bitmaps
 		while (!skip_background_bitmaps && !optional_string("#end")) {
+			// at the end of the file nothing below consumes input, so a missing #end would loop forever
+			if (check_for_eof()) {
+				required_string("#end");
+			}
+
 			// nebula
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
