@@ -8695,7 +8695,7 @@ bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 	if (consistent_dinky) {
 		if (regular_damage_to_huge)
 			sw_flag |= SW_WEAPON_KILL;
-	} else if ( ((impacted_obj) && (impacted_obj->type == OBJ_WEAPON)) || shot_down) {
+	} else if (shot_down) {
 		sw_flag |= SW_WEAPON_KILL;
 	}
 
