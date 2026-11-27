@@ -61,6 +61,9 @@
 #endif
 #ifdef WITH_VULKAN
 #include "graphics/vulkan/gr_vulkan.h"
+#ifdef __ANDROID__
+#include "graphics/vulkan/VulkanRenderer.h"
+#endif
 #endif
 
 #include <algorithm>
@@ -1031,8 +1034,8 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .finish();
 
 FsrMode Gr_fsr_mode = FsrMode::Off;
-int Gr_fsr_major_version = 0;
-SCP_vector<SCP_string> Gr_fsr_versions;
+int Gr_upscaler_provider = 0;
+SCP_vector<TemporalUpscalerProvider> Gr_upscaler_providers;
 int Gr_max_output_size = 0;
 float Gr_composition_scale = 1.0f;
 bool Gr_native_res_hud = false;
@@ -1043,8 +1046,21 @@ static float output_scale_factor()
 	std::optional<std::pair<int, int>> output;
 	if (openxr_requested()) {
 		output = openxr_get_eye_resolution();
-	} else if (Cmdline_window_res.has_value()) {
-		output = std::make_pair(static_cast<int>(Cmdline_window_res->first), static_cast<int>(Cmdline_window_res->second));
+	} else {
+#if defined(__ANDROID__) && defined(WITH_VULKAN)
+		// Android's native surface can differ from the requested SDL window size.
+		if (gr_screen.mode == GraphicsAPI::Vulkan) {
+			if (const auto* renderer = graphics::vulkan::getRendererInstance()) {
+				const auto extent = renderer->getSwapChainExtent();
+				if (extent.width > 0 && extent.height > 0) {
+					output.emplace(extent.width, extent.height);
+				}
+			}
+		}
+#endif
+		if (!output && Cmdline_window_res) {
+			output = Cmdline_window_res;
+		}
 	}
 	if (!output.has_value()) {
 		return 1.0f;
@@ -1127,9 +1143,9 @@ void gr_screen_layer_end()
 	gr_screen.gf_screen_layer_end();
 }
 
-static int fsr_setting(FsrMode mode, int major_version)
+static int fsr_setting(FsrMode mode, int provider)
 {
-	return mode == FsrMode::Off ? 0 : major_version * 10 + static_cast<int>(mode);
+	return mode == FsrMode::Off ? 0 : provider * 10 + static_cast<int>(mode);
 }
 
 static SCP_vector<int> fsr_setting_enumerator()
@@ -1138,11 +1154,10 @@ static SCP_vector<int> fsr_setting_enumerator()
 
 	// Options are also enumerated before gr_init has set up the renderer.
 	if (gr_screen.gf_is_capable && gr_is_capable(gr_capability::CAPABILITY_FSR)) {
-		for (const auto& version : Gr_fsr_versions) {
-			const int major = atoi(version.c_str());
-			out.push_back(fsr_setting(FsrMode::AA, major));
+		for (const auto& provider : Gr_upscaler_providers) {
+			out.push_back(fsr_setting(FsrMode::AA, provider.settingId));
 			if (output_scale_factor() > 1.0f) {
-				out.push_back(fsr_setting(FsrMode::Upscale, major));
+				out.push_back(fsr_setting(FsrMode::Upscale, provider.settingId));
 			}
 		}
 	}
@@ -1158,9 +1173,9 @@ static SCP_string fsr_setting_display(int setting)
 	}
 
 	SCP_string label = "FSR";
-	for (const auto& name : Gr_fsr_versions) {
-		if (atoi(name.c_str()) == setting / 10) {
-			label += " " + name;
+	for (const auto& provider : Gr_upscaler_providers) {
+		if (provider.settingId == setting / 10) {
+			label = provider.label;
 			break;
 		}
 	}
@@ -1171,7 +1186,7 @@ static void fsr_apply_setting(int setting)
 {
 	const int mode = setting % 10;
 	Gr_fsr_mode = mode <= static_cast<int>(FsrMode::Upscale) ? static_cast<FsrMode>(mode) : FsrMode::Off;
-	Gr_fsr_major_version = setting / 10;
+	Gr_upscaler_provider = setting / 10;
 }
 
 // -fsr only names a mode, and what of it can run is only known once the renderer is up. Settle it on the closest
@@ -1212,7 +1227,7 @@ static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      .enumerator(fsr_setting_enumerator)
                      .display(fsr_setting_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_func([]() { return fsr_setting(Gr_fsr_mode, Gr_fsr_major_version); } )
+                     .default_func([]() { return fsr_setting(Gr_fsr_mode, Gr_upscaler_provider); } )
                      .change_listener([](const int& setting, bool) {
                          fsr_apply_setting(setting);
                          return true;

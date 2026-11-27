@@ -76,10 +76,14 @@ enum class FsrMode {
 	Upscale = 2,
 };
 extern FsrMode Gr_fsr_mode;
-// The chosen FSR major version, or 0 for the newest the renderer offers
-extern int Gr_fsr_major_version;
-// The FSR versions the renderer offers, newest first, such as "4.1.2". Empty without FSR.
-extern SCP_vector<SCP_string> Gr_fsr_versions;
+struct TemporalUpscalerProvider {
+	int settingId;
+	SCP_string label;
+};
+// FSR uses its major version as the setting ID. Arm ASR has a separate persistent ID.
+constexpr int ARM_ASR_PROVIDER_SETTING_ID = 100;
+extern int Gr_upscaler_provider;
+extern SCP_vector<TemporalUpscalerProvider> Gr_upscaler_providers;
 // The largest image side the renderer supports, which limits the output scale factor. 0 until the renderer is up.
 extern int Gr_max_output_size;
 

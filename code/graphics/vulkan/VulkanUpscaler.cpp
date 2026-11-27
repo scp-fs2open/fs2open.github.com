@@ -32,13 +32,13 @@ vk::PhysicalDevice Upscaler_gpu;
 // The mode and version FSR failed with. Choosing anything else gives it another try.
 struct failed_setting {
 	FsrMode mode;
-	int majorVersion;
+	int provider;
 };
 std::optional<failed_setting> Failed_setting;
 
 bool failed_for_current_setting()
 {
-	if (Failed_setting && (Failed_setting->mode != Gr_fsr_mode || Failed_setting->majorVersion != Gr_fsr_major_version)) {
+	if (Failed_setting && (Failed_setting->mode != Gr_fsr_mode || Failed_setting->provider != Gr_upscaler_provider)) {
 		Failed_setting.reset();
 	}
 	return Failed_setting.has_value();
@@ -46,7 +46,7 @@ bool failed_for_current_setting()
 
 void mark_failed()
 {
-	Failed_setting = failed_setting{Gr_fsr_mode, Gr_fsr_major_version};
+	Failed_setting = failed_setting{Gr_fsr_mode, Gr_upscaler_provider};
 }
 
 struct fsr_version {
@@ -86,9 +86,9 @@ SCP_vector<fsr_version> query_fsr_versions(vk::Device device)
 	return versions;
 }
 
-int major_version(const SCP_string& name)
+int provider_setting_id(const SCP_string& name)
 {
-	return std::atoi(name.c_str());
+	return ffxPortableUsesArmAsr() ? ARM_ASR_PROVIDER_SETTING_ID : std::atoi(name.c_str());
 }
 
 bool is_offered(int major)
@@ -100,11 +100,11 @@ bool is_offered(int major)
 const fsr_version* find_chosen_version(const SCP_vector<fsr_version>& versions)
 {
 	for (const auto& version : versions) {
-		if (major_version(version.name) == Gr_fsr_major_version) {
+		if (provider_setting_id(version.name) == Gr_upscaler_provider) {
 			return &version;
 		}
 	}
-	mprintf(("Vulkan: FSR %d isn't available, leaving the version to AMD's selection\n", Gr_fsr_major_version));
+	mprintf(("Vulkan: FSR %d isn't available, using the default version\n", Gr_upscaler_provider));
 	return nullptr;
 }
 
@@ -157,6 +157,11 @@ void vulkan_upscaler_prepare_device(vk::Instance instance,
 		VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
 		&Device_requirements);
 
+	if (!Device_requirements.supported) {
+		mprintf(("Vulkan: FSR unavailable: %s\n", ffxPortableLoadError()));
+		return;
+	}
+
 	if (VulkanApiVersion < Device_requirements.minApiVersion) {
 		mprintf(("Vulkan: FSR unavailable: needs a newer Vulkan API version than the renderer uses\n"));
 		return;
@@ -180,24 +185,33 @@ void vulkan_upscaler_device_created(vk::Device device)
 		return;
 	}
 
-	Gr_fsr_versions.clear();
+	Gr_upscaler_providers.clear();
 	const auto versions = query_fsr_versions(device);
+	if (ffxPortableUsesArmAsr()) {
+		if (versions.empty()) {
+			Upscaler_available = false;
+			return;
+		}
+		Gr_upscaler_providers.push_back({ARM_ASR_PROVIDER_SETTING_ID, versions.front().name});
+		return;
+	}
 	for (const auto& version : versions) {
 		mprintf(("Vulkan: FSR version available: %s\n", version.name.c_str()));
-		if (is_offered(major_version(version.name))) {
-			Gr_fsr_versions.push_back(version.name);
+		const int major = provider_setting_id(version.name);
+		if (is_offered(major)) {
+			Gr_upscaler_providers.push_back({major, "FSR " + version.name});
 		}
 	}
 	// FSR 2 is only the fallback for hardware where neither of the newer versions is available
-	if (Gr_fsr_versions.empty()) {
+	if (Gr_upscaler_providers.empty()) {
 		for (const auto& version : versions) {
-			if (major_version(version.name) == 2) {
-				Gr_fsr_versions.push_back(version.name);
+			if (provider_setting_id(version.name) == 2) {
+				Gr_upscaler_providers.push_back({2, "FSR " + version.name});
 			}
 		}
 	}
-	std::sort(Gr_fsr_versions.begin(), Gr_fsr_versions.end(),
-		[](const SCP_string& a, const SCP_string& b) { return major_version(a) > major_version(b); });
+	std::sort(Gr_upscaler_providers.begin(), Gr_upscaler_providers.end(),
+		[](const TemporalUpscalerProvider& a, const TemporalUpscalerProvider& b) { return a.settingId > b.settingId; });
 }
 
 bool vulkan_upscaler_available()
@@ -269,8 +283,11 @@ bool VulkanUpscaler::createContext(View& view)
 		view.output.format = HDR_COLOR_FORMAT;
 		view.output.width = w;
 		view.output.height = h;
-		if (!m_ctx->createImage(w, h, HDR_COLOR_FORMAT,
-		                        vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment,
+		auto usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment;
+		if (!ffxPortableUsesArmAsr()) {
+			usage |= vk::ImageUsageFlagBits::eStorage;
+		}
+		if (!m_ctx->createImage(w, h, HDR_COLOR_FORMAT, usage,
 		                        vk::ImageAspectFlagBits::eColor,
 		                        view.output.image, view.output.view, view.output.allocation)) {
 			mprintf(("Vulkan: FSR disabled: could not create its output image\n"));
@@ -306,7 +323,7 @@ bool VulkanUpscaler::createContext(View& view)
 		chosenVersion.versionId = chosen->id;
 		desc.header.pNext = &chosenVersion.header;
 	}
-	m_contextMajorVersion = Gr_fsr_major_version;
+	m_contextProvider = Gr_upscaler_provider;
 	m_contextMode = Gr_fsr_mode;
 
 	const auto result = ffxCreateContext(&view.context, &desc.header, nullptr);
@@ -380,11 +397,20 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	GR_DEBUG_SCOPE("FSR");
 
 	auto& view = currentView();
+	constexpr bool fragmentOutput = ffxPortableUsesArmAsr();
+	constexpr auto outputLayout = fragmentOutput ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::eGeneral;
+	constexpr auto outputStage = fragmentOutput ? vk::PipelineStageFlagBits2::eColorAttachmentOutput
+	                                           : vk::PipelineStageFlagBits2::eComputeShader;
+	constexpr auto outputWrite = fragmentOutput ? vk::AccessFlagBits2::eColorAttachmentWrite
+	                                           : vk::AccessFlagBits2::eShaderWrite;
+	constexpr auto inputStages = fragmentOutput
+		? vk::PipelineStageFlagBits2::eComputeShader | vk::PipelineStageFlagBits2::eFragmentShader
+		: vk::PipelineStageFlags2(vk::PipelineStageFlagBits2::eComputeShader);
 
 	cmdMemoryBarrier(cmd,
 		vk::PipelineStageFlagBits2::eColorAttachmentOutput,
 		vk::AccessFlagBits2::eColorAttachmentWrite,
-		vk::PipelineStageFlagBits2::eComputeShader,
+		inputStages,
 		vk::AccessFlagBits2::eShaderRead);
 
 	ImageBarrier2 barrier;
@@ -392,21 +418,24 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	barrier.levelCount = 1;
 	barrier.layerCount = 1;
 	barrier.oldLayout = vk::ImageLayout::eUndefined;
-	barrier.newLayout = vk::ImageLayout::eGeneral;
+	barrier.newLayout = outputLayout;
 	// Last frame's bloom composited into the output, and tonemapping read it
 	barrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput | vk::PipelineStageFlagBits2::eFragmentShader;
 	barrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
-	barrier.dstStage = vk::PipelineStageFlagBits2::eComputeShader;
-	barrier.dstAccess = vk::AccessFlagBits2::eShaderWrite;
+	barrier.dstStage = outputStage;
+	barrier.dstAccess = outputWrite;
 	cmdImageBarrier(cmd, barrier);
 
 	ffxDispatchDescUpscale desc{};
 	desc.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 	desc.commandList = static_cast<VkCommandBuffer>(cmd);
-	desc.color = ffx_image(color, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-	desc.depth = ffx_image(depth, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-	desc.motionVectors = ffx_image(motion, FFX_API_RESOURCE_STATE_COMPUTE_READ);
-	desc.output = ffx_image(view.output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, FFX_API_RESOURCE_USAGE_UAV);
+	constexpr auto inputState = fragmentOutput ? FFX_API_RESOURCE_STATE_PIXEL_COMPUTE_READ : FFX_API_RESOURCE_STATE_COMPUTE_READ;
+	desc.color = ffx_image(color, inputState);
+	desc.depth = ffx_image(depth, inputState);
+	desc.motionVectors = ffx_image(motion, inputState);
+	desc.output = fragmentOutput
+		? ffx_image(view.output, FFX_API_RESOURCE_STATE_RENDER_TARGET, FFX_API_RESOURCE_USAGE_RENDERTARGET)
+		: ffx_image(view.output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS, FFX_API_RESOURCE_USAGE_UAV);
 	desc.jitterOffset = {view.jitterX, view.jitterY};
 	desc.renderSize = {color.width, color.height};
 	desc.upscaleSize = {view.output.width, view.output.height};
@@ -432,10 +461,10 @@ bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 		mark_failed();
 	}
 
-	barrier.oldLayout = vk::ImageLayout::eGeneral;
+	barrier.oldLayout = outputLayout;
 	barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	barrier.srcStage = vk::PipelineStageFlagBits2::eComputeShader;
-	barrier.srcAccess = vk::AccessFlagBits2::eShaderWrite;
+	barrier.srcStage = outputStage;
+	barrier.srcAccess = outputWrite;
 	barrier.dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
 	barrier.dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 	cmdImageBarrier(cmd, barrier);
