@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace arm {
@@ -33,14 +34,14 @@ namespace arm {
 /// @param bufferSize The size of the buffer.
 /// @param seed A unique seed.
 /// @return The hash.
-uint64_t computeHash(const void* buffer, size_t bufferSize, uint64_t seed = 123);
+uint64_t computeHash(const void* buffer, std::size_t bufferSize, uint64_t seed = 123);
 
 /// Computes a hash of a buffer. This function implements the MurmurHash2 algorithm by Austin Appleby.
 /// @param[in] buffer The buffer to hash.
 /// @param bufferSize The size of the buffer.
 /// @param prevHash The hash to append to.
 /// @return The new hash.
-uint64_t appendHash(const void* buffer, size_t bufferSize, uint64_t prevHash);
+uint64_t appendHash(const void* buffer, std::size_t bufferSize, uint64_t prevHash);
 /// @}
 
 } // end namespace arm

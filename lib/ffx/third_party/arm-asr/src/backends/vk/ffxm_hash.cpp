@@ -26,7 +26,7 @@ namespace arm {
 constexpr uint64_t kHashM = 0xc6a4a7935bd1e995;
 constexpr uint64_t kHashR = 47;
 
-uint64_t appendHash(const void* buffer, size_t bufferSize, uint64_t h)
+uint64_t appendHash(const void* buffer, std::size_t bufferSize, uint64_t h)
 {
 	const uint64_t* data = static_cast<const uint64_t*>(buffer);
 	const uint64_t* const end = data + (bufferSize / sizeof(uint64_t));
@@ -71,7 +71,7 @@ uint64_t appendHash(const void* buffer, size_t bufferSize, uint64_t h)
 	return h;
 }
 
-uint64_t computeHash(const void* buffer, size_t bufferSize, uint64_t seed)
+uint64_t computeHash(const void* buffer, std::size_t bufferSize, uint64_t seed)
 {
 	const uint64_t h = seed ^ (bufferSize * kHashM);
 	return appendHash(buffer, bufferSize, h);
