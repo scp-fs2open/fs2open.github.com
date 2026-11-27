@@ -532,6 +532,7 @@ namespace particle {
 
 				if (!index.isValid()) {
 					error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
+					return {};
 				}
 
 				auto effect = ParticleManager::get()->getEffect(index);
@@ -603,7 +604,9 @@ namespace particle {
 					while (optional_string("+Child effect:")) {
 						const auto& child_effects = parseLegacyCompositeElement(first ? name : "");
 						result.insert(result.end(), std::make_move_iterator(child_effects.begin()), std::make_move_iterator(child_effects.end()));
-						first = false;
+						if (!child_effects.empty()) {
+							first = false;
+						}
 					}
 					if (result.empty()) {
 						error_display(0, "Composite effect %s must have at least one child effect!", name.c_str());
