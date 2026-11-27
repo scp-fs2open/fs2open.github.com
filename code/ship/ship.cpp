@@ -21134,6 +21134,9 @@ void parse_ai_target_priorities()
 	if (already_exists == -1) {
 		Ai_tp_list.push_back(std::move(temp_priority));
 	} else {
+		// memberships belong to the ship type and ship class entries, so they survive a redefinition of the group
+		temp_priority.ship_type = std::move(Ai_tp_list[already_exists].ship_type);
+		temp_priority.ship_class = std::move(Ai_tp_list[already_exists].ship_class);
 		Ai_tp_list[already_exists] = std::move(temp_priority);
 	}
 }
