@@ -1,0 +1,14 @@
+#Weapon Templates
+
+$Template:	Tinted Base
+@Laser Color:	255 0 0
+@Laser Color2:	0 0 255
+
+#End
+
+#Primary Weapons
+
+$Name:	Tinted Derived
++Use Template:	Tinted Base
+
+#End

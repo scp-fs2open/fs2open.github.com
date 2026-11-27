@@ -1,0 +1,13 @@
+#Weapon Templates
+
+$Template:	Base Laser
+
+#End
+
+#Primary Weapons
+
+$Name:	Ghost
++nocreate
++Use Template:	Base Laser
+
+#End

@@ -1,0 +1,12 @@
+#Weapon Templates
+
+$Template:	Base Laser
+
+#End
+
+#Primary Weapons
+
+$Name:	Derived Laser
++Use Template:	Base Laser
+
+#End

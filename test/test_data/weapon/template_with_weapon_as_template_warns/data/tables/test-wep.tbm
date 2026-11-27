@@ -1,0 +1,13 @@
+#Weapon Templates
+
+$Template:	Base Laser
++Use Weapon as Template:	Subach HL-7
+$Damage:	3.0
+
+#End
+
+#Primary Weapons
+
+$Name:	Survivor
+
+#End
