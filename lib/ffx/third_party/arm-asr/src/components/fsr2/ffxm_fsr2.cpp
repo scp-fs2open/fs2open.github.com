@@ -568,7 +568,9 @@ static FfxmErrorCode fsr2Create(FfxmFsr2Context_Private* context, const FfxmFsr2
 	const bool applyBalancedModeOptimizations = contextDescription->qualityMode == FFXM_FSR2_SHADER_QUALITY_MODE_BALANCED;
 	const bool isBalancedOrPerformance = applyBalancedModeOptimizations || applyPerfModeOptimizations;
 
-	const bool preparedInputColorNeedsFP16 = !applyPerfModeOptimizations;
+	// Performance's 8-bit target can quantize dark HDR colors to black before accumulation.
+	const bool hdrInput = (contextDescription->flags & FFXM_FSR2_ENABLE_HIGH_DYNAMIC_RANGE) != 0;
+	const bool preparedInputColorNeedsFP16 = !applyPerfModeOptimizations || hdrInput;
 
 	const bool isOpenGLES = (contextDescription->flags & FFXM_FSR2_OPENGL_ES_3_2) != 0;
 

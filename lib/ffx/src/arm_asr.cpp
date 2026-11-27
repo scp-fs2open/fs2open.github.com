@@ -23,7 +23,7 @@ struct Backend {
     size_t views = 0;
 };
 
-// The standalone Arm backend uses one shared interface for its effect contexts.
+// The Arm backend uses one shared interface for its effect contexts.
 Backend SharedBackend;
 ffxApiMessage ClientMessage;
 

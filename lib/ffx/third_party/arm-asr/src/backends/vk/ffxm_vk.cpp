@@ -30,9 +30,21 @@
 #include <array>
 #include <ffxm_hash.h>
 #include <locale>
+#include <type_traits>
 
 namespace arm
 {
+
+template <typename To, typename From>
+static To castGpuHandle(From handle)
+{
+    static_assert(sizeof(To) == sizeof(From));
+    if constexpr (std::is_pointer_v<To> || std::is_pointer_v<From>) {
+        return reinterpret_cast<To>(handle);
+    } else {
+        return static_cast<To>(handle);
+    }
+}
 
 // prototypes for functions in the interface
 FfxmUInt32              GetSDKVersionVK(FfxmInterface* backendInterface);
@@ -394,9 +406,14 @@ FfxmUInt32 findMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequirem
         if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & requestedProperties)) {
 
 #ifndef __ANDROID__
-            // if just device-local memory is requested, make sure this is the invisible heap to prevent over-subscribing the local heap
-            if (requestedProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+            // Prefer non-host-visible device-local memory, with a fallback for unified memory.
+            if (requestedProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
+                if (bestCandidate == UINT32_MAX) {
+                    bestCandidate = i;
+                    outProperties = memProperties.memoryTypes[i].propertyFlags;
+                }
                 continue;
+            }
 #endif
 
             bestCandidate = i;
@@ -1749,9 +1766,9 @@ FfxmErrorCode RegisterResourceVK(
     // If we got here, we are setting up a new dynamic entry
     backendResource->resourceDescription = inFfxmResource->description;
     if (inFfxmResource->description.type == FFXM_RESOURCE_TYPE_BUFFER)
-        backendResource->bufferResource = reinterpret_cast<VkBuffer>(inFfxmResource->resource);
+        backendResource->bufferResource = castGpuHandle<VkBuffer>(inFfxmResource->resource);
     else
-        backendResource->imageResource = reinterpret_cast<VkImage>(inFfxmResource->resource);
+        backendResource->imageResource = castGpuHandle<VkImage>(inFfxmResource->resource);
 
     copyResourceState(backendResource, inFfxmResource);
 
@@ -1868,7 +1885,7 @@ FfxmResource GetResourceVK(FfxmInterface* backendInterface, FfxmResourceInternal
     FfxmResourceDescription ffxmResDescription = backendInterface->fpGetResourceDescription(backendInterface, inResource);
 
     FfxmResource resource = {};
-    resource.resource = reinterpret_cast<FfxmGpuHandle>(backendContext->pResources[inResource.internalIndex].imageResource);
+    resource.resource = castGpuHandle<FfxmGpuHandle>(backendContext->pResources[inResource.internalIndex].imageResource);
     // If the internal resource state is undefined, that means we are importing a resource that
     // has not yet been initialized, so we will flag it as such to finish initializing it later
     // before it is used.
@@ -2265,7 +2282,7 @@ FfxmErrorCode CreateComputePipelineVK(FfxmInterface* backendInterface,
     backendContext->vkFunctionTable.vkDestroyShaderModule(backendContext->device, shaderModule, nullptr);
 
     // set the pipeline
-    outPipeline->pipeline = reinterpret_cast<FfxmPipeline>(computePipeline);
+    outPipeline->pipeline = castGpuHandle<FfxmPipeline>(computePipeline);
 
     return FFXM_OK;
 }
@@ -2789,7 +2806,7 @@ FfxmErrorCode getOrCreateGraphicsPipeline(BackendContext_VK* backendContext, Ffx
         pipelineLayout->graphicsPipelineIndex = idx;
 
         // set the pipeline
-        pipeline->pipeline = reinterpret_cast<FfxmPipeline>(pipelineLayout->graphicsPipeline[pipelineLayout->graphicsPipelineIndex].handle);
+        pipeline->pipeline = castGpuHandle<FfxmPipeline>(pipelineLayout->graphicsPipeline[pipelineLayout->graphicsPipelineIndex].handle);
 
         return FFXM_OK;
     }
@@ -2916,7 +2933,7 @@ FfxmErrorCode getOrCreateGraphicsPipeline(BackendContext_VK* backendContext, Ffx
     pipelineLayout->graphicsPipeline[pipelineLayout->graphicsPipelineIndex].hash = hash;
 
     // set the pipeline
-    pipeline->pipeline = reinterpret_cast<FfxmPipeline>(pipelineLayout->graphicsPipeline[pipelineLayout->graphicsPipelineIndex].handle);
+    pipeline->pipeline = castGpuHandle<FfxmPipeline>(pipelineLayout->graphicsPipeline[pipelineLayout->graphicsPipelineIndex].handle);
 
     return FFXM_OK;
 }
@@ -2930,7 +2947,7 @@ FfxmErrorCode DestroyPipelineVK(FfxmInterface* backendInterface, FfxmPipelineSta
         return FFXM_OK;
 
     // Destroy the pipeline
-    VkPipeline vkPipeline = reinterpret_cast<VkPipeline>(pipeline->pipeline);
+    VkPipeline vkPipeline = castGpuHandle<VkPipeline>(pipeline->pipeline);
 
     BackendContext_VK::PipelineLayout* pPipelineLayout = reinterpret_cast<BackendContext_VK::PipelineLayout*>(pipeline->rootSignature);
 
@@ -3248,7 +3265,7 @@ static FfxmErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, Ffx
     backendContext->vkFunctionTable.vkUpdateDescriptorSets(backendContext->device, descriptorWriteIndex, writeDescriptorSets, 0, nullptr);
 
     // bind pipeline
-    backendContext->vkFunctionTable.vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, reinterpret_cast<VkPipeline>(job->computeJobDescriptor.pipeline.pipeline));
+    backendContext->vkFunctionTable.vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, castGpuHandle<VkPipeline>(job->computeJobDescriptor.pipeline.pipeline));
 
     // bind descriptor sets
     backendContext->vkFunctionTable.vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout->pipelineLayout, 0, job->computeJobDescriptor.pipeline.descriptorSetCount, pipelineLayout->descriptorSets[pipelineLayout->descriptorSetIndex], 0, nullptr);
@@ -3432,7 +3449,7 @@ static FfxmErrorCode executeGpuJobFragment(BackendContext_VK* backendContext, Ff
 
     backendContext->vkFunctionTable.vkCmdBeginRenderPass(vkCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     // bind pipeline
-    backendContext->vkFunctionTable.vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VkPipeline>(job->fragmentJobDescription.pipeline->pipeline));
+    backendContext->vkFunctionTable.vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, castGpuHandle<VkPipeline>(job->fragmentJobDescription.pipeline->pipeline));
 
     // bind descriptor sets
     backendContext->vkFunctionTable.vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout->pipelineLayout, 0, job->fragmentJobDescription.pipeline->descriptorSetCount, pipelineLayout->descriptorSets[pipelineLayout->descriptorSetIndex], 0, nullptr);

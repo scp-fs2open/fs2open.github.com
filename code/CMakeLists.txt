@@ -117,7 +117,7 @@ if (FSO_BUILD_WITH_VULKAN)
 	target_link_libraries(code PUBLIC VulkanMemoryAllocator)
 	if (FSO_BUILD_WITH_FFX)
 		get_target_property(ffx_backend ffx_portable FFX_PORTABLE_SELECTED_BACKEND)
-		# Arm ASR can also use the 64-bit Vulkan handles in 32-bit Android builds.
+		# Arm ASR also supports the 64-bit Vulkan handles used in 32-bit builds.
 		if (IS_64BIT OR ffx_backend STREQUAL "ARM_ASR")
 			target_compile_definitions(code PRIVATE WITH_FFX)
 			target_link_libraries(code PRIVATE ffx_portable)

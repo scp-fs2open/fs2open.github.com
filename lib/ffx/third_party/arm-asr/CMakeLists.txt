@@ -19,18 +19,14 @@ target_include_directories(ffx_portable_arm_asr PRIVATE
     src/backends/shared/blob_accessors/prebuilt_shaders
 )
 target_compile_definitions(ffx_portable_arm_asr PRIVATE FFXM_FSR VK_NO_PROTOTYPES)
-# Limit warning exceptions to the vendored Arm sources.
-target_compile_options(ffx_portable_arm_asr PRIVATE
-    -Wno-deprecated-declarations
-    -Wno-missing-braces
-    -Wno-missing-field-initializers
-    -Wno-pointer-bool-conversion
-    -Wno-shadow
-    -Wno-sign-compare
-    -Wno-tautological-pointer-compare
-    -Wno-unused-function
-    -Wno-unused-parameter
-)
+# Standalone builds of ffx-portable do not include FSO's CMake helpers.
+if(COMMAND suppress_warnings)
+    suppress_warnings(ffx_portable_arm_asr)
+elseif(MSVC)
+    target_compile_options(ffx_portable_arm_asr PRIVATE /W0)
+else()
+    target_compile_options(ffx_portable_arm_asr PRIVATE -w)
+endif()
 if(TARGET Vulkan::Headers)
     target_link_libraries(ffx_portable_arm_asr PRIVATE Vulkan::Headers)
 endif()

@@ -46,11 +46,6 @@ include(antlr4.cmake)
 include(vulkan.cmake)
 
 if (FSO_BUILD_WITH_VULKAN AND FSO_BUILD_WITH_FFX)
-	# ffx-portable's AUTO picks by OS and CMAKE_SYSTEM_PROCESSOR, which Visual Studio generators don't set per
-	# architecture, so it would fetch x64-only DLLs for FSO's Win32 and ARM64 builds.
-	if (WIN32 AND (NOT IS_64BIT OR IS_ARM64))
-		set(FFX_PORTABLE_BACKEND "UNAVAILABLE" CACHE STRING "")
-	endif()
 	add_subdirectory(ffx)
 	ffx_portable_get_runtime_files(FFX_RUNTIME_FILES)
 	foreach(ffx_runtime_file IN LISTS FFX_RUNTIME_FILES)
