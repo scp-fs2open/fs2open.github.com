@@ -1757,7 +1757,7 @@ void multi_standalone_postgame_init()
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
 		// MUST store goals and events first - may be used to evaluate next mission
 		// store goals and events
-		mission_campaign_store_goals_and_events_and_variables(false);
+		mission_campaign_store_goals_and_events();
 
 		// evaluate next mission
 		mission_campaign_eval_next_mission();
