@@ -89,6 +89,7 @@
 #include "species_defs/species_defs.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/array_utils.h"
 #include "utils/Random.h"
 #include "utils/string_utils.h"
 #include "weapon/beam.h"
@@ -1585,13 +1586,7 @@ ubyte allowed_weapon_bank::operator[](size_t index) const
 static void target_priority_groups_remove_index(SCP_vector<int> ai_target_priority::*members, int index)
 {
 	for (auto &group : Ai_tp_list)
-	{
-		auto &list = group.*members;
-		list.erase(std::remove(list.begin(), list.end(), index), list.end());
-		for (auto &idx : list)
-			if (idx > index)
-				--idx;
-	}
+		array_remove_index_from_list(group.*members, index);
 }
 
 static SCP_vector<SCP_string> Removed_ships;
@@ -16504,6 +16499,8 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
+
+	Ai_tp_list.clear();
 
 	Ships_inited = false;
 }	
