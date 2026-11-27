@@ -5,7 +5,6 @@ set(FFX_PORTABLE_BACKEND "AUTO" CACHE STRING "How FSR is provided: AUTO, DYNAMIC
 set_property(CACHE FFX_PORTABLE_BACKEND PROPERTY STRINGS AUTO DYNAMIC SHIM DIRECT ARM_ASR UNAVAILABLE)
 set(FFX_PORTABLE_AMD_LIBRARY "" CACHE FILEPATH "DIRECT: AMD library to link. Empty uses AMD's Windows import library")
 set(FFX_PORTABLE_AMD_RUNTIME_FILES "" CACHE STRING "DIRECT: runtime files to deploy. Empty uses AMD's Windows DLLs")
-set(FFX_PORTABLE_ARM_ASR_ROOT "" CACHE PATH "ARM_ASR: installed Arm ASR. Empty uses the Android prebuilt package")
 option(FFX_PORTABLE_BUILD_TESTS "Build the ffx-portable smoke client" OFF)
 
 # Mirrors the root of AMD's SDK, because the file list in AMD's license.md uses paths relative to that root.
@@ -80,24 +79,12 @@ else()
 endif()
 
 set(FFX_PORTABLE_SELECTED "${FFX_PORTABLE_BACKEND}")
-set(arm_asr_root "${FFX_PORTABLE_ARM_ASR_ROOT}")
-if(NOT arm_asr_root AND ANDROID AND PREBUILT_PATH)
-    set(arm_asr_root "${PREBUILT_PATH}/arm-asr")
-endif()
-if(ANDROID AND arm_asr_root
-    AND EXISTS "${arm_asr_root}/include/host/backends/vk/ffxm_vk.h"
-    AND EXISTS "${arm_asr_root}/include/host/ffxm_fsr2.h"
-    AND EXISTS "${arm_asr_root}/lib/libArm_ASR_api.a"
-    AND EXISTS "${arm_asr_root}/lib/libArm_ASR_backend.a"
-    AND EXISTS "${arm_asr_root}/licenses/arm-asr.txt")
-    set(arm_asr_available ON)
-endif()
 if(FFX_PORTABLE_SELECTED STREQUAL "AUTO")
     if(WIN32)
         set(FFX_PORTABLE_SELECTED DYNAMIC)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND FFX_PORTABLE_X64)
         set(FFX_PORTABLE_SELECTED SHIM)
-    elseif(arm_asr_available)
+    elseif(ANDROID)
         set(FFX_PORTABLE_SELECTED ARM_ASR)
     else()
         set(FFX_PORTABLE_SELECTED UNAVAILABLE)
@@ -146,16 +133,14 @@ elseif(FFX_PORTABLE_SELECTED STREQUAL "SHIM")
     target_compile_definitions(ffx_portable PRIVATE FFX_PORTABLE_UPSCALER_SHA256="${FFX_PORTABLE_UPSCALER_SHA256}")
     ffx_portable_fetch(amd_fidelityfx_upscaler_vk.dll ${FFX_PORTABLE_UPSCALER_SHA256} FFX_PORTABLE_RUNTIME)
 elseif(FFX_PORTABLE_SELECTED STREQUAL "ARM_ASR")
-    if(NOT arm_asr_available)
-        message(FATAL_ERROR "FFX_PORTABLE_BACKEND=ARM_ASR requires matching Arm ASR prebuilts for the selected Android ABI")
+    if(NOT ANDROID)
+        message(FATAL_ERROR "FFX_PORTABLE_BACKEND=ARM_ASR only supports Android")
     endif()
+    add_subdirectory(third_party/arm-asr)
     add_library(ffx_portable STATIC src/android/arm_asr.cpp)
-    target_include_directories(ffx_portable SYSTEM PRIVATE "${arm_asr_root}/include")
     target_compile_definitions(ffx_portable PUBLIC FFX_PORTABLE_ARM_ASR=1 PRIVATE VK_NO_PROTOTYPES)
-    target_link_libraries(ffx_portable PRIVATE
-        "${arm_asr_root}/lib/libArm_ASR_api.a"
-        "${arm_asr_root}/lib/libArm_ASR_backend.a")
-    set(FFX_PORTABLE_ARM_ASR_LICENSE "${arm_asr_root}/licenses/arm-asr.txt")
+    target_link_libraries(ffx_portable PRIVATE ffx_portable_arm_asr)
+    set(FFX_PORTABLE_ARM_ASR_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/arm-asr/LICENSES/arm-asr.txt")
 elseif(FFX_PORTABLE_SELECTED STREQUAL "UNAVAILABLE")
     add_library(ffx_portable STATIC src/unavailable.cpp)
 else()
