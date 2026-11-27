@@ -16,6 +16,8 @@
 #include "graphics/2d.h"
 
 int parse_cmdline(int argc, char *argv[]);
+// Handle a launcher query before starting the editor and return its exit status.
+std::optional<int> cmdline_handle_get_flags_json_v2(int argc, char* argv[]);
 
 // COMMAND LINE SETTINGS
 // This section is for reference by all the *_init() functions. For example, the multiplayer init function

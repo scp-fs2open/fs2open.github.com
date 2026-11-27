@@ -40,6 +40,8 @@
 
 #include <QDateTime>
 #include <QDir>
+#include <QCryptographicHash>
+#include <cfile/mod_bootstrap.h>
 #include <QFileInfo>
 #include <QStandardPaths>
 
@@ -151,8 +153,7 @@ void Editor::update() {
 void Editor::maybeUseAutosave(std::string& filepath)
 {
 	const QString qpath       = QString::fromStdString(filepath);
-	const QString basename    = QFileInfo(qpath).fileName();
-	const QString autosavePath = _autosaveDirectory + basename;
+	const QString autosavePath = autosavePathFor(qpath);
 
 	const QFileInfo autosaveInfo(autosavePath);
 	if (!autosaveInfo.exists())
@@ -190,17 +191,24 @@ void Editor::setCurrentMissionPath(const QString& path) {
 	_currentMissionPath = path;
 }
 
-void Editor::performTimedAutosave() {
-	QString savePath;
-	if (_currentMissionPath.isEmpty()) {
-		savePath = _autosaveDirectory + "untitled_autosave.fs2";
-	} else {
-		savePath = _autosaveDirectory + QFileInfo(_currentMissionPath).fileName();
+QString Editor::autosavePathFor(const QString& missionPath) const
+{
+	const QFileInfo mission(missionPath);
+	auto name = missionPath.isEmpty() ? QStringLiteral("untitled_autosave.fs2") : mission.fileName();
+	if (const auto bootstrap = mod_bootstrap_get()) {
+		const auto key = QByteArray::fromStdString(bootstrap->mod_id) + '\0' +
+			(missionPath.isEmpty() ? QByteArray() : mission.absoluteFilePath().toUtf8());
+		const auto hash = QCryptographicHash::hash(key, QCryptographicHash::Sha256).toHex().left(16);
+		name.prepend(QString::fromLatin1(hash) + '_');
 	}
-	autosaveDue(savePath);
+	return _autosaveDirectory + name;
 }
 
-bool Editor::loadMission(const std::string& mission_name, int flags) {
+void Editor::performTimedAutosave() {
+	autosaveDue(autosavePathFor(_currentMissionPath));
+}
+
+bool Editor::loadMission(const std::string& mission_name, int flags, const std::string& document_path) {
 	char name[512], * old_name;
 	int i, j, ob;
 	object* objp;
@@ -417,7 +425,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	stars_post_level_init();
 
-	missionLoaded(filepath);
+	missionLoaded(document_path.empty() ? filepath : document_path);
 
 	// This hook will allow for scripts to know when a mission has been loaded
 	// which will then allow them to update any LuaEnums that may be related to sexps

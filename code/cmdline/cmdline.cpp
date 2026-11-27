@@ -8,6 +8,7 @@
 */
 
 #include "cmdline/cmdline.h"
+#include "cfile/mod_bootstrap.h"
 #include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
 #include "cfile/cfilesystem.h"
 #include "fireball/fireballs.h"
@@ -34,6 +35,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
+#include <windows.h>
 #elif defined(APPLE_APP)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -44,6 +46,7 @@
 #include <sys/stat.h>
 #endif
 
+#include <algorithm>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -423,6 +426,12 @@ int Cmdline_no_enhanced_sound = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
+cmdline_parm bootstrap_arg("-bootstrap", "Load the ordered mod roots from an absolute bootstrap.json path", AT_STRING);
+
+const char* cmdline_bootstrap_path()
+{
+	return bootstrap_arg.found() ? bootstrap_arg.str() : nullptr;
+}
 cmdline_parm campaign_arg("-campaign", "Set current campaign", AT_STRING);	// Cmdline_campaign
 
 char *Cmdline_mod = NULL; //DTP for mod argument
@@ -671,7 +680,11 @@ SCP_string cmdline_build_string()
 			cmdline << " " << parmp->name;
 
 			if (parmp->args) {
-				cmdline << " " << parmp->args;
+				if (parmp == &bootstrap_arg) {
+					cmdline << " \"" << parmp->args << '"';
+				} else {
+					cmdline << " " << parmp->args;
+				}
 			}
 
 			found++;
@@ -683,6 +696,20 @@ SCP_string cmdline_build_string()
 	}
 
 	return cmdline.str();
+}
+
+SCP_vector<SCP_string> cmdline_build_args()
+{
+	SCP_vector<SCP_string> args;
+	for (auto parm = GET_FIRST(&Parm_list); parm != END_OF_LIST(&Parm_list); parm = GET_NEXT(parm)) {
+		if (parm->name_found) {
+			args.emplace_back(parm->name);
+			if (parm->args) {
+				args.emplace_back(parm->args);
+			}
+		}
+	}
+	return args;
 }
 
 // prints simple cmdline to multi.log
@@ -1608,25 +1635,62 @@ static flag_output_type get_flags_output_type() {
 	}
 }
 
-static void write_flags() {
-	auto type = get_flags_output_type();
+static bool write_flags_json(flag_output_type type)
+{
+	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
+	json_object_set_new(root, "bootstrap_version", json_integer(MOD_BOOTSTRAP_VERSION));
 
+#ifdef __ANDROID__
+	char* dumped = json_dumps(root, JSON_INDENT(4));
+	os_android_set_flags_string(dumped ? dumped : "");
+	const bool written = dumped != nullptr;
+	free(dumped);
+#else
+	const bool written = json_dumpf(root, stdout, JSON_INDENT(4)) == 0 && fflush(stdout) == 0;
+#endif
+
+	json_decref(root);
+	return written;
+}
+
+static void write_flags()
+{
+	const auto type = get_flags_output_type();
 	if (type == flag_output_type::Binary) {
 		write_flags_file();
 		return;
 	}
 
-	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
+	write_flags_json(type);
+}
 
-#ifdef __ANDROID__
-	char* dumped = json_dumps(root, JSON_INDENT(4));
-	os_android_set_flags_string(dumped ? dumped : "");
-	free(dumped);
-#else
-	json_dumpf(root, stdout, JSON_INDENT(4));
+std::optional<int> cmdline_handle_get_flags_json_v2(int argc, char* argv[])
+{
+	if (argc < 3 || std::none_of(argv + 1, argv + argc, [](const char* arg) {
+			return stricmp(arg, GET_FLAGS_STRING) == 0;
+		})) {
+		return std::nullopt;
+	}
+
+	// Parse just the supplied arguments. The query can run without game or editor settings.
+	os_parse_parms(argc, argv);
+	if (!get_flags_arg.has_param() || strcmp(get_flags_arg.str(), "json_v2") != 0) {
+		reset_cmdline_parms();
+		return std::nullopt;
+	}
+
+	if (portable_mode.found()) {
+		Cmdline_portable_mode = true;
+	}
+	Cmdline_noninteractive = true;
+
+#ifdef _WIN32
+	// Keep inherited stdout (including a launcher's pipe). A GUI executable may have no stdout of its own.
+	if (_fileno(stdout) < 0 && AttachConsole(ATTACH_PARENT_PROCESS)) {
+		freopen("CONOUT$", "w", stdout);
+	}
 #endif
-
-	json_decref(root);
+	return write_flags_json(flag_output_type::Json_V2) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 bool SetCmdlineParams()
@@ -1921,7 +1985,7 @@ bool SetCmdlineParams()
 	}
 
 
-	if(mod_arg.found() ) {
+	if (mod_arg.found() && !bootstrap_arg.found()) {
 		Cmdline_mod = mod_arg.str();
 
 		// strip off blank space if it's there

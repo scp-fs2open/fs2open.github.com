@@ -1,0 +1,37 @@
+#pragma once
+
+#include "globalincs/pstypes.h"
+
+#include <optional>
+
+inline constexpr int MOD_BOOTSTRAP_VERSION = 1;
+
+struct ModBootstrapRootMetadata {
+	std::optional<SCP_string> id;
+	std::optional<SCP_string> type;
+	std::optional<SCP_string> version;
+	std::optional<SCP_string> title;
+};
+
+struct ModBootstrapRoot {
+	SCP_string path;
+	std::optional<ModBootstrapRootMetadata> metadata;
+};
+
+struct ModBootstrap {
+	int version = 0;
+	SCP_string filename;
+	SCP_string launch_directory;
+	SCP_string mod_id;
+	SCP_string workfolder;
+	SCP_vector<ModBootstrapRoot> roots;
+};
+
+const char* cmdline_bootstrap_path();
+void mod_bootstrap_init(const char* filename, const char* launch_directory = nullptr);
+bool mod_bootstrap_init_from_cmdline(const char* launch_directory = nullptr);
+void mod_bootstrap_log();
+const ModBootstrap* mod_bootstrap_get();
+// Returns the bootstrap ID or the first legacy -mod folder name.
+SCP_string get_primary_mod_id();
+bool mod_bootstrap_contains_path(const SCP_string& filename);

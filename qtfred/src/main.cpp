@@ -83,6 +83,10 @@ void game_busy_callback(int  /*count*/) {
 }
 
 int main(int argc, char* argv[]) {
+	if (const auto result = cmdline_handle_get_flags_json_v2(argc, argv)) {
+		return *result;
+	}
+
 	signal( SIGSEGV, handler );
 
 #ifdef _MSC_VER

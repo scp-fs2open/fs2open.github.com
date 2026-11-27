@@ -80,7 +80,7 @@ class Fred_mission_save {
 	 *
 	 * @note Used by legacy FRED2 only; QtFRED uses save_autosave_file() instead.
 	 */
-	int autosave_mission_file(char* pathname);
+	int autosave_mission_file(const char* pathname);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname

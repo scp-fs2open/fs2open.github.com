@@ -20,6 +20,7 @@
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "cfile/mod_bootstrap.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "gamesnd/eventmusic.h"
@@ -6835,16 +6836,17 @@ bool parse_mission(mission *pm, int flags)
 
 			text += "\", and the current mod is \"";
 
-			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
-				text += "<retail default> ";
-			} else {
-				for (char *mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
+			if (!mod_bootstrap_get() && Cmdline_mod != nullptr && *Cmdline_mod != '\0') {
+				for (const char* mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
 					text += mod_token;
 					text += " ";
 				}
+				text.pop_back();
+			} else {
+				const auto mod_id = get_primary_mod_id();
+				text += mod_id.empty() ? "<retail default>" : mod_id;
 			}
 
-			text.erase(text.length() - 1);	// trim last space
 			text += "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ";
 			text += (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission";
 			text += " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n";

@@ -4,6 +4,7 @@
 #include "object.h"
 
 #include "cmdline/cmdline.h"
+#include "cfile/mod_bootstrap.h"
 
 #include <asteroid/asteroid.h>
 #include <cutscene/cutscenes.h>
@@ -67,9 +68,6 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
-	listener(SubSystem::OS);
-	os_init(Osreg_class_name, Osreg_app_name);
-
 	listener(SubSystem::Timer);
 	timer_init();
 
@@ -79,6 +77,13 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 		// Command line contained an option that terminates the program immediately
 		return false;
 	}
+	if (!mod_bootstrap_init_from_cmdline(cfilepath.c_str())) {
+		return false;
+	}
+
+	mod_bootstrap_log();
+	listener(SubSystem::OS);
+	os_init(Osreg_class_name, Osreg_app_name);
 
 #ifndef NDEBUG
 #if FS_VERSION_REVIS == 0

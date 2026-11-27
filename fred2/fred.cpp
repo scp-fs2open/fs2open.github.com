@@ -22,6 +22,9 @@
 #include "CampaignTreeView.h"
 #include "CampaignTreeWnd.h"
 
+#include "cfile/cfilesystem.h"
+#include "cfile/mod_bootstrap.h"
+#include "cmdline/cmdline.h"
 #include "globalincs/mspdb_callstack.h"
 #include "graphics/2d.h"
 #include "io/key.h"
@@ -29,6 +32,8 @@
 #include "object/object.h"
 
 #include "AFXADV.H"
+
+#include <cstdlib>
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -170,10 +175,6 @@ CFREDApp::CFREDApp() {
 	app_init = 0;
 
 	SCP_mspdbcs_Initialise();
-
-	if (LoggingEnabled) {
-		outwnd_init();
-	}
 }
 
 CFREDApp::~CFREDApp() {
@@ -185,6 +186,14 @@ int CFREDApp::ExitInstance() {
 }
 
 BOOL CFREDApp::InitInstance() {
+	if (const auto result = cmdline_handle_get_flags_json_v2(__argc, __argv)) {
+		std::exit(*result);
+	}
+
+	if (LoggingEnabled) {
+		outwnd_init();
+	}
+
 	static char *c;
 	static char *tok = "whee";
 
@@ -336,6 +345,14 @@ BOOL CFREDApp::InitInstance() {
 	OnFileNew();
 
 	if (m_pMainWnd == NULL) return FALSE;
+
+	if (mod_bootstrap_get()) {
+		SCP_string directory;
+		if (cf_create_default_path_string(directory, CF_TYPE_MISSIONS, nullptr,
+			CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_PRIMARY_MOD)) {
+			m_sInitialDir = directory.c_str();
+		}
+	}
 
 	// apply the saved main menu layout preference (the new layout is loaded by default)
 	if (Classic_menu_layout)
