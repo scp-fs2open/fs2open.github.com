@@ -1930,6 +1930,9 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			auto type_objp = &Objects[so->objnum];
 			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_filtered_chase_achievability] && (class_objp->flags[Object::Object_Flags::Protected] ||
+				!iff_matches_mask(obj_team(class_objp), iff_get_attackee_mask(obj_team(objp)))))
+				continue;
 			ship *potential_target_shipp = &Ships[type_objp->instance];
 			if (ship_get_turret_type_aggregate_hits(potential_target_shipp, aigp->int_data) > 0.0f) {
 				return ai_achievability::ACHIEVABLE;
