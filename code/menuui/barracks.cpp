@@ -37,10 +37,6 @@
 
 
 // stats defines
-//#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
-#define STAT_COLUMN1_W 41*2							// as we might use Unicode //ksotar
-#define STAT_COLUMN2_W 11
-
 static int Stat_column1_w[GR_NUM_RESOLUTIONS] =
 {
 	40,		// GR_640
@@ -254,9 +250,12 @@ UI_XSTR Barracks_text[GR_NUM_RESOLUTIONS][BARRACKS_NUM_TEXT] = {
 };
 
 
-static size_t Num_stat_lines;
-static char (*Stat_labels)[STAT_COLUMN1_W];
-static char (*Stats)[STAT_COLUMN2_W];
+struct barracks_stat_line
+{
+	SCP_string label;		// may begin with '*' to mark a heading row
+	SCP_string value;		// empty for headings / spacer rows
+};
+static SCP_vector<barracks_stat_line> Stat_lines;
 static uint16_t Stats_max_width;		// If Unicode language is used then we adapt stats width for new words/strings length
 static uint16_t Stats_X2;				// And numbers position adapted as well
 
@@ -290,166 +289,96 @@ void barracks_squad_change_popup();
 // BARRACKS screen
 //
 
-#define STRCPY1(a, b) do {	\
-	Assert(strlen(b) < STAT_COLUMN1_W); \
-	strcpy_s(a, b); \
-} while (false)
+static void add_stat_line(SCP_string label, SCP_string value = "")
+{
+	Stat_lines.push_back({ std::move(label), std::move(value) });
+}
 
 void barracks_init_stats(scoring_struct *stats)
 {
-	size_t Max_stat_lines = Ship_info.size() + 23;
 	size_t i;
 	float f;
 	int score_from_kills = 0;
+	SCP_string value;
 
-	//Set up variables
-	if(Stat_labels != NULL)
-	{
-		delete[] Stat_labels;
-	}
-	if(Stats != NULL)
-	{
-		delete[] Stats;
-	}
+	Stat_lines.clear();
 
-	Stat_labels = (char (*)[STAT_COLUMN1_W]) new char[Max_stat_lines * STAT_COLUMN1_W];
-	Stats = (char (*)[STAT_COLUMN2_W]) new char[Max_stat_lines * STAT_COLUMN2_W];
+	add_stat_line(XSTR( "*All Time Stats", 50));
+	add_stat_line("");
 
-	//Now start throwing stuff in
-	Num_stat_lines = 0;
+	sprintf(value, "%u", stats->p_shots_fired);
+	add_stat_line(XSTR( "Primary weapon shots:", 51), value);
 
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "*All Time Stats", 50));
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	sprintf(value, "%u", stats->p_shots_hit);
+	add_stat_line(XSTR( "Primary weapon hits:", 52), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;	
+	sprintf(value, "%u", stats->p_bonehead_hits);
+	add_stat_line(XSTR( "Primary friendly hits:", 53), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon shots:", 51));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_fired);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon hits:", 52));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_hit);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hits:", 53));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_bonehead_hits);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary hit %:", 54));
 	if (stats->p_shots_fired > 0) {
 		f = (float) stats->p_shots_hit * 100.0f / (float) stats->p_shots_fired;
 	} else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
-	Num_stat_lines++;
+	sprintf(value, XSTR( "%.1f%%", 55), f);
+	add_stat_line(XSTR( "Primary hit %:", 54), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hit %:", 56));
 	if (stats->p_shots_fired > 0) {
 		f = (float) stats->p_bonehead_hits * 100.0f / (float) stats->p_shots_fired;
 	} else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
-	Num_stat_lines++;
+	sprintf(value, XSTR( "%.1f%%", 55), f);
+	add_stat_line(XSTR( "Primary friendly hit %:", 56), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	add_stat_line("");
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon shots:", 57));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_fired);
-	Num_stat_lines++;
+	sprintf(value, "%u", stats->s_shots_fired);
+	add_stat_line(XSTR( "Secondary weapon shots:", 57), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon hits:", 58));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_hit);
-	Num_stat_lines++;
+	sprintf(value, "%u", stats->s_shots_hit);
+	add_stat_line(XSTR( "Secondary weapon hits:", 58), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hits:", 59));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
-	Num_stat_lines++;
+	sprintf(value, "%u", stats->s_bonehead_hits);
+	add_stat_line(XSTR("Secondary friendly hits:", 59), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary hit %:", 60));
 	if (stats->s_shots_fired > 0) {
 		f = (float)stats->s_shots_hit * 100.0f / (float)stats->s_shots_fired;
 	}
 	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
-	Num_stat_lines++;
+	sprintf(value, XSTR("%.1f%%", 55), f);
+	add_stat_line(XSTR("Secondary hit %:", 60), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hit %:", 61));
 	if (stats->s_shots_fired > 0) {
 		f = (float)stats->s_bonehead_hits * 100.0f / (float)stats->s_shots_fired;
 	}
 	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
-	Num_stat_lines++;
+	sprintf(value, XSTR("%.1f%%", 55), f);
+	add_stat_line(XSTR("Secondary friendly hit %:", 61), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	add_stat_line("");
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Total kills:", 62));
-	sprintf(Stats[Num_stat_lines], "%d", stats->kill_count_ok);
-	Num_stat_lines++;
+	sprintf(value, "%d", stats->kill_count_ok);
+	add_stat_line(XSTR("Total kills:", 62), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Assists:", 63));
-	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
-	Num_stat_lines++;
+	sprintf(value, "%d", stats->assists);
+	add_stat_line(XSTR("Assists:", 63), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	add_stat_line("");
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	strcpy_s(Stat_labels[Num_stat_lines], XSTR("Current Score:", 1583));
-	sprintf(Stats[Num_stat_lines], "%d", stats->score);
-	Num_stat_lines++;
+	sprintf(value, "%d", stats->score);
+	add_stat_line(XSTR("Current Score:", 1583), value);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	add_stat_line("");
+	add_stat_line("");
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	add_stat_line(XSTR("*Kills by Ship Type", 64));
 
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("*Kills by Ship Type", 64));
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	// Goober5000 - make sure we have room for all ships
-	Assert((Num_stat_lines + Ship_info.size()) < Max_stat_lines);
+	add_stat_line("");
 
 	// wookieejedi - Show kills by ship type, but if using display name
 	// then consolidate values for similarly named entries
@@ -459,7 +388,6 @@ void barracks_init_stats(scoring_struct *stats)
 		if (stats->kills[i]) {
 			// wookieejedi - consolidate by display name or ship class name
 			const char* name_key = it->get_display_name();
-			Assert(strlen(name_key) + 1 < STAT_COLUMN1_W);
 			kill_map[name_key] += stats->kills[i];
 			score_from_kills += stats->kills[i] * it->score;
 		}
@@ -467,31 +395,23 @@ void barracks_init_stats(scoring_struct *stats)
 
 	// wookieejedi - now display the kills per ship type
 	for (const auto& [name, count] : kill_map) {
-		Assert(Num_stat_lines < Max_stat_lines);
-		// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
-		if (Num_stat_lines >= Max_stat_lines) {
-			break;
-		}
-
-		Assert(name.length() + 1 < STAT_COLUMN1_W);
-		sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), name.c_str());
-		sprintf(Stats[Num_stat_lines], "%d", count);
-		Num_stat_lines++;
+		SCP_string label;
+		sprintf(label, NOX("%s:"), name.c_str());
+		sprintf(value, "%d", count);
+		add_stat_line(label, value);
 	}
 
 	// add the score from kills
-	Assert((Num_stat_lines + 1) < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Score from kills only:", 1636));
-	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
-	Num_stat_lines++;
+	sprintf(value, "%d", score_from_kills);
+	add_stat_line(XSTR("Score from kills only:", 1636), value);
 
 	int w;
 	Stats_max_width = 0;
 	Stats_X2	 = 0;
 	if (Unicode_text_mode && (gr_screen.res != GR_640)) {
-		for (i = 0; i < Num_stat_lines; i++) {					// Find the longest string in labels to base list appearance on that
-			gr_get_string_size(&w, nullptr, Stat_labels[i]);
-			if (Stats_max_width < w) 
+		for (auto &line : Stat_lines) {					// Find the longest string in labels to base list appearance on that
+			gr_get_string_size(&w, nullptr, line.label.c_str());
+			if (Stats_max_width < w)
 				Stats_max_width = (uint16_t)w;
 		}
 		Stats_max_width += 20;
@@ -500,9 +420,9 @@ void barracks_init_stats(scoring_struct *stats)
 	else {
 		Stats_max_width = (uint16_t) Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD];
 		Stats_X2	 = (uint16_t) Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD];
-		for (i = 0; i < Num_stat_lines; i++) {
-			font::force_fit_string(Stat_labels[i], Stat_column1_w[gr_screen.res], Stats_max_width);
-			font::force_fit_string(Stats[i], Stat_column2_w[gr_screen.res], Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD]);
+		for (auto &line : Stat_lines) {
+			font::force_fit_string(line.label, Stat_column1_w[gr_screen.res], Stats_max_width);
+			font::force_fit_string(line.value, Stat_column2_w[gr_screen.res], Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD]);
 		}
 	}
 }
@@ -766,7 +686,7 @@ void barracks_scroll_stats_down()
 {
 	int font_height = gr_get_font_height();
 
-	if (Stats_scroll_offset + Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD] / font_height < static_cast<int>(Num_stat_lines)) {
+	if (Stats_scroll_offset + Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD] / font_height < sz2i(Stat_lines.size())) {
 		Stats_scroll_offset++;
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
@@ -1229,20 +1149,20 @@ void barracks_display_pilot_stats()
 	int y = 0;
 	int z = Stats_scroll_offset;
 	int font_height = gr_get_font_height();
-	char *str;
+	const char *str;
 	int i, w, h;
 	while (y + font_height <= Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD]) {
-		if (z >= (int)Num_stat_lines) {
+		if (!Stat_lines.in_bounds(z)) {
 			break;
 		}
 
-		str = Stat_labels[z];
+		str = Stat_lines[z].label.c_str();
 		if (*str == '*') {
 			gr_set_color_fast(&Color_text_heading);
 			str++;
 
 			gr_get_string_size(&w, &h, str);
-			i = Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y + h / 2 - 1;			
+			i = Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y + h / 2 - 1;
 			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width - w - 2, i, GR_RESIZE_MENU);
 			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width + 1, i, Stats_X2 + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i, GR_RESIZE_MENU);
 
@@ -1252,7 +1172,7 @@ void barracks_display_pilot_stats()
 
 		gr_get_string_size(&w, NULL, str);
 		gr_printf_menu(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
-		str = Stats[z];
+		str = Stat_lines[z].value.c_str();
 		if (*str) {
 			gr_printf_menu(Stats_X2, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		}
@@ -1383,10 +1303,6 @@ void barracks_draw_squad_pic()
 // -----------------------------------------------------------------------------
 void barracks_init()
 {
-	//Set these to null, 'cause they aren't allocated yet.
-	Stat_labels = NULL;
-	Stats = NULL;
-
 	UI_WINDOW *w = &Ui_window;
 
 	// save current pilot file, so we don't possibly loose it.
@@ -1705,16 +1621,8 @@ void barracks_close()
 		}
 	}
 
-	if(Stat_labels != NULL)
-	{
-		delete[] Stat_labels;
-		Stat_labels = NULL;
-	}
-	if(Stats != NULL)
-	{
-		delete[] Stats;
-		Stats = NULL;
-	}
+	Stat_lines.clear();
+	Stat_lines.shrink_to_fit();
 
 	game_flush();
 }

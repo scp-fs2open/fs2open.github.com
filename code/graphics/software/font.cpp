@@ -621,6 +621,15 @@ namespace font
 		return w;
 	}
 
+	int force_fit_string(SCP_string &str, size_t max_str_len, int max_width, float scale)
+	{
+		// the char* overload only ever shortens the string, so operating on the buffer
+		// in-place and resizing to the new length afterward is safe
+		int width = force_fit_string(str.data(), max_str_len, max_width, scale);
+		str.resize(strlen(str.c_str()));
+		return width;
+	}
+
 	void stuff_first(SCP_string &firstFont)
 	{
 		try
