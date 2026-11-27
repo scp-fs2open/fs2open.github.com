@@ -639,7 +639,7 @@ void debrief_unpause()
 	if (!Debriefing_paused)
 		return;
 
-	Debriefing_paused = 1;
+	Debriefing_paused = 0;
 
 	if (Briefing_music_handle >= 0) {
 		audiostream_unpause(Briefing_music_handle);
@@ -2047,7 +2047,10 @@ void debrief_close(bool API_Access)
 	int i;
 	scoring_struct *sc;
 
-	Assert(Debrief_inited);
+	if ( !Debrief_inited ) {
+		nprintf(("Warning", "debrief_close() returning without doing anything\n"));
+		return;
+	}
 
 	// if the mission wasn't accepted, clear out my stats
 	// we need to evaluate a little differently for multiplayer since the conditions for "accepting" 
@@ -2094,9 +2097,11 @@ void debrief_close(bool API_Access)
 	// clear out award text 
 	Debrief_award_text_num_lines = 0;
 
+	// unload the audio streams used for voice playback
+	debrief_voice_unload_all();
+
 	//These don't need to be handled when accessing through the API -Mjn
 	if (!API_Access) {
-		debrief_voice_unload_all();
 		common_music_close();
 		chatbox_close();
 	}

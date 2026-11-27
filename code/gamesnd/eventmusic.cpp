@@ -775,25 +775,18 @@ void event_music_level_close()
 	if ( Event_music_level_inited == FALSE )
 		return;
 
-	if ( Current_soundtrack_num >= 0 && Current_soundtrack_num < (int)Soundtracks.size() ) {
-		auto strack = &Soundtracks[Current_soundtrack_num];
-
-		// close the pattern files
-		for ( i = 0; i < strack->num_patterns; i++ ) {
-			if ( i == Current_pattern ) {
-				if (  audiostream_is_playing(Patterns[Current_pattern].handle) )
-					audiostream_close_file( Patterns[i].handle );
-				else
-					audiostream_close_file( Patterns[i].handle, 0 );
-			}
+	// close all the pattern files
+	for ( i = 0; i < MAX_PATTERNS; i++ ) {
+		if ( i == Current_pattern ) {
+			if (  audiostream_is_playing(Patterns[Current_pattern].handle) )
+				audiostream_close_file( Patterns[i].handle );
 			else
-				audiostream_close_file( Patterns[i].handle, 0 );
-
-			Patterns[i].handle = -1;
+				audiostream_close_file( Patterns[i].handle, false );
 		}
-	} else {
-		// close em all down then
-		audiostream_close_all(0);
+		else
+			audiostream_close_file( Patterns[i].handle, false );
+
+		Patterns[i].handle = -1;
 	}
 
 	Current_soundtrack_num = -1;

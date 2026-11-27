@@ -11,6 +11,7 @@
 
 #include "scripting/lua/LuaValue.h"
 
+#include "scripting/api/libs/audio.h"
 #include "scripting/api/objs/bytearray.h"
 #include "scripting/api/objs/audio_stream.h"
 #include "sound/audiostr.h"
@@ -34,7 +35,8 @@ ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
 ADE_FUNC(openAudioStreamMem,
 	l_Testing,
 	"string snddata, enumeration stream_type /* AUDIOSTREAM_* */",
-	"Opens an audio stream of the specified in-memory file contents and type.",
+	"Opens an audio stream of the specified in-memory file contents and type. A stream opened during a mission, briefing, "
+	"or debriefing is closed when a mission ends if it is neither playing nor paused, even if it was never played.",
 	"audio_stream",
 	"A handle to the opened stream or invalid on error")
 {
@@ -79,7 +81,9 @@ ADE_FUNC(openAudioStreamMem,
         return ade_set_args(L, "o", l_AudioStream.Set(-1));
     }
 
-	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+	int signature = audiostream_get_signature(ah);
+	script_music_track(signature);
+	return ade_set_args(L, "o", l_AudioStream.Set(signature));
 }
 
 

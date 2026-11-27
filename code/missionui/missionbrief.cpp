@@ -1924,14 +1924,14 @@ void brief_close(bool api_access)
 		return;
 	}
 
+	// unload the audio streams used for voice playback
+	brief_voice_unload_all();
+
 	if (!api_access) {
 		nprintf(("Alan", "Entering brief_close()\n"));
 
 		ML_objectives_close();
 		fsspeech_stop();
-
-		// unload the audio streams used for voice playback
-		brief_voice_unload_all();
 
 		if (Fade_anim.first_frame != -1) {
 			bm_unload(Fade_anim.first_frame);

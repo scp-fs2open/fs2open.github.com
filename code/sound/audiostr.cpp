@@ -120,18 +120,22 @@ public:
 	float	Get_Default_Volume() { return m_lDefaultVolume; }
 	uint	Get_Samples_Committed();
 	int	Is_looping() { return m_bLooping; }
+	void	Print_Status(int index);
 	int	status;
 	int	type;
+	int	signature;
 	bool paused_via_sexp_or_script;
 
 protected:
-	bool prepareOpened(const char *filename);
+	bool prepareOpened();
 	void Cue ();
 	bool WriteWaveData (uint cbSize, uint *num_bytes_written, int service = 1);
 	uint GetMaxWriteSize ();
 	bool ServiceBuffer ();
 	static bool TimerCallback (ptr_u dwUser);
 	bool PlaybackDone();
+
+	SCP_string m_filename;
 
 	ALuint m_source_id;	// name of openAL source
 	ALuint m_buffer_ids[MAX_STREAM_BUFFERS];	// names of buffers
@@ -279,7 +283,7 @@ void AudioStream::Init_Data ()
 }
 
 
-bool AudioStream::prepareOpened(const char *filename)
+bool AudioStream::prepareOpened()
 {
 	bool fRtn = true;
 
@@ -317,7 +321,7 @@ bool AudioStream::prepareOpened(const char *filename)
 
 ErrorExit:
 	if ( (fRtn == false) && (m_pwavefile) ) {
-		mprintf(("AUDIOSTR => ErrorExit for ::prepareOpened() on wave file: %s\n", filename));
+		mprintf(("AUDIOSTR => ErrorExit for ::prepareOpened() on wave file: %s\n", m_filename.c_str()));
 
 		if (m_source_id)
 			OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
@@ -341,10 +345,12 @@ bool AudioStream::Create (char *pszFilename)
 	if ( !strlen(pszFilename) )
 		return false;
 
+	m_filename = pszFilename;
+
 	// Create a new WaveFile object and open it
 	m_pwavefile = openAudioFile(pszFilename, (type == ASF_EVENTMUSIC));
 	if (m_pwavefile) {
-		return prepareOpened(pszFilename);
+		return prepareOpened();
 	}
 	else {
 		// Error, unable to create WaveFile object
@@ -358,10 +364,12 @@ bool AudioStream::CreateMem (const uint8_t* snddata, size_t snd_len)
 {
 	Init_Data();
 	
+	m_filename = "<memory>";
+
 	// Create a new WaveFile object and open it
 	m_pwavefile = openAudioMem(snddata, snd_len);
 	if (m_pwavefile) {
-		return prepareOpened("in-memory");
+		return prepareOpened();
 	}
 	else {
 		// Error, unable to create WaveFile object
@@ -399,6 +407,7 @@ bool AudioStream::Destroy (void)
 	m_pwavefile = nullptr;
 
 	status = ASF_FREE;
+	signature = 0;
 
 	SDL_UnlockMutex(write_lock);
 
@@ -771,11 +780,11 @@ void AudioStream::Fade_and_Destroy (void)
 	}
 }
 
-// Fade_and_Destroy
+// Fade_and_Stop
 void AudioStream::Fade_and_Stop (void)
 {
+	// leave m_bDestroy_when_faded alone; a pending Fade_and_Destroy must still free the stream
 	m_bFade = true;
-	m_bDestroy_when_faded = false;
 }
 
 // Restart a stream that a lost playback device stopped; playback resumes from the start of the queued buffers
@@ -816,7 +825,7 @@ void AudioStream::Stop(int paused)
 // Stop_and_Rewind
 void AudioStream::Stop_and_Rewind (void)
 {
-	if (m_fPlaying) {
+	if (m_fPlaying || m_bIsPaused) {
 		// Stop playback
 		OpenAL_ErrorPrint( alSourceStop(m_source_id) );
 
@@ -861,6 +870,25 @@ float AudioStream::Get_Volume()
 double AudioStream::Get_Duration()
 {
 	return m_fileProps.duration;
+}
+
+void AudioStream::Print_Status(int index)
+{
+	const char *type_name;
+	switch (type)
+	{
+		case ASF_SOUNDFX:		type_name = "SOUNDFX"; break;
+		case ASF_EVENTMUSIC:	type_name = "EVENTMUSIC"; break;
+		case ASF_MENUMUSIC:		type_name = "MENUMUSIC"; break;
+		case ASF_VOICE:			type_name = "VOICE"; break;
+		default:				type_name = "NONE"; break;
+	}
+
+	mprintf(("  stream %2d (sig %d): %-10s %-32s%s%s%s%s\n", index, signature, type_name, m_filename.c_str(),
+		m_fPlaying ? " playing" : "",
+		m_bIsPaused ? " paused" : "",
+		m_bFade ? " fading" : "",
+		m_bDestroy_when_faded ? " destroy-pending" : ""));
 }
 
 bool AudioStream::PlaybackDone()
@@ -914,6 +942,7 @@ void audiostream_init()
 		Audio_streams[i].Init_Data();
 		Audio_streams[i].status = ASF_FREE;
 		Audio_streams[i].type = ASF_NONE;
+		Audio_streams[i].signature = 0;
 		Audio_streams[i].paused_via_sexp_or_script = false;
 	}
 
@@ -965,6 +994,30 @@ void audiostream_close()
 
 }
 
+static int Audio_stream_next_signature = 1;	// 0 is bogus
+
+int audiostream_get_signature(int i)
+{
+	if ( (i < 0) || (i >= MAX_AUDIO_STREAMS) || (Audio_streams[i].status != ASF_USED) )
+		return 0;
+
+	return Audio_streams[i].signature;
+}
+
+int audiostream_get_by_signature(int signature)
+{
+	if ( signature <= 0 )
+		return -1;
+
+	for (int i = 0; i < MAX_AUDIO_STREAMS; i++)
+	{
+		if ( (Audio_streams[i].status == ASF_USED) && (Audio_streams[i].signature == signature) )
+			return i;
+	}
+
+	return -1;
+}
+
 static int audiostream_use_next_free( int type )
 {
 	if ( !Audiostream_inited || !snd_is_inited() )
@@ -975,13 +1028,28 @@ static int audiostream_use_next_free( int type )
 		if (Audio_streams[i].status == ASF_FREE)
 			break;
 
+	// only print the streams on the first failure since the last success, since callers may retry
+	static bool reported_exhaustion = false;
+
 	if (i == MAX_AUDIO_STREAMS) {
 		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
+
+		if (!reported_exhaustion) {
+			reported_exhaustion = true;
+			mprintf(("All %d audio streams are in use:\n", MAX_AUDIO_STREAMS));
+			for (int j = 0; j < MAX_AUDIO_STREAMS; j++)
+				Audio_streams[j].Print_Status(j);
+		}
 		return -1;
 	}
 
+	reported_exhaustion = false;
 	Audio_streams[i].status = ASF_USED;
 	Audio_streams[i].type = type;
+	Audio_streams[i].paused_via_sexp_or_script = false;
+
+	Audio_streams[i].signature = Audio_stream_next_signature;
+	Audio_stream_next_signature = (Audio_stream_next_signature == std::numeric_limits<int>::max()) ? 1 : Audio_stream_next_signature + 1;
 
 	switch (type) {
 		case ASF_SOUNDFX: // As in: sound.cpp:590

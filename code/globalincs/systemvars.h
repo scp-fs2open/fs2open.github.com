@@ -79,6 +79,9 @@ extern int Game_mode;
 
 #define SINGLEPLAYER !(Game_mode & GM_MULTIPLAYER)
 
+// set when a level has been initialized and not yet closed; unlike GM_IN_MISSION, this covers the briefing screens
+extern bool Game_level_loaded;
+
 extern int Viewer_mode;
 
 extern int Game_restoring;		// If set, this means we are restoring data from disk
