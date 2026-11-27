@@ -2775,7 +2775,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 					animList += Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info));
 					
 					if (animList.start(animation::ModelAnimationDirection::FWD)) {
-						ss->turret_animation_done_time = timestamp(animList.getTime());
+						ss->turret_animation_done_time = timestamp(animList.getRemainingTime());
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}
