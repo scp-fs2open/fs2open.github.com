@@ -19026,7 +19026,20 @@ void ship_page_in()
 				// Model already loaded
 				model_previously_loaded = it->model_num;
 
-				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
+				// The class found above may only have model_num set (e.g. by a briefing closeup) without
+				// linked subsystems.  If this class is already linked to this model, keep its links rather
+				// than clearing them and relying on ship_copy_subsystem_fixup() to find another source.
+				bool sip_already_linked = (sip->n_subsystems > 0);
+				for (k = 0; k < sip->n_subsystems; k++) {
+					if (sip->subsystems[k].model_num != model_previously_loaded) {
+						sip_already_linked = false;
+						break;
+					}
+				}
+
+				if (sip_already_linked) {
+					ship_previously_loaded = i;
+				} else if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
 					ship_previously_loaded = (int)std::distance(Ship_info.begin(), it);
 
 					// It is possible in some cases for sip->model_num to change, and for subsystems->model_num
