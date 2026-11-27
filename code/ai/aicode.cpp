@@ -8302,7 +8302,7 @@ int ai_set_attack_subsystem(object *objp, int subnum, int wip_index)
 		ssp = ship_get_indexed_subsys(shipp, subnum);
 	else
 		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos, wip_index);
-	if (ssp == NULL)
+	if (ssp == nullptr)
 		return 0;
 
 	set_targeted_subsys(aip, ssp, aip->target_objnum);
@@ -15635,7 +15635,7 @@ void ai_frame(int objnum)
 
 	// check if targeted subsystem has been destroyed, if so, move onto another subsystem
 	// if trying to disable or disarm the target
-	if ((En_objp != NULL) && ( aip->targeted_subsys != NULL )) {
+	if ((En_objp != nullptr) && ( aip->targeted_subsys != nullptr )) {
 		Assert(En_objp->type == OBJ_SHIP);
 		if ( aip->targeted_subsys->current_hits <= 0.0f ) {
 			int subsys_type;
@@ -15655,19 +15655,19 @@ void ai_frame(int objnum)
 			if ( subsys_type != -1 ) {
 				ship_subsys *new_subsys;
 				new_subsys = ship_return_next_subsys(&Ships[En_objp->instance], subsys_type, &Pl_objp->pos, turret_wip_index);
-				if ( new_subsys != NULL ) {
+				if ( new_subsys != nullptr ) {
 					set_targeted_subsys(aip, new_subsys, aip->target_objnum);
 				} else {
 					// AL 12-16-97: no more subsystems to attack... reset targeting info
 					aip->target_objnum = -1;
-					set_targeted_subsys(aip, NULL, -1);
+					set_targeted_subsys(aip, nullptr, -1);
 					if (aip->goals[0].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
 						aip->active_goal = -1;
 					}
 				}
 			} else {
 				// targeted subsys is destroyed, so stop attacking it
-				set_targeted_subsys(aip, NULL, -1);
+				set_targeted_subsys(aip, nullptr, -1);
 			}
 		}
 	}
