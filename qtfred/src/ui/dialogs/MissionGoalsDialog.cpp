@@ -102,7 +102,7 @@ void MissionGoalsDialog::updateUi()
 	ui->goalDescription->setText(QString::fromUtf8(goal.message.c_str()));
 	ui->goalTypeCombo->setCurrentIndex(goal.type & GOAL_TYPE_MASK);
 	ui->objectiveInvalidCheck->setChecked((goal.type & INVALID_GOAL) != 0);
-	ui->noCompletionMusicCheck->setChecked((goal.type & MGF_NO_MUSIC) != 0);
+	ui->noCompletionMusicCheck->setChecked((goal.flags & MGF_NO_MUSIC) != 0);
 	ui->goalScore->setValue(goal.score);
 	ui->goalTeamCombo->setCurrentIndex(goal.team);
 
@@ -187,6 +187,9 @@ void MissionGoalsDialog::on_goalName_textChanged(const QString& text)
 		_model->setCurrentGoalName(text.toUtf8().constData());
 
 		auto item = ui->goalEventTree->currentItem();
+		if (item == nullptr) {
+			return;
+		}
 		while (item->parent() != nullptr) {
 			item = item->parent();
 		}
@@ -214,17 +217,17 @@ void MissionGoalsDialog::on_goalTeamCombo_currentIndexChanged(int team)
 	}
 }
 
-void MissionGoalsDialog::on_objectiveInvalidCheck_stateChanged(bool checked)
+void MissionGoalsDialog::on_objectiveInvalidCheck_stateChanged(int state)
 {
 	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalInvalid(checked);
+		_model->setCurrentGoalInvalid(state == Qt::Checked);
 	}
 }
 
-void MissionGoalsDialog::on_noCompletionMusicCheck_stateChanged(bool checked)
+void MissionGoalsDialog::on_noCompletionMusicCheck_stateChanged(int state)
 {
 	if (_model->isCurrentGoalValid()) {
-		_model->setCurrentGoalNoMusic(checked);
+		_model->setCurrentGoalNoMusic(state == Qt::Checked);
 	}
 }
 
@@ -239,9 +242,11 @@ void MissionGoalsDialog::on_goalEventTree_selectedRootChanged(int formula)
 	for (size_t i = 0; i < goals.size(); ++i) {
 		if (goals[i].formula == formula) {
 			_model->setCurrentGoal(static_cast<int>(i));
-			break;
+			return;
 		}
 	}
+	// the tree reports no row after a delete; without this the fields would keep editing another goal
+	_model->setCurrentGoal(-1);
 }
 
 void MissionGoalsDialog::on_goalEventTree_rootNodeDeleted(int node)
