@@ -312,9 +312,10 @@ void briefing_editor_dlg::OnClose()
 	theApp.record_window_data(&Briefing_wnd_data, this);
 	ptr = Briefing_dialog;	// this juggling prevents a crash in certain situations
 	Briefing_dialog = nullptr;
-	delete ptr;
 
+	// recorded before closing, so the main window's "Editing" step when focus returns is the skipped duplicate
 	FREDDoc_ptr->autosave("briefing editor");
+	delete ptr;
 }
 
 void briefing_editor_dlg::reset_editor()

@@ -668,11 +668,12 @@ void event_editor::OnButtonOk()
 
 	m_annotation_model.saveToGlobal(m_event_tree._model.tree_nodes, m_events, m_sig);
 
+	// recorded before closing, so the main window's "Editing" step when focus returns is the skipped duplicate
+	FREDDoc_ptr->autosave("event editor");
+
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
-
-	FREDDoc_ptr->autosave("event editor");
 }
 
 // load controls with structure data

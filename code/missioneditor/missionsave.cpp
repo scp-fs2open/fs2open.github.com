@@ -83,14 +83,75 @@
 	} while (false)
 
 
-int Fred_mission_save::autosave_mission_file(char* pathname)
+static void erase_lines(SCP_string& text, const char* line_start, int count, size_t search_from)
 {
-	char backup_name[256], name2[256];
+	auto start = text.find(line_start, search_from);
+	if (start == SCP_string::npos) {
+		return;
+	}
+	start++;
+
+	auto end = start;
+	for (int i = 0; i < count && end != SCP_string::npos; i++) {
+		end = text.find('\n', end + 1);
+	}
+	text.erase(start, end - start);
+}
+
+// Undo restores neither the save time nor the camera, so two steps that differ only there are the same step
+static SCP_string mission_text_for_undo_compare(const char* filename)
+{
+	SCP_string text;
+	CFILE* fp = cfopen(filename, "rb", CF_TYPE_MISSIONS);
+	if (fp == nullptr) {
+		return text;
+	}
+
+	text.resize(cfilelength(fp));
+	if (!text.empty() && cfread(text.data(), 1, static_cast<int>(text.size()), fp) != static_cast<int>(text.size())) {
+		text.clear();
+	}
+	cfclose(fp);
+
+	// tags are searched with the newline before them, so the same words inside a line of free text don't count
+	erase_lines(text, "\n$Modified:", 1, 0);
+
+	// notes that don't end in a newline have this tag on their last line, so it is searched without one
+	auto after_free_text = text.find("$End Notes:");
+	// the notes and description are free text and could hold a line that looks like the camera's
+	after_free_text = text.find("\n$end_multi_text", after_free_text);
+	erase_lines(text, "\n+Viewer pos:", 1, after_free_text);
+	erase_lines(text, "\n+Viewer orient:", 4, after_free_text);
+	return text;
+}
+
+int Fred_mission_save::autosave_mission_file(char* pathname, bool& unchanged)
+{
+	char backup_name[256], name2[256], new_name[256];
 	int i;
 
+	unchanged = false;
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
+	strcpy_s(new_name, pathname);
+	strcpy(new_name + len, ".new");
+
+	save_mission_internal(new_name);
+	if (err) {
+		// a delete that fails only leaves a file behind that the next save overwrites
+		cf_delete(new_name, CF_TYPE_MISSIONS);
+		return err;
+	}
+
+	strcpy(backup_name + len, ".001");
+	auto new_text = mission_text_for_undo_compare(new_name);
+	if (!new_text.empty() && new_text == mission_text_for_undo_compare(backup_name)) {
+		cf_delete(new_name, CF_TYPE_MISSIONS);
+		unchanged = true;
+		return 0;
+	}
+
 	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
@@ -100,8 +161,20 @@ int Fred_mission_save::autosave_mission_file(char* pathname)
 	}
 
 	strcpy(backup_name + len, ".001");
-
-	save_mission_internal(backup_name);
+	if (cf_rename(new_name, backup_name, CF_TYPE_MISSIONS) != CF_RENAME_SUCCESS) {
+		mprintf(("Could not rename %s to %s\n", new_name, backup_name));
+		cf_delete(new_name, CF_TYPE_MISSIONS);
+		// shift back, or the gap left at .001 would stop Undo there
+		char from[256], to[256];
+		strcpy_s(from, pathname);
+		strcpy_s(to, pathname);
+		for (i = 1; i < MISSION_BACKUP_DEPTH; i++) {
+			sprintf(from + len, ".%.3d", i + 1);
+			sprintf(to + len, ".%.3d", i);
+			cf_rename(from, to, CF_TYPE_MISSIONS);
+		}
+		err = -1;
+	}
 
 	return err;
 }

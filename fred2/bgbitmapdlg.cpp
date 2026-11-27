@@ -587,10 +587,11 @@ void bg_bitmap_dlg::OnClose()
 
 	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
+
+	// recorded before closing, so the main window's "Editing" step when focus returns is the skipped duplicate
+	FREDDoc_ptr->autosave("background editor");
 	delete Bg_bitmap_dialog;
 	Bg_bitmap_dialog = nullptr;
-
-	FREDDoc_ptr->autosave("background editor");
 }
 
 void bg_bitmap_dlg::update_data(int update)

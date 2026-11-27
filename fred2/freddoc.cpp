@@ -71,6 +71,7 @@ CFREDDoc *FREDDoc_ptr = NULL;
 int Local_modified = 0;
 int Undo_available = 0;
 int Undo_count = 0;
+static bool Recreating_dialogs = false;
 
 
 CFREDDoc::CFREDDoc() {
@@ -89,6 +90,22 @@ void CFREDDoc::AssertValid() const {
 	CDocument::AssertValid();
 }
 #endif //_DEBUG
+
+static void set_backup_save_options(Fred_mission_save& save)
+{
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+	save.set_always_save_display_names(Always_save_display_names);
+	save.set_view_pos(view_pos);
+	save.set_view_orient(view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
+}
 
 bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
@@ -121,6 +138,28 @@ bool CFREDDoc::autoload() {
 	strcat_s(backup_name, ".001");
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 
+	// the closing old Background or Briefing editor writes its fields onto the loaded mission; keep them out of backups
+	bool editor_reopened = Bg_bitmap_dialog != nullptr || Briefing_dialog != nullptr;
+
+	// a loaded mission saves with slightly different rounding, which would make the next unchanged step look new
+	if (r && !editor_reopened) {
+		Fred_mission_save save;
+		set_backup_save_options(save);
+		sprintf(name + len, ".new");
+		if (save.save_autosave_file(name) == 0 && cf_rename(name, backup_name, CF_TYPE_MISSIONS) == CF_RENAME_SUCCESS) {
+			// .001 now holds this step, so .002 goes and the shift below starts at .003
+			sprintf(backup_name + len, ".002");
+			if (!cf_delete(backup_name, CF_TYPE_MISSIONS)) {
+				// a .002 left in place would block every rename below, so hand .001 back to the plain shift
+				sprintf(backup_name + len, ".001");
+				cf_delete(backup_name, CF_TYPE_MISSIONS);
+			}
+		} else {
+			cf_delete(name, CF_TYPE_MISSIONS);
+			mprintf(("Undo: could not save the loaded mission again\n"));
+		}
+	}
+
 	// Rename Backups. .002 becomes .001, .003 becomes .002, etc.
 	for (i = 1; i < MISSION_BACKUP_DEPTH; i++) {
 		sprintf(backup_name + len, ".%.3d", i + 1);
@@ -138,22 +177,11 @@ bool CFREDDoc::autoload() {
 int CFREDDoc::autosave(char *desc) {
 	int i;
 	Fred_mission_save save;
-	if (Mission_save_format == FSO_FORMAT_RETAIL) {
-		save.set_save_format(MissionFormat::RETAIL);
-	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
-		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
-	} else {
-		save.set_save_format(MissionFormat::STANDARD);
-	}
-	save.set_always_save_display_names(Always_save_display_names);
-	save.set_view_pos(view_pos);
-	save.set_view_orient(view_orient);
-	save.set_fred_alt_names(Fred_alt_names);
-	save.set_fred_callsigns(Fred_callsigns);
+	set_backup_save_options(save);
 
 	CWaitCursor wait;
 
-	if (Autosave_disabled) {
+	if (Autosave_disabled || Recreating_dialogs) {
 		return 0;
 	}
 
@@ -161,9 +189,15 @@ int CFREDDoc::autosave(char *desc) {
 		Briefing_dialog->update_data(1);
 	}
 
-	if (save.autosave_mission_file(MISSION_BACKUP_NAME)) {
+	bool unchanged = false;
+	if (save.autosave_mission_file(MISSION_BACKUP_NAME, unchanged)) {
 		Undo_count = Undo_available = 0;
 		return -1;
+	}
+
+	// a second step holding the same mission would make the next Undo do nothing
+	if (unchanged) {
+		return 0;
 	}
 
 	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
@@ -800,6 +834,9 @@ void CFREDDoc::Serialize(CArchive& ar) {
 }
 
 void CFREDDoc::recreate_dialogs() {
+	// the mission was just replaced or reloaded; closing the editors for that must not record a step
+	Recreating_dialogs = true;
+
 	if (Briefing_dialog) {
 		Briefing_dialog->OnCancel();
 		Briefing_dialog = new briefing_editor_dlg;
@@ -817,6 +854,8 @@ void CFREDDoc::recreate_dialogs() {
 									   SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 		Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
 	}
+
+	Recreating_dialogs = false;
 }
 
 void CFREDDoc::UpdateStatus(int flags) {

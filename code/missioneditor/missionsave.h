@@ -70,6 +70,8 @@ class Fred_mission_save {
 	 * @brief Saves the mission onto the backup stack
 	 *
 	 * @param[in] pathname The full pathname
+	 * @param[out] unchanged Set when the mission matches the newest backup apart from its save time and camera; no
+	 * backup is added then
 	 *
 	 * @details Returns the value of CFred_mission_save::err, which is:
 	 *
@@ -80,7 +82,7 @@ class Fred_mission_save {
 	 *
 	 * @note Used by legacy FRED2 only; QtFRED uses save_autosave_file() instead.
 	 */
-	int autosave_mission_file(char* pathname);
+	int autosave_mission_file(char* pathname, bool& unchanged);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname
@@ -97,11 +99,10 @@ class Fred_mission_save {
 	int save_mission_file(const char* pathname);
 
 	/**
-	 * @brief Saves the mission directly to an absolute path without any .bak rename dance.
-	 *        Used by the QtFRED timer-based autosave, which writes to an AppData directory
-	 *        outside the game's virtual file system.
+	 * @brief Saves the mission directly to the given path without any .bak rename dance.
+	 *        Used by QtFRED's timer-based autosave and by legacy FRED2's Undo.
 	 *
-	 * @param[in] pathname Absolute path for the autosave file
+	 * @param[in] pathname Path for the saved file
 	 *
 	 * @returns 0 for no error, or a negative value if an error occurred
 	 */
