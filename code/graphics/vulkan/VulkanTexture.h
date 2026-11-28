@@ -275,15 +275,8 @@ private:
 
 	/**
 	 * @brief Begin single-time command buffer
-	 * @note Throws vk::SystemError because transitionImageLayout's callers catch it; use
-	 * tryBeginSingleTimeCommands to get a null command buffer instead.
 	 */
 	vk::CommandBuffer beginSingleTimeCommands();
-
-	/**
-	 * @brief Begin single-time command buffer, returning a null one instead of throwing if that fails
-	 */
-	vk::CommandBuffer tryBeginSingleTimeCommands();
 
 	/**
 	 * @brief End and submit single-time command buffer (synchronous, blocks on waitIdle)
@@ -296,8 +289,7 @@ private:
 	 * Creates the buffer and allocates CpuOnly memory for it. On failure the
 	 * buffer is destroyed and false is returned (outBuffer left null). Callers
 	 * remain responsible for any image/view they allocated beforehand.
-	 * May wait on the oldest upload fence when the staging budget is full, and
-	 * returns false if waiting for or checking pending uploads fails.
+	 * May wait on the oldest upload fence when the staging budget is full.
 	 */
 	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
 
@@ -316,10 +308,8 @@ private:
 	 *
 	 * Owns staging resources until the submission's fence signals, even when
 	 * level loading does not advance render frames.
-	 * @return false if the submission failed; the command buffer and staging
-	 * resources are freed, and the caller still owns the destination image.
 	 */
-	bool submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
+	void submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
 	                       VulkanAllocation stagingAllocation);
 
 	/**
@@ -401,14 +391,9 @@ private:
 		vk::Fence fence;
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
-
-	/**
-	 * @brief Free an upload's staging resources and command buffer, and keep its fence for reuse
-	 */
-	void releasePendingUpload(PendingCommandBuffer& pending);
 	size_t m_pendingUploadBytes = 0;
 	static constexpr size_t MAX_PENDING_UPLOADS = 64;
-	// signaled fences available for reuse by the next upload
+	// completed fences are kept for reuse because creating one per upload is slow on some drivers
 	SCP_vector<vk::Fence> m_freeUploadFences;
 
 	vk::Device m_device;
