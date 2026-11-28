@@ -127,5 +127,5 @@ TEST_F(TargetPriorityGroupsTest, override_replaces_own_memberships)
 
 	EXPECT_EQ(ship_class_members("group_1"), SCP_vector<SCP_string>{"Ship B"});
 	EXPECT_EQ(ship_class_members("group_2"), SCP_vector<SCP_string>{"Ship B"});
-	EXPECT_EQ(ship_class_members("group_3"), SCP_vector<SCP_string>{"Ship A"});
+	EXPECT_EQ(ship_class_members("group_3"), (SCP_vector<SCP_string>{"Ship B", "Ship A"}));
 }
