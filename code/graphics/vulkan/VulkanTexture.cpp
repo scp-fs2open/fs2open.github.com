@@ -2966,7 +2966,7 @@ void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 	if (m_freeUploadFences.empty()) {
 		fence = m_device.createFence(vk::FenceCreateInfo{});
 	} else {
-		// reset here, not on completion, so a failed reset cannot leave a half-released pending upload
+		// fences in the free list are signaled and must be reset before submit
 		m_device.resetFences(m_freeUploadFences.back());
 		fence = m_freeUploadFences.back();
 		m_freeUploadFences.pop_back();

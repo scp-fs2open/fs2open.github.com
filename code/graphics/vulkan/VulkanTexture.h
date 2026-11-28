@@ -393,7 +393,7 @@ private:
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
 	size_t m_pendingUploadBytes = 0;
 	static constexpr size_t MAX_PENDING_UPLOADS = 64;
-	// completed fences are kept for reuse because creating one per upload is slow on some drivers
+	// signaled fences available for reuse by the next upload
 	SCP_vector<vk::Fence> m_freeUploadFences;
 
 	vk::Device m_device;
