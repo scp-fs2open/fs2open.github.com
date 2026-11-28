@@ -19739,30 +19739,82 @@ void sexp_ship_create(int n)
 	int objnum = ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
 	Assert(objnum != -1);
 
-	// do some initialization that is usually handled by parse_create_object_sub
 	int shipnum = Objects[objnum].instance;
 	ship *shipp = &Ships[shipnum];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if (team >= 0)
 		shipp->team = team;
 
 	// note: model_page_in_textures was called via the sexp preloader
 
-	ship_set_warp_effects(&Objects[objnum]);
+	ship_finish_runtime_create(objnum);
 
-	// if this name has a hash, create a default display name
-	if (get_pointer_to_first_hash_symbol(shipp->ship_name))
-	{
-		shipp->display_name = shipp->ship_name;
-		end_string_at_first_hash_symbol(shipp->display_name);
-		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	// the other players build the same ship, and its network signature is how they receive its updates
+	if (MULTIPLAYER_MASTER) {
+		Objects[objnum].net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
+		multi_rollback_ship_record_add_ship(objnum);
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_string(shipp->ship_name);
+		Current_sexp_network_packet.send_int(new_ship_class);
+		Current_sexp_network_packet.send_float(new_ship_pos.xyz.x);
+		Current_sexp_network_packet.send_float(new_ship_pos.xyz.y);
+		Current_sexp_network_packet.send_float(new_ship_pos.xyz.z);
+		Current_sexp_network_packet.send_float(angle_count > 0 ? new_ship_ang.p : 0.0f);
+		Current_sexp_network_packet.send_float(angle_count > 0 ? new_ship_ang.b : 0.0f);
+		Current_sexp_network_packet.send_float(angle_count > 0 ? new_ship_ang.h : 0.0f);
+		Current_sexp_network_packet.send_int(shipp->team);
+		Current_sexp_network_packet.send_ushort(Objects[objnum].net_signature);
+		Current_sexp_network_packet.end_callback();
 	}
 
-	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
-		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
-
 	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_mission_log ? 0 : MLF_HIDDEN);
+
+	if (scripting::hooks::OnShipArrive->isActive()) {
+		scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, ArrivalLocation::AT_LOCATION, nullptr },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', &Objects[objnum])
+			));
+	}
+}
+
+void multi_sexp_ship_create()
+{
+	char name[NAME_LENGTH];
+	int ship_class, team;
+	vec3d pos;
+	angles ang;
+	ushort net_signature;
+
+	if (MULTIPLAYER_MASTER) {
+		return;
+	}
+	if (!Current_sexp_network_packet.get_string(name) || !Current_sexp_network_packet.get_int(ship_class) ||
+		!Current_sexp_network_packet.get_float(pos.xyz.x) || !Current_sexp_network_packet.get_float(pos.xyz.y) ||
+		!Current_sexp_network_packet.get_float(pos.xyz.z) || !Current_sexp_network_packet.get_float(ang.p) ||
+		!Current_sexp_network_packet.get_float(ang.b) || !Current_sexp_network_packet.get_float(ang.h) ||
+		!Current_sexp_network_packet.get_int(team) || !Current_sexp_network_packet.get_ushort(net_signature)) {
+		return;
+	}
+	if (ship_class < 0 || ship_class >= ship_info_size() || team < 0 || team >= static_cast<int>(Iff_info.size())) {
+		return;
+	}
+	// a second ship under another name would leave this player with two, and lookups by name would find the wrong one
+	if (ship_name_lookup(name) >= 0) {
+		nprintf(("Network", "ship-create: %s already exists here, so the server's copy is not built\n", name));
+		return;
+	}
+
+	matrix orient;
+	vm_angles_2_matrix(&orient, &ang);
+	int objnum = ship_create(&orient, &pos, ship_class, name);
+	if (objnum < 0) {
+		return;
+	}
+	Objects[objnum].net_signature = net_signature;
+	multi_rollback_ship_record_add_ship(objnum);
+	ship* shipp = &Ships[Objects[objnum].instance];
+	shipp->team = team;
+	ship_finish_runtime_create(objnum);
 
 	if (scripting::hooks::OnShipArrive->isActive()) {
 		scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, ArrivalLocation::AT_LOCATION, nullptr },
@@ -31140,6 +31192,10 @@ void multi_sexp_eval()
 
 			case OP_SET_OBJECT_POSITION:
 				multi_sexp_set_object_position();
+				break;
+
+			case OP_SHIP_CREATE:
+				multi_sexp_ship_create();
 				break;
 
 			case OP_CHANGE_TEAM_COLOR:

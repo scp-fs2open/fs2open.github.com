@@ -630,6 +630,9 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);
 // used in squadmate messaging stuff to create wings from reinforcements.
 int parse_wing_create_ships(wing *wingp, int num_to_create, bool force_create = false, bool force_arrival = false, int specific_instance = -1 );
 
+// a later wave reuses a parse object under the new ship's name, which needs its own registry entry
+void parse_object_register_wave_ship(p_object* p_objp);
+
 // function for getting basic mission data without loading whole mission
 int mission_parse_is_multi(const char *filename, char *mission_name );
 int mission_parse_get_multi_mission_info(const char *filename);
@@ -648,6 +651,8 @@ void mission_parse_eval_stuff();
 
 // code to bring in a repair ship.
 void mission_bring_in_support_ship( object *requester_objp );
+// a joining player builds a support ship already in the mission from its class alone
+void support_ship_pobj_init(p_object* pobj, int ship_class);
 int mission_is_support_ship_arriving( void );
 void mission_add_to_arriving_support( object *requester_objp );
 int mission_is_repair_scheduled( object *objp );

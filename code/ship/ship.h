@@ -1802,6 +1802,8 @@ extern void ship_level_close();		// called after the end of each level
 
 //returns -1 if failed
 extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr, bool standalone_ship = false);
+// the setup ship-create and an in-game joiner do after ship_create for a ship with no parse object
+extern void ship_finish_runtime_create(int objnum);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );

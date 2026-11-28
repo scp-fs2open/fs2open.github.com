@@ -11029,6 +11029,26 @@ static void ship_init_afterburners(ship *shipp)
 	}
 }
 
+void ship_finish_runtime_create(int objnum)
+{
+	// do some initialization that is usually handled by parse_create_object_sub
+	ship *shipp = &Ships[Objects[objnum].instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	ship_set_warp_effects(&Objects[objnum]);
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(shipp->ship_name))
+	{
+		shipp->display_name = shipp->ship_name;
+		end_string_at_first_hash_symbol(shipp->display_name);
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+
+	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
+		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
+}
+
 /**
  * Returns object index of ship.
  * @return -1 means failed.

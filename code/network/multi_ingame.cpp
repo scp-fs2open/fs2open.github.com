@@ -39,6 +39,7 @@
 #include "network/multi_endgame.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
+#include "iff_defs/iff_defs.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
@@ -1064,15 +1065,68 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		}
 
 		GET_INT( team );		
+		// every ship's team indexes the IFF list, so a team outside it is as unusable as an unknown ship
+		if (team < 0 || team >= static_cast<int>(Iff_info.size())) {
+			mprintf(("ABORTING in-game join since ship %s has team %d, outside the IFF list!\n", ship_name, team));
+			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			return;
+		}
 		GET_SHORT( wing_data );
 		if(wing_data >= 0){
 			GET_INT(Wings[wing_data].current_wave);			
 		}
+		short pobj_index;
+		short runtime_class = -1;
+		ubyte runtime_support = 0;
+		GET_SHORT(pobj_index);
+		if (pobj_index < 0) {
+			GET_SHORT(runtime_class);
+			GET_DATA(runtime_support);
+		}
+		bool runtime_class_ok = runtime_class >= 0 && runtime_class < ship_info_size() && strlen(ship_name) < NAME_LENGTH;
 
-		// lookup ship in the registry
-		auto entry = ship_registry_get(ship_name);
+		// lookup ship in the registry; a support ship the server called in is never one of the mission's parse objects
+		bool runtime_support_ship = pobj_index < 0 && runtime_support;
+		auto entry = runtime_support_ship ? nullptr : ship_registry_get(ship_name);
 		p_objp = entry ? entry->p_objp_or_null() : nullptr;
-		if (p_objp == nullptr) {
+
+		// a later wave's ship reuses a parse object picked by the wing's history, so the server names which one
+		if (p_objp == nullptr && wing_data >= 0 && Parse_objects.in_bounds(pobj_index) &&
+			Parse_objects[pobj_index].wingnum == wing_data) {
+			const char* number = strrchr(ship_name, ' ');
+			int ordinal = (number != nullptr) ? atoi(number + 1) : 0;
+			if (ordinal > 0) {
+				wing_bash_ship_name(&Parse_objects[pobj_index], &Wings[wing_data], ordinal);
+				if (!stricmp(Parse_objects[pobj_index].name, ship_name)) {
+					p_objp = &Parse_objects[pobj_index];
+					parse_object_register_wave_ship(p_objp);
+					nprintf(("Network", "Ingame join: %s uses parse object %d\n", ship_name, pobj_index));
+				}
+			}
+		}
+
+		// a support ship is called in during the mission and has no parse object, so it is built from its class the
+		// way a client builds one that arrives
+		bool support_ship = runtime_support_ship && runtime_class_ok && Arriving_support_ship == nullptr;
+		if (support_ship) {
+			support_ship_pobj_init(&Support_ship_pobj, runtime_class);
+			strcpy_s(Support_ship_pobj.name, ship_name);
+			Support_ship_pobj.team = team;
+			Support_ship_pobj.net_signature = net_signature;
+			Arriving_support_ship = &Support_ship_pobj;
+			p_objp = Arriving_support_ship;
+			The_mission.support_ships.tally++;
+		}
+
+		// ship-create gives its ships a network signature; ships a script makes have none and reach no other player
+		bool runtime_ship = p_objp == nullptr && pobj_index < 0 && !runtime_support;
+		if (runtime_ship && (net_signature == 0 || !runtime_class_ok)) {
+			nprintf(("Network", "Ingame join: skipping %s, which no other player has either\n", ship_name));
+			GET_DATA( p_type );
+			continue;
+		}
+
+		if (p_objp == nullptr && !runtime_ship) {
 			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
@@ -1083,7 +1137,22 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// multi_set_network_signature uncommented by Kazan on 11-04-2004
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
-		objnum = parse_create_object( p_objp );
+		if (runtime_ship) {
+			matrix orient = vmd_identity_matrix;
+			vec3d pos = vmd_zero_vector;
+			objnum = ship_create(&orient, &pos, runtime_class, ship_name);
+			if (objnum < 0) {
+				mprintf(("ABORTING in-game join since FSO couldn't create ship %s!\n", ship_name));
+				multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+				return;
+			}
+			ship_finish_runtime_create(objnum);
+		} else {
+			objnum = parse_create_object( p_objp );
+		}
+		if (support_ship) {
+			mission_parse_support_arrived(objnum);
+		}
 		ship_num = Objects[objnum].instance;
 		Objects[objnum].flags.reset();
 		Objects[objnum].flags.set_from_vector(object_flags);
@@ -1216,6 +1285,16 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_SHORT(wing_data);
 		if(wing_data >= 0){
 			ADD_INT(Wings[wing_data].current_wave);
+		}
+		auto entry = ship_registry_get(shipp->ship_name);
+		short pobj_index = (entry != nullptr) ? static_cast<short>(entry->pobj_num) : -1;
+		ADD_SHORT(pobj_index);
+		if (pobj_index < 0) {
+			// a ship made during the mission has no parse object; its class is enough to build it
+			auto runtime_class = static_cast<short>(shipp->ship_info_index);
+			ubyte runtime_support = shipp->flags[Ship::Ship_Flags::Warped_support] ? 1 : 0;
+			ADD_SHORT(runtime_class);
+			ADD_DATA(runtime_support);
 		}
 
 		// don't send anymore data if we are getting close to the maximum size of this packet.  Send it off and
