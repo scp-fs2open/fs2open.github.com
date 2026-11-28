@@ -135,6 +135,7 @@ add_file_folder("Scripting\\\\Lua"
 add_file_folder("Ship"
     ship/ship_info.cpp
     ship/test_bank_allows_weapon.cpp
+    ship/test_target_priority_groups.cpp
 )
 
 add_file_folder("Starfield"

@@ -81,6 +81,7 @@
 #include "sound/ds.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
+#include "utils/array_utils.h"
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 #include "missionparse.h"
@@ -8922,12 +8923,8 @@ int insert_subsys_status(p_object *pobjp)
 
 	// we also have to adjust all the indexes in existing parse objects
 	// (each p_object's subsys_index points to subsystem 0 in its list)
-	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
-	{
-		// bump up base index to accommodate inserted subsystem
-		if (ii->subsys_index >= new_index)
-			ii->subsys_index++;
-	}
+	for (auto &pobj : Parse_objects)
+		array_adjust_index_for_insertion(pobj.subsys_index, new_index);
 
 	return new_index;
 }

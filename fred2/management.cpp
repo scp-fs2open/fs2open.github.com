@@ -1488,10 +1488,11 @@ int delete_ship_from_wing(int ship)
 			}
 
 			Assert(i != -1);  // Error, object should be in wing.
+			// the last ship moves into the vacated slot below
 			if (Wings[wing].special_ship == i){
 				Wings[wing].special_ship = 0;
-			} else if (Wings[wing].special_ship > i) {
-				Wings[wing].special_ship--;
+			} else if (Wings[wing].special_ship == end) {
+				Wings[wing].special_ship = i;
 			}
 
 			if (i != end) {

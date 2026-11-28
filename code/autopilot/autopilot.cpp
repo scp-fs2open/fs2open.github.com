@@ -26,6 +26,7 @@
 #include "parse/sexp.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "utils/array_utils.h"
 
 #include <map>
 
@@ -1360,10 +1361,8 @@ bool DelNavPoint(int nav)
 {	
 	if (nav != -1)
 	{
-		if (CurrentNav == nav)
+		if (!array_adjust_index_for_removal(CurrentNav, nav))
 			nav_set_selection(-1);
-		else if (CurrentNav > nav)
-			--CurrentNav;
 
 		for (int i = nav; i < MAX_NAVPOINTS-1; i++)
 		{
