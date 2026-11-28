@@ -508,6 +508,8 @@ void TransformToolBar::applyValue(int axis, double value)
 
 	const int curObj = _editor->currentObject;
 	if (!query_valid_object(curObj)) return;
+	// Keyboard movement also refuses a locked object. Selection by name can make a locked object the current object.
+	if (Objects[curObj].flags[Object::Object_Flags::Locked_from_editing]) return;
 
 	// Change only the axis of the edited box. The other boxes show rounded values. If the code also wrote them,
 	// the object would move on the axes that the user did not change.
