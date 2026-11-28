@@ -2466,7 +2466,7 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 
 		// Replace the old mission file in one step. If the rename fails, the old file stays and the new content is
 		// only in the temporary file. Report an error.
-		if (cf_rename(savepath, pathname, CF_TYPE_MISSIONS, true) != CF_RENAME_SUCCESS) {
+		if (cf_rename(savepath, pathname, CF_TYPE_MISSIONS) != CF_RENAME_SUCCESS) {
 			mprintf(("Could not rename '%s' to '%s'. The mission is not saved.\n", savepath, pathname));
 			err = -19;
 		}
