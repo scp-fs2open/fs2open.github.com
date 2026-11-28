@@ -1036,3 +1036,33 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedHardwareListsFollowTheQuery)
 	ASSERT_FLOAT_EQ(static_cast<float>(json_number_value(json_object_get(aniso_before, "default"))), 1.0f);
 	ASSERT_FLOAT_EQ(static_cast<float>(json_number_value(json_object_get(aniso_after, "default"))), 8.0f);
 }
+
+// a launcher may read the reply a line at a time, and -get_options exits 1 when the reply could not be written
+TEST(OptionsJsonLine, ReplyIsOneLineAndAFailedWriteIsReported)
+{
+	const char* path = "json_write_line_test.txt";
+	std::unique_ptr<json_t> root(json_pack("{s:s}", "text", "two\nlines"));
+	FILE* out = fopen(path, "w");
+	ASSERT_NE(out, nullptr);
+	const bool written = options::json_write_line(root.get(), out, JSON_COMPACT);
+	fclose(out);
+	FILE* read_only = fopen(path, "r");
+	const bool failure_seen = read_only != nullptr && !options::json_write_line(root.get(), read_only, JSON_COMPACT);
+	if (read_only != nullptr) {
+		fclose(read_only);
+	}
+	std::ifstream in(path, std::ios::binary);
+	std::ostringstream contents;
+	contents << in.rdbuf();
+	in.close();
+	std::remove(path);
+
+	ASSERT_TRUE(written);
+	ASSERT_TRUE(failure_seen);
+	const SCP_string text = contents.str();
+	ASSERT_EQ(text.find('\n'), text.size() - 1);
+	json_error_t err;
+	std::unique_ptr<json_t> parsed(json_loads(text.c_str(), 0, &err));
+	ASSERT_NE(parsed, nullptr);
+	ASSERT_TRUE(json_equal(parsed.get(), root.get()));
+}

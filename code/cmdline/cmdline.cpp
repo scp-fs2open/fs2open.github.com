@@ -1711,7 +1711,7 @@ bool cmdline_print_options()
 #ifdef __ANDROID__
 	const bool written = send_json_to_android(root, json_flags);
 #else
-	const bool written = json_dumpf(root, stdout, json_flags) == 0 && fflush(stdout) == 0;
+	const bool written = options::json_write_line(root, stdout, json_flags);
 #endif
 	json_decref(root);
 	return written;

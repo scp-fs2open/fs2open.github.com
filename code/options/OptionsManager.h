@@ -20,6 +20,9 @@ using PostPersistHook = std::function<SCP_vector<const OptionBase*>(const SCP_ve
 // A JSON string for text that may not be UTF-8: such text is read as Latin-1 instead of being dropped. Caller owns it.
 json_t* json_text(const SCP_string& text);
 
+// Writes root to out as one line of JSON ending in a newline; false if any of it could not be written
+bool json_write_line(const json_t* root, FILE* out, size_t flags);
+
 class OptionsManager {
 	OptionsManager();
 

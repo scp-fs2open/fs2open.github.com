@@ -371,6 +371,12 @@ json_t* json_text(const SCP_string& text)
 	return json_string(utf8.c_str());
 }
 
+bool json_write_line(const json_t* root, FILE* out, size_t flags)
+{
+	// a launcher may read the reply a line at a time
+	return json_dumpf(root, out, flags) == 0 && fputc('\n', out) != EOF && fflush(out) == 0;
+}
+
 json_t* OptionsManager::describeOptions()
 {
 	// a serialized value is itself JSON, so it goes in as a value, not as a string holding JSON
