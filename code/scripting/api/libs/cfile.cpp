@@ -156,7 +156,7 @@ ADE_FUNC(renameFile, l_CFile, "string CurrentFilename, string NewFilename, strin
 	if(path == CF_TYPE_INVALID)
 		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", cf_rename(n_filename, n_new_filename, path) != 0);
+	return ade_set_args(L, "b", cf_rename(n_filename, n_new_filename, path) == CF_RENAME_SUCCESS);
 }
 
 }

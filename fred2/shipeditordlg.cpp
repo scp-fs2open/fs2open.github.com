@@ -1077,6 +1077,7 @@ int CShipEditorDlg::update_data(int redraw)
 	UpdateData(TRUE);
 	UpdateData(TRUE);
 	Wing_editor_dialog.update_data_safe();
+	largest_arrival_raise = 0;
 	if (multi_edit) {  // editing multiple ships (ships and/or players)
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -1143,6 +1144,15 @@ int CShipEditorDlg::update_data(int redraw)
 			rename_ship(single_ship, new_name, false);
 			Update_window = 1;
 		}
+	}
+
+	// One warning for all the ships, the same as the wing editor and QtFRED. A minimum of 1 only prevents an
+	// invalid distance, so it needs no warning.
+	if (!bypass_errors && (largest_arrival_raise > 1)) {
+		CString str;
+		str.Format("Ship must arrive at least %d meters away from target.\n"
+			"Value has been reset to this.  Use with caution!\r\n", largest_arrival_raise);
+		MessageBox(str);
 	}
 
 	ensure_valid_player_start_shipnum();  // may need a new single player start
@@ -1284,26 +1294,23 @@ int CShipEditorDlg::update_ship(int ship)
 		if (m_arrival_target >= 0) {
 			z = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, target_to_anchor(z));
-
-			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
-			// greater than 2*radius of target.
-			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & ANCHOR_SPECIAL_ARRIVAL)) {
-			d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
-				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
-					str.Format("Ship must arrive at least %d meters away from target.\n"
-						"Value has been reset to this.  Use with caution!\r\n"
-						"Recommended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[ship].objnum].radius) );
-
-					MessageBox(str);
-					if (Ships[ship].arrival_distance < 0)
-						Ships[ship].arrival_distance = -d;
-					else
-						Ships[ship].arrival_distance = d;
-
-					m_arrival_dist.fix(Ships[ship].arrival_distance);
-				}
-			}
 		}
+
+		// Force the arrival distance to be at least the minimum for the arrival location and target.
+		// This is the same rule as the wing editor and QtFRED. In multi-edit mode, the marked ships can have
+		// different locations and targets, so use the values of this ship.
+		d = arrival_min_distance(Ships[ship].arrival_location, Ships[ship].arrival_anchor);
+		if (Ships[ship].arrival_distance < d) {
+			// update_data() shows the warning after it updates all the ships.
+			largest_arrival_raise = std::max(largest_arrival_raise, d);
+			Ships[ship].arrival_distance = d;
+
+			// In multi-edit mode, save() copies the field to each marked ship. The field must not get the
+			// minimum of one ship, because the minimum of each ship can be different.
+			if (!multi_edit)
+				m_arrival_dist.fix(Ships[ship].arrival_distance);
+		}
+
 		if (m_departure_target >= 0) {
 			z = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
 			MODIFY(Ships[ship].departure_anchor, target_to_anchor(z));

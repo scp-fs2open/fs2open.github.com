@@ -39,7 +39,9 @@
 #include "ui/QtGraphicsOperations.h"
 
 #include <QDateTime>
+#include <QCryptographicHash>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
 
@@ -148,22 +150,37 @@ void Editor::update() {
 	}
 }
 
-void Editor::maybeUseAutosave(std::string& filepath)
+QString Editor::autosavePathFor(const QString& missionPath) const
 {
-	const QString qpath       = QString::fromStdString(filepath);
-	const QString basename    = QFileInfo(qpath).fileName();
-	const QString autosavePath = _autosaveDirectory + basename;
+	if (missionPath.isEmpty())
+		return _autosaveDirectory + "untitled_autosave.fs2";
+
+	const QFileInfo info(missionPath);
+	QString key = QDir::cleanPath(info.absoluteFilePath());
+#ifdef _WIN32
+	// Windows paths are not case-sensitive.
+	key = key.toLower();
+#endif
+	const auto hash = QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Md5).toHex().left(8);
+
+	return _autosaveDirectory + info.completeBaseName() + "." + QString::fromLatin1(hash) + "." + info.suffix();
+}
+
+void Editor::removeAutosave(const QString& missionPath) const
+{
+	QFile::remove(autosavePathFor(missionPath));
+}
+
+QString Editor::askToUseNewerAutosave(const QString& missionPath)
+{
+	const QString autosavePath = autosavePathFor(missionPath);
 
 	const QFileInfo autosaveInfo(autosavePath);
-	if (!autosaveInfo.exists())
-		return;
-
-	const QFileInfo originalInfo(qpath);
-	if (autosaveInfo.lastModified() <= originalInfo.lastModified())
-		return;
+	if (!autosaveInfo.exists() || autosaveInfo.lastModified() <= QFileInfo(missionPath).lastModified())
+		return {};
 
 	if (_lastActiveViewport == nullptr || _lastActiveViewport->dialogProvider == nullptr)
-		return;
+		return {};
 
 	const auto result = _lastActiveViewport->dialogProvider->showButtonDialog(
 		DialogType::Question,
@@ -171,9 +188,8 @@ void Editor::maybeUseAutosave(std::string& filepath)
 		"An autosave file for this mission is newer than the original. Load the autosave instead?",
 		{ DialogButton::Yes, DialogButton::No });
 
-	if (result == DialogButton::Yes) {
-		filepath = autosavePath.toStdString();
-	}
+	// QStandardPaths gives '/' separators. CFile expects the native separator in an absolute path.
+	return result == DialogButton::Yes ? QDir::toNativeSeparators(autosavePath) : QString();
 }
 
 void Editor::startAutosaveTimer(int intervalSeconds) {
@@ -187,20 +203,14 @@ void Editor::stopAutosaveTimer() {
 }
 
 void Editor::setCurrentMissionPath(const QString& path) {
-	_currentMissionPath = path;
+	_currentMissionPath = QDir::toNativeSeparators(path);
 }
 
 void Editor::performTimedAutosave() {
-	QString savePath;
-	if (_currentMissionPath.isEmpty()) {
-		savePath = _autosaveDirectory + "untitled_autosave.fs2";
-	} else {
-		savePath = _autosaveDirectory + QFileInfo(_currentMissionPath).fileName();
-	}
-	autosaveDue(savePath);
+	autosaveDue(autosavePathFor(_currentMissionPath));
 }
 
-bool Editor::loadMission(const std::string& mission_name, int flags) {
+bool Editor::loadMission(const std::string& mission_name, int flags, bool offerAutosaveRecovery) {
 	char name[512], * old_name;
 	int i, j, ob;
 	object* objp;
@@ -208,18 +218,29 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
+	// A .fst file is always a template, from each caller (recent files, -start_mission). Without the template
+	// flag, Save writes a plain mission over the template file.
+	if (QString::fromStdString(mission_name).endsWith(".fst", Qt::CaseInsensitive))
+		flags |= MPF_IS_TEMPLATE;
+
+	// Find the mission file in the CFile system. If it is a "real" file (not in a VP), use its absolute path.
+	// Then the "recent mission" menu has correct file names, Save writes to that file, and the autosave
+	// path is the same for each name of the file.
+	std::string missionPath = mission_name;
+	auto res = cf_find_file_location(missionPath.c_str(), CF_TYPE_MISSIONS);
+	if (res.found && res.offset == 0)
+		missionPath = res.full_name;
+
+	// A template is not a mission file that the user edits, so it has no autosave.
+	QString autosavePath;
+	if (offerAutosaveRecovery && !(flags & MPF_IS_TEMPLATE))
+		autosavePath = askToUseNewerAutosave(QString::fromStdString(missionPath));
+	const bool recovered = !autosavePath.isEmpty();
+
 	clearMission(flags & MPF_FAST_RELOAD);
 
-	std::string filepath = mission_name;
-	auto res = cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS);
-	if (res.found) {
-		// We found this file in the CFile system
-		if (res.offset == 0) {
-			// This is a "real" file. Since we now have an absolute path we can use that to make sure we only deal with
-			// absolute paths which makes sure that the "recent mission" menu has correct file names
-			filepath = res.full_name;
-		}
-	}
+	// The autosave path is already absolute.
+	const std::string filepath = recovered ? autosavePath.toStdString() : missionPath;
 
 	// message 1: required version
 	if (!parse_main(filepath.c_str(), flags)) {
@@ -417,7 +438,18 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	stars_post_level_init();
 
-	missionLoaded(filepath);
+	// The path that Save writes to. A template and an FS1 import have no such file: the user must give a
+	// name with Save As. An autosave belongs to the mission file that it came from.
+	// An untitled mission has no recovery offer, so its autosave is not necessary after the user leaves it.
+	if (_currentMissionPath.isEmpty())
+		removeAutosave({});
+
+	if (flags & (MPF_IS_TEMPLATE | MPF_IMPORT_FSM))
+		setCurrentMissionPath({});
+	else
+		setCurrentMissionPath(QString::fromStdString(missionPath));
+
+	missionLoaded(_currentMissionPath.toStdString(), recovered);
 
 	// This hook will allow for scripts to know when a mission has been loaded
 	// which will then allow them to update any LuaEnums that may be related to sexps
@@ -830,7 +862,8 @@ void Editor::createNewMission() {
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
 	// TODO(Phase 3): _undoStack->clear()
-	missionLoaded("");
+	setCurrentMissionPath({});
+	missionLoaded("", false);
 }
 void Editor::hideMarkedObjects() {
 	object* ptr;

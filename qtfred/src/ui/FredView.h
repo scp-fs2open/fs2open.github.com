@@ -50,7 +50,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 	~FredView() override;
 	void setEditor(Editor* editor, EditorViewport* viewport);
 
-	void loadMissionFile(const QString& pathName, int flags = 0);
+	/**
+	 * @brief Loads a mission file after the prompt to save the current mission.
+	 * @param offerAutosaveRecovery false if the load must not offer a newer autosave (for example Revert).
+	 */
+	void loadMissionFile(const QString& pathName, int flags = 0, bool offerAutosaveRecovery = true);
 
 	QSurface* getRenderSurface();
 	RenderWidget* getRenderWidget();
@@ -221,7 +225,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
 	bool isMissionModified() const;
 
-	void on_mission_loaded(const std::string& filepath);
+	void on_mission_loaded(const std::string& filepath, bool hasUnsavedContent);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
 	void connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx);
@@ -230,6 +234,14 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionControlModeCurrentShip_triggered(bool enabled);
 
 	void addToRecentFiles(const QString& path);
+	// Shows the current mission file (Editor::currentMissionPath()) in the window title.
+	void showCurrentMissionFile();
+	// The editor dialogs and the campaign editor that are open as children of this window.
+	QList<QWidget*> editorWindows() const;
+	// Sets the save options from the user preferences. Mission saves, autosaves, and FS1 imports use it.
+	void configureMissionSave(Fred_mission_save& save) const;
+	bool writeMissionFile(const QString& path);
+	void reportPreSaveFixes(int fixCount);
 	void updateRecentFileList();
 
 	void recentFileOpened();
@@ -283,7 +295,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QAction* _controlModeCamera = nullptr;
 	QAction* _controlModeCurrentShip = nullptr;
 
-	QString saveName = nullptr;
 	MissionFormat _missionSaveFormat = MissionFormat::STANDARD;
 
 	std::unique_ptr<Ui::FredView> ui;

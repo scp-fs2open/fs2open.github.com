@@ -318,23 +318,13 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 }
 
 void shutdown() {
-	audiostream_close();
-	snd_close();
-
-	editor_free_engine_data();
-
-	gr_close();
-
-	os_cleanup();
+	editor_shutdown();
 
 	if (LoggingEnabled) {
 		outwnd_close();
 	}
 }
 
-
-mission_load_error::mission_load_error(const char* msg) : std::runtime_error{ msg } {
-}
 
 }
 }
