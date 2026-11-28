@@ -4449,6 +4449,19 @@ int find_wing_name(char *name)
 	return -1;
 }
 
+void parse_object_register_wave_ship(p_object* p_objp)
+{
+	if (ship_registry_exists(p_objp->name))
+		return;
+
+	ship_registry_entry entry(p_objp->name);
+	entry.status = ShipStatus::NOT_YET_PRESENT;
+	entry.pobj_num = POBJ_INDEX(p_objp);
+
+	Ship_registry.push_back(entry);
+	Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
+}
+
 /**
 * @brief						Tries to create a wing of ships
 * @param[inout]	wingp			Pointer to the wing structure of the wing to be created
@@ -4687,15 +4700,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
-			if (!ship_registry_exists(p_objp->name))
-			{
-				ship_registry_entry entry(p_objp->name);
-				entry.status = ShipStatus::NOT_YET_PRESENT;
-				entry.pobj_num = POBJ_INDEX(p_objp);
-
-				Ship_registry.push_back(entry);
-				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
-			}
+			parse_object_register_wave_ship(p_objp);
 		}
 		// make sure we still handle wing display names in a single-wave wing
 		else if (wingp->has_display_name())
@@ -9169,6 +9174,35 @@ int get_warp_in_pos(vec3d *pos, object *objp, float x, float y, float z)
 	return pp_collide_any(&objp->pos, pos, objp->radius, objp, NULL, 1);
 }
 
+void support_ship_pobj_init(p_object* pobj, int ship_class)
+{
+	*pobj = p_object();		// get a fresh p_object with default fields
+	pobj->ship_class = ship_class;
+	auto sip = &Ship_info[ship_class];
+
+	// initialize class-specific fields
+	pobj->ai_class = sip->ai_class;
+	pobj->warpin_params_index = sip->warpin_params_index;
+	pobj->warpout_params_index = sip->warpout_params_index;
+	pobj->ship_max_shield_strength = sip->max_shield_strength;
+	pobj->ship_max_hull_strength = sip->max_hull_strength;
+	Assert(pobj->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	pobj->max_shield_recharge = sip->max_shield_recharge;
+	pobj->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+	pobj->score = sip->score;
+
+	// Goober5000 - take some stuff from mission flags
+	pobj->arrival_location = The_mission.support_ships.arrival_location;
+	pobj->arrival_anchor = The_mission.support_ships.arrival_anchor;
+	pobj->departure_location = The_mission.support_ships.departure_location;
+	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
+
+	pobj->arrival_cue = Locked_sexp_true;
+	pobj->departure_cue = Locked_sexp_false;
+
+	pobj->initial_velocity = 100;		// start at 100% velocity
+}
+
 /**
  * Modified by Goober5000 to allow more flexibility in support ships
  */
@@ -9205,22 +9239,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// object since I'm no longer working with a mission file.  These exceptions will be noted with
 	// comments
 
-	Support_ship_pobj = p_object();		// get a fresh p_object with default fields
+	support_ship_pobj_init(&Support_ship_pobj, ship_class);
 	Arriving_support_ship = &Support_ship_pobj;
 	pobj = Arriving_support_ship;
-	pobj->ship_class = ship_class;
-	auto sip = &Ship_info[ship_class];
-
-	// initialize class-specific fields
-	pobj->ai_class = sip->ai_class;
-	pobj->warpin_params_index = sip->warpin_params_index;
-	pobj->warpout_params_index = sip->warpout_params_index;
-	pobj->ship_max_shield_strength = sip->max_shield_strength;
-	pobj->ship_max_hull_strength = sip->max_hull_strength;
-	Assert(pobj->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
-	pobj->max_shield_recharge = sip->max_shield_recharge;
-	pobj->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
-	pobj->score = sip->score;
 
 	// get average position of all ships
 	obj_get_average_ship_pos( &center );
@@ -9269,17 +9290,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	Num_arriving_repair_targets = 0;
 	mission_add_to_arriving_support( requester_objp );
 
-	// Goober5000 - take some stuff from mission flags
-	pobj->arrival_location = The_mission.support_ships.arrival_location;
-	pobj->arrival_anchor = The_mission.support_ships.arrival_anchor;
-	pobj->departure_location = The_mission.support_ships.departure_location;
-	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
-
 	pobj->arrival_delay = timestamp_rand(WARP_IN_TIME_MIN, WARP_IN_TIME_MAX);
-	pobj->arrival_cue = Locked_sexp_true;
-	pobj->departure_cue = Locked_sexp_false;
-
-	pobj->initial_velocity = 100;		// start at 100% velocity
 
     if (Player_obj->flags[Object::Object_Flags::No_shields])  {
 		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
