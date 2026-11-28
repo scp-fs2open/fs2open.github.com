@@ -642,10 +642,12 @@ void ShipEditorDialog::on_altShipClassButton_clicked()
 }
 void ShipEditorDialog::on_prevButton_clicked()
 {
+	commitTypedArrivalDistance();
 	_model->onPrevious();
 }
 void ShipEditorDialog::on_nextButton_clicked()
 {
+	commitTypedArrivalDistance();
 	_model->onNext();
 }
 void ShipEditorDialog::on_resetButton_clicked()
@@ -857,6 +859,12 @@ void ShipEditorDialog::updateArrivalDistanceField()
 	} else if (field->isBlank() || field->value() != _model->getArrivalDistance()) {
 		field->setSingleValue(_model->getArrivalDistance());
 	}
+}
+// The distance field has no keyboard tracking. A typed value goes to the model only on Enter or focus loss. F6 and
+// Shift+F6 click Next and Prev without a focus change, so give the typed value to the current ship first.
+void ShipEditorDialog::commitTypedArrivalDistance()
+{
+	ui->arrivalDistanceEdit->interpretText();
 }
 void ShipEditorDialog::on_arrivalDistanceEdit_valueChanged(int value)
 {
