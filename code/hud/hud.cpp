@@ -3607,6 +3607,9 @@ void hud_gauge_popup_start(int gauge_index, int time)
 	if ( !hud_gauge_is_popup(gauge_index) ) {
 		return;
 	}
+	if (Player_ship == nullptr) {
+		return;
+	}
 
 	size_t num_gauges, i;
 
@@ -3636,6 +3639,10 @@ void hud_gauge_start_flash(int gauge_index)
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
 
 	size_t num_gauges, i; 
+
+	if (Player_ship == nullptr) {
+		return;
+	}
 
 	HUD_gauge_flash_duration[gauge_index] = timestamp(HUD_GAUGE_FLASH_DURATION);
 	HUD_gauge_flash_next[gauge_index] = 1;

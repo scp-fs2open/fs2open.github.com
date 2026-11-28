@@ -4457,9 +4457,10 @@ int find_wing_name(char *name)
 *								have been met yet.
 * @param[in] force_arrival		If true, the wing will assume its arrival cue is true
 * @param[in] specific_instance	Set this to create a specific ship from this wing
+* @param[in] skip_mask			Multiplayer clients: the wing positions the server skipped; -1 decides locally
 * @returns						Number of ships created
 */
-int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, bool force_arrival, int specific_instance )
+int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, bool force_arrival, int specific_instance, int skip_mask )
 {
 	int wingnum, objnum, num_create_save;
 	int time_to_arrive;
@@ -4468,6 +4469,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 	// we need to send this in multiplayer
 	pre_create_count = wingp->total_arrived_count;
+	int pre_create_skipped = wingp->red_alert_skipped_ships;
 
 	// force_create is used to force creation of the wing -- used for multiplayer
 	if ( !force_create ) {
@@ -4576,6 +4578,9 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 	// finally we can create the wing.
 
 	num_create_save = num_to_create;
+	int num_requested = num_to_create;
+	int skipped_positions = 0;
+	static_assert(MAX_SHIPS_PER_WING <= 8, "the wing create packet sends skipped positions as one byte");
 
 	wingnum = WING_INDEX(wingp);					// get the wing number
 
@@ -4608,12 +4613,19 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		Assert((p_objp->pos_in_wing >= 0) && (p_objp->pos_in_wing < MAX_SHIPS_PER_WING));
 
 		// skip ships destroyed before mission in a similar way that red-alert-deleted ships are skipped
-		if (p_objp->destroy_before_mission_time >= 0)
+		// (a client skips what the server skipped: its own red-alert data can differ from the server's)
+		bool skip_now = p_objp->destroy_before_mission_time >= 0;
+		if (skip_mask >= 0)
+			skip_now = (skip_mask & (1 << p_objp->pos_in_wing)) != 0;
+		if (skip_now)
 		{
 			num_to_create--;
 			num_create_save--;
 			ship_add_ship_type_count(p_objp->ship_class, -1);
 			wingp->red_alert_skipped_ships++;	// even though it isn't red-alert, this is needed for keeping indexes correct
+			skipped_positions |= (1 << p_objp->pos_in_wing);
+			if (skip_mask >= 0)
+				p_objp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 
 			// skip over this parse object
 			if (num_to_create == 0)
@@ -4635,12 +4647,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			continue;
 		}
 		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
-        else if (p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
+		else if (skip_mask < 0 && p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
 		{
 			num_to_create--;
 			num_create_save--;
 			ship_add_ship_type_count(p_objp->ship_class, -1);
 			wingp->red_alert_skipped_ships++;
+			skipped_positions |= (1 << p_objp->pos_in_wing);
 
 			// clear the flag so that this parse object can be used for the next wave
             p_objp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
@@ -4657,6 +4670,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if we have the maximum number of ships in the wing, we must bail as well
 		if (wingp->current_count >= MAX_SHIPS_PER_WING)
 		{
+			mprintf(("Wing %s is full (%d ships); the rest of wave %d is not created\n",
+				wingp->name,
+				wingp->current_count,
+				wingp->current_wave));
 			Int3();					// this is bogus -- we should always allow all ships to be created
 			num_to_create = 0;
 			break;
@@ -4674,8 +4691,8 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			// if the bash renamed this parse object (which can happen if the ship was saved using the legacy
 			// hash format), re-key its not-yet-present registry entry so that the old name doesn't shadow
 			// lookups of the new name.  (For subsequent waves, the pre-bash name belongs to a previous wave's
-			// ship, whose entry must keep its key; the status and parse object checks exclude that case.)
-			if (stricmp(pre_bash_name, p_objp->name) != 0)
+			// ship, whose entry must keep its key, even on an in-game joiner that never saw that ship.)
+			if (pre_create_count == 0 && stricmp(pre_bash_name, p_objp->name) != 0)
 			{
 				auto ship_it = Ship_registry_map.find(pre_bash_name);
 				if (ship_it != Ship_registry_map.end()
@@ -4829,7 +4846,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
-			send_wing_create_packet( wingp, num_create_save, pre_create_count );
+			send_wing_create_packet( wingp, num_create_save, num_requested, static_cast<ubyte>(skipped_positions), pre_create_count, pre_create_skipped );
 		}
 
 #ifndef NDEBUG
@@ -7764,6 +7781,22 @@ void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_inf
     pobjp->flags.remove(Mission::Parse_Object_Flags::Already_handled);
 }
 
+static void parse_object_find_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
+{
+	if (pobjp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
+	{
+		infop->maintained_variables.objp_value = pobjp;
+		infop->early_return_condition = true;
+	}
+}
+
+p_object *parse_object_find_dock_leader(p_object *pobjp)
+{
+	p_dock_function_info dfi;
+	dock_evaluate_all_docked_objects(pobjp, &dfi, parse_object_find_dock_leader_helper);
+	return dfi.maintained_variables.objp_value != nullptr ? dfi.maintained_variables.objp_value : pobjp;
+}
+
 // Goober5000
 void parse_object_clear_all_handled_flags()
 {
@@ -9281,7 +9314,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->initial_velocity = 100;		// start at 100% velocity
 
-    if (Player_obj->flags[Object::Object_Flags::No_shields])  {
+	if (Player_obj != nullptr && Player_obj->flags[Object::Object_Flags::No_shields]) {
 		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
 	}
 

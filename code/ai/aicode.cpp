@@ -11423,11 +11423,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	case REPAIR_INFO_COMPLETE:
 		// clear the being repaired flag -- and 
 		if ( p_index >= 0 ) {
-			Assert( repair_objp );
-			
+			Assertion(repair_objp != nullptr || MULTIPLAYER_CLIENT, "Repair complete without a support ship");
 			hud_support_view_stop();			
 			
-			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
+			if ((Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) && repair_objp != nullptr) {
 				message_send_builtin(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], nullptr, p_index, p_team);
 			}
 		}
@@ -11435,8 +11434,15 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		break;
 
 	case REPAIR_INFO_ONWAY:
+		Assertion(repair_objp != nullptr || MULTIPLAYER_CLIENT, "Support ship on its way, but no support ship");
+		// an in-game joiner can lack a support ship that was called before its ship list went out
+		if (repair_objp == nullptr) {
+			nprintf(("Network",
+				"Support ship for %s is unknown here, skipping its on-the-way notice\n",
+				Ships[repaired_objp->instance].ship_name));
+			break;
+		}
 		// need to set the signature so that clients in multiplayer games rearm correctly
-		Assert( repair_objp );
 		aip->support_ship_signature = repair_objp->signature;
 		aip->support_ship_objnum = OBJ_INDEX(repair_objp);
 		stamp = timestamp(-1);

@@ -1014,6 +1014,7 @@ void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliab
 		}		
 
 		// perform any special processing checks here		
+		header_info.bytes_available = len - bytes_processed;
 		process_packet_normal(buf,&header_info, reliable != 0);
 		 
 		// MWA -- magic number was removed from header on 8/4/97.  Replaced with bytes_processed

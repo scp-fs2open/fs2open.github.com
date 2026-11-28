@@ -2404,6 +2404,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		// set some extra flags for him as appropriate
 		if(MULTI_IN_MISSION){
 			Net_players[net_player_num].flags |= NETINFO_FLAG_INGAME_JOIN;			
+			Net_players[net_player_num].s_info.ingame_join_flags = 0;
 		}
 
 		Net_players[net_player_num].flags |= NETINFO_FLAG_CONNECTED;		

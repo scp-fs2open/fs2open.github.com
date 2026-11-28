@@ -13330,6 +13330,9 @@ void multi_sexp_change_ai_class()
 	char subsystem[TOKEN_LENGTH];
 
 	Current_sexp_network_packet.get_ship(shipp); 
+	if (shipp == nullptr) {
+		return;
+	}
 	Current_sexp_network_packet.get_int(new_ai_class);
 
 	// subsystem?
@@ -17752,9 +17755,9 @@ void multi_sexp_deal_with_ship_flag()
 	{
 		if (ship_arrived) {
 			Current_sexp_network_packet.get_ship(shipp);
+			// a ship this client has already deleted (an in-game joiner's copy of a dying ship); the rest still apply
 			if (shipp == nullptr) {
-				WarningEx(LOCATION, "Null ship pointer in multi_sexp_deal_with_ship_flag(), tell a coder.\n");
-				return;
+				continue;
 			}
 
 			// save flags for state change comparisons
@@ -17789,14 +17792,17 @@ void multi_sexp_deal_with_ship_flag()
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
 			}
-			if ((ship_flag == (int)Ship::Ship_Flags::Friendly_stealth_invis) && !set_it && (shipp->flags[Ship::Ship_Flags::Stealth]) && (shipp->team == Player_ship->team)) {
+			// with no ship yet, assume friendly; hud_escort_cull_list drops it if it turns out hostile
+			if ((ship_flag == (int)Ship::Ship_Flags::Friendly_stealth_invis) && !set_it &&
+				(shipp->flags[Ship::Ship_Flags::Stealth]) &&
+				(Player_ship == nullptr || shipp->team == Player_ship->team)) {
 				if (shipp->flags[Ship::Ship_Flags::Escort]) {
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
 			}
 			if (ship_flag == (int)Ship::Ship_Flags::Hidden_from_sensors) {
 				if (set_it) {
-					if (Player_ai->target_objnum == shipp->objnum) {
+					if (Player_ai != nullptr && Player_ai->target_objnum == shipp->objnum) {
 						hud_cease_targeting(); 
 					}
 				}
@@ -21321,6 +21327,9 @@ void multi_sexp_set_ammo(bool for_turret, bool primary)
 	int rearm_limit = -1;
 
 	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
 	if (for_turret)
 		Current_sexp_network_packet.get_string(turret_name);
 	Current_sexp_network_packet.get_int(requested_bank);
@@ -21444,6 +21453,9 @@ void multi_sexp_set_weapon()
 	bool primary;
 
 	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
 	Current_sexp_network_packet.get_bool(primary);
 	Current_sexp_network_packet.get_int(requested_bank);
 	Current_sexp_network_packet.get_int(windex);
@@ -21676,8 +21688,7 @@ void multi_sexp_change_ship_class()
 	Current_sexp_network_packet.get_int(class_num);
 	while (Current_sexp_network_packet.get_bool(ship_arrived)) {
 		if (ship_arrived) {
-			Current_sexp_network_packet.get_ship(ship_num);
-			if ((class_num >= 0) && (ship_num >= 0)) {
+			if (Current_sexp_network_packet.get_ship(ship_num) && (class_num >= 0)) {
 				change_ship_type(ship_num, class_num, 1);
 				if (&Ships[ship_num] == Player_ship) {
 					// update HUD and RTT cockpit gauges if applicable
@@ -23702,6 +23713,9 @@ void multi_sexp_add_remove_escort()
 	int flag;
 
 	Current_sexp_network_packet.get_ship(shipp);
+	if (shipp == nullptr) {
+		return;
+	}
 	if (!(Current_sexp_network_packet.get_int(flag))) {
 		return;
 	}
