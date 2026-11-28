@@ -710,7 +710,8 @@ private:
 	// One UBO block for each prepass mip level, one for the main pass and one for the filter pass.
 	static constexpr uint32_t UBO_BLOCKS_PER_REGION = MAX_MIP_LEVELS + 2;
 	// One region for each (frame in flight, lighting mode), because the scene and the cockpit
-	// passes both run CORTAO in one command buffer. See DEFERRED_UBO_REGIONS.
+	// passes both run CORTAO in one command buffer. In VR, each eye has UBO_REGIONS regions.
+	// See DEFERRED_UBO_REGIONS.
 	static constexpr uint32_t UBO_REGIONS = MAX_FRAMES_IN_FLIGHT * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES);
 
 	PostProcessContext* m_ctx = nullptr;

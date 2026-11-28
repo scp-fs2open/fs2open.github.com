@@ -12,6 +12,7 @@
 #include "graphics/cortao_params.h"
 #include "graphics/grinternal.h"
 #include "graphics/matrix.h"
+#include "graphics/openxr.h"
 #include "graphics/ssao.h"
 
 namespace graphics::vulkan {
@@ -135,7 +136,8 @@ bool VulkanCortao::initResources()
 		m_uboBlockSize = (largest + align - 1) / align * align;
 
 		vk::BufferCreateInfo bufInfo;
-		bufInfo.size = m_uboBlockSize * UBO_BLOCKS_PER_REGION * UBO_REGIONS;
+		// In VR, both eyes are recorded before either runs, so each eye gets its own regions.
+		bufInfo.size = m_uboBlockSize * UBO_BLOCKS_PER_REGION * UBO_REGIONS * (openxr_requested() ? 2 : 1);
 		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
 		bufInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -459,8 +461,9 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 		cortao_random_seed(ssao_animate_noise(temporalFilterActive), getRendererInstance()->getCurrentFrameNumber());
 	const SsaoFilterMode filterMode = ssao_filter_mode(temporalFilterActive);
 
-	// The UBO region of this (frame in flight, lighting mode). See UBO_REGIONS.
-	const uint32_t regionIndex = descriptorMgr->getCurrentFrame() * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES)
+	// The UBO region of this (eye, frame in flight, lighting mode). See UBO_REGIONS.
+	const uint32_t regionIndex = static_cast<uint32_t>(openxr_get_current_eye()) * UBO_REGIONS
+	                           + descriptorMgr->getCurrentFrame() * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES)
 	                           + static_cast<uint32_t>(Lighting_mode);
 	const vk::DeviceSize regionBase = regionIndex * m_uboBlockSize * UBO_BLOCKS_PER_REGION;
 	const vk::DeviceSize mainBlockOffset = regionBase + MAX_MIP_LEVELS * m_uboBlockSize;
