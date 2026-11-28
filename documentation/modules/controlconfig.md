@@ -18,8 +18,9 @@ presets**.
   (`PresetFileHandler`, JSON).
 
 ## Core data structures / globals
-- `CCB` — one binding (a device id + a button/axis + flags). `CC_bind` pairs a
-  `CID` with the input index.
+- `CC_bind` — one binding: a device (`CID`) plus a button/axis index and flags.
+- `CCB` — the pair of bindings of one action: `first` (primary) and `second`
+  (secondary), each a `CC_bind`.
 - `CCI` (`: public CCB`) — a full control-config item: the binding plus the
   action's name, type, tab, and metadata. `CCI_builder` constructs the defaults.
 - `SCP_vector<CCI> Control_config` — **the** binding table. It is indexed by

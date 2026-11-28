@@ -40,6 +40,6 @@ fatal, and do not log per-frame when tracking is off.
 None.
 
 ## See also
-- `code/camera/` (where the reading is applied), `code/io/` (the other input
+- `code/playerman/playercontrol.cpp` (where the reading is applied to the view), `code/io/` (the other input
   devices; `code/io/spacemouse.*` is a comparable optional device),
   `code/osapi/` (platform detail), `code/options/` (the player toggle).

@@ -17,7 +17,9 @@ owns dynamic lighting, shadows, post-processing, materials, shaders, fonts, and
 
 ## Core data structures / globals
 - `gr_screen` (the `screen` struct) — current resolution, the bound `gr_*` calls.
-- Backend chosen at init based on `FSO_BUILD_WITH_OPENGL` / `_VULKAN` build options.
+- `FSO_BUILD_WITH_OPENGL` / `_VULKAN` only decide which backends are compiled. The
+  backend is chosen at runtime in `gr_init()` (`2d.cpp`): `-vulkan` or `-opengl`, else
+  the saved video setting.
 
 ## Major constants
 - Backend ids and bit-depth/mode defines in `2d.h`; resize/alignment modes.

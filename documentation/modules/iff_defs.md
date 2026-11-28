@@ -19,7 +19,8 @@ question in the engine ends up here.
   go through the accessors below.
 - `Iff_info_names` — the name list.
 - `Iff_traitor` — the index of the traitor team, referenced all over the engine.
-- `radar_iff_color[5][2][4]` — radar colours per team, per brightness.
+- `radar_iff_color[5][2][4]` — radar blip colours per blip category (missile,
+  navbuoy, warping, node, tagged), per brightness. It is not indexed by team.
 - `IFF_COLOR_SELECTION`, `IFF_COLOR_MESSAGE`, `IFF_COLOR_TAGGED` — the
   non-team colour slots.
 

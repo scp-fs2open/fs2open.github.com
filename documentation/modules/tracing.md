@@ -47,5 +47,5 @@ None.
 ## See also
 - `code/osapi/` (logging, the other diagnostic channel — `modules/osapi.md`),
   `code/graphics/` (the largest set of categories),
-  `code/debugconsole/` (the commands that turn tracing and the frame profiler
-  on).
+  `code/cmdline/` (the `-json_profiling` and `-profile_frame_time` flags turn
+  tracing and the frame profiler on).

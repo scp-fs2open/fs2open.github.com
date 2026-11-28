@@ -19,8 +19,9 @@ gauge.
   3D radar with its own sound loop.
 
 ## How a style is chosen
-There is no runtime switch — the **gauge type in `hud_gauges.tbl` picks the
-style**:
+The **gauge type in `hud_gauges.tbl` picks the style**. The one runtime switch is
+`Cmdline_orb_radar` (the `-orbradar` flag, or the `HUD.OrbRadar` option): with it, a
+`+Radar:` entry and the default radar load as the orb radar (`hudparse.cpp`).
 
 | Table gauge name | Gauge type | Class |
 | --- | --- | --- |

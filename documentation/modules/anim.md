@@ -39,7 +39,8 @@ highlights — and are kept for retail content compatibility.
 
 ## Playback flow
 `anim_init()` / `anim_level_init()` / `anim_level_close()` bracket the system.
-Fill an `anim_play_struct` via `anim_play_init()`, then `anim_render_all(screen_id,
+Fill an `anim_play_struct` via `anim_play_init()`, then start the instance with
+`anim_play()`, which returns the `anim_instance`. `anim_render_all(screen_id,
 frametime)` draws every instance registered for that screen; `anim_render_one()`
 draws a single instance. Animations are grouped by `screen_id` so a screen can
 draw exactly its own.

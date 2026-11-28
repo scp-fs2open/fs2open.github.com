@@ -4,8 +4,9 @@
 The engine's **virtual file system**. Provides `cfopen`/`cfread`/`cfwrite`/… that
 transparently read from loose files *or* from inside **VP archives**. Files are
 categorized by `CF_TYPE_*` (which map to directories like `maps`, `models`,
-`tables`, `sounds`, `missions`). Implements the **mod layering** search order
-(primary mod → secondary mods → game root → user dir).
+`tables`, `sounds`, `missions`). Implements the **mod layering** search order: the user directory first (with its
+mod folders), then the game directory (primary mod → secondary mods → game root).
+See the root setup in `cfilesystem.cpp`.
 
 ## Key files
 - `cfile.h` / `cfile.cpp` — public API, `CFILE` handle, path-type defines.

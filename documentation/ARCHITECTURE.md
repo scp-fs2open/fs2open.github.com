@@ -331,7 +331,9 @@ the dominant data pattern; weapons, fireballs, asteroids all follow it.
 - `2d.h`/`2d.cpp` define the **abstract rendering interface** (`gr_*` function
   pointers) that the rest of the engine calls. The active backend fills these in.
 - Backends: `opengl/` (primary), `vulkan/` (experimental), `stub` (`grstub.cpp`).
-  Backend selection is toggled by the `FSO_BUILD_WITH_OPENGL` / `_VULKAN` CMake options.
+  The `FSO_BUILD_WITH_OPENGL` / `_VULKAN` CMake options decide which backends are
+  compiled. The runtime choice is made in `gr_init()`: `-vulkan` or `-opengl`, else the
+  saved video setting.
 - Supporting: `light.*` (dynamic lights), `shadows.*`, `post_processing.*`,
   `material.*`, `shaders/`, `paths/` (NanoVG 2D), `font.h`.
 - High-level scene assembly: `model_draw_list` / `modelrender.*` and `render.*`.

@@ -25,9 +25,10 @@ library is not available.
   vendored API header), for debugging the renderer.
 
 ## Conventions
-- Every one of these is **optional**. Guard use behind the matching CMake option
-  or a runtime availability check; the engine must build and run without any of
-  them.
+- Most of these are **optional**. Guard use behind the matching CMake option
+  or a runtime availability check, so that the engine builds and runs without them.
+  The exceptions are always built and linked: `jansson` (linked unconditionally in
+  `code/CMakeLists.txt`) and `antlr4`.
 - Include the wrapper header, not the library's own headers, so version
   differences stay in one place.
 
