@@ -5,6 +5,7 @@
 #include "mod_table/mod_table.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
+#include "utils/finally.h"
 
 #include <algorithm>
 #include <array>
@@ -100,9 +101,13 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 
 	// Build a list of all joysticks with the right guid
 	size_t num_sticks = 0;
+	size_t num_attached = 0;
 	for (auto& stick : joysticks) {
 		if (stick->getGUID() == guidStr) {
 			++num_sticks;
+			if (stick->isAttached()) {
+				++num_attached;
+			}
 		}
 	}
 
@@ -115,8 +120,8 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 		return true;
 	}
 
-	// Multiple sticks -> check if the device id is the same
-	return false;
+	// Multiple sticks of the same model -> use the only one that's plugged in
+	return num_attached == 1 && testStick->isAttached();
 }
 
 /**
@@ -473,7 +478,15 @@ bool device_event_handler(const SDL_Event &evt)
 	if (evtType == SDL_EVENT_JOYSTICK_ADDED)
 	{
 		// A new joystick has been added, add it to our list and check if it's the configured joystick
-		Joystick *addedStick;
+		if (getJoystickForID(joyDeviceEvent.which) != nullptr)
+		{
+			// SDL also sends this at startup for sticks init() already set up; instance IDs are never reused
+			return true;
+		}
+
+		Joystick *addedStick = nullptr;
+		// keeps a returning stick's old handles open until it is rebound, so force feedback is shut down first
+		JoystickPtr oldHandles;
 		{
 			auto device = SDL_OpenJoystick(joyDeviceEvent.which);
 
@@ -482,39 +495,39 @@ bool device_event_handler(const SDL_Event &evt)
 				mprintf(("Failed to open connecting joystick: %s\n", SDL_GetError()));
 				return true;
 			}
+			// the Joystick opens its own handle; this one also has to close if its constructor throws
+			auto close_device = util::finally([device]() { SDL_CloseJoystick(device); });
 
 			// Add the new device to our list
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				// must use GUID here as joystick IDs are never reused
-				if ((*iter)->getGUID() == added->getGUID())
+				// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID
+				if (!(*iter)->isAttached() && (*iter)->getGUID() == added->getGUID())
 				{
 					// Already have this stick
 					*(*iter) = std::move(*added);
-					return true;
+					oldHandles = std::move(added);
+					addedStick = iter->get();
+					mprintf(("A joystick has been reconnected:\n"));
+					addedStick->printInfo();
+					break;
 				}
 			}
 
-			addedStick = added.get();
-			// This is a new stick so we can output it's information
-			mprintf(("A new joystick has been connected:\n"));
-			addedStick->printInfo();
+			if (addedStick == nullptr)
+			{
+				addedStick = added.get();
+				// This is a new stick so we can output it's information
+				mprintf(("A new joystick has been connected:\n"));
+				addedStick->printInfo();
 
-			joysticks.push_back(std::move(added));
+				joysticks.push_back(std::move(added));
+			}
 		}
 
-		// Is true if all of the pJoysticks are bound
-		bool all_bound = std::all_of(pJoystick.begin(), pJoystick.end(), [](Joystick* pJoy){ return pJoy != nullptr; });
-
-		if (all_bound)
-		{
-			// We already have all valid joystick devices, bail early
-			return true;
-		}	// Else, at least one player stick is unbound
-
-		// Bind the added stick, if we want it
+		// Bind the added stick, if we want it (also when all slots are full: a returning stick may still hold its slot)
 		if (Using_in_game_options)
 		{
 			// New menu system lets players select joysticks in-game
@@ -676,6 +689,32 @@ namespace joystick
 		}
 
 		return 0.0f;
+	}
+
+	float Joystick::getAxisButtonDownTime(int axis, bool negative) const
+	{
+		Assertion(axis >= 0 && axis < numAxes(), "Invalid axis %d!", axis);
+
+		const auto &info = _axisButton[static_cast<size_t>(axis) * 2 + (negative ? 1 : 0)];
+		if (info.DownTimestamp.isValid()) {
+			return static_cast<float>(ui_timestamp_since(info.DownTimestamp)) / MILLISECONDS_PER_SECOND;
+		}
+
+		return 0.0f;
+	}
+
+	int Joystick::getAxisButtonDownCount(int axis, bool negative, bool reset)
+	{
+		Assertion(axis >= 0 && axis < numAxes(), "Invalid axis %d!", axis);
+
+		auto &info = _axisButton[static_cast<size_t>(axis) * 2 + (negative ? 1 : 0)];
+		auto val = info.DownCount;
+
+		if (reset) {
+			info.DownCount = 0;
+		}
+
+		return val;
 	}
 
 	int Joystick::getButtonDownCount(int index, bool reset)
@@ -847,6 +886,9 @@ namespace joystick
 			_ballValues.resize(0);
 		}
 
+		// Not seeded from the current axis positions: ui_timestamp() is not usable yet when -get_flags gets here
+		_axisButton.assign(_axisValues.size() * 2, button_info{UI_TIMESTAMP::invalid(), 0});
+
 		// Initialize buttons
 		if (_isGamepad) {
 			// gamepads may not support all buttons, but they don't necessarily match
@@ -975,6 +1017,7 @@ namespace joystick
 		Assertion(axis < numAxes(), "SDL event contained invalid axis index!");
 
 		_axisValues[axis] = evt.value;
+		updateAxisButtons(axis, evt.value);
 	}
 
 	// gamepad version of event
@@ -997,21 +1040,40 @@ namespace joystick
 
 			// We can also take this opportunity to map triggers to a button
 			int button = SDL_GAMEPAD_BUTTON_COUNT + (axis - SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
-			bool down = (value >= 0);
-
 			Assertion(button < numButtons(), "Gamepad trigger button is out of bounds!");
 
-			// We also need to avoid bumping DownCount for every tiny axis movement.
-			if ( !down || (_button[button].DownCount == 0) ) {
-				_button[button].DownTimestamp = down ? ui_timestamp() : UI_TIMESTAMP::invalid();
+			// press at half travel and let go a little lower, in the proportions the other axis buttons use
+			const bool held = _button[button].DownTimestamp.isValid();
+			const bool down = held ? (value > (JOY_AXIS_BUTTON_RELEASE - JOY_AXIS_BUTTON_PRESS) * 2) : (value >= 0);
 
-				if (down) {
-					++_button[button].DownCount;
-				}
+			// Count presses, not every tiny axis movement; re-arm without waiting for the count to be read
+			if (down && !held) {
+				_button[button].DownTimestamp = ui_timestamp();
+				++_button[button].DownCount;
+			} else if (!down) {
+				_button[button].DownTimestamp = UI_TIMESTAMP::invalid();
 			}
 		}
 
 		_axisValues[axis] = value;
+		updateAxisButtons(axis, value);
+	}
+
+	void Joystick::updateAxisButtons(int axis, Sint16 value)
+	{
+		for (int side = 0; side < 2; ++side) {
+			auto &info = _axisButton[static_cast<size_t>(axis) * 2 + side];
+			const int travel = (side == 0) ? value : -value;
+			const bool held = info.DownTimestamp.isValid();
+			const bool down = held ? (travel > JOY_AXIS_BUTTON_RELEASE) : (travel >= JOY_AXIS_BUTTON_PRESS);
+
+			if (down && !held) {
+				info.DownTimestamp = ui_timestamp();
+				++info.DownCount;
+			} else if (!down) {
+				info.DownTimestamp = UI_TIMESTAMP::invalid();
+			}
+		}
 	}
 
 	void Joystick::handleButtonEvent(const SDL_JoyButtonEvent &evt)
@@ -1391,6 +1453,13 @@ float joy_down_time(const CC_bind &bind)
 		return 0.0f;
 	}
 
+	if (bind.get_flags() & CCF_AXIS_BTN) {
+		if (btn >= current->numAxes()) {
+			return 0.0f;
+		}
+		return current->getAxisButtonDownTime(btn, bind.is_inverted());
+	}
+
 	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
 	{
 		// Not a valid button
@@ -1422,6 +1491,13 @@ int joy_down_count(const CC_bind &bind, int reset_count)
 	if (current == nullptr)
 	{
 		return 0;
+	}
+
+	if (bind.get_flags() & CCF_AXIS_BTN) {
+		if (btn >= current->numAxes()) {
+			return 0;
+		}
+		return current->getAxisButtonDownCount(btn, bind.is_inverted(), reset_count != 0);
 	}
 
 	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
@@ -1479,4 +1555,15 @@ short joy_get_button_axis(short cid, short btn)
 	}
 
 	return static_cast<short>(SDL_GAMEPAD_AXIS_LEFT_TRIGGER + axis_button);
+}
+
+bool joy_axis_is_trigger(short cid, short axis)
+{
+	auto current = io::joystick::getPlayerJoystick(cid);
+
+	if ((current == nullptr) || !current->isGamepad()) {
+		return false;
+	}
+
+	return (axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) || (axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
 }

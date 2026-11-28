@@ -36,7 +36,6 @@ void MissionSpecDialogModel::initializeData() {
 	_m_mission_notes = The_mission.notes;
 	_m_mission_desc = The_mission.mission_desc;
 
-	_m_full_war = Mission_all_attack;
 	_m_disallow_support = (The_mission.support_ships.max_support_ships == 0);
 
 	_m_flags = The_mission.flags;
@@ -55,7 +54,7 @@ void MissionSpecDialogModel::initializeData() {
 	}
 
 	_m_type = The_mission.game_type;
-	_m_ai_profile = AI_PROFILES_INDEX(The_mission.ai_profile);
+	_m_ai_profile = The_mission.ai_profile_index;
 
 	_m_event_music = Current_soundtrack_num + 1;
 	_m_substitute_event_music = The_mission.substitute_event_music_name;
@@ -181,7 +180,7 @@ bool MissionSpecDialogModel::apply() {
 		strncpy(The_mission.squad_filename, _m_squad_filename.c_str(), MAX_FILENAME_LEN);
 	}
 
-	The_mission.ai_profile = &Ai_profiles[_m_ai_profile];
+	The_mission.ai_profile_index = _m_ai_profile;
 
 	Current_soundtrack_num = _m_event_music - 1;
 	strcpy_s(The_mission.substitute_event_music_name, _m_substitute_event_music.c_str());
@@ -191,8 +190,6 @@ bool MissionSpecDialogModel::apply() {
 		strcpy_s(The_mission.command_sender, _m_command_sender.substr(1).c_str());
 	else
 		strcpy_s(The_mission.command_sender, _m_command_sender.c_str());
-
-	Mission_all_attack = (int)_m_full_war;
 
 	// update the Num_teams variable accoriding to mission types
 	Num_teams = 1;
@@ -506,15 +503,6 @@ SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMission
 		}
 	}
 	return descriptions;
-}
-
-void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
-	if (_m_full_war != enabled) {
-		_m_full_war = enabled;
-		_m_flags.set(Mission::Mission_Flags::All_attack, enabled);
-		set_modified();
-		modelChanged();
-	}
 }
 
 void MissionSpecDialogModel::setAIProfileIndex(int m_ai_profile) {

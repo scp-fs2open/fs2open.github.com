@@ -175,6 +175,26 @@ void gr_opengl_stop_decal_pass();
 
 void gr_opengl_calculate_irrmap();
 
+bool gr_opengl_screen_layer_begin(int bitmap);
+void gr_opengl_screen_layer_end();
+bool opengl_screen_layer_active();
+
+// What screen drawing goes to: the screen layer if one is active, else the backbuffer
+GLuint opengl_get_screen_framebuffer();
+
+// Converts gr_screen units to pixels of what is being drawn into right now
+GLint opengl_screen_to_pixels(int value);
+
+// The size of the screen (the backbuffer) in pixels, which is larger than gr_screen with the HUD at output resolution
+int opengl_screen_pixel_width();
+int opengl_screen_pixel_height();
+
+// When the scene ends: the screen's viewport if it has more pixels than gr_screen, otherwise left as is
+void opengl_maybe_set_full_screen_viewport();
+
+// A framebuffer holding the screen at gr_screen size, for reading it back. Downscales into a scratch target if needed.
+GLuint opengl_screen_readback_framebuffer();
+
 extern int Scene_texture_initialized;
 
 extern GLuint Scene_color_texture;

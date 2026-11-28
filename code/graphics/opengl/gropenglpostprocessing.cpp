@@ -478,15 +478,18 @@ void opengl_post_lightshafts()
 
 				opengl_set_generic_uniform_data<graphics::generic_data::lightshaft_data>(
 					[&](graphics::generic_data::lightshaft_data* data) {
-						data->sun_pos.x = x;
-						data->sun_pos.y = y;
+						// The pass samples only the part of the scene targets that the frame fills (see
+						// opengl_draw_full_screen_scene_texture()). Thus put the sun position in the
+						// same coordinates as the texture coordinates of the pass.
+						data->sun_pos.x = x * Scene_texture_u_scale;
+						data->sun_pos.y = y * Scene_texture_v_scale;
 
 						auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
 						data->density      = ls_params.density;
 						data->falloff      = ls_params.falloff;
 						data->weight       = ls_params.weight;
 						data->intensity    = Sun_spot * ls_params.intensity;
-						data->cp_intensity = Sun_spot * ls_params.cpintensity;
+						data->cp_intensity = Sun_spot * ls_params.cpweight * ls_params.intensity;
 					});
 
 				Current_shader->program->Uniforms.setTextureUniform("scene", 0);
@@ -630,6 +633,7 @@ void gr_opengl_post_process_end()
 
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
+	opengl_maybe_set_full_screen_viewport();
 
 	opengl_draw_full_screen_scene_texture();
 
@@ -764,7 +768,9 @@ void gr_opengl_post_process_set_defaults()
 	// reset all effects to their default values
 	for (idx = 0; idx < postEffects.size(); idx++) {
 		postEffects[idx].intensity = postEffects[idx].default_intensity;
+		postEffects[idx].rgb = postEffects[idx].default_rgb;
 	}
+	graphics::Post_processing_manager->resetLightshaftParams();
 
 	Post_active_shader_index = -1;
 }
@@ -1013,8 +1019,10 @@ static GLuint load_smaa_texture(GLsizei width, GLsizei height, GLenum format, co
 	} else {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
-		             nullptr);
+		// Use the size of the lookup table, not Post_texture_width/height. The lookup tables are
+		// loaded before the render targets get their size, so the Post_texture values are 0 here.
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format == GL_RG8 ? GL_RG : GL_RED,
+		             GL_UNSIGNED_BYTE, nullptr);
 	}
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format == GL_RG8 ? GL_RG : GL_RED, GL_UNSIGNED_BYTE, pixels);
 

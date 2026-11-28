@@ -174,7 +174,7 @@ int CMissionNotesDlg::query_modified()
 	if (Current_soundtrack_num != m_event_music - 1){
 		return 1;
 	}
-	if (Mission_all_attack != m_full_war){
+	if (The_mission.flags[Mission::Mission_Flags::All_attack] != (m_full_war != 0)){
 		return 1;
 	}
 
@@ -232,6 +232,8 @@ void CMissionNotesDlg::OnOK()
 
 	// set flags for scramble
     The_mission.flags.set(Mission::Mission_Flags::Scramble, m_scramble != 0);
+
+	The_mission.flags.set(Mission::Mission_Flags::All_attack, m_full_war != 0);
 
 	// set the flags for no promotion
     The_mission.flags.set(Mission::Mission_Flags::No_promotion, m_no_promotion != 0);
@@ -322,7 +324,7 @@ void CMissionNotesDlg::OnOK()
 		string_copy(The_mission.squad_filename, m_squad_filename, MAX_FILENAME_LEN - 1);
 	}
 
-	The_mission.ai_profile = &Ai_profiles[m_ai_profile];
+	The_mission.ai_profile_index = m_ai_profile;
 
 	MODIFY(Current_soundtrack_num, m_event_music - 1);
 	strcpy_s(The_mission.substitute_event_music_name, m_substitute_event_music);
@@ -333,7 +335,6 @@ void CMissionNotesDlg::OnOK()
 	else
 		strcpy_s(The_mission.command_sender, m_command_sender);
 
-	MODIFY(Mission_all_attack, m_full_war);
 	if (query_modified()){
 		set_modified();
 	}
@@ -384,7 +385,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	convert_multiline_string(m_mission_desc, The_mission.mission_desc);
 	m_red_alert = (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0;
 	m_scramble = (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0;
-	m_full_war = Mission_all_attack;
+	m_full_war = (The_mission.flags[Mission::Mission_Flags::All_attack]) ? 1 : 0;
 	m_no_promotion = (The_mission.flags[Mission::Mission_Flags::No_promotion]) ? 1 : 0;
 	m_no_builtin_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) ? 1 : 0;
 	m_no_builtin_command_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ? 1 : 0;
@@ -409,8 +410,8 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	box = (CComboBox *) GetDlgItem(IDC_AI_PROFILE);
-	for (i=0; i<Num_ai_profiles; i++){
-		box->AddString(Ai_profiles[i].profile_name);
+	for (const auto &profile : Ai_profiles){
+		box->AddString(profile.profile_name);
 	}
 
 	box = (CComboBox *) GetDlgItem(IDC_EVENT_MUSIC);
@@ -454,7 +455,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	}
 
 	m_type = The_mission.game_type;
-	m_ai_profile = AI_PROFILES_INDEX(The_mission.ai_profile);
+	m_ai_profile = The_mission.ai_profile_index;
 
 	m_event_music = Current_soundtrack_num + 1;
 	m_substitute_event_music = The_mission.substitute_event_music_name;

@@ -1,6 +1,8 @@
 #include "PreferencesDialog.h"
 #include "ui_PreferencesDialog.h"
 
+#include <cmath>
+
 #include <QFormLayout>
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
@@ -9,6 +11,7 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui/widgets/sexp_tree_view.h"
 
+#include <graphics/2d.h>
 #include <options/Option.h>
 #include <options/OptionsManager.h>
 
@@ -20,17 +23,23 @@ namespace {
 // gropengltexture.cpp). Reading the labels back out of those definitions keeps this dialog from
 // carrying a second, silently-diverging copy of them.
 //
-// Returns empty if the option isn't registered, in which case the caller leaves the combo alone
+// Returns null if the option isn't registered, in which case the caller leaves the combo alone
 // rather than showing a half-populated list.
-SCP_vector<options::ValueDescription> engineOptionValues(const char* configKey)
+const options::OptionBase* findEngineOption(const char* configKey)
 {
 	for (const auto& option : options::OptionsManager::instance()->getOptions()) {
 		if (option->getConfigKey() == configKey && option->getType() == options::OptionType::Selection) {
-			return option->getValidValues();
+			return option.get();
 		}
 	}
 
-	return {};
+	return nullptr;
+}
+
+SCP_vector<options::ValueDescription> engineOptionValues(const char* configKey)
+{
+	const auto* option = findEngineOption(configKey);
+	return option ? option->getValidValues() : SCP_vector<options::ValueDescription>{};
 }
 
 void populateFromEngineOption(QComboBox* combo, const char* configKey)
@@ -186,6 +195,10 @@ void PreferencesDialog::initializeUi() {
 #endif
 
 	populateFromEngineOption(ui->shadowQualityCombo, "Graphics.Shadows");
+
+	// Contact hardening needs a GPU feature. Without it, the setting has no effect.
+	ui->shadowContactHardening->setEnabled(shadow_contact_hardening_supported());
+
 	// Only offers Raytraced on a Vulkan build/session with raytraced-shadow hardware support --
 	// shadows_remove_unsupported_options() removes Graphics.ShadowRenderMethod entirely otherwise,
 	// so engineOptionValues() comes back empty and the combo greys itself out. That is also why
@@ -210,10 +223,6 @@ void PreferencesDialog::initializeUi() {
 		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(level, 0, 'f', 0), level);
 	}
 	ui->anisotropyCombo->setEnabled(ui->anisotropyCombo->count() > 0);
-
-	for (int samples : GraphicsSettings::validMsaaSampleCounts()) {
-		ui->msaaCombo->addItem(samples == 0 ? tr("Off") : tr("%1x").arg(samples), samples);
-	}
 
 	// Build the controls key-binding form dynamically from the registered bindings
 	auto* form = new QFormLayout(ui->controlsFormWidget);
@@ -260,20 +269,33 @@ void PreferencesDialog::updateUi() {
 	selectComboValue(ui->backendCombo, static_cast<int>(graphics.backend));
 	ui->enablePostProcessing->setChecked(graphics.enablePostProcessing);
 	selectComboValue(ui->shadowQualityCombo, static_cast<int>(graphics.shadowQuality));
+	ui->shadowContactHardening->setChecked(graphics.shadowContactHardening);
 	selectComboValue(ui->shadowMethodCombo, static_cast<int>(graphics.shadowMethod));
 	selectComboValue(ui->aaModeCombo, static_cast<int>(graphics.aaMode));
-	selectComboValue(ui->msaaCombo, graphics.msaaSamples);
-
 	ui->gammaSpin->setValue(graphics.gamma);
 
-	// Both of these can be "not chosen", in which case the engine picks: trilinear, and the
-	// hardware's maximum anisotropy. Show what will actually be used rather than a blank.
-	selectComboValue(ui->textureFilterCombo,
-		graphics.textureFilter == GraphicsSettings::NO_TEXTURE_FILTER_CHOICE ? 1 : graphics.textureFilter);
+	// The user can leave these two settings unset. Then the engine selects the value. Show the
+	// value that the engine uses, not a value that qtFRED guesses. gr_texture_filter_setting()
+	// and gr_anisotropy_setting() give that value, also when the in-game options are off.
+	selectComboValue(ui->textureFilterCombo, graphics.textureFilter == GraphicsSettings::NO_TEXTURE_FILTER_CHOICE
+		? gr_texture_filter_setting()
+		: graphics.textureFilter);
 
 	if (ui->anisotropyCombo->count() > 0) {
-		const int level = ui->anisotropyCombo->findData(graphics.anisotropy);
-		ui->anisotropyCombo->setCurrentIndex(level >= 0 ? level : ui->anisotropyCombo->count() - 1);
+		const float anisotropy = graphics.anisotropy == GraphicsSettings::NO_ANISOTROPY_CHOICE
+			? gr_anisotropy_setting()
+			: graphics.anisotropy;
+
+		// The level in use need not be in the list (for example, a command-line level that the
+		// GPU does not support). Then show the nearest level.
+		const auto levelAt = [this](int i) { return ui->anisotropyCombo->itemData(i).toFloat(); };
+		int index = 0;
+		for (int i = 1; i < ui->anisotropyCombo->count(); ++i) {
+			if (std::fabs(levelAt(i) - anisotropy) < std::fabs(levelAt(index) - anisotropy)) {
+				index = i;
+			}
+		}
+		ui->anisotropyCombo->setCurrentIndex(index);
 	}
 
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
@@ -377,6 +399,10 @@ void PreferencesDialog::on_shadowQualityCombo_currentIndexChanged(int /*index*/)
 	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.shadowQuality = quality; });
 }
 
+void PreferencesDialog::on_shadowContactHardening_toggled(bool checked) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.shadowContactHardening = checked; });
+}
+
 void PreferencesDialog::on_shadowMethodCombo_currentIndexChanged(int /*index*/) {
 	const auto method = static_cast<ShadowRenderMethod>(
 		currentComboValue(ui->shadowMethodCombo, static_cast<int>(_model->getGraphics().shadowMethod)));
@@ -387,11 +413,6 @@ void PreferencesDialog::on_aaModeCombo_currentIndexChanged(int /*index*/) {
 	const auto mode = static_cast<AntiAliasMode>(
 		currentComboValue(ui->aaModeCombo, static_cast<int>(_model->getGraphics().aaMode)));
 	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.aaMode = mode; });
-}
-
-void PreferencesDialog::on_msaaCombo_currentIndexChanged(int /*index*/) {
-	const int samples = currentComboValue(ui->msaaCombo, _model->getGraphics().msaaSamples);
-	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.msaaSamples = samples; });
 }
 
 void PreferencesDialog::on_textureFilterCombo_currentIndexChanged(int /*index*/) {

@@ -63,6 +63,7 @@
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "network/multi_kick.h"
+#include "network/multi_lua.h"
 #include "network/multi_data.h"
 #include "network/multi_voice.h"
 #include "network/multi_team.h"
@@ -894,6 +895,8 @@ void delete_player(int player_num,int kicked_reason)
 	
 	psnet_rel_close_socket(Net_players[player_num].reliable_socket);					// close out the reliable socket
 
+	multi_lua_forget_player(Net_players[player_num].player_id);
+
 	// if this guy was ingame joining, the remove my netgame flag so others may join
 	if ( Net_players[player_num].flags & NETINFO_FLAG_INGAME_JOIN ) {
 		Netgame.flags &= ~NG_FLAG_INGAME_JOINING;
@@ -1270,16 +1273,29 @@ void multi_maybe_send_ship_status()
 	}
 }
 
-int multi_find_player_by_callsign(const char *callsign)
+std::pair<int, int> multi_find_player_by_callsign(const char *callsign, bool requires_ship)
 {
 	int idx;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
+		// the standalone's own player is named "server", and a pilot can have that callsign too
+		if (MULTI_STANDALONE(Net_players[idx])) {
+			continue;
+		}
+
 		if(MULTI_CONNECTED(Net_players[idx]) && (strcmp(callsign,Net_players[idx].m_player->callsign)==0)){
-			return idx;
+			if (!requires_ship) {
+				return {idx, -1};
+			}
+
+			// two pilots can share a callsign, so skip a match that has no ship
+			const int shipnum = multi_get_player_ship(idx);
+			if (shipnum >= 0) {
+				return {idx, shipnum};
+			}
 		}
 	}
 
-	return -1;
+	return {-1, -1};
 }
 
 // if Game_current_mission_filename is a builtin multiplayer mission
@@ -3490,9 +3506,10 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, physics_info 
 		a = fl2i(round(r * 16.0f)); 
 		b = fl2i(round(u * 16.0f));
 		c = fl2i(round(f * 32.0f));
-		CAP(a,-2048,2047);
-		CAP(b,-2048,2047);
-		CAP(c,-4096,4095);
+		// the full range of the 13 and 14 bit fields, about 256 m/s each way
+		CAP(a,-4096,4095);
+		CAP(b,-4096,4095);
+		CAP(c,-8192,8191);
 		bitbuffer_put( &buf, (uint)a, 13 );
 		bitbuffer_put( &buf, (uint)b, 13 );
 		bitbuffer_put( &buf, (uint)c, 14 );
@@ -4102,3 +4119,13 @@ void multi_send_anti_timeout_ping()
 #ifdef _MSC_VER
 #pragma optimize("", on)
 #endif
+
+ship_subsys* multi_get_indexed_subsys(ship* shipp, int index)
+{
+	if (index < 0 || index >= ship_get_num_subsys(shipp)) {
+		nprintf(("Network", "Ship %s (%s) has %d subsystems, but a packet named subsystem %d\n", shipp->ship_name, Ship_info[shipp->ship_info_index].name, ship_get_num_subsys(shipp), index));
+		return nullptr;
+	}
+
+	return ship_get_indexed_subsys(shipp, index);
+}

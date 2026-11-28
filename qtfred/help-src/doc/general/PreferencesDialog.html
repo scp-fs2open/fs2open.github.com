@@ -55,29 +55,34 @@ never change them.</p>
 
 <h3>Post-processing</h3>
 <p><strong>Enable post-processing in the viewport</strong> routes the viewport
-through the same HDR rendering pipeline the game uses, adding bloom,
-tonemapping, lightshafts, and shadows. It is off by default, so missions look
-the way they always have until you opt in. The same switch is available as
+through the same HDR rendering pipeline the game uses, adding bloom and
+tonemapping. Lightshafts do not show in QtFRED. It is off by default, so missions look the way
+they always have until you opt in. The same switch is available as
 <strong>View &rsaquo; Enable Post Processing</strong>.</p>
-<p>Every other setting in this section only changes what you see while
-post-processing is on, because they are all consumed by that pipeline.</p>
+<p>Anti-aliasing only changes what you see while post-processing is on,
+because that pipeline applies it. Shadows, texture filtering and gamma also
+apply while post-processing is off.</p>
 
 <h3>Shadows &amp; anti-aliasing</h3>
 <ul>
     <li><strong>Shadow quality</strong> - detail level of the shadows cast by the
         mission's sun. Higher settings cost more performance. Shadows are off
         until you raise this above <em>Disabled</em>, so enabling post-processing
-        alone will not produce any. <em>Requires a restart</em> - including the
+        alone will not produce any. Shadows show also while post-processing is
+        off. <em>Requires a restart</em> - including the
         first time you turn it on.</li>
+    <li><strong>Contact hardening</strong> - makes each shadow sharp near the
+        object that casts it and softer farther away, as real shadows are,
+        instead of one blur width for the whole shadow. On by default, the same
+        as in the game. It costs a little performance, and it has no effect
+        while shadows are off. The box is greyed out if your GPU does not
+        support it. Applies immediately.</li>
     <li><strong>Shadow method</strong> - whether shadows are rendered with
         cascaded shadow maps or hardware raytracing. Raytraced is only offered
         on the Vulkan backend, and only when your GPU and driver support it;
         the control is greyed out otherwise. Applies immediately.</li>
     <li><strong>Anti-aliasing</strong> - post-process anti-aliasing mode (FXAA or
         SMAA, in increasing quality). Applies immediately.</li>
-    <li><strong>MSAA</strong> - multisample anti-aliasing for the 3D scene, off
-        or 4x/8x. More expensive than the post-process modes above but higher
-        quality. <em>Requires a restart.</em></li>
 </ul>
 
 <h3>Textures</h3>

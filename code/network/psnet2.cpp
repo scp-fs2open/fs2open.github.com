@@ -675,14 +675,33 @@ int psnet_get_network_status()
 const char *psnet_addr_to_string(const net_addr *address, char *text, size_t max_len)
 {
 	in6_addr addr6;
+	char addr_text[INET6_ADDRSTRLEN];
 
 	memcpy(&addr6, &address->addr, sizeof(addr6));
 
-	if ( inet_ntop(AF_INET6, &addr6, text, static_cast<socklen_t>(max_len)) == nullptr ) {
-		strncpy(text, "", max_len);
+	if ( inet_ntop(AF_INET6, &addr6, addr_text, sizeof(addr_text)) == nullptr ) {
+		addr_text[0] = '\0';
+	}
+
+	if ( SDL_strlcpy(text, addr_text, max_len) >= max_len ) {
+		nprintf(("Network", "psnet_addr_to_string: %s does not fit in " SIZE_T_ARG " bytes and was truncated\n", addr_text, max_len));
 	}
 
 	return text;
+}
+
+/**
+ * Convert a ::net_addr to a string
+ *
+ * @return A pointer into @a text, valid until @a text changes
+ */
+const char *psnet_addr_to_string(const net_addr *address, SCP_string &text)
+{
+	char addr_text[INET6_ADDRSTRLEN];
+
+	text = psnet_addr_to_string(address, addr_text, sizeof(addr_text));
+
+	return text.c_str();
 }
 
 /**
@@ -1770,33 +1789,19 @@ void psnet_rel_work()
 		}
 
 		if (rcv_buff.type == RNT_DATA) {
+			// sequence numbers wrap at 65536, so take the difference as a signed 16-bit value
+			const int seqdelta = static_cast<short>(static_cast<unsigned short>(rcv_buff.seq - rsocket->oursequence));
+
 			// If the data is out of order by >= MAXNETBUFFERS-1 ignore that packet for now
-			int seqdelta = rcv_buff.seq - rsocket->oursequence;
-
-			if (seqdelta < 0) {
-				seqdelta = -seqdelta;
-			}
-
-			if ( seqdelta >= (MAXNETBUFFERS-1) ) {
+			if ( std::abs(seqdelta) >= (MAXNETBUFFERS-1) ) {
 				ml_string("Received reliable packet out of order!");
 
 				// It's out of order, so we won't ack it, which will mean we will get it again soon.
 				continue;
 			}
 
-			//e lse move data into the proper buffer position
-			int savepacket = 1;
-
-			if ( rsocket->oursequence < (0xffff - (MAXNETBUFFERS-1)) ) {
-				if (rsocket->oursequence > rcv_buff.seq) {
-					savepacket = 0;
-				}
-			} else {
-				// Sequence is high, so prepare for wrap around
-				if ( static_cast<unsigned short>(rcv_buff.seq + rsocket->oursequence) > (MAXNETBUFFERS-1) ) {
-					savepacket = 0;
-				}
-			}
+			// an older packet is one we already have; ack it again but don't keep it
+			int savepacket = (seqdelta >= 0) ? 1 : 0;
 
 			for (i = 0; i < MAXNETBUFFERS; i++) {
 				if ( (rsocket->rbuffers[i] != nullptr) && (rsocket->rsequence[i] == rcv_buff.seq) ) {

@@ -40,6 +40,10 @@ extern GLuint Shadow_map_depth_texture;
 // shadow_contact_hardening_supported() is true; 0 otherwise. See gropengltnl.cpp.
 extern GLuint Shadow_map_raw_sampler;
 
+// The texture unit of the "shadow_map_raw" sampler, in the model shaders and in the deferred
+// lighting shader. Unit 7 is the model misc map, so the raw sampler must not use it.
+constexpr GLuint SHADOW_MAP_RAW_TEXTURE_UNIT = 11;
+
 struct opengl_vertex_bind {
 	vertex_format_data::vertex_format format;
 	GLint size;

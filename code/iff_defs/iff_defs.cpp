@@ -33,6 +33,15 @@ int IFF_COLOR_TAGGED    = 2;
 // global only to file
 SCP_vector <std::pair<color, color>> Iff_colors;		// AL 1-2-97: Create two IFF colors, regular and bright
 
+typedef struct {
+	int r;
+	int g;
+	int b;
+} temp_color_t;
+
+// parallel to Iff_colors
+static SCP_vector<temp_color_t> temp_colors;
+
 flag_def_list rti_flags[] = {
 	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
 	{ "blink",				RTIF_BLINK,			0 },
@@ -82,15 +91,7 @@ int iff_get_alpha_value(bool is_bright)
  */
 int iff_init_color(int r, int g, int b)
 {
-	typedef struct {
-		int r;
-		int g;
-		int b;
-	} temp_color_t;
-
 	int i, idx;
-
-	static SCP_vector<temp_color_t> temp_colors;
 
 	Assert(r >= 0 && r <= 255);
 	Assert(g >= 0 && g <= 255);
@@ -207,6 +208,13 @@ void resolve_iff_data()
 			}
 		}
 
+		// an IFF that no table gave an accessibility color, such as one a mod adds in a tbm, keeps its normal colors
+		if (iff->accessibility_color_index < 0) {
+			iff->accessibility_color_index = iff->color_index;
+			iff->accessibility_observed_color_map.insert(iff->observed_color_map.begin(),
+				iff->observed_color_map.end());
+		}
+
 		// resolve the all teams at war relationships
 		if (iff->flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR) {
 			// exempt, so use standard attacks
@@ -259,10 +267,10 @@ void parse_iff_table(const char* filename)
 {
 	int i, j, k;
 
-	iff_info ifft;
+	iff_info ifft{};
+	ifft.hotkey_team = IFF_hotkey_team::Default;
 	iff_info* iffp;
 	int cur_iff;
-	bool create_if_not_found = true;
 
 	try
 	{
@@ -448,6 +456,7 @@ void parse_iff_table(const char* filename)
 		// begin reading data
 		while (required_string_either("#End", "$IFF Name:"))
 		{
+			bool create_if_not_found = true;
 
 			// get the iff name
 			required_string("$IFF Name:");
@@ -484,8 +493,8 @@ void parse_iff_table(const char* filename)
 				iffp = &Iff_info[Iff_info.size() - 1];
 				//Initialize this to white for new IFFs
 				iffp->color_index = iff_init_color(255, 255, 255);
-				// Initialize this to white for new IFFs
-				iffp->accessibility_color_index = iff_init_color(255, 255, 255);
+				// -1 until a table sets it; resolve_iff_data() falls back to the normal colors
+				iffp->accessibility_color_index = -1;
 				//Make sure flags are reset for new IFFs
 				iffp->default_parse_flags.reset();
 			}
@@ -537,7 +546,6 @@ void parse_iff_table(const char* filename)
 			}
 
 			// get F3 override
-			iffp->hotkey_team = IFF_hotkey_team::Default;
 			if (optional_string("+Hotkey Team:"))
 			{
 				char temp[NAME_LENGTH];
@@ -550,16 +558,16 @@ void parse_iff_table(const char* filename)
 				else if (!stricmp(temp, "None"))
 					iffp->hotkey_team = IFF_hotkey_team::None;
 				else
-					Warning(LOCATION, "Unrecognized +Hotkey Tean: %s\n", temp);
+					Warning(LOCATION, "Unrecognized +Hotkey Team: %s\n", temp);
 			}
 
 
 			// get flags ----------------------------------------------------------
 
 			// get iff flags
-			iffp->flags = 0;
 			if (optional_string("$Flags:"))
 			{
+				iffp->flags = 0;
 				SCP_vector<SCP_string> flag_strings;
 				stuff_string_list(flag_strings);
 
@@ -655,6 +663,28 @@ void iff_init()
 	resolve_iff_data();
 }
 
+void iff_close()
+{
+	Iff_info.clear();
+	Iff_info_names.clear();
+	Iff_colors.clear();
+	temp_colors.clear();
+
+	attack_names.clear();
+	observed_color_table.clear();
+	accessibility_observed_color_table.clear();
+
+	strcpy_s(traitor_name, "Traitor");
+	Iff_traitor = 0;
+	AccessiblitySupported = false;
+
+	// the table's built-in colors are created before it sets the brightness, so they use this initial value
+	iff_bright_delta = 0;
+
+	// the table only adds flags to this
+	radar_target_id_flags = 0;
+}
+
 /**
  * Find the iff name
  *
@@ -689,7 +719,7 @@ int iff_get_attackee_mask(int attacker_team)
 		return 0;
 
 	//	All teams attack all other teams.
-	if (Mission_all_attack)
+	if (The_mission.flags[Mission::Mission_Flags::All_attack])
 	{
 		return Iff_info[attacker_team].attackee_bitmask_all_teams_at_war;
 	}

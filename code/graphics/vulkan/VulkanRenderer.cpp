@@ -243,6 +243,10 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 	vk::CommandPoolCreateInfo poolCreate;
 	poolCreate.queueFamilyIndex = values.graphicsQueueIndex.index;
 	poolCreate.flags |= vk::CommandPoolCreateFlagBits::eTransient;
+	// Buffers are allocated and individually freed throughout loading and each
+	// frame. Allow their backing storage to be recycled without resetting the
+	// entire shared pool while other command buffers are still in flight.
+	poolCreate.flags |= vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
 	m_graphicsCommandPool = m_device->createCommandPoolUnique(poolCreate);
 }
@@ -276,8 +280,8 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	const vk::PipelineStageFlags2 srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
 	const vk::AccessFlags2 srcAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
 	const uint32_t bytesPerSrcPixel = 8; // fp16 RGBA = 4 x 2 bytes
-	uint32_t w = m_current->renderExtent.width;
-	uint32_t h = m_current->renderExtent.height;
+	uint32_t w = m_current->compositionExtent.width;
+	uint32_t h = m_current->compositionExtent.height;
 	vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * bytesPerSrcPixel;
 
 	// End the current render pass so we can record transfer commands

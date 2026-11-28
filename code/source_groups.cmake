@@ -259,6 +259,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main_large.sdr
 	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
+	def_files/data/effects/motion-vector-f.sdr
+	def_files/data/effects/motion-vectors.sdr
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
@@ -269,6 +271,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_cascade_params.sdr
 	def_files/data/effects/shadow_map-f.sdr
 	def_files/data/effects/shadow_map-g.sdr
 	def_files/data/effects/shadow_map-v.sdr
@@ -629,6 +632,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessingLighting.cpp
 		graphics/vulkan/VulkanPostProcessingMSAA.cpp
 		graphics/vulkan/VulkanPostProcessingSMAA.cpp
+		graphics/vulkan/VulkanPostProcessingMotion.cpp
 		graphics/vulkan/VulkanPostProcessingShadow.cpp
 		graphics/vulkan/VulkanPresentTarget.cpp
 		graphics/vulkan/VulkanPresentTarget.h
@@ -651,6 +655,8 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanShaderCompiler.h
 		graphics/vulkan/VulkanState.cpp
 		graphics/vulkan/VulkanState.h
+		graphics/vulkan/VulkanUpscaler.cpp
+		graphics/vulkan/VulkanUpscaler.h
 		graphics/vulkan/VulkanTexture.cpp
 		graphics/vulkan/VulkanTexture.h
 		graphics/vulkan/VulkanTextureAPI.cpp
@@ -716,6 +722,8 @@ add_file_folder("Hud"
 	hud/hudtarget.h
 	hud/hudtargetbox.cpp
 	hud/hudtargetbox.h
+	hud/hudvr.cpp
+	hud/hudvr.h
 	hud/hudwingmanstatus.cpp
 	hud/hudwingmanstatus.h
 )

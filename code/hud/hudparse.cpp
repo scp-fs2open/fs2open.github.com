@@ -7,6 +7,7 @@
  
 
 #include <cstddef>
+#include <optional>
 
 #include "cmdline/cmdline.h"
 #include "graphics/font.h" //for gr_force_fit_string
@@ -29,6 +30,8 @@
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "options/Option.h"
+#include "options/OptionsManager.h"
 #include "parse/parselo.h"
 #include "radar/radar.h"
 #include "radar/radardradis.h"
@@ -54,6 +57,104 @@ int Force_scaling_above_res_global[2] = {-1, -1};
 int Hud_font = -1;
 
 bool Chase_view_only_ex = false;
+
+static bool orb_radar_default = false;
+
+// Lock an option only when no loaded gauge depends on the player's value
+struct GaugeSettingTally {
+	int gauges = 0;
+	int set_by_mod = 0;
+	bool value = false;
+};
+static GaugeSettingTally Scan_lines_tally;
+static GaugeSettingTally Rearm_timer_tally;
+static GaugeSettingTally Radar_tally;
+static std::optional<bool> Target_info_from_table;
+static bool Disco_scan_lines_seen = false;
+
+static void tally_gauge_setting(GaugeSettingTally& tally, bool set_by_mod, bool value)
+{
+	++tally.gauges;
+	if (!set_by_mod) {
+		return;
+	}
+	++tally.set_by_mod;
+	tally.value = value;
+}
+
+static void set_option_by_mod(const char* key, bool value)
+{
+	mprintf(("HUD tables set option %s to %s\n", key, value ? "true" : "false"));
+	options::OptionsManager::instance()->setOverride(key,
+		std::unique_ptr<json_t>(value ? json_true() : json_false()),
+		"an active mod",
+		options::OverrideSource::Mod);
+}
+
+static void lock_option_if_mod_set_everywhere(const char* key, const GaugeSettingTally& tally)
+{
+	if ((tally.gauges > 0) && (tally.set_by_mod == tally.gauges)) {
+		set_option_by_mod(key, tally.value);
+	}
+}
+
+static void parse_orb_radar_func()
+{
+	stuff_boolean(&orb_radar_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Cmdline_orb_radar = orb_radar_default ? 1 : 0;
+}
+
+static auto OrbRadarOption __UNUSED = options::OptionBuilder<bool>("HUD.OrbRadar",
+	std::pair<const char*, int>{"3D Radar", -1},
+	std::pair<const char*, int>{"Shows the 3D orb radar instead of the flat radar. Takes effect after a restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return orb_radar_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.bind_to_once(&Cmdline_orb_radar)
+	.importance(59)
+	.parser(parse_orb_radar_func)
+	.finish();
+
+static bool dual_scan_lines_default = false;
+
+static void parse_dual_scan_lines_func()
+{
+	stuff_boolean(&dual_scan_lines_default);
+	Cmdline_dualscanlines = dual_scan_lines_default ? 1 : 0;
+}
+
+static auto DualScanLinesOption __UNUSED = options::OptionBuilder<bool>("HUD.DualScanLines",
+	std::pair<const char*, int>{"Dual Scan Lines", -1},
+	std::pair<const char*, int>{"Adds a second pair of scanning lines to the target box while scanning cargo. "
+		"Takes effect after a restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return dual_scan_lines_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.bind_to_once(&Cmdline_dualscanlines)
+	.importance(58)
+	.parser(parse_dual_scan_lines_func)
+	.finish();
+
+static bool rearm_timer_default = false;
+
+static void parse_rearm_timer_func()
+{
+	stuff_boolean(&rearm_timer_default);
+	Cmdline_rearm_timer = rearm_timer_default ? 1 : 0;
+}
+
+static auto RearmTimerOption __UNUSED = options::OptionBuilder<bool>("HUD.RearmTimer",
+	std::pair<const char*, int>{"Rearm Timer", -1},
+	std::pair<const char*, int>{"Shows the time left until rearming and repair are complete. Takes effect after a "
+		"restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return rearm_timer_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.bind_to_once(&Cmdline_rearm_timer)
+	.importance(57)
+	.parser(parse_rearm_timer_func)
+	.finish();
 
 //WARNING: If you add gauges to this array, make sure to bump Num_builtin_gauges!
 const int Num_builtin_gauges = 42;
@@ -758,6 +859,11 @@ void hud_positions_init()
 	}
 
 	default_hud_gauges.clear();
+	Scan_lines_tally = GaugeSettingTally();
+	Rearm_timer_tally = GaugeSettingTally();
+	Radar_tally = GaugeSettingTally();
+	Target_info_from_table.reset();
+	Disco_scan_lines_seen = false;
 
 	if (cf_exists_full("hud_gauges.tbl", CF_TYPE_TABLES))
 		parse_hud_gauges_tbl("hud_gauges.tbl");
@@ -766,6 +872,18 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
+
+	lock_option_if_mod_set_everywhere("HUD.DualScanLines", Scan_lines_tally);
+	// With every target monitor on the disco style no gauge reads the option
+	if (Disco_scan_lines_seen && (Scan_lines_tally.gauges == 0)) {
+		options::OptionsManager::instance()->removeOption(DualScanLinesOption);
+	}
+	lock_option_if_mod_set_everywhere("HUD.RearmTimer", Rearm_timer_tally);
+	lock_option_if_mod_set_everywhere("HUD.OrbRadar", Radar_tally);
+	// One setting for every ship, so even a ship-specific HUD replaces the player's choice
+	if (Target_info_from_table.has_value()) {
+		set_option_by_mod("HUD.TargetInfo", *Target_info_from_table);
+	}
 }
 
 void load_missing_retail_gauges()
@@ -1421,8 +1539,29 @@ void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
 	}
 }
 
+// A newly created gauge, used as a T while it is set up.  T may be a base class of the gauge's real type: the n-gon
+// radar is set up as a standard radar.  The gauge still knows its real type, so the copies gauge_assign_common makes
+// for each ship class that uses the gauge are complete n-gon radars, not just their standard radar part.
 template<class T>
-std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated = NULL)
+struct new_gauge {
+	SCP_polymorphic<HudGauge> gauge;
+
+	explicit new_gauge(SCP_polymorphic<HudGauge>&& g) : gauge(std::move(g)) {}
+
+	template<class U, typename = std::enable_if_t<std::is_base_of<T, U>::value>>
+	new_gauge(new_gauge<U>&& other) : gauge(std::move(other.gauge)) {}
+
+	T* operator->() const { return static_cast<T*>(gauge.get()); }
+};
+
+template<class T, typename... Args>
+new_gauge<T> gauge_create(Args&&... args)
+{
+	return new_gauge<T>(SCP_polymorphic<HudGauge>::make<T>(std::forward<Args>(args)...));
+}
+
+template<class T, typename... Args>
+new_gauge<T> gauge_load_common(gauge_settings* settings, Args&&... args)
 {
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
@@ -1568,12 +1707,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		stuff_boolean(&visible_in_config);
 	}
 
-	std::unique_ptr<T> instance(preAllocated);
-
-	if (instance == NULL)
-	{
-		instance.reset(new T());
-	}
+	auto instance = gauge_create<T>(std::forward<Args>(args)...);
 
 	instance->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	instance->initFont(settings->font_num);
@@ -1602,16 +1736,14 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 }
 
 template<typename T>
-void gauge_assign_common(const gauge_settings* settings, std::unique_ptr<T>&& hud_gauge) {
+void gauge_assign_common(const gauge_settings* settings, new_gauge<T>&& hud_gauge) {
+	auto& gauge = hud_gauge.gauge;
 	if(settings->ship_idx && !settings->ship_idx->empty() && settings->ship_idx->at(0) >= 0) {
 		for (auto ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
-			std::unique_ptr<T> instance(new T());
-			*instance = *hud_gauge;
-			Ship_info[*ship_index].hud_gauges.push_back(std::move(instance));
+			Ship_info[*ship_index].hud_gauges.push_back(gauge);
 		}
-		// Previous instance goes out of scope here and is destructed
 	} else {
-		default_hud_gauges.push_back(std::move(hud_gauge));
+		default_hud_gauges.push_back(std::move(gauge));
 	}
 }
 
@@ -1784,7 +1916,7 @@ void load_gauge_custom(gauge_settings* settings)
 		}
 	}
 
-	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, settings->message_gauge, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
+	auto hud_gauge = gauge_create<HudGauge>(gauge_type, settings->slew, settings->message_gauge, r, g, b, name, text, filename, txtoffset_x, txtoffset_y);
 
 	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
@@ -3037,13 +3169,13 @@ void load_gauge_radar_std(gauge_settings* settings)
 	// Cyborg17 - not using auto here is a huge pain to get exactly right and to read. If we put this in a
 	// normal if block, either auto will break or hud_gauge will go out of scope before the last block below.
 	// The ternery operator lets us circumvent this problem by allowing us to use auto, while also loading
-	// the radar, creating the unique_ptr, and staying in scope.
+	// the radar, creating the gauge, and staying in scope.
 
 	// did we have a normal radar? If so, load the regular radar.
 	auto hud_gauge = (num_sides == 0)
 	                     ? gauge_load_common<HudGaugeRadarStd>(settings)
-	                     // if not *construct* and then load the ngon radar
-	                     : gauge_load_common<HudGaugeRadarNgon>(settings, new HudGaugeRadarNgon(num_sides, offset));
+	                     // if not load the ngon radar
+	                     : gauge_load_common<HudGaugeRadarNgon>(settings, num_sides, offset);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3064,6 +3196,8 @@ void load_gauge_radar_std(gauge_settings* settings)
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
 	
+	tally_gauge_setting(Radar_tally, false, false);
+
 	// Only load this if the user hasn't specified a preference
 	if (Cmdline_orb_radar == 0) {
 		hud_gauge->initBitmaps(fname);
@@ -3160,6 +3294,8 @@ void load_gauge_radar_orb(gauge_settings* settings)
 	if(optional_string("Short Distance Offsets:")) {
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
+
+	tally_gauge_setting(Radar_tally, false, false);
 
 	//only load this if the user actually wants to use the orb radar.
 	if (Cmdline_orb_radar == 1) {
@@ -3356,7 +3492,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		}
 	}
 
-	std::unique_ptr<HudGaugeRadarDradis> hud_gauge(new HudGaugeRadarDradis());
+	auto hud_gauge = gauge_create<HudGaugeRadarDradis>();
 	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
 	hud_gauge->initFont(settings->font_num);
@@ -3374,6 +3510,9 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		//In this case, we must always slew every hud gauge, no matter what.
 		hud_gauge->initSlew(true);
 	}
+
+	// DRADIS ignores the 3D radar option, so the lock keeps showing the player's choice
+	tally_gauge_setting(Radar_tally, true, Cmdline_orb_radar == 1);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -3521,7 +3660,9 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	if(optional_string("Cargo Contents Offsets:")) {
 		stuff_int_list(Cargo_string_offsets, 2);
 	}
+	bool scan_type_from_table = false;
 	if (optional_string("Cargo Scan Type:")) {
+		scan_type_from_table = true;
 		char type_str[NAME_LENGTH];
 		stuff_string(type_str, F_NAME, NAME_LENGTH);
 
@@ -3592,6 +3733,12 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	hud_gauge->initHiRes(fname_monitor);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
+	// The option only chooses between the default and dual styles, so a disco gauge has no say in the lock
+	if (Cargo_scan_type == CargoScanType::DISCO_SCAN_LINES) {
+		Disco_scan_lines_seen = true;
+	} else {
+		tally_gauge_setting(Scan_lines_tally, scan_type_from_table, Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES);
+	}
 }
 
 void load_gauge_squad_message(gauge_settings* settings)
@@ -4556,8 +4703,10 @@ void load_gauge_support(gauge_settings* settings)
 	if(optional_string("Dock Time X-offset:")) {
 		stuff_int(&text_dock_val_offset_x);
 	}
+	bool rearm_timer_from_table = false;
 	if (optional_string("Enable Rearm Timer:")) {
 		stuff_boolean(&rearm_timer_choice);
+		rearm_timer_from_table = true;
 	}
 
 	hud_gauge->initBitmaps(fname);
@@ -4569,6 +4718,7 @@ void load_gauge_support(gauge_settings* settings)
 	hud_gauge->initRearmTimer(rearm_timer_choice);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
+	tally_gauge_setting(Rearm_timer_tally, rearm_timer_from_table, rearm_timer_choice);
 }
 
 void load_gauge_training_messages(gauge_settings* settings)
@@ -5042,6 +5192,7 @@ void load_gauge_brackets(gauge_settings* settings)
 	}
 	if (optional_string("Enable Target Info:")) {
 		stuff_boolean(&Extra_target_info);
+		Target_info_from_table = Extra_target_info;
 	}
 
 	hud_gauge->initBitmaps(fname);

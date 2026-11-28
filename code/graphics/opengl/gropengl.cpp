@@ -135,7 +135,7 @@ void gr_opengl_flip()
 			// just-rendered texture caused flicker on some drivers, so the hand-off to the screen
 			// always goes through glBlitFramebuffer instead.
 			GL_state.BindFrameBuffer(GammaBlit_framebuffer);
-			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+			glViewport(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height());
 
 			opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
 
@@ -165,7 +165,7 @@ void gr_opengl_flip()
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_BACK);
-		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		glDrawBuffer(GL_NONE);
 
 		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
@@ -196,7 +196,7 @@ void gr_opengl_setup_frame() {
 	if (Cmdline_window_res) {
 		GL_state.PushFramebufferState();
 		GL_state.BindFrameBuffer(Back_framebuffer);
-		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+		glViewport(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height());
 	}
 }
 
@@ -286,7 +286,10 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 	if(GL_rendering_to_texture) {
 		glScissor(x, y, w, h);
 	} else {
-		glScissor(x, gr_screen.max_h-y-h, w, h);
+		// Scale the edges, so that adjacent clip rects stay adjacent
+		const GLint left = opengl_screen_to_pixels(x);
+		const GLint bottom = opengl_screen_to_pixels(gr_screen.max_h - y - h);
+		glScissor(left, bottom, opengl_screen_to_pixels(x + w) - left, opengl_screen_to_pixels(gr_screen.max_h - y) - bottom);
 	}
 }
 
@@ -325,7 +328,7 @@ void gr_opengl_print_screen(const char *filename)
     _mkdir(os_get_config_path("screenshots").c_str());
 
 	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
+	GL_state.BindFrameBuffer(opengl_screen_readback_framebuffer(), GL_FRAMEBUFFER);
 
 	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
 	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
@@ -406,8 +409,8 @@ SCP_string gr_opengl_blob_screen()
 	if (render_target != 0) {
 		source_fbo = render_target;
 	}
-	else if (Cmdline_window_res) {
-		source_fbo = Back_framebuffer;
+	else {
+		source_fbo = opengl_screen_readback_framebuffer();
 	}
 
 	GL_state.BindFrameBuffer(source_fbo, GL_FRAMEBUFFER);
@@ -765,7 +768,7 @@ int  gr_opengl_save_screen()
 	GLboolean save_state = GL_state.DepthTest(GL_FALSE);
 
 	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
+	GL_state.BindFrameBuffer(opengl_screen_readback_framebuffer(), GL_FRAMEBUFFER);
 
 	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
 	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
@@ -1085,7 +1088,12 @@ static void gr_opengl_imgui_new_frame()
 
 static void gr_opengl_imgui_render_draw_data()
 {
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	auto* drawData = ImGui::GetDrawData();
+	// Otherwise the target is SDL's drawable, whose (HiDPI) scale the platform backend already set
+	if (drawData && (Cmdline_window_res || opengl_screen_layer_active())) {
+		drawData->FramebufferScale = ImVec2(Gr_composition_scale, Gr_composition_scale);
+	}
+	ImGui_ImplOpenGL3_RenderDrawData(drawData);
 }
 
 void gr_opengl_init_function_pointers()
@@ -1163,7 +1171,16 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
 	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
-	gr_screen.gf_viewport_size_changed = gr_opengl_resize_render_targets;
+	gr_screen.gf_viewport_size_changed = []() {
+		// In the game, only the main window renders the scene. Other viewports, for example the
+		// -debug_window, go through gr_use_viewport() and thus gr_screen_resize() on each frame.
+		// If they grew the targets, the scale of the game's scene would drop below 1, and Back and
+		// GammaBlit (sized from the main window) would not agree with the scene targets. qtFRED
+		// renders the scene in each of its viewports, so there all viewports can grow the targets.
+		if (Fred_running || current_viewport == nullptr || current_viewport == os::getMainViewport()) {
+			gr_opengl_resize_render_targets();
+		}
+	};
 
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_msaa = gr_opengl_deferred_lighting_msaa;
@@ -1221,6 +1238,9 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_sync_delete = gr_opengl_sync_delete;
 
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
+
+	gr_screen.gf_screen_layer_begin = gr_opengl_screen_layer_begin;
+	gr_screen.gf_screen_layer_end = gr_opengl_screen_layer_end;
 
 	gr_screen.gf_override_fog = gr_opengl_override_fog;
 
@@ -1681,6 +1701,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 #else
 		return GLAD_GL_VERSION_3_3 != 0;
 #endif
+	case gr_capability::CAPABILITY_FSR:
+		return false;
 	}
 
 

@@ -354,6 +354,8 @@ cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), req
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
+cmdline_parm fsr_mode_arg("-fsr", "AMD FSR: 0 off, 1 AA only, 2 upscale to the window resolution. Vulkan only", AT_INT);
+cmdline_parm native_res_hud_arg("-native_res_hud", "Draws the HUD at the window (or VR headset) resolution instead of the render resolution", AT_NONE);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -1895,11 +1897,15 @@ bool SetCmdlineParams()
 
 	if(dualscanlines_arg.found() ) {
 		Cmdline_dualscanlines = 1;
+		options::OptionsManager::instance()->setOverride("HUD.DualScanLines",
+			std::unique_ptr<json_t>(json_true()), "-dualscanlines");
 	}
 
 	if(targetinfo_arg.found())
 	{
 		Extra_target_info = true;
+		options::OptionsManager::instance()->setOverride("HUD.TargetInfo",
+			std::unique_ptr<json_t>(json_true()), "-targetinfo");
 	}
 
 	if(nomovies_arg.found() ) {
@@ -1957,6 +1963,8 @@ bool SetCmdlineParams()
 	if (fps_arg.found())
 	{
 		Show_framerate = 1;
+		options::OptionsManager::instance()->setOverride("HUD.ShowFPS",
+			std::unique_ptr<json_t>(json_true()), "-fps");
 	}
 
 	if (bmpmanusage_arg.found())
@@ -2034,6 +2042,8 @@ bool SetCmdlineParams()
 	if (orb_radar.found())
 	{
 		Cmdline_orb_radar = 1;
+		options::OptionsManager::instance()->setOverride("HUD.OrbRadar",
+			std::unique_ptr<json_t>(json_true()), "-orbradar");
 	}
 
 	if ( allow_autpilot_interrupt.found() )	{
@@ -2125,6 +2135,21 @@ bool SetCmdlineParams()
 		options::OptionsManager::instance()->setOverride("Graphics.AAMode",
 			std::unique_ptr<json_t>(json_integer(static_cast<int>(Gr_aa_mode))),
 			post_process_aa_preset_arg.found() ? "-aa_preset" : "-aa");
+	}
+
+	if (fsr_mode_arg.found()) {
+		const int mode = fsr_mode_arg.get_int();
+		if (mode >= static_cast<int>(FsrMode::Off) && mode <= static_cast<int>(FsrMode::Upscale)) {
+			// What of this can run is only known once the renderer is up; gr_init settles it on the closest offered setting
+			Gr_fsr_mode = static_cast<FsrMode>(mode);
+			Gr_fsr_major_version = 0;
+			options::OptionsManager::instance()->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(mode)), "-fsr");
+		}
+	}
+
+	if (native_res_hud_arg.found()) {
+		Gr_native_res_hud = true;
+		options::OptionsManager::instance()->setOverride("Graphics.NativeResHUD", std::unique_ptr<json_t>(json_boolean(true)), "-native_res_hud");
 	}
 
 	if (msaa_enabled_arg.found()) {
@@ -2236,6 +2261,8 @@ bool SetCmdlineParams()
 
 	if ( ballistic_gauge.found() ) {
 		Cmdline_ballistic_gauge = 1;
+		options::OptionsManager::instance()->setOverride("HUD.BallisticGauge",
+			std::unique_ptr<json_t>(json_true()), "-ballistic_gauge");
 	}
 
 	if(dis_collisions.found())
@@ -2248,8 +2275,11 @@ bool SetCmdlineParams()
 		Cmdline_no_fbo = 1;
 	}
 
-	if ( rearm_timer_arg.found() )
+	if ( rearm_timer_arg.found() ) {
 		Cmdline_rearm_timer = 1;
+		options::OptionsManager::instance()->setOverride("HUD.RearmTimer",
+			std::unique_ptr<json_t>(json_true()), "-rearm_timer");
+	}
 
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;

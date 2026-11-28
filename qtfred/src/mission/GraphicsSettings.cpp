@@ -1,6 +1,7 @@
 #include "mission/GraphicsSettings.h"
 
 #include <cmdline/cmdline.h>
+#include <mod_table/mod_table.h>
 #include <options/OptionsManager.h>
 
 #include <QSettings>
@@ -14,9 +15,9 @@ const char* SETTINGS_GROUP = "Preferences";
 const char* KEY_BACKEND = "view_graphics_backend";
 const char* KEY_POST_PROCESSING = "view_enable_post_processing";
 const char* KEY_SHADOW_QUALITY = "view_graphics_shadow_quality";
+const char* KEY_SHADOW_CONTACT_HARDENING = "view_graphics_shadow_contact_hardening";
 const char* KEY_SHADOW_METHOD = "view_graphics_shadow_method";
 const char* KEY_AA_MODE = "view_graphics_aa_mode";
-const char* KEY_MSAA_SAMPLES = "view_graphics_msaa_samples";
 const char* KEY_TEXTURE_FILTER = "view_graphics_texture_filter";
 const char* KEY_ANISOTROPY = "view_graphics_anisotropy";
 const char* KEY_GAMMA = "view_graphics_gamma";
@@ -40,14 +41,9 @@ T readEnum(const QSettings& settings, const char* key, T fallback, T highest)
 bool GraphicsSettings::operator==(const GraphicsSettings& rhs) const
 {
 	return backend == rhs.backend && enablePostProcessing == rhs.enablePostProcessing &&
-	       shadowQuality == rhs.shadowQuality && shadowMethod == rhs.shadowMethod && aaMode == rhs.aaMode &&
-	       msaaSamples == rhs.msaaSamples && gamma == rhs.gamma && textureFilter == rhs.textureFilter &&
-	       anisotropy == rhs.anisotropy;
-}
-
-SCP_vector<int> GraphicsSettings::validMsaaSampleCounts()
-{
-	return {0, 4, 8};
+	       shadowQuality == rhs.shadowQuality && shadowContactHardening == rhs.shadowContactHardening &&
+	       shadowMethod == rhs.shadowMethod && aaMode == rhs.aaMode && gamma == rhs.gamma &&
+	       textureFilter == rhs.textureFilter && anisotropy == rhs.anisotropy;
 }
 
 GraphicsSettings GraphicsSettings::load()
@@ -74,6 +70,8 @@ GraphicsSettings GraphicsSettings::load()
 
 	out.enablePostProcessing = settings.value(KEY_POST_PROCESSING, out.enablePostProcessing).toBool();
 	out.shadowQuality = readEnum(settings, KEY_SHADOW_QUALITY, out.shadowQuality, ShadowQuality::Ultra);
+	out.shadowContactHardening =
+		settings.value(KEY_SHADOW_CONTACT_HARDENING, out.shadowContactHardening).toBool();
 	out.shadowMethod =
 		readEnum(settings, KEY_SHADOW_METHOD, out.shadowMethod, ShadowRenderMethod::Raytraced);
 	out.aaMode = readEnum(settings, KEY_AA_MODE, out.aaMode, AntiAliasMode::SMAA_Ultra);
@@ -85,12 +83,6 @@ GraphicsSettings GraphicsSettings::load()
 
 	if (settings.contains(KEY_ANISOTROPY)) {
 		out.anisotropy = settings.value(KEY_ANISOTROPY).toFloat();
-	}
-
-	const int samples = settings.value(KEY_MSAA_SAMPLES, out.msaaSamples).toInt();
-	const auto validSamples = validMsaaSampleCounts();
-	if (std::find(validSamples.begin(), validSamples.end(), samples) != validSamples.end()) {
-		out.msaaSamples = samples;
 	}
 
 	settings.endGroup();
@@ -105,9 +97,9 @@ void GraphicsSettings::save() const
 
 	settings.setValue(KEY_POST_PROCESSING, enablePostProcessing);
 	settings.setValue(KEY_SHADOW_QUALITY, static_cast<int>(shadowQuality));
+	settings.setValue(KEY_SHADOW_CONTACT_HARDENING, shadowContactHardening);
 	settings.setValue(KEY_SHADOW_METHOD, static_cast<int>(shadowMethod));
 	settings.setValue(KEY_AA_MODE, static_cast<int>(aaMode));
-	settings.setValue(KEY_MSAA_SAMPLES, msaaSamples);
 	settings.setValue(KEY_GAMMA, gamma);
 
 	// Don't write the sentinels back out -- an absent key is what keeps the engine default in play.
@@ -129,6 +121,11 @@ void GraphicsSettings::save() const
 void GraphicsSettings::applyLive() const
 {
 	Gr_aa_mode = aaMode;
+
+	// qtFRED does not load the engine options, so nothing else writes this global. The shadow
+	// code reads it on each frame, thus the change applies immediately. If the GPU cannot do
+	// contact hardening, shadow_contact_hardening_enabled() ignores this value.
+	Shadow_contact_hardening_enabled = shadowContactHardening;
 	gr_set_gamma(gamma);
 
 	// Same as Gr_aa_mode: this is what Graphics.ShadowRenderMethod's own .bind_to() does, and it is
@@ -149,7 +146,6 @@ GraphicsSettings GraphicsSettings::applyBeforeGrInit()
 		Cmdline_graphics_api = settings.backend;
 	}
 
-	Cmdline_msaa_enabled = settings.msaaSamples;
 	Shadow_quality = settings.shadowQuality;
 
 	auto* options = options::OptionsManager::instance();
@@ -158,10 +154,22 @@ GraphicsSettings GraphicsSettings::applyBeforeGrInit()
 	// config file the game reads its own graphics settings from.
 	if (settings.textureFilter != NO_TEXTURE_FILTER_CHOICE) {
 		options->setOverride("Graphics.TextureFilter", std::to_string(settings.textureFilter), "qtFRED Preferences");
+
+		// When a mod turns off the in-game options, the engine does not read the override. It
+		// reads Gr_texture_filter_override, so set that value also. It is in memory only.
+		if (!Using_in_game_options) {
+			Gr_texture_filter_override = settings.textureFilter;
+		}
 	}
 
 	if (settings.anisotropy != NO_ANISOTROPY_CHOICE) {
 		options->setOverride("Graphics.Anisotropy", std::to_string(settings.anisotropy), "qtFRED Preferences");
+
+		// When a mod turns off the in-game options, the engine does not read the override. It
+		// reads the command-line level, so set that value also. It is in memory only.
+		if (!Using_in_game_options) {
+			Cmdline_aniso_level = static_cast<int>(settings.anisotropy);
+		}
 	}
 
 	return settings;

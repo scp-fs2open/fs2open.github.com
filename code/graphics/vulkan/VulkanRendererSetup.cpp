@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanOpenXR.h"
 #include "VulkanTexture.h"
+#include "VulkanUpscaler.h"
 
 #include "cmdline/cmdline.h"
 #include "globalincs/version.h"
@@ -415,6 +416,10 @@ bool VulkanRenderer::initialize()
 	if (!m_postProcessor->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
 	                           m_mainTarget->renderExtent, m_depthFormat, m_mainTarget->hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
+		m_postProcessor.reset();
+	} else if (!m_postProcessor->resize(m_mainTarget->renderExtent, m_mainTarget->compositionExtent)) {
+		mprintf(("Warning: Failed to size the Vulkan post-processor, post-processing will be disabled\n"));
+		m_postProcessor->shutdown();
 		m_postProcessor.reset();
 	} else {
 		setPostProcessor(m_postProcessor.get());
@@ -932,6 +937,13 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 	}
 
+	// FSR adds to the feature set audited above, for AMD's shaders and host code
+	vulkan_upscaler_prepare_device(m_vkInstance.get(),
+		deviceValues.device,
+		deviceValues.graphicsQueueIndex.index,
+		supportedFeatures,
+		deviceCreateChain.get<vk::DeviceCreateInfo>());
+
 	if (openxr_requested())
 		m_device = vulkan_openxr_create_device(deviceValues.device, deviceCreateChain.get<vk::DeviceCreateInfo>());
 	else
@@ -939,6 +951,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Load device-level function pointers for the dynamic dispatcher
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device.get());
+	vulkan_upscaler_device_created(m_device.get());
 
 	// Create queues
 	m_graphicsQueue = m_device->getQueue(deviceValues.graphicsQueueIndex.index, 0);
@@ -948,6 +961,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	m_physicalDevice = deviceValues.device;
 	// Cache properties + features once (the limit/feature getters read these).
 	m_deviceProperties = m_physicalDevice.getProperties();
+	Gr_max_output_size = static_cast<int>(m_deviceProperties.limits.maxImageDimension2D);
 	m_deviceFeatures = m_physicalDevice.getFeatures();
 	m_graphicsQueueFamilyIndex = deviceValues.graphicsQueueIndex.index;
 	m_presentQueueFamilyIndex = deviceValues.presentQueueIndex.index;

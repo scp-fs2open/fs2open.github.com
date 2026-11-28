@@ -176,11 +176,6 @@ void gr_opengl_deferred_lighting_end()
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	GL_state.ColorMask(true, true, true, false);
-
-	// Do not leave the raw-depth sampler bound after the pass.
-	if (Shadow_map_raw_sampler) {
-		GL_state.Texture.BindSampler(11, 0);
-	}
 }
 
 static GLuint deferred_light_cylinder_vbo = 0;
@@ -261,8 +256,7 @@ void gr_opengl_deferred_lighting_finish()
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 		if (Shadow_map_raw_sampler) {
-			GL_state.Texture.Enable(11, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
-			GL_state.Texture.BindSampler(11, Shadow_map_raw_sampler);
+			GL_state.Texture.Enable(SHADOW_MAP_RAW_TEXTURE_UNIT, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture, Shadow_map_raw_sampler);
 		}
 	}
 
@@ -325,8 +319,8 @@ void gr_opengl_deferred_lighting_finish()
 		auto lp = ltp::current();
 
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
+		shadows_fill_deferred_global_data(*header);
 		if (Shadow_quality != ShadowQuality::Disabled) {
-			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 			shadow_cascade_params_bind_deferred();
 		}
 
@@ -506,7 +500,6 @@ void gr_opengl_deferred_lighting_finish()
 				deferred_light_sphere_icount,
 				GL_UNSIGNED_SHORT,
 				0);
-			opengl_draw_sphere();
 			++element_index;
 		}
 		if (!cylinder_lights.empty()) {

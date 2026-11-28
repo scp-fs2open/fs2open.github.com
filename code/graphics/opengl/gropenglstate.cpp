@@ -94,17 +94,20 @@ void opengl_texture_state::Enable(GLuint tex_id)
 		return;
 	}
 
-	if (units[active_texture_unit].texture_id != tex_id) {
-		glBindTexture(units[active_texture_unit].texture_target, tex_id);
-		units[active_texture_unit].texture_id = tex_id;
-	}
+	glBindTexture(units[active_texture_unit].texture_target, tex_id);
+	units[active_texture_unit].texture_id = tex_id;
+
+	// A sampler that an earlier bind set belongs to the earlier texture. No GL call when
+	// the unit has no sampler.
+	BindSampler(active_texture_unit, 0);
 }
 
-void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id) {
+void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id, GLuint sampler) {
 	Assertion(unit < num_texture_units, "Invalid texture unit value!");
 
-	if (units[unit].texture_target == tex_target && units[unit].texture_id == tex_id) {
-		// The texture unit already uses this texture. There is no need to change it
+	if (units[unit].texture_target == tex_target && units[unit].texture_id == tex_id
+		&& units[unit].bound_sampler == sampler) {
+		// The texture unit already uses this texture and sampler. There is no need to change it
 		return;
 	}
 
@@ -112,6 +115,7 @@ void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id)
 	SetActiveUnit(unit);
 	SetTarget(tex_target);
 	Enable(tex_id);
+	BindSampler(unit, sampler);
 }
 
 void opengl_texture_state::BindSampler(GLuint unit, GLuint sampler)
@@ -141,6 +145,7 @@ void opengl_texture_state::Delete(GLuint tex_id)
 
 			glBindTexture(units[i].texture_target, 0);
 			units[i].texture_id = 0;
+			BindSampler(i, 0);
 
 			default_values(i, units[i].texture_target);
 
@@ -198,7 +203,8 @@ void opengl_state::init()
 
 	glBlendFunc(GL_ONE, GL_ZERO);
 	blendfunc_Value.first = GL_ONE;
-	blendfunc_Value.first = GL_ZERO;
+	blendfunc_Value.second = GL_ZERO;
+	blendfunc_alpha_Value = blendfunc_Value;
 	buffer_blendfunc_Value.fill(blendfunc_Value);
 
 	glDepthFunc(GL_LESS);
@@ -428,14 +434,28 @@ bvec4 opengl_state::ColorMask(bool red, bool green, bool blue, bool alpha)
 
 void opengl_state::BlendFunc(GLenum s_val, GLenum d_val)
 {
-	if (s_val != blendfunc_Value.first || d_val != blendfunc_Value.second) {
-		glBlendFunc(s_val, d_val);
-		blendfunc_Value.first = s_val;
-		blendfunc_Value.second = d_val;
+	BlendFuncSeparate(s_val, d_val, s_val, d_val);
+}
 
-		// This has set all the buffer blend modes as well
-		buffer_blendfunc_Value.fill(blendfunc_Value);
+void opengl_state::BlendFuncSeparate(GLenum s_val, GLenum d_val, GLenum s_alpha, GLenum d_alpha)
+{
+	const std::pair<GLenum, GLenum> rgb_factors(s_val, d_val), alpha_factors(s_alpha, d_alpha);
+	if (rgb_factors == blendfunc_Value && alpha_factors == blendfunc_alpha_Value) {
+		return;
 	}
+
+	if (rgb_factors == alpha_factors) {
+		glBlendFunc(s_val, d_val);
+		// This has set all the buffer blend modes as well
+		buffer_blendfunc_Value.fill(rgb_factors);
+	} else {
+		glBlendFuncSeparate(s_val, d_val, s_alpha, d_alpha);
+		// The buffer cache only tracks color factors, so it cannot represent this state
+		buffer_blendfunc_Value.fill({GL_INVALID_ENUM, GL_INVALID_ENUM});
+	}
+
+	blendfunc_Value = rgb_factors;
+	blendfunc_alpha_Value = alpha_factors;
 }
 void opengl_state::BlendFunci(int buffer, GLenum s_val, GLenum d_val) {
 	Assertion(GLAD_GL_ARB_draw_buffers_blend != 0, "Buffer blend modes are not supported by this OpenGL implementation!");
@@ -459,36 +479,57 @@ void opengl_state::BlendFunci(int buffer, GLenum s_val, GLenum d_val) {
 
 void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
 {
+	GLenum s_val, d_val;
 	switch (ab) {
 		case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
-			GL_state.BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			s_val = GL_SRC_ALPHA;
+			d_val = GL_ONE_MINUS_SRC_ALPHA;
 			break;
 
 		case ALPHA_BLEND_NONE:
-			GL_state.BlendFunc(GL_ONE, GL_ZERO);
+			s_val = GL_ONE;
+			d_val = GL_ZERO;
 			break;
 
 		case ALPHA_BLEND_ADDITIVE:
-			GL_state.BlendFunc(GL_ONE, GL_ONE);
+			s_val = GL_ONE;
+			d_val = GL_ONE;
 			break;
 
 		case ALPHA_BLEND_ALPHA_ADDITIVE:
-			GL_state.BlendFunc(GL_SRC_ALPHA, GL_ONE);
+			s_val = GL_SRC_ALPHA;
+			d_val = GL_ONE;
 			break;
 
 		case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
-			GL_state.BlendFunc(/*GL_SRC_COLOR*/GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+			s_val = /*GL_SRC_COLOR*/GL_SRC_ALPHA;
+			d_val = GL_ONE_MINUS_SRC_COLOR;
 			break;
 
 		case ALPHA_BLEND_PREMULTIPLIED:
-			GL_state.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			s_val = GL_ONE;
+			d_val = GL_ONE_MINUS_SRC_ALPHA;
 			break;
 
 		default:
-			break;
+			GL_state.Blend(GL_TRUE);
+			return;
+	}
+
+	if (!coverage_alpha) {
+		GL_state.BlendFunc(s_val, d_val);
+	} else if (ab == ALPHA_BLEND_ADDITIVE || ab == ALPHA_BLEND_ALPHA_ADDITIVE) {
+		GL_state.BlendFuncSeparate(s_val, d_val, GL_ZERO, GL_ONE);
+	} else {
+		GL_state.BlendFuncSeparate(s_val, d_val, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	GL_state.Blend( (ab == ALPHA_BLEND_NONE) ? GL_FALSE : GL_TRUE );
+}
+
+void opengl_state::SetCoverageAlpha(bool enable)
+{
+	coverage_alpha = enable;
 }
 
 void opengl_state::SetAlphaBlendModei(int buffer, gr_alpha_blend ab)

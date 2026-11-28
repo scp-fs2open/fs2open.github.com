@@ -35,7 +35,7 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Bloom Brightpass", false },
 
 	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", nullptr,
-		{ VATTRIB_POSITION }, "FXAA", false },
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "FXAA", false },
 
 	{ SDR_TYPE_POST_PROCESS_FXAA_PREPASS, "post-v.sdr", "fxaapre-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "FXAA Prepass", false },
@@ -116,6 +116,10 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 
 	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Gamma correct blit", false },
+
+	// Vulkan-only
+	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
 };
 // clang-format on
 

@@ -82,6 +82,10 @@ struct VulkanPresentTarget {
 	// drawing at gr_screen.max_w/max_h while the window is smaller, and the encode pass scales one
 	// into the other. See VulkanRenderer::m_renderExtent and createSwapChain().
 	vk::Extent2D renderExtent;
+	// The size everything after the scene is drawn at: the composition image, the depth buffer and the
+	// framebuffers. For the main target this is renderExtent times FSR's upscale factor (see
+	// VulkanRenderer::m_compositionExtent). For the other targets it is renderExtent.
+	vk::Extent2D compositionExtent;
 
 	SCP_vector<vk::Image> images;
 	SCP_vector<vk::UniqueImageView> imageViews;

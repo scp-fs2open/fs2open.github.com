@@ -22,7 +22,7 @@ class BuiltinActionDefinition : public ActionDefinition {
 		return flagset<ProgramContextFlags>(TAction::getRequiredExecutionContextFlags());
 	}
 
-	std::unique_ptr<Action> createAction(
+	SCP_polymorphic<Action> createAction(
 		const SCP_unordered_map<SCP_string, expression::ActionExpression>& parameterExpressions) const override
 	{
 		const auto paramIter = parameterExpressions.find("parameter");
@@ -30,7 +30,7 @@ class BuiltinActionDefinition : public ActionDefinition {
 		// This should have been caught earlier
 		Assertion(paramIter != parameterExpressions.cend(), "Could not find built-in parameter!");
 
-		return std::make_unique<TAction>(paramIter->second.template asTyped<ActionValueType>());
+		return SCP_polymorphic<Action>::make<TAction>(paramIter->second.template asTyped<ActionValueType>());
 	}
 };
 

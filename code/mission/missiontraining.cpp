@@ -79,7 +79,7 @@ int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
 int Training_voice_type;
-int Training_voice_soundstream;
+int Training_voice_soundstream = -1;
 sound_handle Training_voice_snd_handle;
 int Training_flag = 0;
 int Training_failure = 0;
@@ -699,6 +699,7 @@ void training_mission_shutdown()
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
 			audiostream_close_file(Training_voice_soundstream, false);
+			Training_voice_soundstream = -1;
 
 		} else {
 			snd_stop(Training_voice_snd_handle);
@@ -825,13 +826,11 @@ SCP_string message_translate_tokens(const char *text)
  */
 int message_play_training_voice(int index)
 {
-	int len;
-	CFILE *fp;
-
 	if (index < 0) {
 		if (Training_voice >= 0) {
 			if (Training_voice_type) {
 				audiostream_close_file(Training_voice_soundstream, false);
+				Training_voice_soundstream = -1;
 
 			} else {
 				snd_stop(Training_voice_snd_handle);
@@ -843,20 +842,21 @@ int message_play_training_voice(int index)
 	}
 
 	if (!Message_waves[index].num.isValid()) {
-		fp = cfopen(Message_waves[index].name, "rb");
-		if (!fp)
+		// even though we localize the filename here, if we use the audiostream branch, we pass the original filename;
+		// because audiostream_open() performs its own localization
+		const auto localized = cf_localize_filename(Message_waves[index].name, CF_TYPE_ANY, NUM_AUDIO_EXT, audio_ext_list);
+
+		// check the size of the localized file: large files get streamed, small files get played as sounds
+		const auto res = cf_find_file_location_ext(localized.c_str(), NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY);
+		if (!res.found)
 			return -1;
 
-		len = cfilelength(fp);
-		cfclose(fp);
-		if (len > 100000) {
+		if (res.size > 100000) {
 			if ((Training_voice < 0) || !Training_voice_type || (Training_voice != index)) {
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
-						if (Training_voice == index)
-							audiostream_stop(Training_voice_soundstream, 1, 0);
-						else
-							audiostream_close_file(Training_voice_soundstream, false);
+						audiostream_close_file(Training_voice_soundstream, false);
+						Training_voice_soundstream = -1;
 
 					} else {
 						snd_stop(Training_voice_snd_handle);
@@ -880,7 +880,7 @@ int message_play_training_voice(int index)
 
 		} else {
 			game_snd_entry tmp_gse;
-			strcpy_s(tmp_gse.filename, Message_waves[index].name);
+			strcpy_s(tmp_gse.filename, localized.c_str());
 			Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 			if (!Message_waves[index].num.isValid()) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
@@ -892,6 +892,7 @@ int message_play_training_voice(int index)
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
 			audiostream_close_file(Training_voice_soundstream, false);
+			Training_voice_soundstream = -1;
 
 		} else {
 			snd_stop(Training_voice_snd_handle);

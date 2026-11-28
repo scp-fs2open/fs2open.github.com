@@ -90,9 +90,9 @@ struct GraphicsSettings {
 	 */
 	ShadowRenderMethod shadowMethod = ShadowRenderMethod::ShadowMap;
 
+	//! Size each shadow's penumbra from the distance to its occluder. Same default as the game.
+	bool shadowContactHardening = true;
 	AntiAliasMode aaMode = AntiAliasMode::None;
-
-	int msaaSamples = 0; //!< 0 (off), 4, or 8; see validMsaaSampleCounts()
 
 	/**
 	 * @brief Viewport brightness, as the exponent in pow(colour, 1/gamma).
@@ -116,11 +116,6 @@ struct GraphicsSettings {
 
 	bool operator==(const GraphicsSettings& rhs) const;
 	bool operator!=(const GraphicsSettings& rhs) const { return !(*this == rhs); }
-
-	/**
-	 * @brief The MSAA sample counts the Preferences combo offers, in combo order.
-	 */
-	static SCP_vector<int> validMsaaSampleCounts();
 
 	static GraphicsSettings load();
 	void save() const;

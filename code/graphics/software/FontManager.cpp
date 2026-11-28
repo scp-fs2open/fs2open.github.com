@@ -10,7 +10,6 @@
 
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
-#include "localization/localize.h"
 #include "options/Option.h"
 
 namespace font
@@ -30,6 +29,23 @@ namespace font
 		}
 
 		return nullptr;
+	}
+
+	const TrueTypeFontData* FontManager::getTrueTypeFontData(const SCP_string& fontName)
+	{
+		const auto* selectedFont = getFont(fontName);
+
+		if (selectedFont == nullptr || selectedFont->getType() != NVG_FONT) {
+			return nullptr;
+		}
+
+		const auto iter = allocatedData.find(selectedFont->getFilename());
+
+		if (iter == allocatedData.end()) {
+			return nullptr;
+		}
+
+		return &iter->second;
 	}
 
 	FSFont* FontManager::getFontByFilename(const SCP_string& filename)
@@ -139,19 +155,7 @@ namespace font
 			return data;
 		}
 
-		// try localized version first
-		CFILE* fp = nullptr;
-		SCP_string typeface_lcl = typeface;
-
-		lcl_add_dir_to_path_with_filename(typeface_lcl);
-
-		fp = cfopen(typeface_lcl.c_str(), "rb", CF_TYPE_ANY);
-
-		// fallback if not found
-		if ( !fp )
-		{
-			fp = cfopen(typeface.c_str(), "rb", CF_TYPE_ANY);
-		}
+		CFILE* fp = cfopen(typeface.c_str(), "rb", CF_TYPE_ANY, true);
 
 		if ( !fp )
 		{
@@ -462,7 +466,7 @@ namespace font
 		auto iter = allocatedData.find(fileName);
 		if (iter == allocatedData.end())
 		{
-			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CF_TYPE_ANY);
+			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CF_TYPE_ANY, true);
 
 			if (fontFile == nullptr)
 			{

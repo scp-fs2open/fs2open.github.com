@@ -68,6 +68,7 @@ struct VulkanBufferObject {
 	vk::Buffer frameAllocBuffer;       // VkBuffer at upload time (may be old allocator buffer after growth)
 	size_t frameAllocOffset = 0;       // Byte offset within the frame allocator buffer
 	uint32_t frameAllocFrame = UINT32_MAX; // Frame index when last allocated
+	bool orphanPending = false;        // The next offset write must not reuse the current allocation
 	uint32_t frameAllocGeneration = UINT32_MAX; // Allocator generation when last allocated
 
 	bool isStreaming() const {

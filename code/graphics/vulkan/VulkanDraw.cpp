@@ -236,7 +236,7 @@ void VulkanDrawManager::clear()
 	// gr_screen dimensions can exceed the active render pass when rendering to a
 	// smaller off-screen target; vkCmdClearAttachments requires rects inside the
 	// render area.
-	clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+	clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 	if (clearRect.rect.extent.width == 0 || clearRect.rect.extent.height == 0) {
 		return;
 	}
@@ -422,7 +422,7 @@ void VulkanDrawManager::zbufferClear(int mode)
 		clearRect.rect.offset = vk::Offset2D(0, 0);
 		clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 		                                      static_cast<uint32_t>(gr_screen.max_h));
-		clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+		clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 		clearRect.baseArrayLayer = 0;
 		clearRect.layerCount = 1;
 
@@ -1119,6 +1119,11 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 	config.renderPass = stateTracker->getCurrentRenderPass();
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 	config.sampleCount = stateTracker->getCurrentSampleCount();
+	config.coverageAlpha = stateTracker->getCoverageAlpha();
+	config.writesVelocity = mat->get_velocity_output()
+		&& (config.shaderType == SDR_TYPE_MODEL || config.shaderType == SDR_TYPE_BATCHED_BITMAP
+			|| config.shaderType == SDR_TYPE_EFFECT_PARTICLE)
+		&& config.colorWriteMask.x;
 
 	return config;
 }
@@ -1130,7 +1135,8 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 	// Get sampler matching current texture addressing mode and fallback texture
 	vk::SamplerAddressMode addressMode = convertTextureAddressing(m_textureAddressing);
 	vk::Sampler sampler = texManager->getSampler(
-		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true);
+		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true,
+		mat->get_texture_lod_bias() ? getStateTracker()->getMaterialLodBias() : 0.0f, true);
 	// OpenGL skips applying texture addressing for AABITMAP, INTERFACE, and CUBEMAP
 	// types - they always stay clamped. We need a clamp sampler for those cases.
 	vk::Sampler clampSampler = texManager->getSampler(
@@ -1151,7 +1157,6 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 				// Load on demand - YUV planes are 8bpp grayscale
 				bitmap* bmp = bm_lock(handle, 8, BMP_AABITMAP);
 				if (bmp) {
-					texManager->bm_data(handle, bmp, bm_is_compressed(handle));
 					bm_unlock(handle);
 					texSlot = texManager->getTextureSlot(handle);
 					m_frameStats.onDemandTextureUploads++;
@@ -1271,9 +1276,9 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 			// Lock bitmap with appropriate flags
 			bitmap* bmp = bm_lock(textureHandle, bpp, lockFlags);
 			if (bmp) {
-				// Upload texture
-				texManager->bm_data(textureHandle, bmp, bm_is_compressed(textureHandle));
+				// bm_lock() has already uploaded the texture through gr_bm_data().
 				bm_unlock(textureHandle);
+				texManager->releaseCpuBitmapData(textureHandle);
 				m_frameStats.onDemandTextureUploads++;
 
 				// Re-get the slot after upload
@@ -1303,12 +1308,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 	setTexture(mat->get_texture_map(TM_BASE_TYPE), TextureSlot::BaseMap, true);
 	setTexture(mat->get_texture_map(TM_GLOW_TYPE), TextureSlot::GlowMap);
 
-	// Specular - prefer spec_gloss if available
-	int specMap = mat->get_texture_map(TM_SPEC_GLOSS_TYPE);
-	if (specMap < 0) {
-		specMap = mat->get_texture_map(TM_SPECULAR_TYPE);
-	}
-	setTexture(specMap, TextureSlot::SpecMap);
+	setTexture(mat->get_specular_map(), TextureSlot::SpecMap);
 
 	setTexture(mat->get_texture_map(TM_NORMAL_TYPE), TextureSlot::NormalMap);
 	setTexture(mat->get_texture_map(TM_HEIGHT_TYPE), TextureSlot::HeightMap);
@@ -1459,11 +1459,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		MaterialSetInputs matInputs;
 		matInputs.texHandles[0] = mat->get_texture_map(TM_BASE_TYPE);
 		matInputs.texHandles[1] = mat->get_texture_map(TM_GLOW_TYPE);
-		int specMap = mat->get_texture_map(TM_SPEC_GLOSS_TYPE);
-		if (specMap < 0) {
-			specMap = mat->get_texture_map(TM_SPECULAR_TYPE);
-		}
-		matInputs.texHandles[2] = specMap;
+		matInputs.texHandles[2] = mat->get_specular_map();
 		matInputs.texHandles[3] = mat->get_texture_map(TM_NORMAL_TYPE);
 		matInputs.texHandles[4] = mat->get_texture_map(TM_HEIGHT_TYPE);
 		matInputs.texHandles[5] = mat->get_texture_map(TM_AMBIENT_TYPE);

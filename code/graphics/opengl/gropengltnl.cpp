@@ -614,8 +614,7 @@ void opengl_tnl_shutdown()
 		// Clear the tracked bindings before deleting -- glDeleteSamplers silently unbinds
 		// the sampler from every unit on the GL side, which would leave GL_state's tracking
 		// stale (BindSampler() would then skip a rebind of a since-deleted sampler name).
-		GL_state.Texture.BindSampler(7, 0);
-		GL_state.Texture.BindSampler(11, 0);
+		GL_state.Texture.BindSampler(SHADOW_MAP_RAW_TEXTURE_UNIT, 0);
 		glDeleteSamplers(1, &Shadow_map_raw_sampler);
 		Shadow_map_raw_sampler = 0;
 	}
@@ -828,8 +827,13 @@ void gr_opengl_shadow_map_end()
 	Glowpoint_override = Glowpoint_override_save;
 	gr_htl_projection_matrix_set = false;
 
-	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
-	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	const int bottom = gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height;
+	gr_opengl_set_viewport(gr_screen.offset_x, bottom, gr_screen.clip_width, gr_screen.clip_height);
+
+	const GLint left_px = opengl_screen_to_pixels(gr_screen.offset_x);
+	const GLint bottom_px = opengl_screen_to_pixels(bottom);
+	glScissor(left_px, bottom_px, opengl_screen_to_pixels(gr_screen.offset_x + gr_screen.clip_width) - left_px,
+		opengl_screen_to_pixels(bottom + gr_screen.clip_height) - bottom_px);
 }
 
 void opengl_tnl_set_material(material* material_info, bool set_base_map, bool set_clipping)
@@ -974,11 +978,11 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SHADOWS)) {
 			Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
-			// Unit 11 is reserved for this -- see the raw-sampler bind alongside "shadow_map"
-			// below. Set unconditionally (even when contact hardening is unsupported) for the
+			// SHADOW_MAP_RAW_TEXTURE_UNIT is reserved for this -- see the raw-sampler bind alongside
+			// "shadow_map" below. Set unconditionally (even when contact hardening is unsupported) for the
 			// same AMD unbound-uniform reason as the rest of this block; the shader's own
 			// penumbra_scale sentinel check is what prevents the read at runtime.
-			Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", 11);
+			Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", SHADOW_MAP_RAW_TEXTURE_UNIT);
 		}
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_TRANSFORM))
@@ -1005,23 +1009,14 @@ void opengl_tnl_set_model_material(model_material *material_info)
 				1);
 		}
 
-		if (material_info->get_texture_map(TM_SPECULAR_TYPE) >= 0 ||
-			material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
-			if (material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
-				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE),
-					TCACHE_TYPE_NORMAL,
-					&u_scale,
-					&v_scale,
-					&array_index,
-					2);
-			} else {
-				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE),
-					TCACHE_TYPE_NORMAL,
-					&u_scale,
-					&v_scale,
-					&array_index,
-					2);
-			}
+		const auto specular_map = material_info->get_specular_map();
+		if (specular_map >= 0) {
+			gr_opengl_tcache_set(specular_map,
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				2);
 		}
 
 		if (material_info->get_texture_map(TM_NORMAL_TYPE) >= 0) {
@@ -1063,8 +1058,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		if (material_info->is_shadow_receiving()) {
 			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 			if (Shadow_map_raw_sampler) {
-				GL_state.Texture.Enable(11, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
-				GL_state.Texture.BindSampler(11, Shadow_map_raw_sampler);
+				GL_state.Texture.Enable(SHADOW_MAP_RAW_TEXTURE_UNIT, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture, Shadow_map_raw_sampler);
 			}
 		}
 
@@ -1287,7 +1281,9 @@ void opengl_tnl_set_rocketui_material(interface_material* material_info)
 }
 
 void gr_opengl_set_viewport(int x, int y, int width, int height) {
-	glViewport(x, y, width, height);
+	const GLint left = opengl_screen_to_pixels(x);
+	const GLint bottom = opengl_screen_to_pixels(y);
+	glViewport(left, bottom, opengl_screen_to_pixels(x + width) - left, opengl_screen_to_pixels(y + height) - bottom);
 }
 
 void opengl_bind_vertex_component(const vertex_format_data &vert_component, size_t base_offset)

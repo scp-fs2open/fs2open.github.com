@@ -239,7 +239,7 @@ void VulkanRenderer::createCompositionResources(VulkanPresentTarget& target)
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
 		imageInfo.format = HDR_COLOR_FORMAT;
-		imageInfo.extent = vk::Extent3D(target.renderExtent.width, target.renderExtent.height, 1);
+		imageInfo.extent = vk::Extent3D(target.compositionExtent.width, target.compositionExtent.height, 1);
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = vk::SampleCountFlagBits::e1;
@@ -298,8 +298,8 @@ void VulkanRenderer::createFrameBuffers(VulkanPresentTarget& target)
 		framebufferInfo.renderPass = m_renderPass.get();
 		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = target.renderExtent.width;
-		framebufferInfo.height = target.renderExtent.height;
+		framebufferInfo.width = target.compositionExtent.width;
+		framebufferInfo.height = target.compositionExtent.height;
 		framebufferInfo.layers = 1;
 
 		target.framebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
@@ -360,8 +360,8 @@ void VulkanRenderer::createDepthResources(VulkanPresentTarget& target)
 	vk::ImageCreateInfo imageInfo;
 	imageInfo.imageType = vk::ImageType::e2D;
 	imageInfo.format = m_depthFormat;
-	imageInfo.extent.width = target.renderExtent.width;
-	imageInfo.extent.height = target.renderExtent.height;
+	imageInfo.extent.width = target.compositionExtent.width;
+	imageInfo.extent.height = target.compositionExtent.height;
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
@@ -391,7 +391,7 @@ void VulkanRenderer::createDepthResources(VulkanPresentTarget& target)
 	target.depthImageView = m_device->createImageViewUnique(viewInfo);
 
 	nprintf(("vulkan", "Vulkan: Created depth buffer (%dx%d, format %d)\n",
-		target.renderExtent.width, target.renderExtent.height, static_cast<int>(m_depthFormat)));
+		target.compositionExtent.width, target.compositionExtent.height, static_cast<int>(m_depthFormat)));
 }
 
 
@@ -610,8 +610,11 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 				vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
 		}
 		target.renderExtent = m_renderExtent;
+		// Sets target.compositionExtent too
+		setCompositionExtent(wantedCompositionExtent());
 	} else {
 		target.renderExtent = target.extent;
+		target.compositionExtent = target.renderExtent;
 	}
 
 	mprintf(("Vulkan: Swap chain output mode: %s\n", target.hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
@@ -760,7 +763,7 @@ bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(target.renderExtent)) {
+	if (m_postProcessor && !m_postProcessor->resize(target.renderExtent, target.compositionExtent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();

@@ -593,6 +593,7 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 			bufferObj.dataSize = size;
 			bufferObj.frameAllocFrame = m_currentFrame;
 			bufferObj.frameAllocGeneration = alloc.generation;
+			bufferObj.orphanPending = false;
 		} else {
 			// Pattern B: pre-alloc for offset writes (null data)
 			if (bufferObj.frameAllocFrame != m_currentFrame ||
@@ -604,8 +605,14 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 				bufferObj.dataSize = size;
 				bufferObj.frameAllocFrame = m_currentFrame;
 				bufferObj.frameAllocGeneration = alloc.generation;
+				bufferObj.orphanPending = false;
+			} else {
+				// Same frame, same generation and size fits. This still orphans, like glBufferData(NULL): draws
+				// already recorded this frame must keep their data until submission, e.g. eye 0 of a VR frame while
+				// eye 1 records into the same command buffer. Deferred to the next write, which usually comes in the
+				// next frame and allocates anyway.
+				bufferObj.orphanPending = true;
 			}
-			// Otherwise: same frame, same generation and size fits — keep current allocation
 		}
 	} else {
 		// Static / PersistentMapping path.
@@ -661,7 +668,8 @@ void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t
 		// the caller skips updateBufferData (e.g. gr_add_to_immediate_buffer
 		// when the data fits the existing buffer size).
 		auto& fa = m_frameAllocs[m_currentFrame];
-		if (bufferObj.frameAllocFrame != m_currentFrame || bufferObj.frameAllocGeneration != fa.generation) {
+		if (bufferObj.frameAllocFrame != m_currentFrame || bufferObj.frameAllocGeneration != fa.generation ||
+			bufferObj.orphanPending) {
 			size_t allocSize = std::max(bufferObj.dataSize, offset + size);
 			Assert(allocSize > 0);
 			size_t allocOffset = bumpAllocate(allocSize);
@@ -670,6 +678,7 @@ void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t
 			bufferObj.dataSize = allocSize;
 			bufferObj.frameAllocFrame = m_currentFrame;
 			bufferObj.frameAllocGeneration = fa.generation;
+			bufferObj.orphanPending = false;
 		}
 
 		Assert(offset + size <= bufferObj.dataSize);

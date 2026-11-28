@@ -14,6 +14,7 @@
 
 #include "cfile/cfile.h"
 #include "io/mouse.h"
+#include "localization/localize.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "scpui/IncludeNodeHandler.h"
@@ -134,22 +135,40 @@ int get_modifier_state()
 	return mods;
 }
 
-void load_fonts()
+// the fonts with this extension, including those that only exist in the current language's subfolder
+SCP_vector<SCP_string> list_fonts(const char* ext)
 {
 	SCP_vector<SCP_string> files;
-	cf_get_file_list(files, CF_TYPE_FONT, "*.ttf");
+	const SCP_string filter = SCP_string("*") + ext;
+	cf_get_file_list(files, CF_TYPE_FONT, filter.c_str());
 
-	for (auto& name : files) {
-		// The file extension gets removed by CFile
-		FontDatabase::LoadFontFace((name + ".ttf").c_str());
+	const int lang = lcl_get_current_lang_index();
+	if (Lcl_languages.in_bounds(lang) && Lcl_languages[lang].lang_ext[0] != '\0')
+	{
+		SCP_vector<SCP_string> localized;
+		cf_get_file_list(localized, CF_TYPE_FONT, (SCP_string(Lcl_languages[lang].lang_ext) + DIR_SEPARATOR_STR + filter).c_str());
+
+		for (const auto& name : localized)
+		{
+			// a listing of a subfolder includes the subfolder in each name
+			auto bare = name.substr(name.rfind(DIR_SEPARATOR_CHAR) + 1);
+			if (!SCP_vector_contains_lcase(files, bare))
+				files.push_back(std::move(bare));
+		}
 	}
 
-	files.clear();
-	cf_get_file_list(files, CF_TYPE_FONT, "*.otf");
+	return files;
+}
 
-	for (auto& name : files) {
-		// The file extension gets removed by CFile
-		FontDatabase::LoadFontFace((name + ".otf").c_str());
+void load_fonts()
+{
+	for (auto ext : { ".ttf", ".otf" })
+	{
+		for (const auto& name : list_fonts(ext))
+		{
+			// The file extension gets removed by CFile
+			FontDatabase::LoadFontFace((name + ext).c_str());
+		}
 	}
 }
 
@@ -542,31 +561,18 @@ bool text_input_handler(const SDL_Event& evt)
 		return false;
 	}
 
-	// libRocket expects UCS-2 so we first need to convert to that
-	// NOTE: not using SDL_iconv_utf8_ucs2() macro here due to Linux compatiblity issue
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	const char *tocode = "UCS-2BE";
-#else
-	const char *tocode = "UCS-2LE";
-#endif
-
-	auto text = reinterpret_cast<char16_t *>(SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1));
-
-	if ( !text ) {
-		// encoding failed
-		return false;
+	// libRocket accepts one UCS-2 character at a time, so codepoints outside the BMP are replaced
+	const char* text = evt.text.text;
+	bool not_consumed = true;
+	while (*text != '\0')
+	{
+		auto codepoint = SDL_StepUTF8(&text, nullptr);
+		if (codepoint > 0xFFFF)
+			codepoint = SDL_INVALID_UNICODE_CODEPOINT;
+		not_consumed = input_context->ProcessTextInput(static_cast<word>(codepoint)) && not_consumed;
 	}
 
-	auto ucs2String = std::u16string(text);
-
-	SDL_free(text);
-
-	bool consumed = true;
-	for (auto& c : ucs2String) {
-		consumed = consumed && input_context->ProcessTextInput(c);
-	}
-
-	return consumed;
+	return not_consumed;
 }
 
 } // namespace

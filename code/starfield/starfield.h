@@ -33,15 +33,22 @@
 // +AngularSize:, stars.tbl's $SunAngularSize:, and the LabUi session override -- uses this same
 // encoding, so "the first one that specifies a size wins" is all the precedence logic there is
 // (see sun_angular_radius_tangent() in starfield.cpp). Negative means that layer doesn't specify
-// a size; 0 asks for hard shadows outright. Only affects raytraced shadows.
+// a size; 0 asks for hard shadows outright. The size sets the shadow softness of both shadow
+// methods: the raytraced penumbra cone and the shadow-map filter width.
 constexpr float SUN_ANGULAR_SIZE_UNSPECIFIED = -1.0f;
 
 // Sol's apparent diameter from Earth -- the one figure anyone has an intuition for, so it's what
 // the editors and the lab start from when switching a sun's size on.
 constexpr float SUN_ANGULAR_SIZE_SOL = 0.53f;
 
-// Well past anything plausible; the cap only exists to keep the value finite and non-negative.
+// Well past anything plausible. The cap keeps the penumbra cone at a half angle of 45 degrees or
+// less. Above 180 degrees the tangent becomes negative, and both shadow methods become hard.
 constexpr float SUN_ANGULAR_SIZE_MAX = 90.0f;
+
+// Checks a sun angular size from a table or mission file. A negative value gets an error and
+// becomes SUN_ANGULAR_SIZE_UNSPECIFIED. A value above SUN_ANGULAR_SIZE_MAX gets an error and
+// becomes SUN_ANGULAR_SIZE_MAX. field is the name of the parsed field, for the error message.
+float stars_check_angular_size(float degrees, const char* field, const char* sun_filename);
 
 typedef struct starfield_list_entry {
 	char filename[MAX_FILENAME_LEN];		// bitmap filename
