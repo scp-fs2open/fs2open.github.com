@@ -979,6 +979,8 @@ void multi_oo_reset_player_records(int player_index)
 		return;
 	}
 
+	nprintf(("Network", "Resetting object update records for player slot %d.\n", player_index));
+
 	auto& last_sent = Oo_info.player_frame_info[player_index].last_sent;
 
 	// entry 0 is the template that every new ship's record is copied from
