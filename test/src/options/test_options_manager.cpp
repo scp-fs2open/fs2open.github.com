@@ -875,13 +875,6 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
 	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_true()), "-orbradar");
 	StubRenderer renderer;
 	std::unique_ptr<json_t> list(mgr->describeOptions());
-	// without in-game options the game never reads the settings file, so neither value exists
-	Using_in_game_options = false;
-	std::unique_ptr<json_t> unused(mgr->describeOptions());
-	const json_t* unused_entry = described(unused.get(), "HUD.OrbRadar");
-	ASSERT_NE(unused_entry, nullptr);
-	ASSERT_TRUE(json_is_null(json_object_get(unused_entry, "saved")));
-	ASSERT_TRUE(json_is_null(json_object_get(unused_entry, "effective")));
 	const json_t* entry = described(list.get(), "HUD.OrbRadar");
 	ASSERT_NE(entry, nullptr);
 	ASSERT_TRUE(json_is_false(json_object_get(entry, "saved")));
@@ -894,6 +887,21 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
 	const json_t* free_entry = described(list.get(), "HUD.BallisticGauge");
 	ASSERT_NE(free_entry, nullptr);
 	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "overridden_by")));
+}
+
+// without in-game options the game never reads the settings file, so neither value exists even when one is saved
+TEST_F(OptionsManagerOverrideLocalized, DescribedValuesAreNullWithoutInGameOptions)
+{
+	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = false;
+	os_config_write_string("HUD", "OrbRadar", "false", true);
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(OptionsManager::instance()->describeOptions());
+	const json_t* entry = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_null(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_null(json_object_get(entry, "effective")));
 }
 
 // the game never loads an enforced option, so the table's value is used even though the player saved another or a

@@ -2896,7 +2896,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		}
 		// kept in the menu with Off as its only choice, so only a launcher needs to know why
 		if (Cmdline_get_options) {
-			options_mgr->setRequirement(FsrOption->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
+			options_mgr->setRequirement(FsrOption->getConfigKey(),
+				"fsr",
+				XSTR("Needs the Vulkan renderer and a graphics card AMD FSR supports", -1));
 		}
 	}
 	shadows_remove_unsupported_options();

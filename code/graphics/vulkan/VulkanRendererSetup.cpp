@@ -1408,8 +1408,7 @@ bool query_hardware_without_window(HardwareQuery& out)
 	auto unload = ::util::finally([]() { SDL_Vulkan_UnloadLibrary(); });
 
 	try {
-		// the dispatcher is left pointing at the unloaded library; nothing uses it until a renderer initializes it
-		// again
+		// the dispatcher keeps the unloaded library until a renderer initializes it again, and nothing uses it before
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(
 			reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr()));
 		vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VulkanApiVersion);

@@ -895,7 +895,7 @@ static bool mod_settings_file_can_be_opened(const SCP_string& path)
 			return false;
 		}
 #ifdef SCP_UNIX
-		return access(folder.c_str(), W_OK) == 0;
+		return access(folder.c_str(), W_OK | X_OK) == 0;
 #else
 		return true;
 #endif
@@ -1029,8 +1029,9 @@ void os_init_registry_stuff(const char* company, const char* app)
 static bool path_is_absolute(const SCP_string& path)
 {
 #ifdef WIN32
-	const bool drive = path.size() >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/');
-	return drive || path.compare(0, 2, "\\\\") == 0;
+	// a root-relative or drive-relative path is already tied to a drive, so joining it to the working folder breaks it
+	const bool drive = path.size() >= 2 && path[1] == ':';
+	return drive || (!path.empty() && (path[0] == '\\' || path[0] == '/'));
 #else
 	return !path.empty() && path[0] == '/';
 #endif
