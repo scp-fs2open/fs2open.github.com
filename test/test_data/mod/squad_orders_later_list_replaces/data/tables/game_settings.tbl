@@ -1,0 +1,9 @@
+#GAME SETTINGS
+
+$Available squad orders:
+    +Order Type: Message Ships
+    +Text: Ships
+    +Order Type: Message Wings
+    +Text: Wings
+
+#End

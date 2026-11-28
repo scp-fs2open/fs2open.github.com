@@ -1,0 +1,9 @@
+#HUD SETTINGS
+
+$Available squad orders:
+    +Order Type: Message All Bombers
+    +Text: Bombers
+    +Order Type: Abort Rearm
+    +Text: Stop Rearm
+
+#End

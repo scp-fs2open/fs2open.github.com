@@ -766,6 +766,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix stale AI order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
 
+				set_flag(profile, "$player wing orders have same priority as ship orders:", AI::Profile_Flags::Player_wing_orders_same_priority_as_ship_orders);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move

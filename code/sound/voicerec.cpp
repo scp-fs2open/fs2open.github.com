@@ -77,7 +77,7 @@ CComPtr<ISpAudio>				cpAudio;         // Pointer for Audio Input Device
 const bool DEBUG_ON = false;
 
 extern int button_function(int n);
-extern void hud_squadmsg_msg_all_fighters();
+extern void hud_squadmsg_msg_all_fighters(SmallCraftFlavor flavor);
 extern void hud_squadmsg_shortcut( int command );
 extern bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
 extern bool hud_squadmsg_wing_valid(wing *wingp);
@@ -125,9 +125,17 @@ void doVid_Action(int action)
 
 		}
 
-		if(Msg_instance == MESSAGE_ALL_FIGHTERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS )
+		if(Msg_instance == MESSAGE_ALL_FIGHTERS_BOMBERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS_BOMBERS )
 		{
-			hud_squadmsg_send_to_all_fighters(Msg_shortcut_command);
+			hud_squadmsg_send_to_all_fighters(Msg_shortcut_command, -1, SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
+		}
+		else if(Msg_instance == MESSAGE_ALL_FIGHTERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS )
+		{
+			hud_squadmsg_send_to_all_fighters(Msg_shortcut_command, -1, SmallCraftFlavor::ALL_FIGHTERS);
+		}
+		else if(Msg_instance == MESSAGE_ALL_BOMBERS || Squad_msg_mode == SM_MODE_ALL_BOMBERS )
+		{
+			hud_squadmsg_send_to_all_fighters(Msg_shortcut_command, -1, SmallCraftFlavor::ALL_BOMBERS);
 		}
 		else if(Squad_msg_mode == SM_MODE_SHIP_COMMAND)
 		{
@@ -497,7 +505,7 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase)
 
 					case VID_AllFighters:
 					case VID_AllWings:
-						hud_squadmsg_msg_all_fighters();
+						hud_squadmsg_msg_all_fighters(SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
 						// can have the action to perform spoken directly afterwards
 						if (pElements->pProperties->pFirstChild) {
 							doVid_Action(pElements->pProperties->pFirstChild->vValue.ulVal);
