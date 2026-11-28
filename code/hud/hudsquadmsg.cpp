@@ -19,6 +19,7 @@
 #include "io/timer.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
+#include "mission/missionparse.h"
 #include "network/multi_pmsg.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -190,9 +191,14 @@ static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFl
 		return true;
 	}
 
-	// a wing order is also given to the wing's later waves, whose craft may not be of this flavor
+	// a wing order is also given to the wing's later waves, which are built from the wing's parse objects
 	if (wing_entry.current_wave < wing_entry.num_waves) {
-		return false;
+		const int wingnum = WING_INDEX(&wing_entry);
+		for (const auto& p_obj : Parse_objects) {
+			if ((p_obj.wingnum == wingnum) && !is_smallcraft_flavor(&Ship_info[p_obj.ship_class], flavor)) {
+				return false;
+			}
+		}
 	}
 
 	bool any_recipient = false;
