@@ -53,6 +53,9 @@ static BOOL Standalone_minimized = FALSE;
 
 #define MSG_SYSTRAYICON		WM_USER+99
 
+// sent to the connect page; WM_APP because dialogs and property sheets use WM_USER values themselves
+#define MSG_CONNECT_SET_ROW (WM_APP + 1)
+
 static void standalone_do_systray(int mode);
 
 // system tray menu item identifiers...
@@ -302,26 +305,8 @@ void std_connect_remove_ip_string(short player_id)
 // set a player's ip string on the connect page listbox
 void std_connect_set_ip_string(short player_id, char* string)
 {
-	HWND ctrl;
-
-	// get the control handle
-	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE],(int)(uintptr_t)MAKEINTRESOURCE(IDC_CONPING));
-
-	auto loc = std_connect_find_row(ctrl, player_id);
-
-	if(loc!=LB_ERR){
-		// deleting the selected row clears the selection, which would leave the Kick button with nothing to kick
-		bool was_selected = SendMessage(ctrl, LB_GETCURSEL, (WPARAM)0, (LPARAM)0) == loc;
-
-		SendMessage(ctrl,LB_DELETESTRING,(WPARAM)loc,(LPARAM)0);
-		loc = SendMessage(ctrl, LB_INSERTSTRING, (WPARAM)loc, (LPARAM)string);
-		if (loc >= 0) {
-			SendMessage(ctrl, LB_SETITEMDATA, (WPARAM)loc, (LPARAM)player_id);
-			if (was_selected) {
-				SendMessage(ctrl, LB_SETCURSEL, (WPARAM)loc, (LPARAM)0);
-			}
-		}
-	}
+	// the page rewrites the row on its own thread, so a click can't land between the delete and the re-insert
+	SendMessage(Page_handles[CONNECT_PAGE], MSG_CONNECT_SET_ROW, (WPARAM)player_id, (LPARAM)string);
 }
 
 void std_connect_kick_player()
@@ -548,6 +533,27 @@ INT_PTR CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam
 			PostMessage( Psht, WM_DESTROY, 0, 0 );
 		}
 		break;
+
+	case MSG_CONNECT_SET_ROW: {
+		auto player_id = (short)wParam;
+		HWND ctrl = GetDlgItem(hwndDlg, (int)(uintptr_t)MAKEINTRESOURCE(IDC_CONPING));
+		auto loc = std_connect_find_row(ctrl, player_id);
+
+		if (loc != LB_ERR) {
+			// deleting the selected row clears the selection, which would leave the Kick button with nothing to kick
+			bool was_selected = SendMessage(ctrl, LB_GETCURSEL, (WPARAM)0, (LPARAM)0) == loc;
+
+			SendMessage(ctrl, LB_DELETESTRING, (WPARAM)loc, (LPARAM)0);
+			loc = SendMessage(ctrl, LB_INSERTSTRING, (WPARAM)loc, lParam);
+			if (loc >= 0) {
+				SendMessage(ctrl, LB_SETITEMDATA, (WPARAM)loc, (LPARAM)player_id);
+				if (was_selected) {
+					SendMessage(ctrl, LB_SETCURSEL, (WPARAM)loc, (LPARAM)0);
+				}
+			}
+		}
+		return TRUE;
+	}
 
 	default :
 		return 0;		
