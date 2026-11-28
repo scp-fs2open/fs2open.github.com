@@ -39,6 +39,7 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "def_files/def_files.h"
+#include "localization/localize.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 
@@ -1223,11 +1224,32 @@ static bool is_absolute_path(const char *path)
 #endif
 }
 
+// whether the innermost folder of a sub path (which ends with a separator) is named after a language extension
+static bool is_language_sub_path(const SCP_string &sub_path)
+{
+	if (sub_path.size() < 2)
+		return false;
+
+	const size_t end = sub_path.size() - 1;
+	const auto sep = sub_path.rfind(DIR_SEPARATOR_CHAR, end - 1);
+	const size_t start = (sep == SCP_string::npos) ? 0 : sep + 1;
+	const size_t len = end - start;
+
+	for (const auto& language : Lcl_languages)
+	{
+		if (strlen(language.lang_ext) == len && !strnicmp(sub_path.c_str() + start, language.lang_ext, len))
+			return true;
+	}
+
+	return false;
+}
+
 static bool sub_path_match(const SCP_string &search, const SCP_string &index)
 {
-	// if search path is empty then we only care about the file name
+	// if search path is empty then we only care about the file name,
+	// except that localized files are only found by naming their language subfolder
 	if (search.empty()) {
-		return true;
+		return index.empty() || !is_language_sub_path(index);
 	}
 
 	// if we have search but no index then fail
@@ -1660,6 +1682,33 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 	}
 
 	return CFileLocationExt();
+}
+
+SCP_string cf_localize_filename(const char *filename, int pathtype, int num_ext, const char **ext_list)
+{
+	Assertion(filename != nullptr, "filename must not be null!");
+
+	const int lang = lcl_get_current_lang_index();
+	if (!Lcl_languages.in_bounds(lang) || Lcl_languages[lang].lang_ext[0] == '\0')
+		return filename;
+
+	SCP_string localized = filename;
+	lcl_add_dir_to_path_with_filename(localized);
+
+	// cf_find_file_location_ext() and the sound code's buffers are limited to MAX_FILENAME_LEN
+	if (localized.length() >= MAX_FILENAME_LEN)
+	{
+		mprintf(("CFILE: localized file name %s is too long, so %s will be used\n", localized.c_str(), filename));
+		return filename;
+	}
+
+	bool found;
+	if (num_ext > 0)
+		found = cf_find_file_location_ext(localized.c_str(), num_ext, ext_list, pathtype).found;
+	else
+		found = cf_find_file_location(localized.c_str(), pathtype).found;
+
+	return found ? localized : SCP_string(filename);
 }
 
 
@@ -2309,6 +2358,11 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 				break;
 
 			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str()) ) {
+				continue;
+			}
+
+			// sub paths aren't supported here, so this only skips language subfolders
+			if ( !sub_path_match("", f->sub_path) ) {
 				continue;
 			}
 
