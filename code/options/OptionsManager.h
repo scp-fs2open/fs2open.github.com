@@ -15,6 +15,12 @@ enum class OverrideSource {
 	CommandLine,
 	Mod
 };
+// Whether this machine can meet an option's requirement; Unknown when nothing could find out
+enum class RequirementSupport {
+	Unknown,
+	Supported,
+	Unsupported
+};
 using PostPersistHook = std::function<SCP_vector<const OptionBase*>(const SCP_vector<const OptionBase*>& changed)>;
 
 // A JSON string for text that may not be UTF-8: such text is read as Latin-1 instead of being dropped. Caller owns it.
@@ -50,6 +56,9 @@ class OptionsManager {
 
 	// options the current renderer drops, for a launcher: what the player needs to use them, and a sentence saying so
 	SCP_unordered_map<SCP_string, std::pair<SCP_string, SCP_string>> _requirements;
+
+	// keyed by requirement ("vulkan", "raytracing"), as the windowless hardware query answered it
+	SCP_unordered_map<SCP_string, RequirementSupport> _requirementSupport;
 	bool _optionsSorted = false;
 
 	SCP_map<int, PostPersistHook> _post_persist_hooks;
@@ -159,13 +168,18 @@ class OptionsManager {
 	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
 	 * default, the value saved in the settings file (null if none), the value this launch uses (an enforced table
 	 * value or an override wins over the saved one), override source and reason, whether a mod enforces it, and
-	 * whether a change needs a restart (true unless the option is known to apply at once).
+	 * whether a change needs a restart, and what the option needs to be used with whether this machine has it.
+	 * @note The restart flag is approximate, for information only: it is false only for options bound straight to a
+	 * variable, so an option whose own listener applies a change at once (HUD.BallisticGauge) still reports true.
 	 * @return A new JSON array the caller owns
 	 */
 	json_t* describeOptions();
 
 	// Notes what a player needs to use an option ("vulkan", "raytracing"), for describeOptions()
 	void setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation);
+
+	// Records whether this machine meets a requirement, for describeOptions(); requirements never recorded are Unknown
+	void setRequirementSupport(const SCP_string& requirement, RequirementSupport support);
 
 	// Puts back what loadInitialValues() removed and forgets its record. For tests, which share this singleton.
 	void forgetLoadedOptions();

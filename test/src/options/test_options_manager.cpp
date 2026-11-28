@@ -998,6 +998,8 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsCarryWhatTheyNeed)
 	auto* mgr = OptionsManager::instance();
 	mgr->setRequirement("Graphics.Gamma", "vulkan", "Needs the Vulkan renderer");
 	std::unique_ptr<json_t> list(mgr->describeOptions());
+	mgr->setRequirementSupport("vulkan", RequirementSupport::Unsupported);
+	std::unique_ptr<json_t> answered(mgr->describeOptions());
 	mgr->forgetLoadedOptions();
 	const json_t* needing = described(list.get(), "Graphics.Gamma");
 	const json_t* free_entry = described(list.get(), "Input.JoystickDeadZone");
@@ -1005,7 +1007,13 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsCarryWhatTheyNeed)
 	ASSERT_NE(free_entry, nullptr);
 	ASSERT_EQ(SCP_string(json_string_value(json_object_get(needing, "requires"))), "vulkan");
 	ASSERT_EQ(SCP_string(json_string_value(json_object_get(needing, "requires_text"))), "Needs the Vulkan renderer");
+	// a skipped or failed hardware query must not read as hardware that lacks the feature
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(needing, "requires_support"))), "unknown");
+	const json_t* answered_entry = described(answered.get(), "Graphics.Gamma");
+	ASSERT_NE(answered_entry, nullptr);
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(answered_entry, "requires_support"))), "unsupported");
 	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "requires")));
+	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "requires_support")));
 }
 
 // with no renderer running, these lists come only from the windowless hardware query

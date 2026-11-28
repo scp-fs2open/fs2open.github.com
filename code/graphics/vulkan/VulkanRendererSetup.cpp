@@ -1448,8 +1448,9 @@ bool query_hardware_without_window(HardwareQuery& out)
 			}
 		}
 		if (!found) {
-			return false;
+			return true;
 		}
+		out.usable_device = true;
 		out.raytraced_shadows = raytracedShadowsSupported(best);
 		out.max_anisotropy = best.properties.limits.maxSamplerAnisotropy;
 		return true;

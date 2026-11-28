@@ -1691,6 +1691,7 @@ bool cmdline_print_options()
 	// enumerate only: the full init would take the player's stick and open its force feedback
 	(void)io::joystick::init(true);
 	bool video = SDL_InitSubSystem(SDL_INIT_VIDEO);
+	auto* options_manager = options::OptionsManager::instance();
 #ifdef WITH_VULKAN
 	graphics::vulkan::HardwareQuery hardware;
 	// a crashing Vulkan driver layer would take the whole reply down, so a launcher can retry without the check
@@ -1699,9 +1700,17 @@ bool cmdline_print_options()
 		if (hardware.raytraced_shadows) {
 			shadows_mark_launcher_requirements(true);
 		}
+		const auto answer = [](bool supported) {
+			return supported ? options::RequirementSupport::Supported : options::RequirementSupport::Unsupported;
+		};
+		options_manager->setRequirementSupport("vulkan", answer(hardware.usable_device));
+		options_manager->setRequirementSupport("raytracing", answer(hardware.raytraced_shadows));
 	}
+#else
+	options_manager->setRequirementSupport("vulkan", options::RequirementSupport::Unsupported);
+	options_manager->setRequirementSupport("raytracing", options::RequirementSupport::Unsupported);
 #endif
-	json_object_set_new(root, "options", options::OptionsManager::instance()->describeOptions());
+	json_object_set_new(root, "options", options_manager->describeOptions());
 	if (video) {
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	}

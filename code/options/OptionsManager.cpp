@@ -458,9 +458,19 @@ json_t* OptionsManager::describeOptions()
 		if (requirement != _requirements.end()) {
 			json_object_set_new(entry, "requires", json_text(requirement->second.first));
 			json_object_set_new(entry, "requires_text", json_text(requirement->second.second));
+			auto found = _requirementSupport.find(requirement->second.first);
+			const auto support = (found != _requirementSupport.end()) ? found->second : RequirementSupport::Unknown;
+			const char* support_name = "unknown";
+			if (support == RequirementSupport::Supported) {
+				support_name = "supported";
+			} else if (support == RequirementSupport::Unsupported) {
+				support_name = "unsupported";
+			}
+			json_object_set_new(entry, "requires_support", json_string(support_name));
 		} else {
 			json_object_set_new(entry, "requires", json_null());
 			json_object_set_new(entry, "requires_text", json_null());
+			json_object_set_new(entry, "requires_support", json_null());
 		}
 		json_array_append_new(list, entry);
 	}
@@ -470,6 +480,11 @@ json_t* OptionsManager::describeOptions()
 void OptionsManager::setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation)
 {
 	_requirements[key] = std::make_pair(requirement, explanation);
+}
+
+void OptionsManager::setRequirementSupport(const SCP_string& requirement, RequirementSupport support)
+{
+	_requirementSupport[requirement] = support;
 }
 
 void OptionsManager::forgetLoadedOptions()
@@ -483,6 +498,7 @@ void OptionsManager::forgetLoadedOptions()
 	}
 	_describedAtLoad.clear();
 	_requirements.clear();
+	_requirementSupport.clear();
 }
 
 void OptionsManager::printValues()
