@@ -762,6 +762,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighterbay speed ramp:", AI::Profile_Flags::Fix_bay_speed_ramp);
 
+				set_flag(profile, "$fix achievability for filtered chase orders:", AI::Profile_Flags::Fix_filtered_chase_achievability);
+
 				set_flag(profile, "$fix stale AI order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
 
 				// end of options ----------------------------------------
@@ -1001,5 +1003,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_model_path_refresh_randomization);
 		flags.set(AI::Profile_Flags::Fix_bay_speed_ramp);
 		flags.set(AI::Profile_Flags::Fix_stale_ai_order_state);
+	}
+	if (mod_supports_version(26, 4, 0)) {
+		flags.set(AI::Profile_Flags::Fix_filtered_chase_achievability);
 	}
 }
