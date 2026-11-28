@@ -91,7 +91,6 @@ void parse_cutscene_table(const char* filename)
 	cutscene_info_init(&csnt);
 
 	cutscene_info *csnp;
-	bool create_if_not_found = true;
 
 	try
 	{
@@ -106,6 +105,7 @@ void parse_cutscene_table(const char* filename)
 
 		while (required_string_either("#End", "$Filename:"))
 		{
+			bool create_if_not_found = true;
 			bool csn_new = false;
 			
 			required_string("$Filename:");
@@ -155,6 +155,7 @@ void parse_cutscene_table(const char* filename)
 				stuff_string(buf, F_MULTITEXT, sizeof(buf));
 				drop_white_space(buf);
 				compact_multitext_string(buf);
+				vm_free(csnp->description);
 				csnp->description = vm_strdup(buf);
 			}
 
@@ -180,15 +181,13 @@ void parse_cutscene_table(const char* filename)
 			{
 				bool flag;
 				stuff_boolean(&flag);
-				if (flag)
-					csnp->flags.set(Cutscene::Cutscene_Flags::Always_viewable);
+				csnp->flags.set(Cutscene::Cutscene_Flags::Always_viewable, flag);
 			}
 			if (optional_string("$Never Viewable:"))
 			{
 				bool flag;
 				stuff_boolean(&flag);
-				if (flag)
-					csnp->flags.set(Cutscene::Cutscene_Flags::Never_viewable);
+				csnp->flags.set(Cutscene::Cutscene_Flags::Never_viewable, flag);
 			}
 			if (optional_string("$Custom data:")) {
 				parse_string_map(csnp->custom_data, "$end_custom_data", "+Val:");

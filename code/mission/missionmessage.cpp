@@ -1292,7 +1292,7 @@ void message_load_wave(int index, const char *filename)
 	}
 
 	game_snd_entry tmp_gse;
-	strcpy_s(tmp_gse.filename, filename);
+	strcpy_s(tmp_gse.filename, cf_localize_filename(filename, CF_TYPE_ANY, NUM_AUDIO_EXT, audio_ext_list).c_str());
 	Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 
 	if (!Message_waves[index].num.isValid())
@@ -2042,7 +2042,8 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 				if (message_filename_has_fs1_wingman_prefix(filename)) {
 					char converted[MAX_FILENAME_LEN];
 					message_filename_convert_to_command(converted, filename);
-					if (cf_exists_full_ext(converted, CF_TYPE_VOICE_SPECIAL, NUM_AUDIO_EXT, audio_ext_list)) {
+					const auto localized = cf_localize_filename(converted, CF_TYPE_VOICE_SPECIAL, NUM_AUDIO_EXT, audio_ext_list);
+					if (cf_exists_full_ext(localized.c_str(), CF_TYPE_VOICE_SPECIAL, NUM_AUDIO_EXT, audio_ext_list)) {
 						convert_to_command = true;
 					}
 				}

@@ -204,6 +204,7 @@ namespace AI {
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 		Fix_model_path_refresh_randomization,	// a subsystem path keeps its randomized point when the path is refreshed because the target moved
 		Fix_bay_speed_ramp,		// the fighterbay speed ramp covers only the bay path itself, not points that route a departing ship around the carrier, and never exceeds max speed
+		Fix_filtered_chase_achievability, // when checking achievability of filtered chase orders like chase-ship-class and chase-ship-type, treat ships which are protected or not on hostile teams as invalid
 		Fix_stale_ai_order_state,	// a) enemy_wing, guard_*, previous_mode, resume_goal_time, and the targeted subsystem (with its path) are reset when a new order takes over (enemy_wing is also reset under Fix_ai_target_recovery);
 									// b) a dynamic chase saves previous_mode/previous_submode; it and strafe entry leave them alone during an ongoing dynamic goal (evading a weapon still overwrites them, which is harmless since the evade resume re-processes orders);
 									// c) resuming guard duty discards any subsystem target and path left over from the interruption;
