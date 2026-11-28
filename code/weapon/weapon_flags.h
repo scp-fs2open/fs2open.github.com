@@ -110,6 +110,7 @@ namespace Weapon {
 		Dead_in_water,				// a missiles engines have died
 		Locked_when_fired,			// fired with a lock
 		Destroyed_by_weapon,		// destroyed by damage from other weapon
+		Destroyed_by_beam,			// set along with Destroyed_by_weapon if that weapon was a beam
 		Spawned,					//Spawned from a spawning type weapon
         No_homing,                  // this weapon should ignore any homing behavior it'd usually have
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)

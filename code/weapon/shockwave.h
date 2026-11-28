@@ -25,6 +25,20 @@ class model_draw_list;
 #define	SW_SHIP_DEATH		(1<<2)
 #define	SW_WEAPON_KILL		(1<<3)	// Shockwave created when weapon destroyed by another
 
+// fields of shockwave_create_info, for tracking which ones a table entry specified
+#define	SCI_DAMAGE			(1<<0)
+#define	SCI_DAMAGE_TYPE		(1<<1)
+#define	SCI_BLAST			(1<<2)
+#define	SCI_INNER_RAD		(1<<3)
+#define	SCI_OUTER_RAD		(1<<4)
+#define	SCI_RADIUS_CURVE	(1<<5)
+#define	SCI_SPEED			(1<<6)
+#define	SCI_ROTATION		(1<<7)
+#define	SCI_ROT_RELATIVE	(1<<8)
+#define	SCI_MODEL			(1<<9)
+#define	SCI_NAME			(1<<10)
+#define	SCI_SOUND			(1<<11)
+
 #define	MAX_SHOCKWAVES					16
 
 // -----------------------------------------------------------
@@ -97,6 +111,7 @@ typedef struct shockwave_create_info {
 extern bool Use_3D_shockwaves;
 
 extern void shockwave_create_info_init(shockwave_create_info *sci);
+extern void shockwave_create_info_inherit(shockwave_create_info *sci, const shockwave_create_info *parent, int specified_fields);
 extern void shockwave_create_info_load(const shockwave_create_info *sci);
 
 void shockwave_level_init();

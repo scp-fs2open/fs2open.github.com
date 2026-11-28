@@ -27,6 +27,7 @@ public:
 	char profile_name[NAME_LENGTH];
 
     flagset<AI::Profile_Flags> flags;
+	flagset<AI::Profile_Flags> explicit_flags;	// flags that a table specified, whether true or false
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
@@ -152,6 +153,8 @@ public:
 	float attack_any_idle_circle_distance; // Radius that AI circles around a point while waiting for new enemies in attack-any mode
 
 	int default_form_on_wing_priority;	// the priority used if not specified in the sexp
+
+	float dinky_shockwave_multiplier;	// damage multiplier for a dinky shockwave that doesn't specify its own damage
 
     void reset();
 };

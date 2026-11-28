@@ -202,7 +202,6 @@ int collide_weapon_weapon( obj_pair * pair )
 					}
 				} else {
 					A->hull_strength -= bDamage;
-					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					std::array<std::optional<ConditionData>, NumHitTypes> impact_data_a = {};
 					impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 						ImpactCondition(wipA->armor_type_idx),
@@ -229,7 +228,6 @@ int collide_weapon_weapon( obj_pair * pair )
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
-				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				std::array<std::optional<ConditionData>, NumHitTypes> impact_data_b = {};
 				impact_data_b[0] = ConditionData {
 					ImpactCondition(wipB->armor_type_idx),
