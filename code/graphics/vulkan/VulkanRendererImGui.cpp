@@ -25,6 +25,14 @@ void VulkanRenderer::createImGuiDescriptorPool()
 
 void VulkanRenderer::initImGui()
 {
+	// Only freespace2 creates an ImGui context (game_init()); the editors never do, and they don't
+	// open the debug window that would draw through it. Without that context ImGui_ImplVulkan_Init()
+	// asserts inside ImGui::GetIO(), so there is nothing to set up here.
+	if (ImGui::GetCurrentContext() == nullptr) {
+		nprintf(("vulkan", "Vulkan: no ImGui context exists, skipping the ImGui backend\n"));
+		return;
+	}
+
 	createImGuiDescriptorPool();
 
 	// Load Vulkan function pointers for imgui (required with VK_NO_PROTOTYPES)
@@ -43,7 +51,7 @@ void VulkanRenderer::initImGui()
 	initInfo.PipelineCache = VK_NULL_HANDLE;
 	initInfo.DescriptorPool = static_cast<VkDescriptorPool>(*m_imguiDescriptorPool);
 	initInfo.MinImageCount = 2;
-	initInfo.ImageCount = static_cast<uint32_t>(m_swapChainImages.size());
+	initInfo.ImageCount = static_cast<uint32_t>(m_mainTarget->images.size());
 	initInfo.Allocator = nullptr;
 	initInfo.CheckVkResultFn = nullptr;
 	initInfo.PipelineInfoMain.Subpass = 0;
@@ -51,13 +59,19 @@ void VulkanRenderer::initImGui()
 	initInfo.PipelineInfoMain.RenderPass = static_cast<VkRenderPass>(*m_renderPass);
 
 	ImGui_ImplVulkan_Init(&initInfo);
+	m_imguiInitialized = true;
 
 	nprintf(("vulkan", "Vulkan: ImGui backend initialized successfully\n"));
 }
 
 void VulkanRenderer::shutdownImGui()
 {
+	if (!m_imguiInitialized) {
+		return;
+	}
+
 	ImGui_ImplVulkan_Shutdown();
+	m_imguiInitialized = false;
 	m_imguiDescriptorPool.reset();
 	nprintf(("vulkan", "Vulkan: ImGui backend shut down\n"));
 }

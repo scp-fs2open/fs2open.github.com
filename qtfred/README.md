@@ -42,43 +42,55 @@ functionality the DLLs will also be copied to the correct paths in the destinati
 
 Rendering backend (OpenGL / Vulkan)
 ------------------------------------
-qtFRED currently always initializes the OpenGL renderer, even if `-vulkan` is passed on the command line
-(`Fred_running` forces `mode = GraphicsAPI::OpenGL` in `gr_init()`, `code/graphics/2d.cpp`). This is intentional:
-qtFRED's windowing (`QtGraphicsOperations`/`QtViewport` in `qtfred/src/ui/QtGraphicsOperations.cpp`) only knows how
-to create a Qt-native (`QOpenGLWidget`-backed) render surface. Unlike the retail engine's `SDLGraphicsOperations`,
-it never creates a real `SDL_Window`, and `QtViewport::toSDLWindow()` unconditionally returns `nullptr`.
+qtFRED can render through either backend. OpenGL is still the default; pass `-vulkan` on the
+command line, or choose it in Preferences > Graphics, to use Vulkan instead. If the windowing
+implementation can't present through Vulkan (a Qt build without `QT_CONFIG(vulkan)`, or a platform
+plugin with no known surface extension), `gr_init()` logs it and falls back to OpenGL rather than
+failing (`code/graphics/2d.cpp`).
 
-The Vulkan backend (`code/graphics/vulkan/`), however, was written exclusively against `SDLGraphicsOperations`'s
-windowing:
-- `VulkanRenderer::initializeInstance()` (`VulkanRendererSetup.cpp`) obtains `vkGetInstanceProcAddr` via
-  `SDL_Vulkan_GetVkGetInstanceProcAddr()`, which only returns a valid pointer once SDL has loaded the Vulkan
-  loader — which normally happens automatically when a window is created with the `SDL_WINDOW_VULKAN` flag
-  (see `freespace2/SDLGraphicsOperations.cpp`).
-- `VulkanRenderer::initializeSurface()` creates the `VkSurfaceKHR` via `SDL_Vulkan_CreateSurface(window, ...)`,
-  which likewise needs a real `SDL_Window*`.
+Vulkan presents through Qt's own Vulkan integration (`QWindow::setSurfaceType(QSurface::VulkanSurface)`
+plus `QVulkanInstance`, adopting the engine's `VkInstance`) rather than through SDL.
+`QtGraphicsOperations` implements `os::VulkanSurfaceProvider` (`code/osapi/vulkan_surface.h`), the
+interface `VulkanRenderer` uses for everything that depends on the windowing toolkit — loading the
+Vulkan loader, the required instance extensions, and `VkSurfaceKHR` creation for a given viewport.
+`SDLGraphicsOperations` implements the same interface for the game. `fred2`'s `MFCGraphicsOperations`
+does not, so `getVulkanSupport()` falls back to the `os::GraphicsOperations` base class default of
+`nullptr` there, and `-vulkan` always falls back to OpenGL in the MFC editor.
 
-Since qtFRED never creates an SDL window, both calls fail: the first call aborts immediately
-(`VULKAN_HPP_DEFAULT_DISPATCHER.init()` is handed a null function pointer), and even if that were papered over,
-surface creation would fail right after.
+qtFRED presents to two independent surfaces: the main viewport, and the briefing map's own window,
+which renders on its own timer and switches between them with `gr_use_viewport()`. `VulkanRenderer`
+keeps a `VulkanPresentTarget` (surface, swap chain, framebuffers, sync objects) per viewport it has
+been asked to present to, created the first time that viewport is used and torn down when the
+viewport goes away — e.g. when the briefing editor dialog is closed, which happens against a live
+device since `BriefingEditorDialog` is built with `Qt::WA_DeleteOnClose`.
 
-If you removed the `Fred_running` OpenGL override in `gr_init()` to experiment with Vulkan in the editor, this is
-the crash you'll hit. To make Vulkan actually work in qtFRED, `QtGraphicsOperations` needs a real Vulkan surface
-path, e.g. one of:
+**Known limitation:** the main viewport does not present while the briefing map's timer is driving
+the render loop (it sits on an already-acquired swap chain image the whole time). Not a regression
+and doesn't block using the backend; see that document's *Follow-up work* section.
 
-1. Create a genuine (possibly hidden/embedded) `SDL_Window` with `SDL_WINDOW_VULKAN` set purely so the existing
-   SDL-based Vulkan plumbing (loader + instance extensions + surface creation) keeps working unmodified, while
-   still presenting through Qt.
-2. Bypass SDL for Vulkan entirely: load the Vulkan loader directly (`SDL_Vulkan_LoadLibrary(nullptr)` works
-   without any window), and create the `VkSurfaceKHR` from the Qt window's native handle
-   (`QWindow::winId()`/native handle APIs) using the appropriate platform extension
-   (`VK_KHR_win32_surface`, `VK_KHR_xcb_surface`, `VK_KHR_wayland_surface`, etc.) instead of
-   `SDL_Vulkan_CreateSurface`.
-
-Either approach is a real chunk of implementation work, not a quick fix — plan for it as its own task rather than
-bundling it with unrelated changes.
+`fred2/` (the Windows MFC editor) is out of scope and stays OpenGL-only.
 
 Known issues
 ------------
+
+### The Gamma preference does nothing on OpenGL
+Preferences > Graphics > Gamma sets `Gr_gamma`, but OpenGL only applies it inside the
+`if (Cmdline_window_res)` branch of `gr_opengl_flip()`, and `gr_init()` deliberately does not set
+`Cmdline_window_res` when `Fred_running` — so in the editor the value is stored and then ignored.
+The Vulkan backend has no such branch and does apply it.
+
+This was invisible for as long as nothing looked at the value: qtFRED inherited
+`gr_set_gamma(3.0f)` verbatim from retail FRED2 (`fred2/management.cpp` still has it), where it was
+equally dead. Once the Vulkan backend started honouring it, that 3.0 became a whole-frame
+`pow(colour, 1/3)` and the viewport was visibly wrong. The default is now 1.0, which is both the
+engine's own default and what the editor has always actually rendered with.
+
+Note that a default is only a default: anyone who ran an earlier build of this branch has
+`view_graphics_gamma=3` written into `qtFRED.conf` (or `%APPDATA%` on Windows) and needs to change
+it in Preferences — the stored value wins.
+
+Fixing the OpenGL side means giving FRED the intermediate buffer the gamma pass reads from, which
+is exactly the `Cmdline_window_res` FRED integration work `gr_init()` already flags as unfinished.
 
 ### Blank/empty render viewport under Wayland
 On Linux, qtFRED's main 3D viewport can render as a completely blank panel — no starfield, no

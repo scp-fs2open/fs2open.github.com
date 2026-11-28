@@ -29,6 +29,72 @@ struct PendingUniformBinding {
 };
 
 /**
+ * @brief A descriptor set, or a fixed group of them, remembered alongside the inputs it was built from
+ *
+ * Writing and allocating a descriptor set per draw is the cost this exists to avoid: consecutive
+ * draws very often want a set identical to the one before it. This is a *previous-only* cache --
+ * any difference in the inputs rebuilds, so a hit is never stale -- and it holds for one frame,
+ * because the sets are frame-pool allocated (see resetFrameStats()).
+ *
+ * @tparam Inputs everything the set's contents are derived from; needs operator==. Anything carried
+ *         as a dynamic offset must be left OUT of it, since an offset-only change rides in the
+ *         dynamic-offset array and leaves the set itself identical -- that is what makes the hit
+ *         rate worth having.
+ * @tparam Payload what a hit hands back. A parameter because the shadow pass memoizes all three of
+ *         its sets against a single key, while applyMaterial() memoizes one set per key.
+ */
+template <typename Inputs, typename Payload = vk::DescriptorSet>
+class MemoizedDescriptorSet {
+  public:
+	/**
+	 * @brief Whether @p inputs matches what the stored payload was built from
+	 *
+	 * A true result means payload() can be rebound as-is, with no allocation or write.
+	 */
+	bool hits(const Inputs& inputs) const { return m_valid && m_inputs == inputs; }
+
+	/**
+	 * @brief The stored sets. Only meaningful after hits() returned true.
+	 */
+	const Payload& payload() const { return m_payload; }
+
+	void store(const Payload& payload, const Inputs& inputs)
+	{
+		// Never memoize an incomplete payload. allocateFrameSet() hands back a null handle when
+		// the pool is exhausted, and the Assert() that catches it at the call site is compiled
+		// out of release builds -- caching that would turn one failed allocation into every
+		// later draw binding a null set, long after the pressure that caused it passed.
+		if (!payload) {
+			invalidate();
+			return;
+		}
+
+		m_payload = payload;
+		m_inputs = inputs;
+		m_valid = true;
+	}
+
+	/**
+	 * @brief Forget the stored sets
+	 *
+	 * Every caller has the same reason: the handles can no longer be assumed current, either
+	 * because the frame pool that owns them was reset or because something rebound descriptor
+	 * sets behind applyMaterial()'s back. Clearing the payload as well as the flag means a
+	 * missing hits() check binds a null set (which asserts) rather than a recycled one.
+	 */
+	void invalidate()
+	{
+		m_payload = Payload{};
+		m_valid = false;
+	}
+
+  private:
+	Payload m_payload{};
+	Inputs m_inputs;
+	bool m_valid = false;
+};
+
+/**
  * @brief Handles Vulkan draw command recording
  *
  * Provides functions to record draw commands to the command buffer,
@@ -290,7 +356,7 @@ class VulkanDrawManager {
 	 * @brief Invalidate every memoized descriptor-set cache (Global + Material + PerDraw)
 	 *
 	 * These previous-set caches (see the class comments above m_cachedGlobalSet /
-	 * m_cachedMaterialSet / m_cachedPerDrawSet) assume nothing rebinds a *different*
+	 * m_cachedMaterial / m_cachedPerDraw) assume nothing rebinds a *different*
 	 * descriptor set on the command buffer between applyMaterial() calls behind their
 	 * back. Code that renders directly on the command buffer without going through
 	 * applyMaterial (currently: ImGui's Vulkan backend, drawing into the same active
@@ -301,9 +367,9 @@ class VulkanDrawManager {
 	void invalidateDrawStateCaches()
 	{
 		m_globalSetDirty = true;
-		m_cachedMaterialValid = false;
-		m_cachedPerDrawValid = false;
-		m_cachedShadowValid = false;
+		m_cachedMaterial.invalidate();
+		m_cachedPerDraw.invalidate();
+		m_cachedShadow.invalidate();
 	}
 
 	/**
@@ -332,11 +398,6 @@ class VulkanDrawManager {
 		gr_buffer_handle bufferHandle,
 		vk::DeviceSize offset,
 		vk::DeviceSize size);
-
-	/**
-	 * @brief Clear all pending uniform bindings
-	 */
-	void clearPendingUniformBindings();
 
 	/**
 	 * @brief Get a pending uniform binding by block type index
@@ -538,11 +599,8 @@ class VulkanDrawManager {
 			       imgEq(depthInfo, o.depthInfo) && imgEq(sceneColorInfo, o.sceneColorInfo) &&
 			       imgEq(distMapInfo, o.distMapInfo);
 		}
-		bool operator!=(const MaterialSetInputs& o) const { return !(*this == o); }
 	};
-	vk::DescriptorSet m_cachedMaterialSet = nullptr;
-	MaterialSetInputs m_cachedMaterialInputs;
-	bool m_cachedMaterialValid = false;
+	MemoizedDescriptorSet<MaterialSetInputs> m_cachedMaterial;
 
 	// ---- PerDraw (Set 2) previous-set memoization ----
 	// PerDraw holds only the pending PerDraw UBO bindings (GenericData, Matrices,
@@ -564,9 +622,7 @@ class VulkanDrawManager {
 			return true;
 		}
 	};
-	vk::DescriptorSet m_cachedPerDrawSet = nullptr;
-	PerDrawSetInputs m_cachedPerDrawInputs;
-	bool m_cachedPerDrawValid = false;
+	MemoizedDescriptorSet<PerDrawSetInputs> m_cachedPerDraw;
 
 	// ---- Shadow-pass descriptor memoization (renderShadowDraw) ----
 	// The shadow pass doesn't go through applyMaterial, so it gets its own cache.
@@ -592,16 +648,17 @@ class VulkanDrawManager {
 				   transformBuffer == o.transformBuffer && transformOffset == o.transformOffset &&
 				   transformSize == o.transformSize;
 		}
-		bool operator!=(const ShadowSetInputs& o) const
-		{
-			return !(*this == o);
-		}
 	};
-	vk::DescriptorSet m_cachedShadowGlobalSet = nullptr;
-	vk::DescriptorSet m_cachedShadowMaterialSet = nullptr;
-	vk::DescriptorSet m_cachedShadowPerDrawSet = nullptr;
-	ShadowSetInputs m_cachedShadowInputs;
-	bool m_cachedShadowValid = false;
+	// The whole set of three, memoized together: they share one key, so they are only ever all
+	// valid or all rebuilt.
+	struct ShadowSets {
+		vk::DescriptorSet global;
+		vk::DescriptorSet material;
+		vk::DescriptorSet perDraw;
+
+		explicit operator bool() const { return global && material && perDraw; }
+	};
+	MemoizedDescriptorSet<ShadowSetInputs, ShadowSets> m_cachedShadow;
 
 	// Texture overrides for material bindings 4-6.
 	vk::DescriptorImageInfo m_depthTextureInfo; // binding 4: depth/position for soft particles

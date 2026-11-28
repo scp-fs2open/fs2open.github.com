@@ -215,9 +215,13 @@ void vulkan_scene_texture_begin()
 
 	auto* renderer = getRendererInstance();
 
-	// Switch to HDR scene render pass when post-processing is enabled
+	// Switch to HDR scene render pass when post-processing is enabled. The post-processor's targets
+	// are sized for the main viewport's swap chain, so this stays off anywhere else -- qtFRED's
+	// briefing map renders through brief_render_map() and never opens a scene-texture scope, so
+	// nothing is lost by that today.
 	auto* pp = getPostProcessor();
-	const bool useSceneTarget = pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override;
+	const bool useSceneTarget = pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override &&
+		renderer->isMainTargetCurrent();
 
 	// Build the ray-tracing TLAS for this frame here, one time, before the scene draws start.
 	// The camera and the objects are final at this point. A TLAS build must be outside a render
