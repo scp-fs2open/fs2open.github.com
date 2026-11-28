@@ -62,6 +62,31 @@ class DynamicSEXP {
 	virtual int execute(int node, int parent_node = -1) = 0;
 
 	/**
+	 * @brief On a multiplayer client, runs this SEXP from the data the server sent for it
+	 * @return true if this SEXP read its data from the SEXP packet, false if it is not sent to clients
+	 */
+	virtual bool executeMulti()
+	{
+		return false;
+	}
+
+	/**
+	 * @brief Whether the multiplayer server sends this SEXP's calls to clients
+	 */
+	virtual bool runsOnClients() const
+	{
+		return false;
+	}
+
+	/**
+	 * @brief The SEXP's argument kinds as the action receives them, in order, for the multiplayer SEXP list checksum
+	 */
+	virtual SCP_string getArgumentLayout() const
+	{
+		return {};
+	}
+
+	/**
 	 * @brief Gets the return type of the SEXP
 	 *
 	 * See the OPR_* defines for what values this function may return.

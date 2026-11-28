@@ -38,6 +38,7 @@
 #define MULTI_END_NOTIFY_KICKED_BAD_XFER		6				// kicked because file xfer failed
 #define MULTI_END_NOTIFY_KICKED_CANT_XFER		7				// kicked because can't xfer a builtin mission
 #define MULTI_END_NOTIFY_KICKED_INGAME_ENDED	8				// kicked because was ingame joining in an ending game
+#define MULTI_END_NOTIFY_KICKED_SEXP_MISMATCH	9				// kicked for a different SEXP list
 
 // error defines for calling multi_quit_game(...)
 #define MULTI_END_ERROR_NONE						(-1)			// no error code
