@@ -2021,6 +2021,8 @@ static int game_init()
 
 	if (Using_in_game_options) {
 		options_manager->loadInitialValues();
+	} else if (Cmdline_get_options) {
+		options_manager->rememberOptionsForLauncher();
 	}
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.

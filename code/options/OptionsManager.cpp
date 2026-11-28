@@ -323,16 +323,21 @@ SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks(
 //Discard changes and restore the option to initial value
 void OptionsManager::discardChanges() { _changed_values.clear(); }
 
+void OptionsManager::rememberOptionsForLauncher()
+{
+	_describedAtLoad = getOptions();
+	for (const auto& opt : _describedAtLoad) {
+		opt->rememberDefaultBeforeLoad();
+	}
+}
+
 //Get the initial values of the option as stored on disk
 void OptionsManager::loadInitialValues()
 {
 	// only -get_options describes options, so normal startup does no extra work here
 	_describedAtLoad.clear();
 	if (Cmdline_get_options) {
-		_describedAtLoad = getOptions();
-		for (const auto& opt : _describedAtLoad) {
-			opt->rememberDefaultBeforeLoad();
-		}
+		rememberOptionsForLauncher();
 	}
 
 	// Collect options to remove in a separate container
@@ -377,6 +382,46 @@ bool json_write_line(const json_t* root, FILE* out, size_t flags)
 	return json_dumpf(root, out, flags) == 0 && fputc('\n', out) != EOF && fflush(out) == 0;
 }
 
+void OptionsManager::describeValues(const OptionBase& option, json_t* default_value, json_t* entry) const
+{
+	if (!Using_in_game_options) {
+		// the game does not read the settings file then
+		json_object_set_new(entry, "saved", json_null());
+		json_object_set_new(entry, "effective", json_null());
+		return;
+	}
+	const auto& key = option.getConfigKey();
+	// read as saved, not through the option, which would turn a device this process didn't list into none
+	std::optional<std::unique_ptr<json_t>> saved;
+	try {
+		saved = getSavedValue(key);
+	} catch (const std::exception&) {
+		// a stored value that is not JSON: loading ignores it too
+	}
+	if (saved.has_value()) {
+		json_object_set(entry, "saved", saved->get());
+	} else {
+		json_object_set_new(entry, "saved", json_null());
+	}
+	auto override_iter = _config_overrides.find(key);
+	const bool overridden = override_iter != _config_overrides.end();
+	json_t* effective = default_value;
+	// in the order the game settles it: a mod's HUD tables lock the option after loading, an enforced option is
+	// never loaded and keeps the table's value, and loading takes a command-line override over the saved value
+	if (overridden && override_iter->second.source == OverrideSource::Mod) {
+		effective = override_iter->second.value.get();
+	} else if (!isOptionEnforced(key)) {
+		json_t* loaded = overridden ? override_iter->second.value.get() : nullptr;
+		if (loaded == nullptr && saved.has_value()) {
+			loaded = saved->get();
+		}
+		if (loaded != nullptr && option.acceptsStoredValue(loaded)) {
+			effective = loaded;
+		}
+	}
+	json_object_set(entry, "effective", effective);
+}
+
 json_t* OptionsManager::describeOptions()
 {
 	// a serialized value is itself JSON, so it goes in as a value, not as a string holding JSON
@@ -417,31 +462,7 @@ json_t* OptionsManager::describeOptions()
 			json_object_set_new(entry, "values", values);
 		}
 		json_object_set_new(entry, "default", default_value);
-		// as stored: read back through the option, a device missing from this process's empty lists becomes none
-		std::optional<std::unique_ptr<json_t>> saved;
-		try {
-			saved = getSavedValue(key);
-		} catch (const std::exception&) {
-			// an unparseable key has no stored value
-		}
-		if (saved.has_value()) {
-			json_object_set(entry, "saved", saved->get());
-		} else {
-			json_object_set_new(entry, "saved", json_null());
-		}
-		auto override_iter = _config_overrides.find(key);
-		const bool overridden = override_iter != _config_overrides.end();
-		json_t* effective = saved.has_value() ? saved->get() : default_value;
-		// in the order the game settles it: a mod's HUD tables lock the option after loading, an enforced option is
-		// never loaded and keeps the table's value, and loading takes a command-line override over the saved value
-		if (overridden && override_iter->second.source == OverrideSource::Mod) {
-			effective = override_iter->second.value.get();
-		} else if (isOptionEnforced(key)) {
-			effective = default_value;
-		} else if (overridden) {
-			effective = override_iter->second.value.get();
-		}
-		json_object_set(entry, "effective", effective);
+		describeValues(*option, default_value, entry);
 		auto source = getOverrideSource(key);
 		if (source.has_value()) {
 			json_object_set_new(entry,

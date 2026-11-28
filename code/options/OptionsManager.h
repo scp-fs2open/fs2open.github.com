@@ -66,6 +66,9 @@ class OptionsManager {
 
 	SCP_vector<const OptionBase*> runPostPersistHooks(const SCP_vector<const OptionBase*>& changed) const;
 
+	// adds the saved and effective values to an option's describeOptions() entry
+	void describeValues(const OptionBase& option, json_t* default_value, json_t* entry) const;
+
   public:
 	static OptionsManager* instance();
 
@@ -162,14 +165,21 @@ class OptionsManager {
 
 	void loadInitialValues();
 
+	// For -get_options: records the options and defaults as they are now, before the renderer drops some of them.
+	// loadInitialValues() does this itself; call it instead when the game does not load in-game options.
+	void rememberOptionsForLauncher();
+
 	void printValues();
 
 	/**
 	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
-	 * default, the value saved in the settings file (null if none), the value this launch uses (an enforced table
-	 * value or an override wins over the saved one), override source and reason, whether a mod enforces it, whether
-	 * a change needs a restart, and what the option needs (the Vulkan renderer, ray tracing) with whether this machine
-	 * has it.
+	 * this launch's default (after the mod's tables and the launch flags), the value saved in the settings file (null
+	 * if none), the value this launch uses (an enforced table value or an override wins over the saved one, and a
+	 * saved value the option cannot read gives the default), override source and reason, whether a mod enforces it,
+	 * whether a change needs a restart, and what the option needs (the Vulkan renderer, ray tracing) with whether
+	 * this machine has it.
+	 * @note When the mod does not use in-game options, the game never reads the settings file, so saved and the
+	 * value in use are null.
 	 * @note The restart flag is approximate, for information only: it is false only for options bound straight to a
 	 * variable, so an option whose own listener applies a change at once (HUD.BallisticGauge) still reports true.
 	 * @return A new JSON array the caller owns

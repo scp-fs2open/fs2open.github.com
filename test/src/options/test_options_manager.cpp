@@ -868,11 +868,20 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsSayWhichNeedARestart)
 TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
 {
 	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = true;
 	os_config_write_string("HUD", "OrbRadar", "false", true);
 	auto* mgr = OptionsManager::instance();
 	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_true()), "-orbradar");
 	StubRenderer renderer;
 	std::unique_ptr<json_t> list(mgr->describeOptions());
+	// without in-game options the game never reads the settings file, so neither value exists
+	Using_in_game_options = false;
+	std::unique_ptr<json_t> unused(mgr->describeOptions());
+	const json_t* unused_entry = described(unused.get(), "HUD.OrbRadar");
+	ASSERT_NE(unused_entry, nullptr);
+	ASSERT_TRUE(json_is_null(json_object_get(unused_entry, "saved")));
+	ASSERT_TRUE(json_is_null(json_object_get(unused_entry, "effective")));
 	const json_t* entry = described(list.get(), "HUD.OrbRadar");
 	ASSERT_NE(entry, nullptr);
 	ASSERT_TRUE(json_is_false(json_object_get(entry, "saved")));
@@ -887,18 +896,23 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
 	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "overridden_by")));
 }
 
-// the game never loads an enforced option, so the table's value is used even though the player saved another
+// the game never loads an enforced option, so the table's value is used even though the player saved another or a
+// launch flag asks for another
 TEST_F(OptionsManagerOverrideLocalized, DescribedEnforcedOptionsUseTheTableValue)
 {
 	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = true;
 	os_config_write_string("Graphics", "VSync", "true", true);
 	const bool vsync_before = Gr_enable_vsync;
 	auto* mgr = OptionsManager::instance();
 	default_settings_init();
+	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_true()), "-orbradar");
 	StubRenderer renderer;
 	std::unique_ptr<json_t> list(mgr->describeOptions());
-	const bool enforced = mgr->isOptionEnforced("Graphics.VSync");
+	const bool enforced = mgr->isOptionEnforced("Graphics.VSync") && mgr->isOptionEnforced("HUD.OrbRadar");
 	mgr->unenforceOption("Graphics.VSync");
+	mgr->unenforceOption("HUD.OrbRadar");
 	Gr_enable_vsync = vsync_before;
 
 	ASSERT_TRUE(enforced);
@@ -909,6 +923,26 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedEnforcedOptionsUseTheTableValue
 	ASSERT_TRUE(json_is_false(json_object_get(entry, "effective")));
 	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
 	ASSERT_TRUE(json_is_null(json_object_get(entry, "overridden_by")));
+	const json_t* flagged = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(flagged, nullptr);
+	ASSERT_TRUE(json_is_false(json_object_get(flagged, "effective")));
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(flagged, "overridden_by"))), "cmdline");
+}
+
+// loading falls back to the default when the option cannot read the saved value (a bool saved as a number)
+TEST_F(OptionsManagerOverrideLocalized, DescribedSavedValueOfTheWrongTypeGivesTheDefault)
+{
+	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = true;
+	os_config_write_string("HUD", "BallisticGauge", "1", true);
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(OptionsManager::instance()->describeOptions());
+	const json_t* entry = described(list.get(), "HUD.BallisticGauge");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_integer(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "effective")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
 }
 
 TEST_F(OptionsManagerOverrideLocalized, DescribedRangeOptionsGiveTheirBounds)
@@ -1032,10 +1066,6 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedHardwareListsFollowTheQuery)
 	ASSERT_FALSE(gr_is_capable(gr_capability::CAPABILITY_SHADOWS));
 	const json_t* aniso_before = described(before.get(), "Graphics.Anisotropy");
 	const json_t* aniso_after = described(after.get(), "Graphics.Anisotropy");
-	// the anisotropy option lives in the OpenGL texture code, so builds without OpenGL don't have it
-	if (aniso_before == nullptr && aniso_after == nullptr) {
-		GTEST_SKIP() << "Graphics.Anisotropy is not built without OpenGL";
-	}
 	ASSERT_NE(aniso_before, nullptr);
 	ASSERT_NE(aniso_after, nullptr);
 	ASSERT_EQ(json_array_size(json_object_get(aniso_before, "values")), 0u);

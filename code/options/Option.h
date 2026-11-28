@@ -131,6 +131,9 @@ class OptionBase {
 	// the remembered default if there is one, else the default as computed now, as stored in a settings file
 	virtual SCP_string getDescribedDefault() const = 0;
 
+	// Whether loading would take this stored value; getValue() falls back to the default when it would not
+	virtual bool acceptsStoredValue(const json_t* value) const = 0;
+
 	virtual void setValueDescription(const ValueDescription& desc) const = 0;
 
 	virtual OptionType getType() const = 0;
@@ -322,6 +325,15 @@ class Option : public OptionBase {
 	{
 		auto json = _serializer(_defaultBeforeLoad.has_value() ? *_defaultBeforeLoad : _defaultValueFunc());
 		return json_dump_string_new(json, JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
+	}
+	bool acceptsStoredValue(const json_t* value) const override
+	{
+		try {
+			(void)_deserializer(value);
+			return true;
+		} catch (const std::exception&) {
+			return false;
+		}
 	}
 	void setValueDescription(const ValueDescription& desc) const override
 	{

@@ -4,4 +4,8 @@ $Option Key: Graphics.VSync
 +Value: NO
 +Enforce
 
+$Option Key: HUD.OrbRadar
++Value: NO
++Enforce
+
 #END
