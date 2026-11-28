@@ -2523,9 +2523,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 					}
 
+					// bad points are dropped, not zeroed: a zeroed point would still draw and light at the model origin
+					int kept = 0;
 					for (j = 0; j < bank->num_points; j++)
 					{
-						glow_point *p = &bank->points[j];
+						glow_point* p = &bank->points[kept];
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
@@ -2535,20 +2537,19 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							vm_vec_zero(&temp_vec);
 						p->norm = temp_vec;
 						p->radius = cfread_float( fp);
-						if (!is_valid_vec(&p->pnt) || !is_valid_vec(&p->norm) || !std::isfinite(p->radius)) {
+						if (is_valid_vec(&p->pnt) && is_valid_vec(&p->norm) && std::isfinite(p->radius)) {
+							kept++;
+						} else {
 							invalid_glow_points++;
 							if (first_bad_bank < 0)
 								first_bad_bank = gpb;
-							// radius 0 draws nothing; a zero normal alone would draw the point from every angle
-							vm_vec_zero(&p->pnt);
-							vm_vec_zero(&p->norm);
-							p->radius = 0.0f;
 						}
 					}
+					bank->num_points = kept;
 				}
 				if (invalid_glow_points > 0)
 					Warning(LOCATION,
-						"Model '%s' has glow points with an invalid position, normal or radius (%d, first in bank %d).",
+						"Model '%s': removed %d glow points with a NaN or infinite value (first in bank %d).",
 						filename,
 						invalid_glow_points,
 						first_bad_bank);
@@ -2597,8 +2598,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							}
 						}
 
+						// as with glow points, bad points are dropped so no glow, particle or wash comes from them
+						int kept = 0;
 						for (j = 0; j < bank->num_points; j++) {
-							glow_point *p = &bank->points[j];
+							glow_point* p = &bank->points[kept];
 
 							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &temp_vec, fp );
@@ -2612,22 +2615,20 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 								p->radius = 1.0f;
 							}
 
-							if (!is_valid_vec(&p->pnt) || !is_valid_vec(&p->norm) || !std::isfinite(p->radius)) {
+							if (is_valid_vec(&p->pnt) && is_valid_vec(&p->norm) && std::isfinite(p->radius)) {
+								kept++;
+							} else {
 								invalid_thruster_points++;
 								if (first_bad_bank < 0)
 									first_bad_bank = i;
-								// a zero normal also keeps engine wash and afterburner trails off this point
-								vm_vec_zero(&p->pnt);
-								vm_vec_zero(&p->norm);
-								p->radius = 0.0f;
 							}
 						}
+						bank->num_points = kept;
 						//mprintf(( "Num slots = %d\n", bank->num_slots ));
 					}
 					if (invalid_thruster_points > 0)
 						Warning(LOCATION,
-							"Model '%s' has thruster points with an invalid position, normal or radius (%d, first in "
-							"bank %d).",
+							"Model '%s': removed %d thruster points with a NaN or infinite value (first in bank %d).",
 							filename,
 							invalid_thruster_points,
 							first_bad_bank);
@@ -2867,7 +2868,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					}
 					if (invalid_verts > 0)
 						Warning(LOCATION,
-							"Model '%s' has path vertices with an invalid position or radius (%d, first in path '%s').",
+							"Model '%s': zeroed %d path vertices with a NaN or infinite value (first in path '%s').",
 							filename,
 							invalid_verts,
 							pm->paths[first_bad_path].name);
