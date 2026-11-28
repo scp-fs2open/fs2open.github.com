@@ -413,6 +413,8 @@ void remove_ship_from_wing(int ship, int min) {
 			Assert(i != -1);  // Error, object should be in wing.
 			if (Wings[wing].special_ship == i)
 				Wings[wing].special_ship = 0;
+			else if (Wings[wing].special_ship == end)
+				Wings[wing].special_ship = i;
 
 			// if not last element, move last element to position to fill gap
 			if (i != end) {

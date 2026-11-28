@@ -16,6 +16,7 @@
 #include <mission/missionparse.h>
 #include <prop/prop.h>
 #include <missioneditor/common.h>
+#include <utils/array_utils.h>
 #include <FredApplication.h>
 
 namespace {
@@ -959,10 +960,8 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 
 	std::vector<int> toReassign;
 	for (auto& objectLayer : _objectLayers) {
-		if (objectLayer.second == layerIndex) {
+		if (!array_adjust_index_for_removal(objectLayer.second, layerIndex)) {
 			toReassign.push_back(objectLayer.first);
-		} else if (objectLayer.second > layerIndex) {
-			--objectLayer.second;
 		}
 	}
 	for (int objIdx : toReassign) {

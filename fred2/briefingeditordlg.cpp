@@ -30,6 +30,7 @@
 #include "sound/audiostr.h"
 #include "localization/localize.h"
 #include "mod_table/mod_table.h"
+#include "utils/array_utils.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -1227,31 +1228,21 @@ void briefing_editor_dlg::delete_icon(int num)
 	Assert(m_cur_stage >= 0);
 	Assert(Briefing->stages[m_cur_stage].num_icons);
 	z = m_cur_icon;
-	if (z == num)
+	if (!array_adjust_index_for_removal(z, num))
 		z = -1;
-	if (z > num)
-		z--;
 
 	m_cur_icon = -1;
 	update_data(1);
 	obj_delete(icon_obj[num]);
 
-	// remove any lines that reference the icon being deleted
-	i = Briefing->stages[m_cur_stage].num_lines;
-	while (i--)
-		if ((Briefing->stages[m_cur_stage].lines[i].start_icon == num) || (Briefing->stages[m_cur_stage].lines[i].end_icon == num)) {
-			Briefing->stages[m_cur_stage].num_lines--;
-			for (l=i; l<Briefing->stages[m_cur_stage].num_lines; l++)
-				Briefing->stages[m_cur_stage].lines[l] = Briefing->stages[m_cur_stage].lines[l+1];
-		}
-
-	// fix the indexes of lines that reference the icons being shifted down
+	// remove any lines that reference the icon being deleted, and fix the indexes of the rest
+	l = 0;
 	for (i=0; i<Briefing->stages[m_cur_stage].num_lines; i++) {
-		if (Briefing->stages[m_cur_stage].lines[i].start_icon > num)
-			Briefing->stages[m_cur_stage].lines[i].start_icon--;
-		if (Briefing->stages[m_cur_stage].lines[i].end_icon > num)
-			Briefing->stages[m_cur_stage].lines[i].end_icon--;
+		auto &line = Briefing->stages[m_cur_stage].lines[i];
+		if (array_adjust_index_for_removal(line.start_icon, num) && array_adjust_index_for_removal(line.end_icon, num))
+			Briefing->stages[m_cur_stage].lines[l++] = line;
 	}
+	Briefing->stages[m_cur_stage].num_lines = l;
 
 	for (i=num+1; i<Briefing->stages[m_cur_stage].num_icons; i++) {
 		Briefing->stages[m_cur_stage].icons[i-1] = Briefing->stages[m_cur_stage].icons[i];
