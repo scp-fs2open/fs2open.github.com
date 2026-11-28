@@ -121,7 +121,7 @@ struct oo_general_info {
 
 	TIMESTAMP timestamps[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
 	SCP_vector<rollback_ship_position_records> frame_info;		// Actually keeps track of ship physics info.  Uses net_signature as its index.
-	SCP_vector<oo_netplayer_records> player_frame_info;		// keeps track of player targets and what has been sent to each player. Uses player as the index
+	SCP_vector<oo_netplayer_records> player_frame_info;		// keeps track of player targets and what has been sent to each player. Uses the Net_players slot index, not the player id
 
 	// rollback info
 	bool rollback_mode;										// are we currently creating and moving weapons from the client primary fire packets
@@ -949,6 +949,44 @@ int multi_client_lookup_frame_timestamp()
 	return Oo_info.rollback_reference_timestamp;
 }
 
+static void multi_oo_reset_sent_record(oo_info_sent_to_players& sent)
+{
+	sent.timestamp = TIMESTAMP::immediate();
+	sent.position = vmd_zero_vector;
+	sent.hull = -1.0f;
+	sent.ai_mode = -1;
+	sent.ai_submode = -1;
+	sent.target_signature = -1;
+	sent.perfect_shields_sent = false;
+	for (size_t i = 0; i < sent.subsystem_health.size(); i++) {
+		sent.subsystem_health[i] = -1.0f;
+		sent.subsystem_1b[i] = -1.0f;
+		sent.subsystem_1h[i] = -1.0f;
+		sent.subsystem_1p[i] = -1.0f;
+		sent.subsystem_2b[i] = -1.0f;
+		sent.subsystem_2h[i] = -1.0f;
+		sent.subsystem_2p[i] = -1.0f;
+		sent.subsystem_x[i] = 0.0f;
+		sent.subsystem_y[i] = 0.0f;
+		sent.subsystem_z[i] = 0.0f;
+	}
+}
+
+void multi_oo_reset_player_records(int player_index)
+{
+	// the list is empty outside a mission, and joins in the lobby get here too
+	if ((player_index < 0) || (player_index >= static_cast<int>(Oo_info.player_frame_info.size()))) {
+		return;
+	}
+
+	auto& last_sent = Oo_info.player_frame_info[player_index].last_sent;
+
+	// entry 0 is the template that every new ship's record is copied from
+	for (size_t net_sig_idx = SHIP_SIG_MIN; net_sig_idx < last_sent.size(); net_sig_idx++) {
+		multi_oo_reset_sent_record(last_sent[net_sig_idx]);
+	}
+}
+
 // Resets what info we have sent and interpolation info for a respawn
 // To be safe, I believe that most info should be reset.
 void multi_oo_respawn_reset_info(object* objp) 
@@ -961,25 +999,7 @@ void multi_oo_respawn_reset_info(object* objp)
 
 	// When a player respawns, they keep their net signature, so clean up all the info that could mess things up in the future.
 	for (auto & player_record : Oo_info.player_frame_info) {
-		player_record.last_sent[objp->net_signature].timestamp = TIMESTAMP::immediate();
-		player_record.last_sent[objp->net_signature].position = vmd_zero_vector;
-		player_record.last_sent[objp->net_signature].hull = -1.0f;
-		player_record.last_sent[objp->net_signature].ai_mode = -1;
-		player_record.last_sent[objp->net_signature].ai_submode = -1;
-		player_record.last_sent[objp->net_signature].target_signature = -1;
-		player_record.last_sent[objp->net_signature].perfect_shields_sent = false;
-		for (int i = 0; i < (int)player_record.last_sent[objp->net_signature].subsystem_health.size(); i++) {
-			player_record.last_sent[objp->net_signature].subsystem_health[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_1b[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_1h[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_1p[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_2b[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_2h[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_2p[i] = -1.0f;
-			player_record.last_sent[objp->net_signature].subsystem_x[i] = 0.0f;
-			player_record.last_sent[objp->net_signature].subsystem_y[i] = 0.0f;
-			player_record.last_sent[objp->net_signature].subsystem_z[i] = 0.0f;
-		}
+		multi_oo_reset_sent_record(player_record.last_sent[objp->net_signature]);
 	}
 
 	// To ensure clean interpolation, we should probably just reset everything.

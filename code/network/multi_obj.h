@@ -115,6 +115,9 @@ int multi_client_lookup_frame_timestamp();
 // reset all the necessary info for respawning player.
 void multi_oo_respawn_reset_info(object* objp);
 
+// forget what has been sent to the player in this Net_players slot, so a new player there is sent everything
+void multi_oo_reset_player_records(int player_index);
+
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE FUNCTIONS
 //
