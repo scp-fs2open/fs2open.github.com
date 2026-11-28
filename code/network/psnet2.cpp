@@ -675,14 +675,33 @@ int psnet_get_network_status()
 const char *psnet_addr_to_string(const net_addr *address, char *text, size_t max_len)
 {
 	in6_addr addr6;
+	char addr_text[INET6_ADDRSTRLEN];
 
 	memcpy(&addr6, &address->addr, sizeof(addr6));
 
-	if ( inet_ntop(AF_INET6, &addr6, text, static_cast<socklen_t>(max_len)) == nullptr ) {
-		strncpy(text, "", max_len);
+	if ( inet_ntop(AF_INET6, &addr6, addr_text, sizeof(addr_text)) == nullptr ) {
+		addr_text[0] = '\0';
+	}
+
+	if ( SDL_strlcpy(text, addr_text, max_len) >= max_len ) {
+		nprintf(("Network", "psnet_addr_to_string: %s does not fit in " SIZE_T_ARG " bytes and was truncated\n", addr_text, max_len));
 	}
 
 	return text;
+}
+
+/**
+ * Convert a ::net_addr to a string
+ *
+ * @return A pointer into @a text, valid until @a text changes
+ */
+const char *psnet_addr_to_string(const net_addr *address, SCP_string &text)
+{
+	char addr_text[INET6_ADDRSTRLEN];
+
+	text = psnet_addr_to_string(address, addr_text, sizeof(addr_text));
+
+	return text.c_str();
 }
 
 /**

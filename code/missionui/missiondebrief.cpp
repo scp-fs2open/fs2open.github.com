@@ -925,7 +925,8 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
 		{
 			// if it exists, we're done
-			if (cf_exists_full_ext(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list))
+			const auto localized = cf_localize_filename(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list);
+			if (cf_exists_full_ext(localized.c_str(), CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list))
 				return;
 		}
 
