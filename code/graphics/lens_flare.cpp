@@ -779,6 +779,18 @@ bool lens_flare_viewer_in_cockpit_view()
 
 void lens_flare_commit_candidates(SCP_vector<flare_source>& out, SCP_vector<flare_source>& candidates, int budget)
 {
+	// project_source() rejects a source behind the camera, so it never draws. Remove it before the ranking, so that
+	// it does not use a slot or a raycast.
+	candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
+						 [](const flare_source& src) {
+							 vec3d to_src = src.pos;
+							 if (!src.at_infinity) {
+								 vm_vec_sub2(&to_src, &Eye_position);
+							 }
+							 return vm_vec_dot(&to_src, &Eye_matrix.vec.fvec) <= 0.0f;
+						 }),
+		candidates.end());
+
 	if (budget <= 0 || candidates.empty()) {
 		return;
 	}
