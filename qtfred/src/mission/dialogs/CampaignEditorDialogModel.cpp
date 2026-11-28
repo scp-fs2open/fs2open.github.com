@@ -355,68 +355,9 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		dest_mission.substitute_main_hall = sub_hall;
 		dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
 
-		// Convert the CampaignBranchData back into the cmission formula structure
+		// Branches are not copied here; saveCampaign() passes them to the writer as campaign_links.
 		dest_mission.formula = -1;
 		dest_mission.mission_loop_formula = -1;
-
-		// We need to build a 'cond' SEXP for normal branches...
-		int* normal_branch_ptr = &dest_mission.formula;
-		bool normal_branches_exist = false;
-
-		// ...and another 'cond' SEXP for loop branches
-		int* loop_branch_ptr = &dest_mission.mission_loop_formula;
-		bool loop_branches_exist = false;
-
-		for (const auto& branch : source_mission.branches) {
-			// First, save the branch's SEXP tree to get the final formula index
-			int final_sexp_formula = m_tree_ops.saveSexp(branch.sexp_formula);
-
-			// Create the next-mission part of the branch
-			int action_sexp;
-			if (!branch.next_mission_name.empty()) {
-				action_sexp = alloc_sexp("next-mission",
-					SEXP_ATOM,
-					SEXP_ATOM_OPERATOR,
-					-1,
-					alloc_sexp(branch.next_mission_name.c_str(), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1));
-			} else {
-				action_sexp = alloc_sexp("end-of-campaign", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-			}
-
-			// Create the full arm of the cond
-			int cond_arm = alloc_sexp("",
-				SEXP_LIST,
-				-1,
-				alloc_sexp("", SEXP_LIST, -1, final_sexp_formula, alloc_sexp("", SEXP_LIST, -1, action_sexp, -1)),
-				-1);
-
-			// Add the arm to the correct SEXP list
-			if (branch.is_loop) {
-				if (!loop_branches_exist) {
-					// This is the first loop branch; create the parent 'cond' operator
-					*loop_branch_ptr = alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-					loop_branch_ptr = &Sexp_nodes[*loop_branch_ptr].rest; // Point to the first argument slot
-					loop_branches_exist = true;
-
-					// Set the single loop properties on the cmission from the first loop branch we find
-					dest_mission.flags |= CMISSION_FLAG_HAS_LOOP;
-					dest_mission.mission_branch_desc = branch.loop_description.empty() ? nullptr : strdup(branch.loop_description.c_str());
-					dest_mission.mission_branch_brief_anim = branch.loop_briefing_anim.empty() ? nullptr : strdup(branch.loop_briefing_anim.c_str());
-					dest_mission.mission_branch_brief_sound = branch.loop_briefing_sound.empty() ? nullptr : strdup(branch.loop_briefing_sound.c_str());
-				}
-				*loop_branch_ptr = cond_arm;
-				loop_branch_ptr = &Sexp_nodes[*loop_branch_ptr].rest;
-			} else {
-				if (!normal_branches_exist) {
-					// This is the first normal branch; create the parent 'cond' operator
-					*normal_branch_ptr = alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-					normal_branch_ptr = &Sexp_nodes[*normal_branch_ptr].rest; // Point to the first argument slot
-					normal_branches_exist = true;
-				}
-				*normal_branch_ptr = cond_arm;
-				normal_branch_ptr = &Sexp_nodes[*normal_branch_ptr].rest;
-			}
-		}
 	}
 }
 
@@ -574,6 +515,12 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 	}
 
 	bool failure = save.save_campaign_file(target_filename.c_str(), links);
+
+	for (const auto& link : links) {
+		if (link.sexp >= 0) {
+			free_sexp2(link.sexp);
+		}
+	}
 
 	if (failure) {
 		_viewport->dialogProvider->showButtonDialog(DialogType::Error,

@@ -1823,20 +1823,8 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 		delete_player(player_num);
 	} else {
 		*/
+	// delete_player already takes the player off the standalone's lists
 	delete_player(player_num);	
-
-	// OSAPI GUI stuff (if standalone)
-	if (Game_mode & GM_STANDALONE_SERVER) {
-      // returns true if we should reset the standalone
-		if (std_remove_player(&Net_players[player_num])) {
-			nprintf(("Network", "Should reset!!\n"));
-			return;
-		}
-
-		// update these gui vals
-		std_connect_set_host_connect_status();
-		std_connect_set_connect_count();
-	}
 }
 
 //*********************************************************************************************************
