@@ -54,13 +54,13 @@ int std_connect_set_connect_count();
 void std_connect_set_host_connect_status();
 
 // add an ip string to the connect page listbox
-void std_connect_add_ip_string(char *string);
+void std_connect_add_ip_string(char* string, short player_id);
 
-// remove an ip string from the connect page listbox
-void std_connect_remove_ip_string(char *string);
+// remove a player's ip string from the connect page listbox
+void std_connect_remove_ip_string(short player_id);
 
-// set an ip string on the connect page listbox
-void std_connect_set_ip_string(char *lookup,char *string);
+// set a player's ip string on the connect page listbox
+void std_connect_set_ip_string(short player_id, char* string);
 
 // kick a player (the one currently selected in the listbox)
 void std_connect_kick_player();

@@ -3124,11 +3124,21 @@ void multi_update_valid_missions()
 // get a new id# for a player
 short multi_get_new_id()
 {
-	if(Multi_id_num > 20000){
-		Multi_id_num = 0;
-	} 
+	short id = 0;
 
-	return Multi_id_num++;
+	// once the counter has wrapped, the next id can still belong to a connected player, so those are skipped
+	for (int tries = 0; tries <= MAX_PLAYERS; tries++) {
+		if (Multi_id_num > 20000) {
+			Multi_id_num = 0;
+		}
+
+		id = Multi_id_num++;
+		if (find_player_index(id) == -1) {
+			break;
+		}
+	}
+
+	return id;
 }
 
 
