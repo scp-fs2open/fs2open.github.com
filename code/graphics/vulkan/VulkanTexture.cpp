@@ -298,6 +298,9 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	mprintf(("VulkanTextureManager: ETC2 Texture Support = %s\n", supportsETC2 ? "YES" : "NO"));
 	mprintf(("VulkanTextureManager: BCn Texture Support = %s\n", supportsBC ? "YES" : "NO"));
 
+	// reserved up front so returning a fence to the list never allocates in the middle of retiring an upload
+	m_freeUploadFences.reserve(MAX_PENDING_UPLOADS);
+
 	m_initialized = true;
 	return true;
 }
@@ -311,6 +314,10 @@ void VulkanTextureManager::shutdown()
 	// it before destroying the command pool or allocator during shutdown.
 	m_graphicsQueue.waitIdle();
 	processPendingCommandBuffers();
+	for (auto fence : m_freeUploadFences) {
+		m_device.destroyFence(fence);
+	}
+	m_freeUploadFences.clear();
 
 	// Destroy fallback 3D texture
 	if (m_fallback3DView) {
@@ -2778,12 +2785,11 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 {
 	processPendingCommandBuffers();
 	constexpr size_t maxPendingUploadBytes = 64 * 1024 * 1024;
-	constexpr size_t maxPendingUploads = 64;
 	// A single large upload may exceed this limit, but never accumulate more
 	// uploads behind it. Waiting on an upload fence does not submit or retire
 	// the render command buffer currently being recorded.
 	while (!m_pendingCommandBuffers.empty() &&
-	       (m_pendingCommandBuffers.size() >= maxPendingUploads || m_pendingUploadBytes >= maxPendingUploadBytes ||
+	       (m_pendingCommandBuffers.size() >= MAX_PENDING_UPLOADS || m_pendingUploadBytes >= maxPendingUploadBytes ||
 	        size > maxPendingUploadBytes - m_pendingUploadBytes)) {
 		nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
 			m_pendingCommandBuffers.size(), m_pendingUploadBytes));
@@ -2956,7 +2962,15 @@ void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmd;
 
-	auto fence = m_device.createFence(vk::FenceCreateInfo{});
+	vk::Fence fence;
+	if (m_freeUploadFences.empty()) {
+		fence = m_device.createFence(vk::FenceCreateInfo{});
+	} else {
+		// fences in the free list are signaled and must be reset before submit
+		m_device.resetFences(m_freeUploadFences.back());
+		fence = m_freeUploadFences.back();
+		m_freeUploadFences.pop_back();
+	}
 	try {
 		m_graphicsQueue.submit(submitInfo, fence);
 	} catch (...) {
@@ -2965,24 +2979,23 @@ void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 	}
 	m_pendingCommandBuffers.push_back({cmd, stagingBuffer, stagingAllocation, fence});
 	m_pendingUploadBytes += static_cast<size_t>(stagingAllocation.size);
+	Assertion(m_pendingCommandBuffers.size() <= MAX_PENDING_UPLOADS,
+		"%zu texture uploads are pending; an upload skipped the budget wait in createStagingBuffer",
+		m_pendingCommandBuffers.size());
 }
 
 void VulkanTextureManager::processPendingCommandBuffers()
 {
-	size_t completed = 0;
-	for (auto& pending : m_pendingCommandBuffers) {
-		if (m_device.getFenceStatus(pending.fence) != vk::Result::eSuccess) {
-			break;
-		}
+	// each upload leaves the list as soon as it is released, so a throw from a later fence cannot release it twice
+	while (!m_pendingCommandBuffers.empty() &&
+	       m_device.getFenceStatus(m_pendingCommandBuffers.front().fence) == vk::Result::eSuccess) {
+		auto& pending = m_pendingCommandBuffers.front();
 		m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
 		m_device.destroyBuffer(pending.stagingBuffer);
 		m_memoryManager->freeAllocation(pending.stagingAllocation);
 		m_device.freeCommandBuffers(m_commandPool, pending.cb);
-		m_device.destroyFence(pending.fence);
-		++completed;
-	}
-	if (completed != 0) {
-		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin(), m_pendingCommandBuffers.begin() + completed);
+		m_freeUploadFences.push_back(pending.fence);
+		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin());
 	}
 	Assert(m_pendingCommandBuffers.empty() == (m_pendingUploadBytes == 0));
 }
