@@ -1,0 +1,7 @@
+#Ship Classes
+
+$Name: Ship A
+$Target Priority Groups: ( "group_3" )
++Override
+
+#End

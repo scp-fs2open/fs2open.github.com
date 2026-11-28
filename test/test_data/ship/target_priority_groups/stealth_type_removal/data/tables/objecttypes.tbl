@@ -1,0 +1,21 @@
+#Target Priorities
+
+$Name: fighters
++Object Type: ship
+
+$Name: bombers
++Object Type: ship
+
+#End
+
+#Ship Types
+
+$Name: stealth
+
+$Name: fighter
+$Target Priority Groups: ( "fighters" )
+
+$Name: bomber
+$Target Priority Groups: ( "bombers" )
+
+#End

@@ -1,0 +1,9 @@
+#Ship Classes
+
+$Name: Ship A
+$Target Priority Groups: ( "group_1" "group_2" )
+
+$Name: Ship B
+$Target Priority Groups: ( "group_1" "group_2" )
+
+#End
