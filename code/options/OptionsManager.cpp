@@ -57,6 +57,11 @@ std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const 
 		return std::unique_ptr<json_t>(changed_iter->second.get());
 	}
 
+	return getSavedValue(key);
+}
+
+std::optional<std::unique_ptr<json_t>> OptionsManager::getSavedValue(const SCP_string& key) const
+{
 	auto parts = parse_key(key);
 	if (parts.first.empty()) {
 		// Invalid key
@@ -407,17 +412,30 @@ json_t* OptionsManager::describeOptions()
 		}
 		json_object_set_new(entry, "default", default_value);
 		// as stored: read back through the option, a device missing from this process's empty lists becomes none
-		std::optional<std::unique_ptr<json_t>> stored;
+		std::optional<std::unique_ptr<json_t>> saved;
 		try {
-			stored = getValueFromConfig(key);
+			saved = getSavedValue(key);
 		} catch (const std::exception&) {
-			// an unparseable key has no stored value; the default stands
+			// an unparseable key has no stored value
 		}
-		if (stored.has_value()) {
-			json_object_set(entry, "current", stored->get());
+		if (saved.has_value()) {
+			json_object_set(entry, "saved", saved->get());
 		} else {
-			json_object_set(entry, "current", default_value);
+			json_object_set_new(entry, "saved", json_null());
 		}
+		auto override_iter = _config_overrides.find(key);
+		const bool overridden = override_iter != _config_overrides.end();
+		json_t* effective = saved.has_value() ? saved->get() : default_value;
+		// in the order the game settles it: a mod's HUD tables lock the option after loading, an enforced option is
+		// never loaded and keeps the table's value, and loading takes a command-line override over the saved value
+		if (overridden && override_iter->second.source == OverrideSource::Mod) {
+			effective = override_iter->second.value.get();
+		} else if (isOptionEnforced(key)) {
+			effective = default_value;
+		} else if (overridden) {
+			effective = override_iter->second.value.get();
+		}
+		json_object_set(entry, "effective", effective);
 		auto source = getOverrideSource(key);
 		if (source.has_value()) {
 			json_object_set_new(entry,

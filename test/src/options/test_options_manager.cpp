@@ -1,5 +1,6 @@
 #include "options/OptionsManager.h"
 #include "options/Option.h"
+#include "options/default_settings_table.h"
 #include "graphics/2d.h"
 #include "graphics/grstub.h"
 #include "graphics/shadows.h"
@@ -15,6 +16,9 @@
 #include "util/FSTestFixture.h"
 
 #include <gtest/gtest.h>
+
+#include <fstream>
+#include <sstream>
 
 using namespace options;
 
@@ -801,6 +805,33 @@ class StubRenderer {
   private:
 	screen _saved;
 };
+
+// these tests all use the "options" mod and so one settings file; a test that saves to it puts it back afterwards
+class SharedSettingsFile {
+  public:
+	SharedSettingsFile() : _path(os_get_mod_settings_path())
+	{
+		std::ifstream in(_path, std::ios::binary);
+		if (in.good()) {
+			std::ostringstream contents;
+			contents << in.rdbuf();
+			_contents = contents.str();
+		}
+	}
+	~SharedSettingsFile()
+	{
+		if (_contents.has_value()) {
+			std::ofstream out(_path, std::ios::binary | std::ios::trunc);
+			out << *_contents;
+		} else {
+			std::remove(_path.c_str());
+		}
+	}
+
+  private:
+	SCP_string _path;
+	std::optional<SCP_string> _contents;
+};
 } // namespace
 
 // a launcher shows "needs restart" from this, and only options bound to apply at once may say no
@@ -833,15 +864,19 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsSayWhichNeedARestart)
 	ASSERT_TRUE(json_is_false(json_object_get(once, "default")));
 }
 
+// a launcher edits the saved value and shows the effective one, so a flag must not hide what the player saved
 TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
 {
+	SharedSettingsFile settings;
+	os_config_write_string("HUD", "OrbRadar", "false", true);
 	auto* mgr = OptionsManager::instance();
 	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_true()), "-orbradar");
 	StubRenderer renderer;
 	std::unique_ptr<json_t> list(mgr->describeOptions());
 	const json_t* entry = described(list.get(), "HUD.OrbRadar");
 	ASSERT_NE(entry, nullptr);
-	ASSERT_TRUE(json_is_true(json_object_get(entry, "current")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_true(json_object_get(entry, "effective")));
 	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
 	ASSERT_EQ(SCP_string(json_string_value(json_object_get(entry, "overridden_by"))), "cmdline");
 	ASSERT_EQ(SCP_string(json_string_value(json_object_get(entry, "override_reason"))), "-orbradar");
@@ -850,6 +885,30 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
 	const json_t* free_entry = described(list.get(), "HUD.BallisticGauge");
 	ASSERT_NE(free_entry, nullptr);
 	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "overridden_by")));
+}
+
+// the game never loads an enforced option, so the table's value is used even though the player saved another
+TEST_F(OptionsManagerOverrideLocalized, DescribedEnforcedOptionsUseTheTableValue)
+{
+	SharedSettingsFile settings;
+	os_config_write_string("Graphics", "VSync", "true", true);
+	const bool vsync_before = Gr_enable_vsync;
+	auto* mgr = OptionsManager::instance();
+	default_settings_init();
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(mgr->describeOptions());
+	const bool enforced = mgr->isOptionEnforced("Graphics.VSync");
+	mgr->unenforceOption("Graphics.VSync");
+	Gr_enable_vsync = vsync_before;
+
+	ASSERT_TRUE(enforced);
+	const json_t* entry = described(list.get(), "Graphics.VSync");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_true(json_object_get(entry, "enforced")));
+	ASSERT_TRUE(json_is_true(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "effective")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
+	ASSERT_TRUE(json_is_null(json_object_get(entry, "overridden_by")));
 }
 
 TEST_F(OptionsManagerOverrideLocalized, DescribedRangeOptionsGiveTheirBounds)

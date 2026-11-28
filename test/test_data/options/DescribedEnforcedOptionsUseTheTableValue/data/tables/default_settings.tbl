@@ -1,0 +1,7 @@
+#DEFAULT SETTINGS
+
+$Option Key: Graphics.VSync
++Value: NO
++Enforce
+
+#END

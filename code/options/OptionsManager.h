@@ -61,6 +61,9 @@ class OptionsManager {
 
 	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
 
+	// The value in the settings file only, ignoring overrides and pending edits; nullopt if the file has none
+	std::optional<std::unique_ptr<json_t>> getSavedValue(const SCP_string& key) const;
+
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
 	/**
@@ -151,8 +154,9 @@ class OptionsManager {
 
 	/**
 	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
-	 * default and current value, override source and reason, whether a mod enforces it, and whether a change needs a
-	 * restart (true unless the option is known to apply at once).
+	 * default, the value saved in the settings file (null if none), the value this launch uses (an enforced table
+	 * value or an override wins over the saved one), override source and reason, whether a mod enforces it, and
+	 * whether a change needs a restart (true unless the option is known to apply at once).
 	 * @return A new JSON array the caller owns
 	 */
 	json_t* describeOptions();
