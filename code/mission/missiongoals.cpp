@@ -798,6 +798,11 @@ void mission_goal_status_change( int goal_num, int new_status)
 //   FAILED    = event failed, can't possibly become true anymore
 EventStatus mission_get_event_status(int event)
 {
+	// a multiplayer client can first hear of a current event when it is already directive special
+	if ((Mission_events[event].flags & MEF_CURRENT) && !Mission_events[event].born_on_date.isValid()) {
+		Mission_events[event].born_on_date = _timestamp();
+	}
+
 	// check for directive special events first.  We will always return from this part of the if statement
 	if ( Mission_events[event].flags & MEF_DIRECTIVE_SPECIAL ) {
 		Assertion(Mission_events[event].flags & MEF_CURRENT, "An event should have MEF_CURRENT set if it also has MEF_DIRECTIVE_SPECIAL set");
@@ -815,10 +820,6 @@ EventStatus mission_get_event_status(int event)
 
 		return EventStatus::CURRENT;
 	} else if (Mission_events[event].flags & MEF_CURRENT) {
-		if (!Mission_events[event].born_on_date.isValid()) {
-			Mission_events[event].born_on_date = _timestamp();
-		}
-
 		if (Mission_events[event].result) {
 			return EventStatus::SATISFIED;
 		}
