@@ -1408,7 +1408,8 @@ bool query_hardware_without_window(HardwareQuery& out)
 	auto unload = ::util::finally([]() { SDL_Vulkan_UnloadLibrary(); });
 
 	try {
-		// the dispatcher is left pointing at the unloaded library; nothing uses it until a renderer initializes it again
+		// the dispatcher is left pointing at the unloaded library; nothing uses it until a renderer initializes it
+		// again
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(
 			reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr()));
 		vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VulkanApiVersion);
@@ -1437,7 +1438,9 @@ bool query_hardware_without_window(HardwareQuery& out)
 			}
 			const bool hasGraphicsQueue = std::any_of(values.queueProperties.cbegin(),
 				values.queueProperties.cend(),
-				[](const vk::QueueFamilyProperties& queue) { return static_cast<bool>(queue.queueFlags & vk::QueueFlagBits::eGraphics); });
+				[](const vk::QueueFamilyProperties& queue) {
+					return static_cast<bool>(queue.queueFlags & vk::QueueFlagBits::eGraphics);
+				});
 			if (!checkDeviceExtensionSupport(values) || !values.synchronization2FeatureSupported || !hasGraphicsQueue) {
 				continue;
 			}

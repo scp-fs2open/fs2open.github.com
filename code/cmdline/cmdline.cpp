@@ -1048,7 +1048,8 @@ static void reset_cmdline_parms()
 // cmdline - command line string passed to the application
 void os_init_cmdline(int argc, char *argv[])
 {
-	// known before cmdline_fso.cfg is read, so its unknown flags and the legacy-mode notice stay off a launcher's screen
+	// known before cmdline_fso.cfg is read, so its unknown flags and the legacy-mode notice stay off a launcher's
+	// screen
 	Cmdline_get_options = !Fred_running && cmdline_has_get_options(argc, argv);
 
 	// Tests call this multiple times, so reset the params here.
