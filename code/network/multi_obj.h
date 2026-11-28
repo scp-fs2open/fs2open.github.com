@@ -81,6 +81,11 @@ vec3d multi_ship_record_lookup_position(object* objp, int frame);
 // a quick lookups for orientation
 matrix multi_ship_record_lookup_orientation(object* objp, int frame);
 
+// position and orientation interpolated to time_after_frame past the given frame, rather than
+// snapped to the frame itself.  Rollback should use this: the recorded frames are one server
+// frame apart, and snapping to them rewinds every shot up to that much too early.
+void multi_ship_record_lookup_interpolated(object* objp, int frame, int time_after_frame, vec3d* pos, matrix* ori);
+
 // figures out how much time has passed bwetween the two frames.
 int multi_ship_record_find_time_after_frame(int client_frame, int frame, int time_elapsed);
 
