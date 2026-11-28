@@ -225,7 +225,16 @@ static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFl
 void hud_init_comm_orders()
 {
 	if (!Parsed_comm_orders.empty()) {
-		Comm_order_types = Parsed_comm_orders;
+		Comm_order_types.clear();
+		for (const auto& parsed : Parsed_comm_orders) {
+			SCP_string text;
+			lcl_ext_localize(parsed.second, text);
+			// a translation can be longer than the English text the table parse already cut to size
+			if (text.size() >= MAX_MENU_ITEM_TEXT_SIZE) {
+				text.resize(MAX_MENU_ITEM_TEXT_SIZE - 1);
+			}
+			Comm_order_types.emplace_back(parsed.first, text);
+		}
 	} else {
 		Comm_order_types = {
 			{ CommOrderType::MSG_SHIPS, XSTR("Ships", 293) },

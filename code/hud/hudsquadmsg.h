@@ -99,8 +99,8 @@ enum class CommOrderType : int {
 };
 
 // the comm menu order types parsed from "$Available squad orders:" in game_settings.tbl, with the
-// text to display for each.  empty if the mod did not specify a list, in which case the retail
-// defaults are used instead; see hud_init_comm_orders().
+// text to display for each, still untranslated.  empty if the mod did not specify a list, in which
+// case the retail defaults are used instead; see hud_init_comm_orders().
 extern SCP_vector<std::pair<CommOrderType, SCP_string>> Parsed_comm_orders;
 
 typedef struct mmode_item {
