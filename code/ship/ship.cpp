@@ -1715,6 +1715,14 @@ static void parse_ship(const char *filename, bool replace)
 			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
 			int template_id = ship_info_lookup_sub(template_name);
 			if ( template_id != -1 ) {
+				if (ship_id >= 0) {
+					error_display(0,
+						"A template was specified for ship class '%s', which already exists.  The whole existing "
+						"entry is replaced by a copy of ship class '%s'.  To change only some values, list them "
+						"without '+Use Ship as Template:'.",
+						fname,
+						template_name);
+				}
 				first_time = false;
 				sip->clone(Ship_info[template_id]);
 				strcpy_s(sip->name, fname);
