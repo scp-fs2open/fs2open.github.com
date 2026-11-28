@@ -40,8 +40,13 @@ void VulkanDeletionQueue::shutdown()
 	// a renderer torn down without its shutdown (an early exit) never waited, and queued work may still be running
 	try {
 		m_device.waitIdle();
-	} catch (const vk::SystemError&) {
-		// a lost device fails this wait, and the spec counts that failure as the work being done
+	} catch (const vk::SystemError& e) {
+		if (e.code() != vk::Result::eErrorDeviceLost) {
+			// the GPU may still be using what is queued, so leak it at exit rather than free it under the GPU
+			m_initialized = false;
+			return;
+		}
+		// a lost device counts its work as done (spec, Lost Device), so the queue can be freed
 	}
 	flushAll();
 	m_initialized = false;

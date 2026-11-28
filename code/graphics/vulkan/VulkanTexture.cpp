@@ -1699,21 +1699,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			ts->renderPassLoad = m_device.createRenderPass(loadPassInfo);
 		} catch (const vk::SystemError& e) {
 			nprintf(("vulkan", "Failed to create load-variant render pass: %s\n", e.what()));
-			m_device.destroyRenderPass(ts->renderPass);
-			ts->renderPass = nullptr;
-			if (hasDepth) {
-				m_device.destroyImageView(ts->depthImageView);
-				m_device.destroyImage(ts->depthImage);
-				ts->depthImageView = nullptr;
-				ts->depthImage = nullptr;
-				m_memoryManager->freeAllocation(ts->depthAllocation);
-				ts->depthAllocation = VulkanAllocation{};
-			}
-			m_device.destroyImageView(ts->imageView);
-			m_device.destroyImage(ts->image);
-			ts->image = nullptr;
-			ts->imageView = nullptr;
-			m_memoryManager->freeAllocation(ts->allocation);
+			bm_free_data(slot, false);
 			return 0;
 		}
 	}
@@ -1758,25 +1744,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			ts->framebuffer = m_device.createFramebuffer(framebufferInfo);
 		} catch (const vk::SystemError& e) {
 			nprintf(("vulkan", "Failed to create framebuffer: %s\n", e.what()));
-			if (hasDepth) {
-				m_device.destroyImageView(ts->depthImageView);
-				m_device.destroyImage(ts->depthImage);
-				ts->depthImageView = nullptr;
-				ts->depthImage = nullptr;
-				m_memoryManager->freeAllocation(ts->depthAllocation);
-				ts->depthAllocation = VulkanAllocation{};
-			}
-			m_device.destroyRenderPass(ts->renderPass);
-			if (ts->renderPassLoad) {
-				m_device.destroyRenderPass(ts->renderPassLoad);
-				ts->renderPassLoad = nullptr;
-			}
-			m_device.destroyImageView(ts->imageView);
-			m_device.destroyImage(ts->image);
-			ts->image = nullptr;
-			ts->imageView = nullptr;
-			ts->renderPass = nullptr;
-			m_memoryManager->freeAllocation(ts->allocation);
+			bm_free_data(slot, false);
 			return 0;
 		}
 	}
