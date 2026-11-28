@@ -105,7 +105,7 @@ void process_new_player_packet(ubyte* data, header* hinfo);
 void process_hud_message(ubyte* data, header* hinfo);
 
 // process a notification the a player has left the game
-void process_leave_game_packet(ubyte* data, header* hinfo);
+void process_leave_game_packet(ubyte* data, header* hinfo, bool reliable);
 
 // process information about an active game
 void process_game_active_packet(ubyte* data, header* hinfo);
