@@ -1728,7 +1728,7 @@ void send_leave_game_packet(short player_id, int kicked_reason, net_player *targ
 }
 
 // process a notification that a player has left the game
-void process_leave_game_packet(ubyte* data, header* hinfo)
+void process_leave_game_packet(ubyte* data, header* hinfo, bool reliable)
 {
 	int offset;
 	short deader_id;
@@ -1744,6 +1744,18 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 	// get the address of the guy who is to leave
 	GET_SHORT(deader_id);
 	PACKET_SET_SIZE();
+
+	// the game only sends leave packets reliably, so an unreliable one is forged
+	if (!reliable) {
+		nprintf(("Network", "Ignoring unreliable leave game packet for player %d\n", deader_id));
+		return;
+	}
+
+	// only the master announces other players leaving, so a client may only report itself
+	if ((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (deader_id != hinfo->id)) {
+		nprintf(("Network", "Ignoring leave game packet for player %d sent by player %d\n", deader_id, hinfo->id));
+		return;
+	}
 
 	// determine who is dropping and printf out a notification
 	player_num = find_player_index(deader_id);

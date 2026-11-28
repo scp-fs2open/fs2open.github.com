@@ -531,7 +531,7 @@ void process_packet_normal(ubyte* data, header *header_info, bool reliable)
 			break;
 
 		case LEAVE_GAME:
-			process_leave_game_packet(data, header_info);
+			process_leave_game_packet(data, header_info, reliable);
 			break;
 
 		case GAME_QUERY:

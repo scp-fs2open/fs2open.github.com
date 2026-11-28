@@ -1,4 +1,5 @@
 #include "network/multi.h"
+#include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "physics/physics.h"
 #include "playerman/player.h"
@@ -93,4 +94,61 @@ TEST(VelocityPacking, too_fast_clamps)
 		EXPECT_NEAR(received.vel.xyz.y, (speed > 0) ? 255.94f : -256.0f, 0.01f);
 		EXPECT_NEAR(received.vel.xyz.z, (speed > 0) ? 255.97f : -256.0f, 0.01f);
 	}
+}
+
+class LeavePacketTest : public ::testing::Test {
+  protected:
+	void SetUp() override
+	{
+		_saved_net_player = Net_player;
+		for (int i = 0; i < MAX_PLAYERS; ++i) {
+			_saved_flags[i] = Net_players[i].flags;
+			_saved_ids[i] = Net_players[i].player_id;
+			Net_players[i].flags = 0;
+			Net_players[i].player_id = static_cast<short>(i);
+		}
+		Net_players[0].flags = NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_CONNECTED;
+		Net_players[1].flags = NETINFO_FLAG_CONNECTED;
+		Net_players[2].flags = NETINFO_FLAG_CONNECTED;
+		Net_player = &Net_players[0];
+	}
+
+	void TearDown() override
+	{
+		for (int i = 0; i < MAX_PLAYERS; ++i) {
+			Net_players[i].flags = _saved_flags[i];
+			Net_players[i].player_id = _saved_ids[i];
+		}
+		Net_player = _saved_net_player;
+	}
+
+	// returns the bytes the handler consumed, so the caller can check it still skips the whole packet
+	static int receive_leave(short deader_id, short sender_id, bool reliable)
+	{
+		ubyte data[4] = {LEAVE_GAME, 0xff, 0, 0};
+		short swap = INTEL_SHORT(deader_id);
+		memcpy(data + 2, &swap, sizeof(swap));
+		header hinfo{};
+		hinfo.id = sender_id;
+		process_leave_game_packet(data, &hinfo, reliable);
+		return hinfo.bytes_processed;
+	}
+
+	net_player* _saved_net_player = nullptr;
+	std::array<int, MAX_PLAYERS> _saved_flags{};
+	std::array<short, MAX_PLAYERS> _saved_ids{};
+};
+
+// a client may only say that it is leaving; the server must not drop someone else on its word
+TEST_F(LeavePacketTest, master_ignores_leave_for_another_player)
+{
+	EXPECT_EQ(receive_leave(1, 2, true), 4);
+	EXPECT_TRUE(MULTI_CONNECTED(Net_players[1]));
+}
+
+// leave packets are only ever sent reliably, so an unreliable one is ignored even when the ids match
+TEST_F(LeavePacketTest, unreliable_leave_is_ignored)
+{
+	EXPECT_EQ(receive_leave(1, 1, false), 4);
+	EXPECT_TRUE(MULTI_CONNECTED(Net_players[1]));
 }
