@@ -702,7 +702,8 @@ private:
 	bool initResources();
 	bool createTargets();
 	void destroyTargets();
-	void drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+	// Returns false when the pipeline or a descriptor set is not available. Then the pass did not draw.
+	bool drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
 	              vk::Extent2D extent, int shaderType, unsigned int shaderFlags,
 	              const vk::ImageView* views, uint32_t viewCount, vk::DeviceSize uboOffset, vk::DeviceSize uboSize);
 
@@ -718,7 +719,9 @@ private:
 	const VulkanDeferredGBuffer* m_gbuffer = nullptr;
 	bool m_resourcesInitialized = false;
 	// Set when the creation of the resources fails, so that execute() does not try again each frame.
+	// A resize or a change of Ssao_samples clears it.
 	bool m_initFailed = false;
+	int m_initFailedSamples = 0;
 
 	// Extent-independent resources
 	vk::RenderPass m_packedRenderPass;  // R32_SFLOAT, final layout eShaderReadOnlyOptimal

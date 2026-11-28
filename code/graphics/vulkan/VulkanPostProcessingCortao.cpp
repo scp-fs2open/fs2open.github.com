@@ -354,7 +354,7 @@ bool VulkanCortao::onResize()
 	return createTargets();
 }
 
-void VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+bool VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
                             vk::Extent2D extent, int shaderType, unsigned int shaderFlags,
                             const vk::ImageView* views, uint32_t viewCount, vk::DeviceSize uboOffset, vk::DeviceSize uboSize)
 {
@@ -376,7 +376,7 @@ void VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
 	if (!pipeline) {
-		return;
+		return false;
 	}
 	vk::PipelineLayout pipelineLayout = pipelineMgr->getPipelineLayout();
 
@@ -411,7 +411,7 @@ void VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	if (!materialSet || !perDrawSet) {
 		cmd.endRenderPass();
-		return;
+		return false;
 	}
 
 	writer.writeSet(DescriptorSetIndex::Material, materialSet);
@@ -433,17 +433,27 @@ void VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
+	return true;
 }
 
 vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterActive)
 {
-	if (!m_ctx || !m_gbuffer || !m_gbuffer->isInitialized() || !ssao_enabled() || m_initFailed) {
+	if (!m_ctx || !m_gbuffer || !m_gbuffer->isInitialized() || !ssao_enabled()) {
 		return nullptr;
+	}
+	if (m_initFailed) {
+		if (Ssao_samples == m_initFailedSamples) {
+			return nullptr;
+		}
+		// The user changed the SSAO quality. Try again.
+		m_initFailed = false;
 	}
 
 	if (!m_resourcesInitialized && !initResources()) {
-		// Do not try again each frame. A resize clears this flag.
+		// Do not try again each frame. A resize or a quality change clears this flag.
+		mprintf(("VulkanCortao: Could not create the SSAO resources. SSAO is off until a resize or a quality change.\n"));
 		m_initFailed = true;
+		m_initFailedSamples = Ssao_samples;
 		shutdown();
 		return nullptr;
 	}
@@ -501,16 +511,20 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 		const std::array<vk::ImageView, 2> views = {m_gbuffer->positionView(), m_gbuffer->normalView()};
 		for (uint32_t mip = 0; mip < m_mipLevels; ++mip) {
 			const vk::Extent2D extent(std::max(1u, w >> mip), std::max(1u, h >> mip));
-			drawPass(cmd, m_packedRenderPass, m_packedMipFramebuffers[mip], extent, SDR_TYPE_CORTAO_PREPASS, 0,
-				views.data(), static_cast<uint32_t>(views.size()), regionBase + mip * m_uboBlockSize, m_uboBlockSize);
+			if (!drawPass(cmd, m_packedRenderPass, m_packedMipFramebuffers[mip], extent, SDR_TYPE_CORTAO_PREPASS, 0,
+				views.data(), static_cast<uint32_t>(views.size()), regionBase + mip * m_uboBlockSize, m_uboBlockSize)) {
+				return nullptr;
+			}
 		}
 	}
 
 	{
 		GR_DEBUG_SCOPE("CORTAO main pass");
 		const std::array<vk::ImageView, 3> views = {m_packedFullView, m_gbuffer->normalView(), m_lutView};
-		drawPass(cmd, m_aoRenderPass, m_aoRawFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_MAIN, cortao_main_shader_flags(),
-			views.data(), static_cast<uint32_t>(views.size()), mainBlockOffset, m_uboBlockSize);
+		if (!drawPass(cmd, m_aoRenderPass, m_aoRawFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_MAIN, cortao_main_shader_flags(),
+			views.data(), static_cast<uint32_t>(views.size()), mainBlockOffset, m_uboBlockSize)) {
+			return nullptr;
+		}
 	}
 
 	if (filterMode == SsaoFilterMode::Off) {
@@ -521,9 +535,11 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 		GR_DEBUG_SCOPE("CORTAO filter pass");
 		// The filter reads only mip 0 of the packed data, with texelFetch().
 		const std::array<vk::ImageView, 2> views = {m_packedFullView, m_aoRaw.view};
-		drawPass(cmd, m_aoRenderPass, m_aoFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_FILTER,
+		if (!drawPass(cmd, m_aoRenderPass, m_aoFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_FILTER,
 			cortao_filter_shader_flags(filterMode),
-			views.data(), static_cast<uint32_t>(views.size()), filterBlockOffset, m_uboBlockSize);
+			views.data(), static_cast<uint32_t>(views.size()), filterBlockOffset, m_uboBlockSize)) {
+			return nullptr;
+		}
 	}
 
 	return m_ao.view;

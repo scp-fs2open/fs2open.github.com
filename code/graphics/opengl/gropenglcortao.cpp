@@ -43,8 +43,9 @@ GLuint Cortao_ao_framebuffer = 0;
 
 GLuint Cortao_lut_texture = 0;
 
-// Some resource could not be made. A size change tries again.
+// Some resource could not be made. A size change or a change of Ssao_samples tries again.
 bool Cortao_failed = false;
+int Cortao_failed_samples = 0;
 
 // A frame counter for the animated noise. The scene and the cockpit passes each count one step.
 uint64_t Cortao_frame = 0;
@@ -213,13 +214,16 @@ GLuint opengl_cortao_execute()
 
 	const GLsizei width = Scene_texture_width;
 	const GLsizei height = Scene_texture_height;
-	if (width != Cortao_width || height != Cortao_height) {
+	const bool qualityChanged = Cortao_failed && Ssao_samples != Cortao_failed_samples;
+	if (qualityChanged || width != Cortao_width || height != Cortao_height) {
 		delete_resources();
 		Cortao_failed = !create_resources(width, height);
 		if (Cortao_failed) {
-			// Remember the size, so that only a size change tries again.
+			mprintf(("OpenGL CORTAO: Could not create the SSAO resources. SSAO is off until a resize or a quality change.\n"));
+			// Remember the size and the quality, so that only a change of one of them tries again.
 			Cortao_width = width;
 			Cortao_height = height;
+			Cortao_failed_samples = Ssao_samples;
 		}
 	}
 	if (Cortao_failed) {
