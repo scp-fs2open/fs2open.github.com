@@ -774,6 +774,77 @@ namespace animation {
 		}
 	}
 
+	// Ids aren't unique: a modular table that repeats a class's legacy subsystem animations adds them a second time with
+	// the same id, and an animation requested twice by name is there twice.  Such animations are told apart by their order.
+	template <typename AnimationMap>
+	static SCP_vector<std::shared_ptr<ModelAnimation>> animations_with_id(const AnimationMap& animationSet, unsigned int id) {
+		SCP_vector<std::shared_ptr<ModelAnimation>> found;
+		for (const auto& types : animationSet) {
+			for (const auto& named : types.second) {
+				for (const auto& anim : named.second) {
+					if (anim->id == id)
+						found.push_back(anim);
+				}
+			}
+		}
+		return found;
+	}
+
+	SCP_vector<ModelAnimationSet::RunningAnimationState> ModelAnimationSet::getRunningAnimationStates(const polymodel_instance* pmi) {
+		SCP_vector<RunningAnimationState> states;
+
+		auto running = s_runningAnimations.find(pmi->id);
+		if (running == s_runningAnimations.end())
+			return states;
+
+		for (const auto& anim : running->second.animationList) {
+			if (anim->id == 0)
+				continue;
+			auto instance = anim->m_instances.find(pmi->id);
+			if (instance == anim->m_instances.end())
+				continue;
+			auto sameId = animations_with_id(anim->m_set->m_animationSet, anim->id);
+			auto occurrence = std::find(sameId.begin(), sameId.end(), anim) - sameId.begin();
+			states.push_back({anim->id, static_cast<unsigned int>(occurrence), instance->second});
+		}
+		return states;
+	}
+
+	void ModelAnimationSet::restoreRunningAnimationStates(polymodel_instance* pmi, const SCP_vector<RunningAnimationState>& states) {
+		for (const auto& saved : states) {
+			auto found = s_animationById.find(saved.id);
+			if (found == s_animationById.end())
+				continue;
+			auto sameId = animations_with_id(found->second->m_set->m_animationSet, saved.id);
+			if (saved.occurrence >= sameId.size()) {
+				mprintf(("Checkpoint: animation %s of %s no longer exists; its saved state is dropped\n", found->second->request.c_str(), found->second->m_set->m_SIPname.c_str()));
+				continue;
+			}
+			const auto& anim = sameId[saved.occurrence];
+			auto& running = s_runningAnimations[pmi->id];
+
+			// calculate the animation for this model instance like starting it does, on top of the ones already running
+			ModelAnimationSubmodelBuffer applyBuffer;
+			anim->m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+			for (const auto& other : running.animationList)
+				other->play(0, pmi, applyBuffer, true);
+			ModelAnimationSubmodelBuffer currentAnimationDelta;
+			anim->m_set->initializeSubmodelBuffer(pmi, currentAnimationDelta);
+			anim->m_animation->recalculate(applyBuffer, currentAnimationDelta, pmi);
+
+			// then continue where it was
+			anim->m_instances[pmi->id] = saved.state;
+			running.parentSet = anim->m_set;
+			running.animationList.push_back(anim);
+		}
+	}
+
+	void ModelAnimationSet::captureBaseState(polymodel_instance* pmi) const {
+		// the base is taken from the current pose the first time it is needed
+		ModelAnimationSubmodelBuffer buffer;
+		initializeSubmodelBuffer(pmi, buffer);
+	}
+
 	void ModelAnimationSet::clearShipData(polymodel_instance* pmi) {
 		for (const auto& submodel : m_submodels) {
 			submodel->m_initialData.erase(pmi->id);
@@ -1142,7 +1213,7 @@ namespace animation {
 	}
 
 
-	void anim_set_initial_states(ship* shipp) {
+	void anim_set_initial_states(ship* shipp, bool start_spawn_animations) {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 		polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
@@ -1150,7 +1221,10 @@ namespace animation {
 		sip->animations.clearShipData(pmi);
 		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(ModelAnimationDirection::FWD, true, true);
 		sip->animations.initializeMoveables(pmi);
-		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
+		if (start_spawn_animations)
+			sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
+		else
+			sip->animations.captureBaseState(pmi);
 	}
 
 	const SCP_unordered_map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {

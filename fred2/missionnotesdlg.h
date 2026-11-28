@@ -65,6 +65,7 @@ public:
 	BOOL		m_end_to_mainhall;
 	BOOL		m_override_hashcommand;
 	BOOL        m_preload_subspace;
+	BOOL        m_offer_checkpoints;
 	BOOL		m_contrail_threshold_flag;
 	int			m_contrail_threshold;
 	//}}AFX_DATA

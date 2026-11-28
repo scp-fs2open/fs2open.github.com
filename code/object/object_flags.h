@@ -4,7 +4,7 @@
 #include "globalincs/flagset.h"
 
 namespace Object {
-	FLAG_LIST(Object_Flags) {
+	FLAG_LIST(Object_Flags) {	// @checkpoint fields
 		Renders,				// It renders as something ( objtype_render gets called)
 		Collides,				// It collides with stuff (objtype_check_impact & objtype_hit gets called)
 		Physics,				// It moves with standard physics.
@@ -47,7 +47,8 @@ namespace Object {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Raw_Pof_Flags){Glowmaps_disabled, // No glowmaps for this weapon instance
+	FLAG_LIST(Raw_Pof_Flags){	// @checkpoint fields
+		Glowmaps_disabled,                      // No glowmaps for this weapon instance
 		Draw_as_wireframe,                      // Render wireframe for this weapon instance
 		Render_full_detail,                     // Render full detail for this weapon instance
 		Render_without_light,                   // Render without light for this weapon instance

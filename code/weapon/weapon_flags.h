@@ -102,7 +102,7 @@ namespace Weapon {
         NUM_VALUES
 	};
 
-	FLAG_LIST(Weapon_Flags) {
+	FLAG_LIST(Weapon_Flags) {	// @checkpoint fields
 		Lock_warning_played,		// set when a lock warning sound is played for the player (needed since we don't want to play multiple lock sounds)
 		Already_applied_stats,		// for use in ship_apply_local and ship_apply_global damage functions so that we don't record multiple hits (stats) for one impact
 		Played_flyby_sound,			// flyby sound has been played for this weapon

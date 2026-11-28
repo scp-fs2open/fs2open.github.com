@@ -15,6 +15,7 @@
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
+#include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "debugconsole/console.h"
@@ -128,6 +129,7 @@ int	Ship_auto_repair = 1;		// flag to indicate auto-repair of subsystem should o
 #endif
 
 int	Num_wings = 0;
+CHECKPOINT_GLOBAL(Num_wings);
 ship	Ships[MAX_SHIPS];
 
 ship	*Player_ship;
@@ -137,6 +139,7 @@ bool Disable_cockpits = false;
 bool Disable_cockpit_sway = false;
 
 wing	Wings[MAX_WINGS];
+CHECKPOINT_GLOBAL(Wings);
 bool	Ships_inited = false;
 bool	Armor_inited = false;
 
@@ -150,6 +153,12 @@ int TVT_wings[MAX_TVT_WINGS];
 char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Starting_wings);
+CHECKPOINT_GLOBAL(Squadron_wings);
+CHECKPOINT_GLOBAL(TVT_wings);
+CHECKPOINT_GLOBAL(Starting_wing_names);
+CHECKPOINT_GLOBAL(Squadron_wing_names);
+CHECKPOINT_GLOBAL(TVT_wing_names);
 
 SCP_vector<engine_wash_info> Engine_wash_info;
 
@@ -176,6 +185,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
+CHECKPOINT_GLOBAL(Ships_exited);
 
 ship_registry_entry::ship_registry_entry(const char* _name)
 {
@@ -242,7 +252,17 @@ int ship_registry_entry::ship_class_index() const
 }
 
 SCP_vector<ship_registry_entry> Ship_registry;
+CHECKPOINT_GLOBAL(Ship_registry);
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
+
+// the lookup map is derived from the registry
+static void ship_registry_checkpoint_rebuild_map()
+{
+	Ship_registry_map.clear();
+	for (int i = 0; i < static_cast<int>(Ship_registry.size()); ++i)
+		Ship_registry_map[Ship_registry[i].name] = i;
+}
+CHECKPOINT_AFTER_GLOBALS(ship_registry_checkpoint_rebuild_map);
 
 int ship_registry_get_index(const char *name)
 {
@@ -355,6 +375,7 @@ int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
 
 bool Sensor_static_forced = false; //forced static effect sexp initialization
+CHECKPOINT_GLOBAL(Sensor_static_forced);
 
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
@@ -362,9 +383,12 @@ ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
 ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs, Standalone ship cannot be in this list or it will cause bugs.
 
 SCP_vector<ship_info>	Ship_info;
+// sexps change the shockwave damage types of ship classes
+CHECKPOINT_TABLE_FIELD(Ship_info, shockwave.damage_type_idx);
 SCP_vector<const char *> Ship_class_names;		// to be filled in from Ship_info
 
 SCP_vector<reinforcements>	Reinforcements;
+CHECKPOINT_GLOBAL(Reinforcements);
 SCP_vector<ship_info>	Ship_templates;
 
 SCP_vector<ship_type_info> Ship_types;
@@ -841,6 +865,7 @@ static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound ef
 static int Missile_out_snd_timer;	// timer so we play out of laser sound effect periodically
 
 SCP_vector<ship_counts>	Ship_type_counts;
+CHECKPOINT_GLOBAL(Ship_type_counts);
 
 SCP_vector<wing_formation> Wing_formations;
 
@@ -8115,6 +8140,9 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 void ship_init_cockpit_displays(ship *shipp)
 {
+	// entering gameplay sets the cockpit up again after the loadout may already have done so
+	ship_close_cockpit_displays(shipp);
+
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	int cockpit_model_num = sip->cockpit_model_num;
@@ -11033,6 +11061,98 @@ static void ship_init_afterburners(ship *shipp)
  * Returns object index of ship.
  * @return -1 means failed.
  */
+/**
+ * Acquires the runtime resources of a ship that has its model instance and subsystems: sounds, afterburner trails,
+ * contrails and its entry in the ship list.  Used when a ship is created and when a checkpoint restores one.
+ */
+static void ship_acquire_resources(ship *shipp, bool add_to_ship_list)
+{
+	// this used to be done in parse_create_object_sub
+	if (!Fred_running)
+		ship_assign_sound(shipp);
+
+	// first try at ABtrails -Bobboau
+	ship_init_afterburners(shipp);
+
+	// call the contrail system
+	ct_ship_create(shipp);
+
+	// Add this ship to Ship_obj_list, if it is *not* the standalone ship.  That can cause big time bugs.
+	if (add_to_ship_list){
+		shipp->ship_list_index = ship_obj_list_add(shipp->objnum);
+	}
+}
+
+// Loads the models a ship of this class uses.  Every ship loads them, even if the class already has them, so that it
+// holds its own reference and the model survives a UI preview releasing the one it loaded.
+static bool ship_load_class_models(ship_info* sip)
+{
+	if (!VALID_FNAME(sip->pof_file))
+	{
+		Error(LOCATION, "Cannot create ship %s; pof file is not valid", sip->name);
+		return false;
+	}
+	sip->model_num = model_load(sip->pof_file, sip);		// use the highest detail level
+
+	if(VALID_FNAME(sip->cockpit_pof_file))
+	{
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
+	}
+
+	// maybe load an optional hud target model
+	if(VALID_FNAME(sip->pof_file_hud)){
+		// check to see if a "real" ship uses this model. if so, load it up for him so that subsystems are setup properly
+		for(auto it = Ship_info.begin(); it != Ship_info.end(); ++it){
+			if(!stricmp(it->pof_file, sip->pof_file_hud)){
+				it->model_num = model_load(it->pof_file, &*it);
+			}
+		}
+
+		// mow load it for me with no subsystems
+		sip->model_num_hud = model_load(sip->pof_file_hud);
+	}
+
+	if (VALID_FNAME(sip->generic_debris_pof_file)) {
+		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file);
+		if (sip->generic_debris_model_num >= 0) {
+			polymodel* pm = model_get(sip->generic_debris_model_num);
+			sip->generic_debris_num_submodels = pm->n_models;
+		}
+	}
+
+	return true;
+}
+
+// Prepares a ship class for a ship that is created with it, changed to it or restored with it: loads its models, links
+// the class's subsystems to the model and sets the model's detail distances.
+static bool ship_prepare_class(ship_info* sip)
+{
+	if (!ship_load_class_models(sip))
+		return false;
+
+	auto pm = model_get(sip->model_num);
+
+	ship_copy_subsystem_fixup(sip);
+	verify_ship_subsystems_linked(sip, "After ship_copy_subsystem_fixup in ship_prepare_class");
+
+	if ( sip->num_detail_levels != pm->n_detail_levels )
+	{
+		if ( !Is_standalone )
+		{
+			// just log to file for standalone servers
+			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		}
+		else
+		{
+			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+		}
+	}
+	for (int i = 0; i < pm->n_detail_levels; i++)
+		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
+
+	return true;
+}
+
 int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name, bool standalone_ship)
 {
 	int			i, shipnum, objnum, j, k, t;
@@ -11073,60 +11193,12 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	shipp->clear();
 	shipp->orders_allowed_against = ship_get_default_orders_against();
 
-	if (!VALID_FNAME(sip->pof_file))
-	{
-		Error(LOCATION, "Cannot create ship %s; pof file is not valid", sip->name);
+	if (!ship_prepare_class(sip))
 		return -1;
-	}
-	sip->model_num = model_load(sip->pof_file, sip);		// use the highest detail level
-
-	if(VALID_FNAME(sip->cockpit_pof_file))
-	{
-		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
-	}
-
-	// maybe load an optional hud target model
-	if(VALID_FNAME(sip->pof_file_hud)){
-		// check to see if a "real" ship uses this model. if so, load it up for him so that subsystems are setup properly
-		for(auto it = Ship_info.begin(); it != Ship_info.end(); ++it){
-			if(!stricmp(it->pof_file, sip->pof_file_hud)){
-				it->model_num = model_load(it->pof_file, &*it);
-			}
-		}
-
-		// mow load it for me with no subsystems
-		sip->model_num_hud = model_load(sip->pof_file_hud);
-	}
-
-	if (VALID_FNAME(sip->generic_debris_pof_file)) {
-		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file);
-		if (sip->generic_debris_model_num >= 0) {
-			polymodel* pm = model_get(sip->generic_debris_model_num);
-			sip->generic_debris_num_submodels = pm->n_models;
-		}
-	}
 
 	polymodel *pm = model_get(sip->model_num);
 
-	ship_copy_subsystem_fixup(sip);
-	verify_ship_subsystems_linked(sip, "After ship_copy_subsystem_fixup in ship_create");
-
 	show_ship_subsys_count();
-
-	if ( sip->num_detail_levels != pm->n_detail_levels )
-	{
-		if ( !Is_standalone )
-		{
-			// just log to file for standalone servers
-			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-		}
-		else
-		{
-			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
-		}	
-	}		
-	for ( i=0; i<pm->n_detail_levels; i++ )
-		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
 	flagset<Object::Object_Flags> default_ship_object_flags;
 	default_ship_object_flags.set(Object::Object_Flags::Renders);
@@ -11252,22 +11324,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		sip->flags.set(Ship::Info_Flags::Path_fixup);
 	}
 
-	// this used to be done in parse_create_object_sub
-	if (!Fred_running)
-		ship_assign_sound(shipp);
-
-	// first try at ABtrails -Bobboau
-	ship_init_afterburners(shipp);
-
-	// call the contrail system
-	ct_ship_create(shipp);
-
 	animation::anim_set_initial_states(shipp);
 
-	// Add this ship to Ship_obj_list, if it is *not* the standalone ship.  That can cause big time bugs.
-	if (!standalone_ship){
-		shipp->ship_list_index = ship_obj_list_add(objnum);
-	}
+	ship_acquire_resources(shipp, !standalone_ship);
 
 	// Goober5000 - update the ship registry
 	// (since scripts and sexps can create ships, the entry may not yet exist)
@@ -11305,6 +11364,123 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	return objnum;
 }
 
+// --- checkpoints -----------------------------------------------------------------------------------------------------
+//
+// A ship is saved with its AI, its subsystems in list order, the pose of its model and the animations running on it.
+// When it is restored, the saved fields go back into its slots first; then the model instance and subsystems are
+// created again for its (possibly changed) class and the saved state is put on top of them.
+
+static void ship_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	auto shipp = &Ships[objp.instance];
+	checkpoint::save(w, *shipp);
+	checkpoint::save(w, Ai_info[shipp->ai_index]);
+
+	// subsystems are saved with their model subsystem's name and matched by it when loading
+	w.u32(static_cast<uint32_t>(ship_get_num_subsys(shipp)));
+	for (auto ss : list_range(&shipp->subsys_list)) {
+		checkpoint::save(w, SCP_string(ss->system_info != nullptr ? ss->system_info->subobj_name : ""));
+		checkpoint::save(w, *ss);
+	}
+
+	checkpoint::save(w, model_get_instance(shipp->model_instance_num));
+}
+
+static void ship_checkpoint_restore_as(checkpoint::Reader& r, object& objp, bool ghost)
+{
+	int objnum = OBJ_INDEX(&objp);
+	auto shipp = &Ships[objp.instance];
+	shipp->clear();
+	checkpoint::load(r, *shipp);
+
+	auto aip = &Ai_info[shipp->ai_index];
+	*aip = ai_info();
+	checkpoint::load(r, *aip);
+
+	auto sip = &Ship_info[shipp->ship_info_index];
+	ship_prepare_class(sip);
+	Interp_info[objnum].reset(sip->n_subsystems);
+	shipp->model_instance_num = model_create_instance(objnum, sip->model_num);
+
+	// the aggregate strengths are worked out once the saved subsystems are back
+	subsys_set(objnum, 1);
+	SCP_vector<ship_subsys*> current;
+	for (auto ss : list_range(&shipp->subsys_list))
+		current.push_back(ss);
+	SCP_vector<bool> matched(current.size(), false);
+	SCP_vector<int> positions;
+
+	auto subsys_count = r.u32();
+	for (uint32_t i = 0; i < subsys_count && !r.failed(); ++i) {
+		SCP_string name;
+		checkpoint::load(r, name);
+
+		// the first subsystem of that name not matched yet, so subsystems sharing a name keep their order
+		int position = -1;
+		for (size_t j = 0; j < current.size(); ++j) {
+			if (!matched[j] && current[j]->system_info != nullptr && !stricmp(current[j]->system_info->subobj_name, name.c_str())) {
+				position = static_cast<int>(j);
+				break;
+			}
+		}
+		positions.push_back(position);
+
+		if (position >= 0) {
+			matched[position] = true;
+			checkpoint::load(r, *current[position]);
+		} else {
+			mprintf(("Checkpoint: ship %s no longer has subsystem %s; its saved state is dropped\n", shipp->ship_name, name.c_str()));
+			// static, since fix-ups deferred while loading it may still write to it
+			static ship_subsys discard;
+			checkpoint::load(r, discard);
+		}
+	}
+	if (r.context() != nullptr)
+		r.context()->subsystem_positions[objnum] = std::move(positions);
+	ship_recalc_subsys_strength(shipp);
+	shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
+
+	animation::anim_set_initial_states(shipp, false);
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	checkpoint::load(r, pmi);
+
+	ship_set_warp_effects(&objp);
+
+	// the player's ship turns into a ghost when it blows up; it keeps its data, but no longer counts as a ship
+	if (ghost) {
+		ship_init_afterburners(shipp);
+		ct_ship_create(shipp);
+	} else {
+		ship_acquire_resources(shipp, true);
+	}
+}
+
+static void ship_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	ship_checkpoint_restore_as(r, objp, false);
+}
+
+static void ghost_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	ship_checkpoint_restore_as(r, objp, true);
+}
+
+static void ship_checkpoint_after_restore(object& objp)
+{
+	auto shipp = &Ships[objp.instance];
+
+	// warp effects are not saved, so warps that were under way complete right away; for the player, that also
+	// covers the stages of the warp out before the effect starts
+	bool player_warping_out = (&objp == Player_obj) && (Player->control_mode != PCM_NORMAL);
+	if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1] || shipp->flags[Ship::Ship_Flags::Arriving_stage_2])
+		shipfx_actually_warpin(shipp, &objp);
+	else if (shipp->flags[Ship::Ship_Flags::Depart_warp] || player_warping_out)
+		shipfx_actually_warpout(shipp, &objp);
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_SHIP, ship_checkpoint_save, ship_checkpoint_restore, ship_checkpoint_after_restore, nullptr, MAX_SHIPS);
+CHECKPOINT_OBJECT_TYPE(OBJ_GHOST, ship_checkpoint_save, ghost_checkpoint_restore, nullptr, nullptr, MAX_SHIPS);
+
 /**
  * Change the ship model for a ship to that for ship class 'ship_type'
  *
@@ -11313,7 +11489,6 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
  */
 static void ship_model_change(int n, int ship_type)
 {
-	int			i;
 	ship_info	*sip;
 	ship			*sp;
 	polymodel * pm;
@@ -11326,13 +11501,8 @@ static void ship_model_change(int n, int ship_type)
 	objp = &Objects[sp->objnum];
 	pmi = model_get_instance(sp->model_instance_num);
 
-	// get new model; as in ship_create(), load even if the class already has one, so that this ship holds
-	// its own reference and the model survives a UI preview releasing the one it loaded
-	sip->model_num = model_load(sip->pof_file, sip);
-
-	if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
-	}
+	// get the new class's models, as ship_create() does
+	ship_prepare_class(sip);
 
 	pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
@@ -11367,23 +11537,6 @@ static void ship_model_change(int n, int ship_type)
 			}
 		}
 	}
-
-	ship_copy_subsystem_fixup(sip);
-
-	if ( sip->num_detail_levels != pm->n_detail_levels )
-	{
-		if ( !Is_standalone )
-		{
-			// just log to file for standalone servers
-			Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
-		}
-		else
-		{
-			nprintf(("Warning",  "For ship '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
-		}
-	}	
-	for ( i=0; i<pm->n_detail_levels; i++ )
-		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
 	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
 		objp->shield_quadrant.resize(pm->shield_points.size());

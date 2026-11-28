@@ -18,6 +18,7 @@
 #include "ai/ai_profiles.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
+#include "iff_defs/iff_defs.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
@@ -28,6 +29,7 @@
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
 #include "ship/anchor_t.h"
+#include "ship/warp_params_ref.h"
 #include "stats/scoring.h"
 
 //WMC - This should be here
@@ -102,7 +104,7 @@ inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [
 }();
 
 // Goober5000
-struct support_ship_info
+struct support_ship_info	// @checkpoint fields
 {
 	ArrivalLocation     arrival_location;   // arrival location
 	anchor_t            arrival_anchor;     // arrival anchor
@@ -163,7 +165,7 @@ static const cutscene_type_data CutsceneMenuData[] = {
 };
 
 // defines a mission cutscene.
-typedef struct mission_cutscene {
+typedef struct mission_cutscene {	// @checkpoint fields
 	int type; 
 	char filename[MAX_FILENAME_LEN];
 	int formula;
@@ -175,7 +177,7 @@ typedef struct mission_default_custom_data {
 	SCP_string description;
 } mission_default_custom_data;
 
-typedef struct custom_string {
+typedef struct custom_string {	// @checkpoint fields
 	SCP_string name;
 	SCP_string value;
 	SCP_string text;
@@ -198,7 +200,7 @@ struct parse_object_flag_description {
 	const char *flag_desc;
 };
 
-typedef struct mission {
+typedef struct mission {	// @checkpoint fields
 	SCP_string	name;
 	SCP_string	author;
 	gameversion::version	required_fso_version;
@@ -216,7 +218,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
-	animation::ModelAnimationSet skybox_model_animations;
+	animation::ModelAnimationSet skybox_model_animations;	// @checkpoint skip: set from mission data when the mission is loaded
 	matrix	skybox_orientation;
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
@@ -241,7 +243,7 @@ typedef struct mission {
 	char substitute_briefing_music_name[NAME_LENGTH];
 
 	// Goober5000
-	int ai_profile_index;
+	int ai_profile_index;	// @checkpoint skip: may refer to the transient profile, which transient_ai_profile_checkpoint_apply() makes again
 	const ai_profile_t *ai_profile() const { return &Ai_profiles[ai_profile_index]; }
 
 	SCP_string lighting_profile_name;
@@ -278,7 +280,7 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 
 // enums for arrival locations.  The integer values of these enums should match their counterparts in the arrival location array
 #define	MAX_ARRIVAL_NAMES				9
-enum class ArrivalLocation : int
+enum class ArrivalLocation : int	// @checkpoint fields
 {
 	AT_LOCATION = 0,
 	NEAR_SHIP = 1,
@@ -293,7 +295,7 @@ enum class ArrivalLocation : int
 
 // enums for departure locations.  The integer values of these enums should match their counterparts in the departure location array
 #define MAX_DEPARTURE_NAMES			2
-enum class DepartureLocation : int
+enum class DepartureLocation : int	// @checkpoint fields
 {
 	AT_LOCATION = 0,
 	TO_DOCK_BAY = 1
@@ -427,12 +429,12 @@ struct alt_class {
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
 // be copied into the real object, ship, etc. structs
-class p_object
+class p_object	// @checkpoint fields
 {
 public:
 	char	name[NAME_LENGTH] = "";
 	SCP_string display_name;
-	p_object *next = nullptr, *prev = nullptr;
+	p_object *next = nullptr, *prev = nullptr;	// @checkpoint skip: list link, rebuilt when the element is linked in again
 
 	vec3d	pos = vmd_zero_vector;
 	matrix	orient = vmd_identity_matrix;
@@ -463,8 +465,8 @@ public:
 	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;
 
-	int warpin_params_index = -1;
-	int warpout_params_index = -1;
+	warp_params_ref warpin_params_index;
+	warp_params_ref warpout_params_index;
 
 	int	wingnum = -1;							// set to -1 if not in a wing -- Wing array index otherwise
 	int pos_in_wing = -1;						// Goober5000 - needed for FRED with the new way things work
@@ -477,7 +479,7 @@ public:
 	int	score = 0;
 	float assist_score_pct = 0.0f;					// percentage of the score which players who gain an assist will get when this ship is killed
 	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
-	util::reset_on_move<p_dock_instance *> dock_list;	// Goober5000 - parse objects this parse object is docked to
+	util::reset_on_move<p_dock_instance *> dock_list;	// Goober5000 - parse objects this parse object is docked to @checkpoint skip: parse-time docking, done when the mission is loaded
 	object *created_object = nullptr;					// Goober5000
 	int collision_group_id = 0;							// Goober5000
 	int	group = -1;								// group object is within or -1 if none.
@@ -514,10 +516,10 @@ public:
 	float max_shield_recharge = 0.0f;
 
 	// Goober5000
-	SCP_vector<texture_replace> replacement_textures;
+	SCP_vector<texture_replace> replacement_textures;	// @checkpoint skip: re-acquired after loading
 
 	SCP_vector<alt_class> alt_classes;	
-	SCP_map<std::pair<int, int>, int> alt_iff_color;
+	SCP_map<std::pair<int, int>, iff_color_ref> alt_iff_color;
 
 	~p_object();
 

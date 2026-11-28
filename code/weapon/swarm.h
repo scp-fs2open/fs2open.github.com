@@ -18,7 +18,7 @@ class object;
 class ship_subsys;
 struct weapon_info;
 
-typedef struct turret_swarm_info {
+typedef struct turret_swarm_info {	// @checkpoint fields
 	int				flags;
 	int				weapon_class;
 	int				num_to_launch;
@@ -34,7 +34,7 @@ typedef struct turret_swarm_info {
 	int				swp_sbank;
 } turret_swarm_info;
 
-struct swarm_info {
+struct swarm_info {	// @checkpoint fields
 	int		change_timestamp;
 	vec3d	current_target;
 	vec3d	offset;

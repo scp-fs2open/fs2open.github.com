@@ -11,6 +11,7 @@
 
 
 #include "asteroid/asteroid.h"
+#include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "freespace.h"	// for flFrametime
@@ -120,6 +121,34 @@ float Target_triangle_height[GR_NUM_RESOLUTIONS] = {
 // stuff for hotkey targeting lists
 htarget_list htarget_items[MAX_HOTKEY_TARGET_ITEMS];
 htarget_list htarget_free_list;
+
+// Hotkey assignments are saved as (object, how it was added) for each hotkey and assigned again once the objects are back.
+using hotkey_assignments = SCP_vector<SCP_vector<std::pair<int, int>>>;
+
+static hotkey_assignments hotkeys_checkpoint_capture()
+{
+	hotkey_assignments hotkeys(MAX_KEYED_TARGETS);
+	for (int k = 0; k < MAX_KEYED_TARGETS; ++k) {
+		for (auto item : list_range(&Players[Player_num].keyed_targets[k]))
+			hotkeys[k].emplace_back(OBJ_INDEX(item->objp), item->how_added);
+	}
+	return hotkeys;
+}
+
+static void hotkeys_checkpoint_apply(const hotkey_assignments& hotkeys)
+{
+	for (int k = 0; k < MAX_KEYED_TARGETS; ++k) {
+		hud_target_hotkey_clear(k);
+		if (k >= static_cast<int>(hotkeys.size()))
+			continue;
+		for (const auto& item : hotkeys[k]) {
+			if (item.first >= 0 && item.first < MAX_OBJECTS && Objects[item.first].type != OBJ_NONE)
+				hud_target_hotkey_add_remove(k, &Objects[item.first], item.second);
+		}
+	}
+}
+
+CHECKPOINT_STATE(hotkeys_checkpoint_capture, hotkeys_checkpoint_apply, AfterRestore);
 
 /*
 // coordinates and widths used to render the HUD afterburner energy gauge

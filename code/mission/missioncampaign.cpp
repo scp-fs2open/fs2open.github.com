@@ -24,6 +24,8 @@
 #include <glob.h>
 #endif
 
+#include "checkpoint/registry.h"
+#include "checkpoint/store.h"
 #include "freespace.h"
 #include "missioncampaign.h"
 #include "cfile/cfile.h"
@@ -85,6 +87,8 @@ const char *campaign_types[MAX_CAMPAIGN_TYPES] =
 // module-local sets of new ships/weapons granted to the player during the current mission
 static SCP_set<int> Granted_ships;
 static SCP_set<int> Granted_weapons;
+CHECKPOINT_GLOBAL(Granted_ships);
+CHECKPOINT_GLOBAL(Granted_weapons);
 
 // variables to control the UI stuff for loading campaigns
 LOCAL UI_WINDOW Campaign_window;
@@ -93,6 +97,9 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 
 // the campaign!!!!!
 campaign Campaign;
+
+// sexps choose the next mission during a mission; the rest of the campaign is committed when a mission ends
+CHECKPOINT_GLOBAL(Campaign.next_mission);
 
 
 /**
@@ -813,6 +820,8 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	}
+
+	checkpoint::store_delete_pilot_files(pilot_name);
 }
 
 /**

@@ -11,6 +11,7 @@
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
 #include "camera/photomode.h"
+#include "checkpoint/registry.h"
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
@@ -53,8 +54,22 @@ player	Players[MAX_PLAYERS];
 int		Player_num;
 player	*Player = NULL;
 
+static void player_checkpoint_save(checkpoint::Writer& w)
+{
+	checkpoint::save(w, *Player);
+}
+
+static void player_checkpoint_load(checkpoint::Reader& r)
+{
+	checkpoint::load(r, *Player);
+	Player->flags &= ~PLAYER_FLAGS_MSG_MODE;	// the comms menu isn't checkpointed; a mission starts with it closed
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS(player_checkpoint_save, player_checkpoint_load);
+
 // Goober5000
 bool	Player_use_ai = false;
+CHECKPOINT_GLOBAL(Player_use_ai);
 
 int		lua_game_control = 0;
 

@@ -11,6 +11,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
@@ -51,6 +52,8 @@ typedef struct escort_info
 } escort_info;
 
 static SCP_list<escort_info> Escort_ships;
+CHECKPOINT_LOCAL_RAW(escort_info);
+CHECKPOINT_GLOBAL(Escort_ships);
 int Max_escort_ships = 3;
 
 static int Last_target_index;	// index into Escort_gauges for last targeted via 'Next Escort Target' key

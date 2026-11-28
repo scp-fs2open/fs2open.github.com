@@ -11,6 +11,7 @@
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
 #include "cfile/cfile.h"
+#include "checkpoint/registry.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
@@ -38,28 +39,35 @@ extern int Cmdline_autopilot_interruptable;
 
 // Module variables
 bool AutoPilotEngaged;
+CHECKPOINT_GLOBAL(AutoPilotEngaged);
 bool UseCutsceneBars;
 bool LockWeaponsDuringAutopilot;
 int CurrentNav;
+CHECKPOINT_GLOBAL(CurrentNav);
 float ramp_bias;
+CHECKPOINT_GLOBAL(ramp_bias);
 NavPoint Navs[MAX_NAVPOINTS];
+CHECKPOINT_GLOBAL(Navs);
 NavMessage NavMsgs[NP_NUM_MESSAGES];
 int audio_handle;
 int NavLinkDistance;
 // time offsets for autonav events
 TIMESTAMP LockAPConv;
+CHECKPOINT_GLOBAL(LockAPConv);
 TIMESTAMP EndAPCinematic;
 TIMESTAMP MoveCamera;
 //float CameraSpeed;
 bool CinematicStarted, CameraMoving;
 vec3d cameraPos, cameraTarget;
 SCP_map<int,int> autopilot_wings;
+CHECKPOINT_GLOBAL(autopilot_wings);
 
 int AutopilotMinEnemyDistance;
 int AutopilotMinAsteroidDistance;
 
 // used for ramping time compression;
 int start_dist;
+CHECKPOINT_GLOBAL(start_dist);
 
 // ********************************************************************************************
 

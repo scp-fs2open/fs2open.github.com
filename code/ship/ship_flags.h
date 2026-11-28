@@ -5,7 +5,7 @@
 
 namespace Ship {
 
-	FLAG_LIST(Weapon_Flags){
+	FLAG_LIST(Weapon_Flags){	// @checkpoint fields
 		Beam_Free = 0,	// if this is a beam weapon, its free to fire
 		Turret_Lock,	// is this turret is free to fire or locked
 		Tagged_Only,	// only fire if target is tagged		
@@ -15,7 +15,7 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Subsystem_Flags) {
+	FLAG_LIST(Subsystem_Flags) {	// @checkpoint fields
 		Cargo_revealed = 0,
 		Untargetable,
 		No_SS_targeting,
@@ -49,7 +49,7 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Ship_Flags) {
+	FLAG_LIST(Ship_Flags) {	// @checkpoint fields
 		Ignore_count = 0,			// ignore this ship when counting ship types for goals
 		Reinforcement,				// this ship is a reinforcement ship
 		Escort,						// this ship is an escort ship
@@ -148,7 +148,7 @@ namespace Ship {
 
 	};
 
-	FLAG_LIST(Exit_Flags) {
+	FLAG_LIST(Exit_Flags) {	// @checkpoint fields
 		Destroyed = 0,
 		Departed,
 		Cargo_known,
@@ -273,7 +273,7 @@ namespace Ship {
 	// same_arrival_warp_when_docked, same_departure_warp_when_docked, no_dynamic, and nav_carry_status
     // The list of parseable flags is in missionparse.cpp
 	
-    FLAG_LIST(Wing_Flags) {
+    FLAG_LIST(Wing_Flags) {	// @checkpoint fields
 		Gone,					// all ships were either destroyed or departed
 		Departing,				// wing's departure cue turned true
 		Ignore_count,			// ignore all ships in this wing for goal counting purposes.
@@ -297,7 +297,7 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Subsys_Sound_Flags) {
+	FLAG_LIST(Subsys_Sound_Flags) {	// @checkpoint fields
 		Alive,
 		Dead,
 		Rotate,
@@ -306,7 +306,7 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Awacs_Warning_Flags) {
+	FLAG_LIST(Awacs_Warning_Flags) {	// @checkpoint fields
 		Warn_25,
 		Warn_75,
 

@@ -63,6 +63,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void setChainDelay(int delay);
 	bool getUseMsecs() const;
 	void setUseMsecs(bool useMsecs);
+	bool getNotCheckpointed() const;
+	void setNotCheckpointed(bool notCheckpointed);
 	int getEventScore() const;
 	void setEventScore(int score);
 	int getEventTeam() const;

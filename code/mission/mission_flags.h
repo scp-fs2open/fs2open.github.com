@@ -5,7 +5,7 @@
 
 namespace Mission {
 
-	FLAG_LIST(Mission_Flags) {
+	FLAG_LIST(Mission_Flags) {	// @checkpoint fields
 		Subspace,					// mission takes place in subspace
 		No_promotion,				// cannot get promoted or badges in this mission
 		Fullneb,					// mission is a full nebula mission
@@ -39,11 +39,12 @@ namespace Mission {
 		Large_ships_no_collide_by_default,	// Automatically puts all large ships in a shared collision group
 		Limited_support_rearm_pool, // Support ships can only rearm weapons while mission-level pool is available - MjnMixael
 		Has_transient_ai_profile,	// Runtime only: ai_profile_index refers to a per-mission copy that is removed on reset - Goober5000
+		Offer_checkpoints,			// At mission start and on death, offer the pilot's checkpoints of this mission
 
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Parse_Object_Flags) {
+	FLAG_LIST(Parse_Object_Flags) {	// @checkpoint fields
 		SF_Cargo_known,
 		SF_Ignore_count,
 		SF_Reinforcement,

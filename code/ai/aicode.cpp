@@ -25,6 +25,7 @@
 #include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
+#include "checkpoint/registry.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -283,7 +284,9 @@ const char *Skill_level_names(int level, int translate)
 #define	DELAY_TARGET_TIME	(12*1000)		//	time in milliseconds until a ship can target a new enemy after an order.
 
 pnode		Path_points[MAX_PATH_POINTS];
+CHECKPOINT_GLOBAL(Path_points);
 pnode		*Ppfp;			//	Free pointer in path points.
+CHECKPOINT_GLOBAL(Ppfp);
 
 float	AI_frametime;
 
@@ -307,6 +310,12 @@ typedef struct {
 
 static SCP_vector<huge_fire_info> Ai_huge_fire_info;
 
+// set by good-primary-time and good-secondary-time
+CHECKPOINT_LOCAL_RAW(primary_fire_info);
+CHECKPOINT_LOCAL_RAW(huge_fire_info);
+CHECKPOINT_GLOBAL(Preferred_primary_info);
+CHECKPOINT_GLOBAL(Ai_huge_fire_info);
+
 int Ai_last_arrive_path;	// index of ship_bay path used by last arrival from a fighter bay
 
 // forward declarations
@@ -320,6 +329,7 @@ void ai_cleanup_dock_mode_objective(object *objp);
 // The object that is declared to be the leader of the group formation for
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;
+CHECKPOINT_GLOBAL(Autopilot_flight_leader);
 
 static inline float ai_guard_threshold(const object* guarded_objp, float threshold, const ship* guarder_ship)
 {

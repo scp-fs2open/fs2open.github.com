@@ -1,4 +1,5 @@
 
+#include "checkpoint/registry.h"
 #include "post_processing.h"
 
 #include "graphics/grinternal.h"
@@ -261,6 +262,49 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 } // namespace graphics
 
 bool Lightshafts_override = false;
+CHECKPOINT_GLOBAL(Lightshafts_override);
+
+// Sexps change post effects and lightshafts, which mission loads don't reset.  The intensities and colors are saved by
+// effect name and set again through the renderer, so it updates which effects are active.
+// name, intensity and color
+using post_effect_checkpoint_entry = std::tuple<SCP_string, float, vec3d>;
+
+static void post_effects_checkpoint_save(checkpoint::Writer& w)
+{
+	SCP_vector<post_effect_checkpoint_entry> effects;
+	graphics::lightshaft_parameters lightshafts;
+	if (graphics::Post_processing_manager != nullptr) {
+		for (const auto& effect : graphics::Post_processing_manager->getPostEffects())
+			effects.emplace_back(effect.name, effect.intensity, effect.rgb);
+		lightshafts = graphics::Post_processing_manager->getLightshaftParams();
+	}
+	checkpoint::save(w, effects);
+	w.value(lightshafts);
+}
+
+static void post_effects_checkpoint_load(checkpoint::Reader& r)
+{
+	SCP_vector<post_effect_checkpoint_entry> effects;
+	graphics::lightshaft_parameters lightshafts;
+	checkpoint::load(r, effects);
+	r.value(lightshafts);
+	if (r.failed() || graphics::Post_processing_manager == nullptr)
+		return;
+
+	for (const auto& [name, intensity, rgb] : effects) {
+		for (const auto& effect : graphics::Post_processing_manager->getPostEffects()) {
+			if (stricmp(effect.name.c_str(), name.c_str()) == 0) {
+				// the renderer takes the value a sexp passes, from which it computes the intensity
+				auto value = fl2i((intensity - effect.add) * effect.div + 0.5f);
+				gr_post_process_set_effect(name.c_str(), value, &rgb);
+				break;
+			}
+		}
+	}
+	graphics::Post_processing_manager->getLightshaftParams() = lightshafts;
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS(post_effects_checkpoint_save, post_effects_checkpoint_load);
 
 bool gr_lightshafts_enabled()
 {

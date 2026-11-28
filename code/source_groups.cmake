@@ -124,6 +124,24 @@ add_file_folder("Cheats Table"
 	cheats_table/cheats_table.h
 )
 
+# Checkpoint files
+add_file_folder("Checkpoint"
+	checkpoint/access.h
+	checkpoint/checkpoint.cpp
+	checkpoint/checkpoint.h
+	checkpoint/checkpoint_fields.cpp
+	checkpoint/codec.h
+	checkpoint/fresh_state.cpp
+	checkpoint/fresh_state.h
+	checkpoint/prompt.cpp
+	checkpoint/prompt.h
+	checkpoint/registry.h
+	checkpoint/rules.h
+	checkpoint/codec_impl.h
+	checkpoint/store.cpp
+	checkpoint/store.h
+)
+
 # CFile files
 add_file_folder("CFile"
 	cfile/cfile.cpp
@@ -414,6 +432,7 @@ add_file_folder("GlobalIncs"
 	globalincs/safe_strings.cpp
 	globalincs/safe_strings.h
 	globalincs/scp_defines.h
+	globalincs/session_index.h
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
@@ -1435,6 +1454,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/bitops.h
 	scripting/api/libs/cfile.cpp
 	scripting/api/libs/cfile.h
+	scripting/api/libs/checkpoints.cpp
+	scripting/api/libs/checkpoints.h
 	scripting/api/libs/controls.cpp
 	scripting/api/libs/controls.h
 	scripting/api/libs/engine.cpp
@@ -1694,6 +1715,8 @@ add_file_folder("Ship"
 	ship/shipcontrails.h
 	ship/shipfx.cpp
 	ship/shipfx.h
+	ship/split_ship.h
+	ship/warp_params_ref.h
 	ship/shiphit.cpp
 	ship/shiphit.h
 	ship/subsysdamage.h

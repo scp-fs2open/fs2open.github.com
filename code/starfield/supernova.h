@@ -29,7 +29,7 @@ constexpr float SUPERNOVA_FADE_TO_WHITE_DURATION = 1.0f;				// fade to white ove
 constexpr float SUPERNOVA_SUN_SCALE = 3.0f;
 
 // stages for the supernova this mission
-enum class SUPERNOVA_STAGE : int
+enum class SUPERNOVA_STAGE : int	// @checkpoint fields
 {
 	NONE = 0,															// not active.
 	STARTED,															// player still in control. shockwave approaching.

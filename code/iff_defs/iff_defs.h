@@ -11,6 +11,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/session_index.h"
 #include "graphics/2d.h"
 #include "mission/mission_flags.h"
 
@@ -22,7 +23,7 @@ extern int IFF_COLOR_SELECTION;
 extern int IFF_COLOR_MESSAGE;
 extern int IFF_COLOR_TAGGED;
 
-enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
+enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };	// @checkpoint fields
 
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
@@ -33,7 +34,7 @@ enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
 #define MAX_IFF_FLAGS						5
 
 // Goober5000
-typedef struct iff_info {
+typedef struct iff_info {	// @checkpoint fields
 
 	// required stuff
 	char iff_name[NAME_LENGTH];
@@ -68,6 +69,14 @@ extern int radar_iff_color[5][2][4];
 // color stuff
 extern int iff_get_alpha_value(bool is_bright);
 extern int iff_init_color(int r, int g, int b);
+
+// An index into the IFF colors, which grow as tables and sexps add colors
+struct iff_color_ref : session_index {
+	using session_index::session_index;
+
+	std::tuple<int, int, int> checkpoint_key() const;
+	static iff_color_ref from_checkpoint_key(const std::tuple<int, int, int>& rgb);
+};
 
 // load the iff table
 extern void iff_init();

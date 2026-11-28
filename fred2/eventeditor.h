@@ -91,6 +91,7 @@ public:
 	int		m_chain_delay;
 	BOOL	m_chained;
 	BOOL	m_use_msecs;
+	BOOL	m_not_checkpointed;
 	CString	m_obj_text;
 	CString	m_obj_key_text;
 	CString	m_avi_filename;

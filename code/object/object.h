@@ -135,10 +135,10 @@ typedef struct raw_pof_obj {
 
 extern SCP_map<int, raw_pof_obj> Pof_objects;
 
-class object
+class object	// @checkpoint fields
 {
 public:
-	class object	*next, *prev;	// for linked lists of objects
+	class object	*next, *prev;	// for linked lists of objects @checkpoint skip: list link, rebuilt when the element is linked in again
 	int				signature;		// Every object ever has a unique signature...
 	char			type;			// what type of object this is... ship, weapon, debris, asteroid, fireball, see OBJ_* defines above
 	int				parent;			// This object's parent.
@@ -154,17 +154,17 @@ public:
 	SCP_vector<float>	shield_quadrant;	//	Shield is broken into components, quadrants by default.
 	float			hull_strength;	//	Remaining hull strength.
 	float			sim_hull_strength;	// Simulated hull strength - used with training weapons.
-	SCP_vector<int> objsnd_num;		// Index of persistant sound struct.
+	SCP_vector<int> objsnd_num;		// Index of persistant sound struct. @checkpoint skip: re-acquired after loading
 	ushort			net_signature;
 	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.
 
-	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
-	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
+	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to @checkpoint skip: saved by Extra<object> in checkpoint/rules.h
+	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead @checkpoint skip: saved by Extra<object> in checkpoint/rules.h
 
 	int				collision_group_id; // This is a bitfield. Collision checks will be skipped if A->collision_group_id & B->collision_group_id returns nonzero
 
-	util::event<void, object*> pre_move_event;
-	util::event<void, object*> post_move_event;
+	util::event<void, object*> pre_move_event;	// @checkpoint skip: Lua callbacks
+	util::event<void, object*> post_move_event;	// @checkpoint skip: Lua callbacks
 
 	void clear();
 
@@ -267,6 +267,9 @@ void obj_shutdown();
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
 int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient, const vec3d *pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential = true);
+
+// Claims a specific free object slot, for restoring checkpoints.  Returns false if the slot is in use.
+bool obj_allocate_at(int objnum);
 
 void obj_render(object* obj);
 

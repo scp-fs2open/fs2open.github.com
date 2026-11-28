@@ -11,17 +11,20 @@
 #define _SHIP_H
 
 #include "ai/ai.h"
+#include "checkpoint/access.h"
 #include "fireball/fireballs.h"
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"			// for color def
 #include "hud/hud.h"
 #include "hud/hudparse.h"
+#include "iff_defs/iff_defs.h"
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "ship/warp_params_ref.h"
 #include "species_defs/species_defs.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
@@ -80,7 +83,7 @@ enum class CycleDirection { NEXT, PREV };
 
 #define RF_IS_AVAILABLE			(1<<0)			// reinforcement is now available
 
-struct reinforcements {
+struct reinforcements {	// @checkpoint fields
 	char	name[NAME_LENGTH];	// ship or wing name (ship and wing names don't collide)
 	int	type;						// what operations this reinforcement unit can perform
 	int	uses;						// number of times reinforcemnt unit can be used
@@ -95,17 +98,17 @@ struct reinforcements {
 
 // Per-bank state for a weapon's external model - the model rendered at the bank's firing
 // points when the ship enables $Show Primary Models: / $Show Secondary Models:.
-struct external_weapon_state
+struct external_weapon_state	// @checkpoint fields
 {
-	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one
-	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked
+	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one @checkpoint skip: re-acquired after loading
+	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked @checkpoint skip: re-acquired after loading
 	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
 	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
 	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
 	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
 };
 
-class ship_weapon {
+class ship_weapon {	// @checkpoint fields
 public:
 	int num_primary_banks;					// Number of primary banks (same as model)
 	int num_secondary_banks;				// Number of secondary banks (same as model)
@@ -161,7 +164,7 @@ public:
 	int detonate_weapon_time;			//	time at which last fired weapon can be detonated
 	int ai_class;
 
-	int firing_loop_sounds[MAX_SHIP_PRIMARY_BANKS]; // objsnd indices, 
+	int firing_loop_sounds[MAX_SHIP_PRIMARY_BANKS]; // objsnd indices, @checkpoint skip: positions in the rebuilt object sound list; firing loops restart by themselves
 													// -2 is a special value used to mean 'a loop WOULD be going on right now' 
 													// but the modder did not actually specify a loop sound
 
@@ -325,7 +328,7 @@ typedef struct cockpit_display_info {
 } cockpit_display_info;
 
 // structure to keep track of ship locks
-typedef struct lock_info {
+typedef struct lock_info {	// @checkpoint fields
 	object *obj;
 	ship_subsys *subsys;
 
@@ -364,11 +367,11 @@ struct guard_range_entry {
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
-class ship_subsys
+class ship_subsys	// @checkpoint fields
 {
 public:
-	class ship_subsys *next, *prev;				//	Index of next and previous objects in list.
-	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
+	class ship_subsys *next, *prev;				//	Index of next and previous objects in list. @checkpoint skip: list link, rebuilt when the element is linked in again
+	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition @checkpoint skip: set up from table data when it is created
 
 	int			parent_objnum;						// objnum of the parent ship
 	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list -- Do not access manually, use parent_subsys_index() as this may not yet be cached.
@@ -622,6 +625,9 @@ private:
 	int _points_per_bank = 0;
 	T _value;
 	SCP_vector<T> _buffer;
+
+	template <typename, typename>
+	friend struct checkpoint::Rule;
 };
 
 struct ship_electrical_arc : electrical_arc
@@ -633,7 +639,7 @@ struct ship_electrical_arc : electrical_arc
 };
 
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
-class ship
+class ship	// @checkpoint fields
 {
 public:
 	int	objnum;
@@ -676,8 +682,8 @@ public:
 	std::unique_ptr<WarpEffect> warpin_effect;
 	std::unique_ptr<WarpEffect> warpout_effect;
 
-	int warpin_params_index;
-	int warpout_params_index;
+	warp_params_ref warpin_params_index;
+	warp_params_ref warpout_params_index;
 
 	int	next_fireball;
 
@@ -738,7 +744,7 @@ public:
 	// types of subsystems.  (i.e. the list might contain 3 engines.  There will be one subsys_info entry
 	// describing the state of all engines combined) -- MWA 4/1/97
 	ship_subsys_sentinel	subsys_list;						//	linked list of subsystems for this ship.
-	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
+	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list @checkpoint skip: lookup index into the subsystem list, rebuilt on demand
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
@@ -786,7 +792,7 @@ public:
 	int	group;								// group ship is in, or -1 if none.  Fred thing
 	SCP_string fred_layer = "Default";		// FRED view layer assignment
 	sound_handle death_roll_snd;            // id of death roll sound, may need to be stopped early
-	int	ship_list_index;					// index of ship in Ship_objs[] array
+	int	ship_list_index;					// index of ship in Ship_objs[] array @checkpoint skip: re-acquired after loading
 
 	int	thruster_bitmap;					// What frame the current thruster bitmap is at for this ship
 	float	thruster_frame;					// Used to keep track of which frame the animation should be on.
@@ -811,7 +817,7 @@ public:
 	int	subsys_disrupted_flags;					// bitflags used to check if SUBYSTEM_* is disrupted or not
 	int	subsys_disrupted_check_timestamp;	// timer to control how oftern flags are set/cleared in subsys_disrupted_flags
 
-	uint	create_time;						// time ship was created, set by gettime()
+	realtime_stamp	create_time;				// time ship was created, set by gettime()
 
 	// keep multiplayer specific stuff below this point	
 	int	ts_index;							// index into the team select and Wss_slots array (or -1 if not in one of those arrays)
@@ -849,7 +855,7 @@ public:
 	int special_warpout_objnum;
 
 	ship_subsys fighter_beam_turret_data;		//a fake subsystem that pretends to be a turret for fighter beams
-	model_subsystem beam_sys_info;
+	model_subsystem beam_sys_info;	// @checkpoint skip: set up from table data when it is created
 	int was_firing_last_frame[MAX_SHIP_PRIMARY_BANKS];
 
 	// Goober5000 - range of primitive sensors
@@ -894,7 +900,7 @@ public:
 
 	SCP_vector<alt_class> s_alt_classes;	
 
-	SCP_map<std::pair<int, int>, int> ship_iff_color;
+	SCP_map<std::pair<int, int>, iff_color_ref> ship_iff_color;
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
@@ -903,7 +909,7 @@ public:
 	int debris_damage_type_idx;
 	ushort debris_net_sig;						// net signiture of the first piece of debris this ship has
 
-	int model_instance_num;
+	int model_instance_num;	// @checkpoint skip: re-acquired after loading
 
 	fix time_created;
 
@@ -921,7 +927,7 @@ public:
 	float autoaim_fov;
 	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
-	int cockpit_model_instance;
+	int cockpit_model_instance;	// @checkpoint skip: re-acquired after loading
 
 	TIMESTAMP	multi_client_collision_timestamp;
 
@@ -990,7 +996,7 @@ ai_target_priority init_ai_target_priorities();
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
 
-typedef struct exited_ship {
+typedef struct exited_ship {	// @checkpoint fields
 	char	ship_name[NAME_LENGTH];
 	SCP_string display_name;
 	int		obj_signature;
@@ -1014,7 +1020,7 @@ extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
-enum class ShipStatus
+enum class ShipStatus	// @checkpoint fields
 {
 	// The ship_registry_entry hasn't been initialized yet
 	INVALID = 0,
@@ -1035,7 +1041,7 @@ enum class ShipStatus
 	EXITED
 };
 
-struct ship_registry_entry
+struct ship_registry_entry	// @checkpoint fields
 {
 	ShipStatus status = ShipStatus::INVALID;
 	char name[NAME_LENGTH] = { 0 };
@@ -1588,7 +1594,7 @@ public:
 	int radar_image_size;
 	float radar_projection_size_mult;
 
-	SCP_map<std::pair<int, int>, int> ship_iff_info;
+	SCP_map<std::pair<int, int>, iff_color_ref> ship_iff_info;
 
 	flagset<Object::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;
@@ -1682,7 +1688,7 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 
 
 //	Defines a wing of ships.
-typedef struct wing {
+typedef struct wing {	// @checkpoint fields
 	char	name[NAME_LENGTH];
 	SCP_string display_name;
 
@@ -1737,7 +1743,7 @@ typedef struct wing {
 	// it's specified for the wing rather than each individual ship to cut down on the amount
 	// of stuff that needs to be sitting in memory at once - each ship uses the wing texture;
 	// and it also makes practical sense: no wing has two different squadrons in it :)
-	int wing_insignia_texture;
+	int wing_insignia_texture;	// @checkpoint skip: re-acquired after loading
 
 	// if -1, retail formation, else a custom one defined in ships.tbl
 	int formation;
@@ -1771,7 +1777,7 @@ extern SCP_vector<reinforcements> Reinforcements;
 // of a particular type, and the number of times that a ship of that particular type has been
 // killed.  When changing any info here, be sure to update the ship_type_names array in Ship.cpp
 // the order of the types here MUST match the order of the types in the array
-typedef struct ship_counts {
+typedef struct ship_counts {	// @checkpoint fields
 	int	total;
 	int	killed;
 	ship_counts(){total=0;killed=0;}

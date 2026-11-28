@@ -9,6 +9,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "debugconsole/console.h"
 #include "freespace.h"	// for Missiontime
 #include "io/timer.h"
@@ -49,6 +50,9 @@ typedef struct cscrew_info {
 
 #define MAX_CORKSCREW_MISSILES	200
 cscrew_info	Corkscrew_missiles[MAX_CORKSCREW_MISSILES];
+
+CHECKPOINT_LOCAL_RAW(cscrew_info);
+CHECKPOINT_GLOBAL(Corkscrew_missiles);
 
 // ------------------------------------------------------------------
 // cscrew_level_init()

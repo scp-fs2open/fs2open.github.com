@@ -10,6 +10,7 @@
 
 
 #include "asteroid/asteroid.h"
+#include "checkpoint/registry.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"
 #include "freespace.h"
@@ -56,12 +57,16 @@ const float MEDIUM_DEBRIS_WEIGHT = 4.0f;
 const float LARGE_DEBRIS_WEIGHT = 1.0f;
 
 int	Asteroids_enabled = 1;
+CHECKPOINT_GLOBAL(Asteroids_enabled);
 int	Num_asteroids = 0;
 
 // Contains information for asteroid and debris objects for use in asteroid fields
 SCP_vector< asteroid_info > Asteroid_info;
+// sexps change the damage types of asteroid classes
+CHECKPOINT_TABLE_FIELD(Asteroid_info, damage_type_idx);
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
+CHECKPOINT_GLOBAL(Asteroid_field);
 
 
 static particle::ParticleEffectHandle 		Asteroid_impact_explosion_ani;
@@ -83,6 +88,8 @@ typedef struct asteroid_target {
 // if default throwing behavior is enabled, then this should always have at most 1 target or possibly none, determined the retail way
 // if not, then this is whatever number of mission-specified ships (after they arrive, list is sanitized when they exit)
 SCP_vector<asteroid_target> Asteroid_targets;
+CHECKPOINT_LOCAL_RAW(asteroid_target);
+CHECKPOINT_GLOBAL(Asteroid_targets);
 
 
 /**
@@ -301,6 +308,46 @@ int get_asteroid_subtype_index_by_name(const SCP_string &name, int asteroid_idx)
 /**
  * Create a single asteroid 
  */
+/**
+ * Acquires the runtime resources of an asteroid whose fields are set: its model instance and its entry in the asteroid
+ * list.  Used when an asteroid is created and when a checkpoint restores one.
+ */
+static void asteroid_acquire_resources(int asteroid_num)
+{
+	asteroid *asp = &Asteroids[asteroid_num];
+	auto model_num = Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
+
+	asp->model_instance_num = -1;
+	if (model_get(model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+		asp->model_instance_num = model_create_instance(asp->objnum, model_num);
+	}
+
+	// Add to Asteroid_used_list
+	asteroid_obj_list_add(asp->objnum);
+
+	Num_asteroids++;
+}
+
+static void asteroid_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	const asteroid *asp = &Asteroids[objp.instance];
+	checkpoint::save(w, *asp);
+	checkpoint::save(w, object_get_model_instance(&objp));
+}
+
+static void asteroid_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	asteroid *asp = &Asteroids[objp.instance];
+	*asp = asteroid();
+	checkpoint::load(r, *asp);
+	asteroid_load(asp->asteroid_type, asp->asteroid_subtype);
+	asteroid_acquire_resources(objp.instance);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_ASTEROID, asteroid_checkpoint_save, asteroid_checkpoint_restore, nullptr, nullptr, MAX_ASTEROIDS);
+
 object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility)
 {
 	int				n, objnum;
@@ -413,22 +460,13 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	}
 
 	asp->objnum = objnum;
-	asp->model_instance_num = -1;
-
-	if (model_get(asip->subtypes[asteroid_subtype].model_number)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
-		asp->model_instance_num = model_create_instance(objnum, asip->subtypes[asteroid_subtype].model_number);
-	}
-
-	// Add to Asteroid_used_list
-	asteroid_obj_list_add(objnum);
+	asteroid_acquire_resources(n);
 
 	objp = &Objects[objnum];
 
 	if ( Game_mode & GM_MULTIPLAYER ){
 		objp->net_signature = signature;
 	}
-
-	Num_asteroids++;
 
 	if (radius < 1.0) {
 		radius = 1.0f;

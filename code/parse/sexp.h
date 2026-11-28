@@ -249,6 +249,7 @@ enum : int {
 	CHANGE_SUBCATEGORY_SPECIAL_EFFECTS,
 	CHANGE_SUBCATEGORY_VARIABLES,
 	CHANGE_SUBCATEGORY_CONTAINERS,
+	CHANGE_SUBCATEGORY_CHECKPOINTS,
 	CHANGE_SUBCATEGORY_OTHER,
 	STATUS_SUBCATEGORY_MISSION,
 	STATUS_SUBCATEGORY_CUTSCENES,
@@ -942,6 +943,15 @@ enum : int {
 	OP_NEBULA_SET_RANGE,	// Goober5000
 	OP_SET_SQUADRON_WINGS,	// Goober5000
 	OP_SET_LIGHTSHAFTS_OVERRIDE,	// Dustinspace217
+	OP_SAVESTATE_SAVE,
+	OP_SAVESTATE_LOAD,
+	OP_SAVESTATE_SHIPSTATUS,
+	OP_SAVESTATE_GETINDEX,
+	OP_SAVESTATE_CHECK,
+	OP_SAVESTATE_ASSIST,
+	OP_SAVESTATE_CLEAR,
+	OP_SAVESTATE_GET_NEXT_FREE_INDEX,
+	OP_SAVESTATE_SET_NAME,
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -1392,10 +1402,10 @@ struct sexp_cached_data
 	}
 };
 
-struct sexp_node
+struct sexp_node	// @checkpoint fields
 {
 	char	text[TOKEN_LENGTH];
-	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
+	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator) @checkpoint skip: looked up from the node text again; operator indices change as operators are added
 	int	type;						// atom, list, or not used
 	int	subtype;					// type of atom or list?
 	int	first;					// if first parameter is sexp, index into Sexp_nodes
@@ -1423,7 +1433,7 @@ struct sexp_node
 #define SNF_VARIABLE_TYPE_MISMATCH	(1<<10)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
-typedef struct sexp_variable {
+typedef struct sexp_variable {	// @checkpoint fields
 	int		type;
 	char	text[TOKEN_LENGTH];
 	char	variable_name[TOKEN_LENGTH];
@@ -1450,6 +1460,18 @@ extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
 extern bool Assume_event_is_current;
+// Set once savestate-load has requested a load: the remaining actions of the event are skipped.  Cleared by whoever
+// started the evaluation (mission_process_event, run_sexp).
+extern bool Sexp_actions_stopped;
+
+// Runs the actions of an event whose operator is when or every-time, without evaluating its condition.  Used to run the
+// event that loaded a checkpoint again once the checkpoint is loaded.
+void sexp_replay_event_actions(int event);
+
+// Persistent nodes (campaign formulas) are set aside while a mission is parsed, so the mission's nodes are where they
+// would be without them; checkpoints rely on that.  Nothing in the game may use them in between.
+void sexp_nodes_set_aside_persistent();
+void sexp_nodes_put_back_persistent();
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;
@@ -1469,6 +1491,9 @@ extern int find_free_sexp();
 extern int free_one_sexp(int num);
 extern int free_sexp(int num, int calling_node = -1);
 extern int free_sexp2(int num, int calling_node = -1);
+// Parses an argument list, "( a b ... )" as written by convert_sexp_to_string, into new nodes; returns the first one, or
+// -1 for an empty list.  The nodes are freed with free_sexp2.
+extern int parse_sexp_argument_list(const char* text);
 extern int dup_sexp_chain(int node);
 extern int cmp_sexp_chains(int node1, int node2);
 extern int find_sexp_list(int num);

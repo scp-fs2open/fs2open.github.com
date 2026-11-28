@@ -79,7 +79,7 @@
 // having the opportunity to skip it
 #define PLAYER_MISSION_FAILURE_LIMIT		5
 
-class player
+class player	// @checkpoint fields
 {
 public:
 	void reset();
@@ -87,21 +87,21 @@ public:
 	friend bool operator==(const player& lhs, const player& rhs);
 	friend bool operator!=(const player& lhs, const player& rhs);
 
-	char				callsign[CALLSIGN_LEN + 1];
-	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels
-	int				short_callsign_width;					// useful for mutliplayer chat boxes.
+	char				callsign[CALLSIGN_LEN + 1];	// @checkpoint skip: belongs to the pilot, not the mission
+	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels @checkpoint skip: belongs to the pilot, not the mission
+	int				short_callsign_width;					// useful for mutliplayer chat boxes. @checkpoint skip: belongs to the pilot, not the mission
 
-	char				image_filename[MAX_FILENAME_LEN+1];	// filename of the image for this pilot
-	char				s_squad_filename[MAX_FILENAME_LEN+1];	// filename of the squad image for this pilot
-	char				s_squad_name[NAME_LENGTH + 1];			// pilot's squadron name
-	char				m_squad_filename[MAX_FILENAME_LEN+1];	// filename of the squad image for this pilot (multiplayer)
-	char				m_squad_name[NAME_LENGTH + 1];			// pilot's squadron name (multiplayer)
+	char				image_filename[MAX_FILENAME_LEN+1];	// filename of the image for this pilot @checkpoint skip: belongs to the pilot, not the mission
+	char				s_squad_filename[MAX_FILENAME_LEN+1];	// filename of the squad image for this pilot @checkpoint skip: belongs to the pilot, not the mission
+	char				s_squad_name[NAME_LENGTH + 1];			// pilot's squadron name @checkpoint skip: belongs to the pilot, not the mission
+	char				m_squad_filename[MAX_FILENAME_LEN+1];	// filename of the squad image for this pilot (multiplayer) @checkpoint skip: belongs to the pilot, not the mission
+	char				m_squad_name[NAME_LENGTH + 1];			// pilot's squadron name (multiplayer) @checkpoint skip: belongs to the pilot, not the mission
 
-	char				current_campaign[MAX_FILENAME_LEN+1]; // Name of the currently active campaign, or zero-length string if none
-	int				readyroom_listing_mode;
+	char				current_campaign[MAX_FILENAME_LEN+1]; // Name of the currently active campaign, or zero-length string if none @checkpoint skip: belongs to the pilot, not the mission
+	int				readyroom_listing_mode;	// @checkpoint skip: belongs to the pilot, not the mission
 
 	int				flags;
-	int				save_flags;
+	int				save_flags;	// @checkpoint skip: belongs to the pilot, not the mission
 
 	htarget_list	keyed_targets[MAX_KEYED_TARGETS];	// linked list of hot-keyed targets
 	int				current_hotkey_set;						// currently hotkey set in use, -1 if none
@@ -118,7 +118,7 @@ public:
 	float				lock_time_to_target;						// time left (in milliseconds) before minimum time to lock elapsed
 	float				lock_dist_to_target;						//	distance from lock indicator to target (in pixels)
 
-	int				last_ship_flown_si_index;				// ship info index of ship most recently flown on a mission
+	int				last_ship_flown_si_index;				// ship info index of ship most recently flown on a mission @checkpoint skip: belongs to the pilot, not the mission
 
 	int				objnum;										// object number for this player
 	button_info		bi;												// structure that holds bit vectors for button presses
@@ -186,36 +186,36 @@ public:
 	int				update_dumbfire_time;					// when to update dumbfire threat indicators
 	int				update_lock_time;							// when to update lock threat indicators
 	int				threat_flags;								// threat flags
-	int				auto_advance;								// auto-advance through briefing?
+	int				auto_advance;								// auto-advance through briefing? @checkpoint skip: belongs to the pilot, not the mission
 
-	multi_local_options m_local_options;					// options for local player in multiplayer mode (ignore for single player pilots)
-	multi_server_options m_server_options;					// options for netgame host/server in multiplayer mode
+	multi_local_options m_local_options;					// options for local player in multiplayer mode (ignore for single player pilots) @checkpoint skip: belongs to the pilot, not the mission
+	multi_server_options m_server_options;					// options for netgame host/server in multiplayer mode @checkpoint skip: belongs to the pilot, not the mission
 
-	int				insignia_texture;							// player's insignia bitmap (or -1 if none). should correspond to squad filename
+	int				insignia_texture;							// player's insignia bitmap (or -1 if none). should correspond to squad filename @checkpoint skip: belongs to the pilot, not the mission
 																		// NOTE : this bitmap is in TEXTURE format. do not try to use this bitmap to 
 																		//			 render in screen format
-	int				tips;											// show tips or not
+	int				tips;											// show tips or not @checkpoint skip: belongs to the pilot, not the mission
 
 	int				shield_penalty_stamp;					// timestamp for when we can next apply a shield balance penalty
 
-	int				failures_this_session;					// number of times dude has failed the mission he is on this session
-	ubyte				show_skip_popup;							// false if dude clicked "don't show this again" -- persists for current mission only
+	int				failures_this_session;					// number of times dude has failed the mission he is on this session @checkpoint skip: belongs to the pilot, not the mission
+	ubyte				show_skip_popup;							// false if dude clicked "don't show this again" -- persists for current mission only @checkpoint skip: belongs to the pilot, not the mission
 
 	// player-persistent variables - Goober5000
-	SCP_vector<sexp_variable>	variables;
+	SCP_vector<sexp_variable>	variables;	// @checkpoint skip: belongs to the pilot, not the mission
 
 	// player-persistent containers - jg18
-	SCP_vector<sexp_container>	containers;
+	SCP_vector<sexp_container>	containers;	// @checkpoint skip: belongs to the pilot, not the mission
 
 	SCP_string		death_message;								// Goober5000
 
-	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
-	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls).
-	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
+	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls). @checkpoint skip: copy of the controls for scripts, refreshed every frame
+	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls). @checkpoint skip: copy of the controls for scripts, refreshed every frame
+	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed @checkpoint skip: copy of the controls for scripts, refreshed every frame
 
-	int		player_was_multi;		// 1 if the player file was last used in Multiplayer
+	int		player_was_multi;		// 1 if the player file was last used in Multiplayer @checkpoint skip: belongs to the pilot, not the mission
 
-	char			language[LCL_LANG_NAME_LEN+1];    // language the pilot was created with
+	char			language[LCL_LANG_NAME_LEN+1];    // language the pilot was created with @checkpoint skip: belongs to the pilot, not the mission
 };
 
 extern player Players[MAX_PLAYERS];

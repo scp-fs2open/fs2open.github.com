@@ -12,11 +12,13 @@
 #include "globalincs/pstypes.h"
 #include "mission/missiongoals.h"
 #include "parse/generic_log.h"
+#include "checkpoint/registry.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
 #include "utils/Random.h"
 
 static SCP_vector<sexp_container> Sexp_containers;
+CHECKPOINT_GLOBAL(Sexp_containers);
 
 
 const SCP_vector<sexp_container> &get_all_sexp_containers()

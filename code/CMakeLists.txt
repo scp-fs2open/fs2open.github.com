@@ -126,6 +126,12 @@ include(shaders.cmake)
 
 target_embed_files(code FILES ${default_files_files} RELATIVE_TO "def_files")
 
+target_checkpoint_fields(code OUTPUT checkpoint_fields.inc)
+# the generated field lists instantiate the codec for every struct, which exceeds the COFF section limit
+if(MSVC)
+	set_source_files_properties(checkpoint/checkpoint_fields.cpp PROPERTIES COMPILE_OPTIONS /bigobj)
+endif()
+
 handle_embedded_files(code)
 
 set_precompiled_header(code "${CMAKE_CURRENT_SOURCE_DIR}/prefix_header.h")

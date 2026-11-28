@@ -20,11 +20,13 @@
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "gamesnd/eventmusic.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "graphics/light.h"
 #include "graphics/post_processing.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
@@ -104,18 +106,29 @@ int Total_initially_docked;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 mission	The_mission;
+CHECKPOINT_GLOBAL(The_mission);
+
+// sexps can change the ambient light, which is kept in the mission and applied to the renderer
+static void mission_checkpoint_apply_ambient_light()
+{
+	auto level = The_mission.ambient_light_level;
+	gr_set_ambient_light(level & 0xff, (level >> 8) & 0xff, (level >> 16) & 0xff);
+}
+CHECKPOINT_AFTER_GLOBALS(mission_checkpoint_apply_ambient_light);
 char Mission_filename[80];
 
 int Mission_palette;  // index into Nebula_palette_filenames[] of palette file to use for mission
 int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
+CHECKPOINT_GLOBAL(Num_cargo);
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
 int Num_parse_goals;
 int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
+CHECKPOINT_GLOBAL(Entry_delay_time);
 
 int Num_unknown_ship_classes;
 int Num_unknown_prop_classes;
@@ -131,11 +144,15 @@ SCP_vector<mission_default_custom_data> Default_custom_data;
 
 // alternate ship type names
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Mission_alt_types);
 int Mission_alt_type_count = 0;
+CHECKPOINT_GLOBAL(Mission_alt_type_count);
 
 // callsigns
 char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Mission_callsigns);
 int Mission_callsign_count = 0;
+CHECKPOINT_GLOBAL(Mission_callsign_count);
 
 #define SHIP_WARP_TIME 5.0f		// how many seconds it takes for ship to warp in
 
@@ -144,9 +161,35 @@ int Mission_callsign_count = 0;
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 p_object Ship_arrival_list;	// for linked list of ships to arrive later
 
+// Which parse objects are waiting to arrive depends on many things, so checkpoints save the list itself, as indexes.
+// The parse objects are restored with the other globals, so the list is linked again afterwards.
+static SCP_vector<int> ship_arrival_list_checkpoint_capture()
+{
+	SCP_vector<int> indexes;
+	for (auto p_objp : list_range(&Ship_arrival_list))
+		indexes.push_back(POBJ_INDEX(p_objp));
+	return indexes;
+}
+
+static void ship_arrival_list_checkpoint_apply(const SCP_vector<int>& indexes)
+{
+	// The links aren't saved, so parse objects keep the ones from the reloaded mission; those that arrived before the
+	// checkpoint would otherwise still count as on the list (see parse_object_on_arrival_list).
+	for (auto& p_obj : Parse_objects)
+		p_obj.next = p_obj.prev = nullptr;
+	list_init(&Ship_arrival_list);
+	for (int index : indexes) {
+		if (SCP_vector_inbounds(Parse_objects, index))
+			list_append(&Ship_arrival_list, &Parse_objects[index]);
+	}
+}
+
+CHECKPOINT_STATE(ship_arrival_list_checkpoint_capture, ship_arrival_list_checkpoint_apply, AfterGlobals);
+
 // all the ships that we parse
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 SCP_vector<p_object> Parse_objects;
+CHECKPOINT_GLOBAL(Parse_objects);
 
 // all the props that we parse
 SCP_vector<parsed_prop> Parse_props;
@@ -155,9 +198,13 @@ SCP_vector<parsed_prop> Parse_props;
 // list for arriving support ship
 // coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 p_object	Support_ship_pobj;
+CHECKPOINT_GLOBAL(Support_ship_pobj);
 p_object *Arriving_support_ship;
+CHECKPOINT_GLOBAL(Arriving_support_ship);
 char Arriving_repair_targets[MAX_AI_GOALS][NAME_LENGTH];
+CHECKPOINT_GLOBAL(Arriving_repair_targets);
 int Num_arriving_repair_targets;
+CHECKPOINT_GLOBAL(Num_arriving_repair_targets);
 
 #define MIN_SUBSYS_STATUS_SIZE		25
 subsys_status *Subsys_status = NULL;
@@ -276,6 +323,8 @@ const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 
 char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
+// set-cargo adds names during a mission; Cargo_names points into the buffer
+CHECKPOINT_GLOBAL(Cargo_names_buf);
 
 const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
@@ -429,7 +478,8 @@ flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[] = {
 	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false},
 	{"Large Ships Do Not Collide By Default",    Mission::Mission_Flags::Large_ships_no_collide_by_default, true, false},
 	{"Limit Support Rearm to Mission Pool",       Mission::Mission_Flags::Limited_support_rearm_pool, true, true},
-	{"Has Transient AI Profile",                  Mission::Mission_Flags::Has_transient_ai_profile,   false, false}
+	{"Has Transient AI Profile",                  Mission::Mission_Flags::Has_transient_ai_profile,   false, false},
+	{"Offer Checkpoints",                         Mission::Mission_Flags::Offer_checkpoints,          true, false}
 };
 
 parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[] = {
@@ -466,6 +516,7 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 	{Mission::Mission_Flags::Large_ships_no_collide_by_default, "Automatically places all large ships in the configured collision group, preventing large ships from colliding with each other"},
 	{Mission::Mission_Flags::Limited_support_rearm_pool, "Support ships can only rearm from the mission weapon pool"},
 	{Mission::Mission_Flags::Has_transient_ai_profile,   "The mission is using a temporary copy of its AI profile"},
+	{Mission::Mission_Flags::Offer_checkpoints, "When the mission starts, and in the death popup, the pilot is offered their checkpoints of this mission (savestate-save) to continue from.  Nothing is shown if there are none"},
 };
 
 const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
@@ -741,6 +792,7 @@ const size_t Num_parse_prop_flag_descriptions = sizeof(Parse_prop_flag_descripti
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
 	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
+	{ "not checkpointed", MEF_NOT_CHECKPOINTED, 0 },
 };
 int Num_mission_event_flags = sizeof(Mission_event_flags) / sizeof(flag_def_list);
 
@@ -766,6 +818,7 @@ matrix Parse_viewer_orient;
 int Loading_screen_bm_index=-1;
 
 fix Mission_end_time;
+CHECKPOINT_GLOBAL(Mission_end_time);
 
 // calculates a "unique" file signature as a ushort (checksum) and an int (file length)
 // the amount of The_mission we're going to checksum
@@ -779,16 +832,24 @@ fix Mission_end_time;
 #define ARRIVAL_MESSAGE_DELAY_MAX		3000
 
 static int Allow_arrival_music_timestamp;
+CHECKPOINT_GLOBAL(Allow_arrival_music_timestamp);
 static int Allow_arrival_message_timestamp;
+CHECKPOINT_GLOBAL(Allow_arrival_message_timestamp);
 static int Arrival_message_delay_timestamp;
+CHECKPOINT_GLOBAL(Arrival_message_delay_timestamp);
 static int Arrival_message_subject;
+CHECKPOINT_GLOBAL(Arrival_message_subject);
 
 static int Allow_backup_message_timestamp;
+CHECKPOINT_GLOBAL(Allow_backup_message_timestamp);
 
 // multi TvT
 static int Allow_arrival_music_timestamp_m[2];
+CHECKPOINT_GLOBAL(Allow_arrival_music_timestamp_m);
 static int Allow_arrival_message_timestamp_m[2];
+CHECKPOINT_GLOBAL(Allow_arrival_message_timestamp_m);
 static int Arrival_message_delay_timestamp_m[2];
+CHECKPOINT_GLOBAL(Arrival_message_delay_timestamp_m);
 
 // local prototypes
 void parse_player_info2(mission *pm);
@@ -7307,6 +7368,37 @@ ai_profile_t *mission_get_transient_ai_profile()
 	return &Ai_profiles[The_mission.ai_profile_index];
 }
 
+// The transient profile is removed when the mission is reloaded for a checkpoint load, while the restored mission flags
+// still claim it; it is made again from the profile the reloaded mission uses, with the caps sexps had given it.
+using transient_ai_profile_caps = std::array<std::array<float, NUM_SKILL_LEVELS>, 3>;
+
+static std::optional<transient_ai_profile_caps> transient_ai_profile_checkpoint_capture()
+{
+	if (!The_mission.flags[Mission::Mission_Flags::Has_transient_ai_profile])
+		return std::nullopt;
+
+	const auto& profile = Ai_profiles[The_mission.ai_profile_index];
+	transient_ai_profile_caps caps;
+	std::copy(std::begin(profile.beam_friendly_damage_cap), std::end(profile.beam_friendly_damage_cap), caps[0].begin());
+	std::copy(std::begin(profile.weapon_friendly_damage_cap), std::end(profile.weapon_friendly_damage_cap), caps[1].begin());
+	std::copy(std::begin(profile.weapon_self_damage_cap), std::end(profile.weapon_self_damage_cap), caps[2].begin());
+	return caps;
+}
+
+static void transient_ai_profile_checkpoint_apply(const std::optional<transient_ai_profile_caps>& caps)
+{
+	The_mission.flags.remove(Mission::Mission_Flags::Has_transient_ai_profile);
+	if (!caps)
+		return;
+
+	auto profile = mission_get_transient_ai_profile();
+	std::copy((*caps)[0].begin(), (*caps)[0].end(), std::begin(profile->beam_friendly_damage_cap));
+	std::copy((*caps)[1].begin(), (*caps)[1].end(), std::begin(profile->weapon_friendly_damage_cap));
+	std::copy((*caps)[2].begin(), (*caps)[2].end(), std::begin(profile->weapon_self_damage_cap));
+}
+
+CHECKPOINT_STATE(transient_ai_profile_checkpoint_capture, transient_ai_profile_checkpoint_apply, AfterGlobals);
+
 void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags)
 {
 	for (const auto &parse_mission_flag : Parse_mission_flags)
@@ -7363,6 +7455,7 @@ void mission_init(mission *pm, bool quick_init)
 	if (quick_init)
 		return;
 
+	sexp_nodes_set_aside_persistent();	// put back by parse_main()
 	init_sexp();
 	mission_goals_and_events_init();
 
@@ -7504,6 +7597,7 @@ bool parse_main(const char *mission_name, int flags)
 	} while (0);
 
 	Parsing_mission = false;
+	sexp_nodes_put_back_persistent();
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);

@@ -5,7 +5,7 @@
 
 namespace Prop {
 
-FLAG_LIST(Prop_Flags){
+FLAG_LIST(Prop_Flags){	// @checkpoint fields
 	Glowmaps_disabled,                      // No glowmaps for this weapon instance
 	Draw_as_wireframe,                      // Render wireframe for this weapon instance
 	Render_full_detail,                     // Render full detail for this weapon instance

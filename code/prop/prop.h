@@ -25,12 +25,12 @@ typedef struct prop_info {
 	SCP_vector<custom_string> custom_strings;                   // Custom strings for this prop
 } prop_info;
 
-typedef struct prop {
+typedef struct prop {	// @checkpoint fields
 	char prop_name[NAME_LENGTH];
 	int objnum;
 	int prop_info_index;
-	int model_instance_num;
-	uint create_time;                     // time prop was created, set by gettime()
+	int model_instance_num;	// @checkpoint skip: re-acquired after loading
+	realtime_stamp create_time;           // time prop was created, set by gettime()
 	fix time_created;
 	float alpha_mult;
 	SCP_string fred_layer = "Default";

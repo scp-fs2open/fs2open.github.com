@@ -10,6 +10,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
@@ -175,16 +176,21 @@ int Event_index = -1;  // used by sexp code to tell what event it came from
 bool Log_event = false;
 bool Snapshot_all_events = false;
 TIMESTAMP Mission_goal_timestamp;
+CHECKPOINT_GLOBAL(Mission_goal_timestamp);
 
 SCP_vector<mission_event> Mission_events;
+CHECKPOINT_GLOBAL(Mission_events);
 SCP_vector<mission_goal> Mission_goals;		// structure for the goals of this mission
+CHECKPOINT_GLOBAL(Mission_goals);
 static goal_text Goal_text;
 
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
 
 static TIMESTAMP Mission_directive_sound_timestamp;		// timestamp to control when directive succcess sound gets played
+CHECKPOINT_GLOBAL(Mission_directive_sound_timestamp);
 static TIMESTAMP Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
+CHECKPOINT_GLOBAL(Mission_directive_special_timestamp);
 
 const char *Goal_type_text(int n)
 {
@@ -871,6 +877,8 @@ void mission_event_set_completion_sound_timestamp()
 	Mission_directive_sound_timestamp = _timestamp(DIRECTIVE_SOUND_DELAY);
 }
 
+static bool mission_event_apply_result(int event, int result, int sindex);
+
 // function which evaluates and processes the given event
 void mission_process_event( int event )
 {
@@ -879,8 +887,8 @@ void mission_process_event( int event )
 	int store_count = Mission_events[event].count;
 
 	int result, sindex;
-	bool bump_timestamp = false; 
 	Log_event = false;
+	Sexp_actions_stopped = false;
 
 	Directive_count = 0;
 	Event_index = event;
@@ -1002,8 +1010,30 @@ void mission_process_event( int event )
 	}
 
 	Log_event = false;
+	Sexp_actions_stopped = false;
 
 	Event_index = -1;
+	if (mission_event_apply_result(event, result, sindex))
+		return;
+
+	// see if anything has changed
+	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+		send_event_update_packet(event);
+	}
+}
+
+void mission_event_set_fired(int event)
+{
+	Mission_events[event].flags |= MEF_CURRENT;
+	mission_event_apply_result(event, 1, -1);
+}
+
+// Records the result of evaluating an event: timestamps, repeat and trigger counts, completion and score.  Returns true
+// if the event became known false, which has already been sent to multiplayer clients.
+static bool mission_event_apply_result(int event, int result, int sindex)
+{
+	bool bump_timestamp = false;
+
 	Mission_events[event].result = result;
 
 	// if the sexpression is known false, then no need to evaluate anymore
@@ -1020,7 +1050,7 @@ void mission_process_event( int event )
 		if (MULTIPLAYER_MASTER) {
 			send_event_update_packet(event);
 		}
-		return;
+		return true;
 	}
 
 	if (result && !Mission_events[event].satisfied_time.isValid()) {
@@ -1074,10 +1104,7 @@ void mission_process_event( int event )
 		}
 	}
 
-	// see if anything has changed	
-	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
-		send_event_update_packet(event);
-	}
+	return false;
 }
 
 // Maybe play a directive success sound... need to poll since the sound is delayed from when

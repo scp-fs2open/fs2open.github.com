@@ -7,6 +7,7 @@
  *
  */
 
+#include "checkpoint/registry.h"
 #include "mission/missionmessage.h"
 
 #include "anim/animplay.h"
@@ -51,6 +52,7 @@ float Command_announces_enemy_arrival_chance = 0.25;
 #define DEFAULT_MOOD 0
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
+CHECKPOINT_GLOBAL(Current_mission_mood);
 
 builtin_message::builtin_message(const char* _name, int _occurrence_chance, int _max_count, int _min_delay, int _priority, int _timing, int _fallback, bool _used_strdup)
 	: name(_name), occurrence_chance(_occurrence_chance), max_count(_max_count), min_delay(_min_delay), priority(_priority), timing(_timing), fallback(_fallback), used_strdup(_used_strdup)
@@ -2696,6 +2698,56 @@ void message_pagein_mission_messages()
 
 // ---------------------------------------------------
 // Add and remove messages - used by autopilot code now, but useful elswhere
+
+// Scripts add and change mission messages.  The mission reload brings back the mission's own messages, so the ones after
+// the built-in messages are saved with what scripts can change, and messages a script added are created again.
+// name, text, persona, team, avi and wave file names
+using message_checkpoint_entry = std::tuple<SCP_string, SCP_string, int, int, SCP_string, SCP_string>;
+
+static void messages_checkpoint_save(checkpoint::Writer& w)
+{
+	SCP_vector<message_checkpoint_entry> entries;
+	for (int i = Num_builtin_messages; i < Num_messages; ++i) {
+		const auto& msg = Messages[i];
+		SCP_string avi = SCP_vector_inbounds(Message_avis, msg.avi_info.index) ? Message_avis[msg.avi_info.index].name : "";
+		SCP_string wave = SCP_vector_inbounds(Message_waves, msg.wave_info.index) ? Message_waves[msg.wave_info.index].name : "";
+		entries.emplace_back(msg.name, msg.message, msg.persona_index, msg.multi_team, avi, wave);
+	}
+	checkpoint::save(w, entries);
+}
+
+static void messages_checkpoint_load(checkpoint::Reader& r)
+{
+	SCP_vector<message_checkpoint_entry> entries;
+	checkpoint::load(r, entries);
+	if (r.failed())
+		return;
+
+	for (size_t i = 0; i < entries.size(); ++i) {
+		const auto& [name, text, persona_index, multi_team, avi, wave] = entries[i];
+		auto index = Num_builtin_messages + static_cast<int>(i);
+
+		// a message the reload doesn't have at this place was added by a script
+		if (index >= static_cast<int>(Messages.size()))
+			Messages.emplace_back();
+		else if (stricmp(Messages[index].name, name.c_str()) != 0)
+			Messages[index] = MissionMessage();
+
+		auto& msg = Messages[index];
+		strcpy_s(msg.name, name.c_str());
+		strcpy_s(msg.message, text.c_str());
+		msg.persona_index = persona_index;
+		msg.multi_team = multi_team;
+		// media lists grow as messages need files, so the files are found or added by name
+		SCP_string avi_name = avi;
+		msg.avi_info.index = avi_name.empty() ? -1 : add_avi(avi_name.data());
+		msg.wave_info.index = wave.empty() ? -1 : add_wave(wave.c_str());
+	}
+	Messages.resize(Num_builtin_messages + entries.size());
+	Num_messages = static_cast<int>(Messages.size());
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS(messages_checkpoint_save, messages_checkpoint_load);
 
 bool add_message(const char* name, const char* message, int persona_index, int multi_team)
 {

@@ -27,6 +27,8 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "checkpoint/checkpoint.h"
+#include "checkpoint/registry.h"
 #include "camera/photomode.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
@@ -792,6 +794,15 @@ SCP_vector<sexp_oper> Operators = {
 	{ "config-field-targets",			OP_CONFIG_FIELD_TARGETS,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-lightshafts-override",		OP_SET_LIGHTSHAFTS_OVERRIDE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Dustinspace217
+	{ "savestate-save",					OP_SAVESTATE_SAVE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "savestate-load",					OP_SAVESTATE_LOAD,						1,	1,			SEXP_ACTION_OPERATOR,	},
+	{ "savestate-shipstatus",			OP_SAVESTATE_SHIPSTATUS,				1,	2,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "savestate-getindex",				OP_SAVESTATE_GETINDEX,					0,	0,			SEXP_INTEGER_OPERATOR,	},
+	{ "savestate-check",				OP_SAVESTATE_CHECK,						0,	2,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "savestate-assist",				OP_SAVESTATE_ASSIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "savestate-clear",				OP_SAVESTATE_CLEAR,						0,	1,			SEXP_ACTION_OPERATOR,	},
+	{ "savestate-get-next-free-index",	OP_SAVESTATE_GET_NEXT_FREE_INDEX,		0,	0,			SEXP_INTEGER_OPERATOR,	},
+	{ "savestate-set-name",				OP_SAVESTATE_SET_NAME,					1,	1,			SEXP_ACTION_OPERATOR,	},
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -1024,6 +1035,7 @@ const char *Skybox_flags[] = {
 int	Directive_count;
 int	Sexp_useful_number = 1;  // a variable to pass useful info in from external modules
 bool Assume_event_is_current = true;
+bool Sexp_actions_stopped = false;
 int	Locked_sexp_true = -1;
 int	Locked_sexp_false = -1;
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
@@ -1037,6 +1049,7 @@ int Num_sexp_nodes = 0;
 sexp_node *Sexp_nodes = nullptr;
 
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
+CHECKPOINT_GLOBAL(Sexp_variables);
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
 int Num_special_expl_blocks;
@@ -1050,6 +1063,7 @@ static int Fade_out_b = 0;
 
 // for is-true-for-duration
 SCP_vector<fix> Sexp_is_true_for_duration_times;
+CHECKPOINT_GLOBAL(Sexp_is_true_for_duration_times);
 
 // for play-music - Goober5000
 SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
@@ -1345,6 +1359,123 @@ static void sexp_nodes_close()
 		Num_sexp_nodes = 0;
 	}
 }
+
+// Checkpoints save the whole node array: the mission's sexps keep their evaluation state there, and nodes may have
+// been allocated or freed during the mission.
+static void sexp_nodes_checkpoint_save(checkpoint::Writer& w)
+{
+	w.u32(static_cast<uint32_t>(Num_sexp_nodes));
+	for (int i = 0; i < Num_sexp_nodes; i++)
+		checkpoint::save(w, Sexp_nodes[i]);
+}
+
+static void sexp_nodes_grow(int count)
+{
+	int old_size = Num_sexp_nodes;
+	Num_sexp_nodes = count;
+	Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
+	Verify(Sexp_nodes != nullptr);
+	for (int i = old_size; i < Num_sexp_nodes; i++)
+		new (&Sexp_nodes[i]) sexp_node();
+}
+
+// Persistent nodes (the campaign's formulas) are set aside while a mission is loaded, so the mission's nodes are in the
+// same places whatever campaign is loaded, which checkpoints rely on.
+using persistent_sexp_nodes = SCP_vector<std::pair<int, sexp_node>>;
+static persistent_sexp_nodes Persistent_nodes_set_aside;
+static int Locked_sexps_set_aside[2] = {-1, -1};
+
+static persistent_sexp_nodes sexp_nodes_take_persistent()
+{
+	persistent_sexp_nodes persistent;
+	for (int i = 0; i < Num_sexp_nodes; i++) {
+		if (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT) {
+			clear_cache(i);
+			persistent.emplace_back(i, std::move(Sexp_nodes[i]));
+			Sexp_nodes[i].type = SEXP_NOT_USED;
+		}
+	}
+	return persistent;
+}
+
+// Puts persistent nodes into unused nodes, keeping their index where it is free, and updates the references to them.
+// moved can map other nodes they refer to.
+static void sexp_nodes_put_back_persistent(persistent_sexp_nodes& persistent, SCP_unordered_map<int, int> moved)
+{
+	int free_node = 0;
+	for (auto& [old_index, node] : persistent) {
+		int index = old_index;
+		if (index >= Num_sexp_nodes || Sexp_nodes[index].type != SEXP_NOT_USED) {
+			while (free_node < Num_sexp_nodes && Sexp_nodes[free_node].type != SEXP_NOT_USED)
+				++free_node;
+			if (free_node == Num_sexp_nodes)
+				sexp_nodes_grow(Num_sexp_nodes + SEXP_NODE_INCREMENT);
+			index = free_node;
+		}
+		Sexp_nodes[index] = std::move(node);
+		moved[old_index] = index;
+	}
+
+	auto remap = [&moved](int n) {
+		auto it = moved.find(n);
+		return (it == moved.end()) ? n : it->second;
+	};
+	for (const auto& entry : persistent) {
+		auto& node = Sexp_nodes[moved[entry.first]];
+		node.first = remap(node.first);
+		node.rest = remap(node.rest);
+	}
+	for (int i = 0; i < Campaign.num_missions; i++) {
+		Campaign.missions[i].formula = remap(Campaign.missions[i].formula);
+		Campaign.missions[i].mission_loop_formula = remap(Campaign.missions[i].mission_loop_formula);
+	}
+	persistent.clear();
+}
+
+void sexp_nodes_set_aside_persistent()
+{
+	if (Fred_running)
+		return;
+	Persistent_nodes_set_aside = sexp_nodes_take_persistent();
+	Locked_sexps_set_aside[0] = Locked_sexp_true;
+	Locked_sexps_set_aside[1] = Locked_sexp_false;
+}
+
+void sexp_nodes_put_back_persistent()
+{
+	// campaign formulas may be one of the locked nodes, which are made again for the mission
+	SCP_unordered_map<int, int> moved;
+	if (Locked_sexps_set_aside[0] >= 0)
+		moved[Locked_sexps_set_aside[0]] = Locked_sexp_true;
+	if (Locked_sexps_set_aside[1] >= 0)
+		moved[Locked_sexps_set_aside[1]] = Locked_sexp_false;
+	Locked_sexps_set_aside[0] = Locked_sexps_set_aside[1] = -1;
+	sexp_nodes_put_back_persistent(Persistent_nodes_set_aside, std::move(moved));
+}
+
+// The checkpoint's persistent nodes belong to the session that saved it; this session's are kept.
+static void sexp_nodes_checkpoint_load(checkpoint::Reader& r)
+{
+	auto persistent = sexp_nodes_take_persistent();
+
+	auto count = static_cast<int>(r.u32());
+	if (count > Num_sexp_nodes)
+		sexp_nodes_grow(count);
+
+	for (int i = 0; i < Num_sexp_nodes; i++) {
+		// cached lookups belong to what the node held before
+		clear_cache(i);
+		Sexp_nodes[i].op_index = NO_OPERATOR_INDEX_DEFINED;
+		if (i < count)
+			checkpoint::load(r, Sexp_nodes[i]);
+		if (i >= count || (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT))
+			Sexp_nodes[i].type = SEXP_NOT_USED;
+	}
+
+	sexp_nodes_put_back_persistent(persistent, {});
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS(sexp_nodes_checkpoint_save, sexp_nodes_checkpoint_load);
 
 // done at the beginning of each mission
 void init_sexp()
@@ -10875,13 +11006,16 @@ void eval_when_for_each_special_argument( int cur_node )
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		eval_sexp(cur_node);
-		
+
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
 
-		// remove the argument 
-		Sexp_replacement_arguments.pop_back(); 
+		// remove the argument
+		Sexp_replacement_arguments.pop_back();
+
+		if (Sexp_actions_stopped)
+			break;
 
 		// continue along argument list
 		ptr = ptr->get_next();
@@ -10905,8 +11039,12 @@ void do_action_for_each_special_argument( int cur_node )
 		// (since these are all actions, they don't return any meaningful values)
 		eval_sexp(cur_node);
 
-		// remove the argument 
-		Sexp_replacement_arguments.pop_back(); 
+		// remove the argument
+		Sexp_replacement_arguments.pop_back();
+
+		if (Sexp_actions_stopped)
+			break;
+
 		// continue along argument list
 		ptr = ptr->get_next();
 	}
@@ -11028,10 +11166,10 @@ void eval_when_do_one_exp(int exp)
 				break; 
 			}
 
-			do_node = CDR(exp); 
-			while (do_node != -1) {
-				do_action_for_each_special_argument(do_node); 
-				do_node = CDR(do_node); 
+			do_node = CDR(exp);
+			while (do_node != -1 && !Sexp_actions_stopped) {
+				do_action_for_each_special_argument(do_node);
+				do_node = CDR(do_node);
 			}
 			break;
 
@@ -11070,21 +11208,21 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 	// loop through all the supplied arguments
 	ptr = Sexp_applicable_argument_list.get_next();
 
-	while (ptr != nullptr)
-	{	
+	while (ptr != nullptr && !Sexp_actions_stopped)
+	{
 		// acquire argument to be used
 		Sexp_replacement_arguments.emplace_back(ptr->text, ptr->node);
-		actions = all_actions; 
+		actions = all_actions;
 
-		while (actions != -1)
-		{	
-			exp = CAR(actions);	
+		while (actions != -1 && !Sexp_actions_stopped)
+		{
+			exp = CAR(actions);
 
 			op_num = get_operator_const(exp);
 
 			if (op_num == OP_DO_FOR_VALID_ARGUMENTS) {
-				int do_node = CDR(exp); 
-				while (do_node != -1) {
+				int do_node = CDR(exp);
+				while (do_node != -1 && !Sexp_actions_stopped) {
 					eval_sexp(do_node); 
 					do_node = CDR(do_node); 
 				}
@@ -11211,7 +11349,7 @@ int eval_perform_actions(int n, int op_num)
 		// perform all the actions in the rest of the sexp
 		// (Since we are technically inside a boolean condition already, no special argument handling is needed.  The special argument, if any,
 		// will have been provided by a higher level of nesting.)
-		while (actions != -1)
+		while (actions != -1 && !Sexp_actions_stopped)
 		{
 			// get the operator
 			int exp = CAR(actions);
@@ -11308,10 +11446,10 @@ int eval_when(int n, int when_op_num)
 				eval_when_do_all_exp(actions, when_op_num);
 			}
 		}
-		// without the mod.tbl setting (or if there are no arguments in this SEXP) we loop 
+		// without the mod.tbl setting (or if there are no arguments in this SEXP) we loop
 		// through every action performing them for all arguments
 		else {
-			while (actions != -1)
+			while (actions != -1 && !Sexp_actions_stopped)
 			{
 				// get the operator
 				exp = CAR(actions);
@@ -11334,7 +11472,7 @@ int eval_when(int n, int when_op_num)
 		actions = CDR(actions);
 
 		// loop through every action
-		while (actions != -1)
+		while (actions != -1 && !Sexp_actions_stopped)
 		{
 			// get the operator
 			int exp = CAR(actions);
@@ -11400,7 +11538,7 @@ int eval_cond(int n)
 
 			val = SEXP_FALSE;
 			actions = CDR(node);
-			while (actions >= 0)
+			while (actions >= 0 && !Sexp_actions_stopped)
 			{
 				exp = CAR(actions);
 				if (exp >= -1)
@@ -13791,6 +13929,7 @@ void multi_sexp_hud_set_max_targeting_range()
 /* Make sure that the Sexp_hud_display_* get added to the game_state
 transitions in freespace.cpp (game_enter_state()). */
 int Sexp_hud_display_warpout = 0;
+CHECKPOINT_GLOBAL(Sexp_hud_display_warpout);
 
 void sexp_hud_display_gauge(int n)
 {
@@ -27978,6 +28117,122 @@ void sexp_set_lightshafts_override(int node)
 	Lightshafts_override = is_sexp_true(node);
 }
 
+// Checkpoints.  The operators follow SaveLoadX's lua-savestate-* ones; see checkpoint/checkpoint.h.
+void sexp_savestate_save(int node)
+{
+	bool is_nan, is_nan_forever;
+	int index = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	SCP_vector<SCP_string> excluded;
+	for (int n = CDR(node); n >= 0; n = CDR(n))
+		excluded.emplace_back(CTEXT(n));
+	checkpoint::request_save(index, std::move(excluded));
+}
+
+void sexp_savestate_load(int node)
+{
+	// the event that loaded the checkpoint is run again once the checkpoint is loaded, and doesn't load a second time
+	if (checkpoint::is_replaying_event())
+		return;
+
+	bool is_nan, is_nan_forever;
+	int index = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	int replay_event = -1;
+	if (Event_index >= 0 && (Mission_events[Event_index].flags & MEF_NOT_CHECKPOINTED)) {
+		int op = get_operator_const(Mission_events[Event_index].formula);
+		if (op == OP_WHEN || op == OP_EVERY_TIME)
+			replay_event = Event_index;
+		else
+			Warning(LOCATION, "Event \"%s\" loads a checkpoint and is flagged \"not checkpointed\", but only such events whose "
+				"operator is when or every-time are run again after the load.", Mission_events[Event_index].name.c_str());
+	}
+
+	if (checkpoint::request_load(index, replay_event))
+		Sexp_actions_stopped = true;
+}
+
+void sexp_replay_event_actions(int event)
+{
+	int formula = Mission_events[event].formula;
+	int op = get_operator_const(formula);
+	if (op != OP_WHEN && op != OP_EVERY_TIME)
+		return;
+
+	int saved_event_index = Event_index;
+	Event_index = event;
+	Sexp_actions_stopped = false;
+
+	// the actions of a when or every-time follow its condition
+	for (int actions = CDDR(formula); actions != -1 && !Sexp_actions_stopped; actions = CDR(actions)) {
+		int exp = CAR(actions);
+		if (exp != -1)
+			eval_when_do_one_exp(exp);
+	}
+
+	Sexp_actions_stopped = false;
+	Event_index = saved_event_index;
+}
+
+int sexp_savestate_shipstatus(int node)
+{
+	auto name = CTEXT(node);
+	int index = 0;
+	if (CDR(node) >= 0) {
+		bool is_nan, is_nan_forever;
+		index = eval_num(CDR(node), is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return SEXP_FALSE;
+	}
+	return checkpoint::ship_status(name, index) ? SEXP_TRUE : SEXP_FALSE;
+}
+
+int sexp_savestate_check(int node)
+{
+	if (node < 0)
+		return checkpoint::has_slot(-1) ? SEXP_TRUE : SEXP_FALSE;
+
+	bool is_nan, is_nan_forever;
+	int index = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return SEXP_FALSE;
+	const char* mission_name = (CDR(node) >= 0) ? CTEXT(CDR(node)) : nullptr;
+	return checkpoint::has_slot(index, mission_name) ? SEXP_TRUE : SEXP_FALSE;
+}
+
+void sexp_savestate_assist(int node)
+{
+	bool is_nan, is_nan_forever;
+	int min_hull = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	node = CDR(node);
+	int min_ammo = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	SCP_vector<SCP_string> ships;
+	for (int n = CDR(node); n >= 0; n = CDR(n))
+		ships.emplace_back(CTEXT(n));
+	checkpoint::assist(i2fl(min_hull), i2fl(min_ammo), ships);
+}
+
+void sexp_savestate_clear(int node)
+{
+	int index = -1;
+	if (node >= 0) {
+		bool is_nan, is_nan_forever;
+		index = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+	}
+	checkpoint::clear_slot(index);
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  * NOTE: this can return SUBSYSTEM_ALL which is not in the normal range of subsystem types
@@ -30188,6 +30443,47 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_lightshafts_override(node);
 				break;
 
+			case OP_SAVESTATE_SAVE:
+				sexp_val = SEXP_TRUE;
+				sexp_savestate_save(node);
+				break;
+
+			case OP_SAVESTATE_LOAD:
+				sexp_val = SEXP_TRUE;
+				sexp_savestate_load(node);
+				break;
+
+			case OP_SAVESTATE_ASSIST:
+				sexp_val = SEXP_TRUE;
+				sexp_savestate_assist(node);
+				break;
+
+			case OP_SAVESTATE_CLEAR:
+				sexp_val = SEXP_TRUE;
+				sexp_savestate_clear(node);
+				break;
+
+			case OP_SAVESTATE_SET_NAME:
+				sexp_val = SEXP_TRUE;
+				checkpoint::set_pending_name(CTEXT(node));
+				break;
+
+			case OP_SAVESTATE_SHIPSTATUS:
+				sexp_val = sexp_savestate_shipstatus(node);
+				break;
+
+			case OP_SAVESTATE_CHECK:
+				sexp_val = sexp_savestate_check(node);
+				break;
+
+			case OP_SAVESTATE_GETINDEX:
+				sexp_val = checkpoint::loaded_index();
+				break;
+
+			case OP_SAVESTATE_GET_NEXT_FREE_INDEX:
+				sexp_val = checkpoint::next_free_slot();
+				break;
+
 			case OP_WEAPON_RECHARGE_PCT:
 			case OP_SHIELD_RECHARGE_PCT:
 			case OP_ENGINE_RECHARGE_PCT:
@@ -31265,6 +31561,23 @@ int get_sexp_main()
 	return start_node;
 }
 
+int parse_sexp_argument_list(const char* text)
+{
+	char* oldMp = Mp;
+	SCP_string buf = text;
+	Mp = buf.data();
+
+	int node = -1;
+	ignore_white_space();
+	if (*Mp == '(') {
+		Mp++;
+		node = get_sexp();
+	}
+
+	Mp = oldMp;
+	return node;
+}
+
 int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)
 {
 	char* oldMp = Mp;
@@ -31312,6 +31625,9 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	}
 
 	Mp = oldMp;
+	// inside an event, a load requested here also ends that event; mission_process_event clears the flag then
+	if (Event_index < 0)
+		Sexp_actions_stopped = false;
 
 	return sexp_val;
 }
@@ -31636,6 +31952,8 @@ int query_operator_return_type(int op)
 		case OP_LIST_HAS_DATA:
 		case OP_MAP_HAS_KEY:
 		case OP_MAP_HAS_DATA_ITEM:
+		case OP_SAVESTATE_SHIPSTATUS:
+		case OP_SAVESTATE_CHECK:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -31738,6 +32056,8 @@ int query_operator_return_type(int op)
 		case OP_TURRET_GET_SECONDARY_AMMO:
 		case OP_GET_POWER_OUTPUT:
 		case OP_GET_SUPERNOVA_STAGE:
+		case OP_SAVESTATE_GETINDEX:
+		case OP_SAVESTATE_GET_NEXT_FREE_INDEX:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -32126,6 +32446,11 @@ int query_operator_return_type(int op)
 		case OP_CALL_SSM_STRIKE:
 		case OP_OVERRIDE_MOTION_DEBRIS:
 		case OP_SET_LIGHTSHAFTS_OVERRIDE:
+		case OP_SAVESTATE_SAVE:
+		case OP_SAVESTATE_LOAD:
+		case OP_SAVESTATE_ASSIST:
+		case OP_SAVESTATE_CLEAR:
+		case OP_SAVESTATE_SET_NAME:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
 		case OP_TURRET_SET_FORCED_TARGET:
@@ -35027,6 +35352,26 @@ int query_operator_argument_type(int op_index, int argnum)
 		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 			return OPF_BOOL;
 
+		case OP_SAVESTATE_SAVE:
+			// ships, wings, variables and containers share one list of names, as in SaveLoadX
+			return (argnum == 0) ? OPF_POSITIVE : OPF_ANYTHING;
+
+		case OP_SAVESTATE_LOAD:
+		case OP_SAVESTATE_CLEAR:
+			return OPF_POSITIVE;
+
+		case OP_SAVESTATE_SET_NAME:
+			return OPF_STRING;
+
+		case OP_SAVESTATE_SHIPSTATUS:
+			return (argnum == 0) ? OPF_SHIP_WING : OPF_POSITIVE;
+
+		case OP_SAVESTATE_CHECK:
+			return (argnum == 0) ? OPF_POSITIVE : OPF_STRING;
+
+		case OP_SAVESTATE_ASSIST:
+			return (argnum < 2) ? OPF_POSITIVE : OPF_SHIP;
+
 		case OP_REPLACE_TEXTURE:
 			if (argnum == 0 || argnum == 1)
 				return OPF_STRING;
@@ -36750,6 +37095,7 @@ int category_of_subcategory(int subcategory_id)
 		case CHANGE_SUBCATEGORY_SPECIAL_EFFECTS:
 		case CHANGE_SUBCATEGORY_VARIABLES:
 		case CHANGE_SUBCATEGORY_CONTAINERS:
+		case CHANGE_SUBCATEGORY_CHECKPOINTS:
 		case CHANGE_SUBCATEGORY_OTHER:
 			return OP_CATEGORY_CHANGE;
 
@@ -37334,6 +37680,15 @@ int get_category(int op_id)
 		case OP_CALL_SSM_STRIKE:
 		case OP_OVERRIDE_MOTION_DEBRIS:
 		case OP_SET_LIGHTSHAFTS_OVERRIDE:
+		case OP_SAVESTATE_SAVE:
+		case OP_SAVESTATE_LOAD:
+		case OP_SAVESTATE_SHIPSTATUS:
+		case OP_SAVESTATE_GETINDEX:
+		case OP_SAVESTATE_CHECK:
+		case OP_SAVESTATE_ASSIST:
+		case OP_SAVESTATE_CLEAR:
+		case OP_SAVESTATE_GET_NEXT_FREE_INDEX:
+		case OP_SAVESTATE_SET_NAME:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_SCRIPT_EVAL_STRING:
@@ -37831,6 +38186,17 @@ int get_subcategory(int op_id)
 		case OP_SUPERNOVA_STOP:
 		case OP_OVERRIDE_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
+
+		case OP_SAVESTATE_SAVE:
+		case OP_SAVESTATE_LOAD:
+		case OP_SAVESTATE_SHIPSTATUS:
+		case OP_SAVESTATE_GETINDEX:
+		case OP_SAVESTATE_CHECK:
+		case OP_SAVESTATE_ASSIST:
+		case OP_SAVESTATE_CLEAR:
+		case OP_SAVESTATE_GET_NEXT_FREE_INDEX:
+		case OP_SAVESTATE_SET_NAME:
+			return CHANGE_SUBCATEGORY_CHECKPOINTS;
 
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SKYBOX_ORIENT:
@@ -42605,6 +42971,146 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tBoolean: True will disable lightshafts, False restores the player's setting.\r\n"
 	},
 
+	{ OP_SAVESTATE_SAVE, "savestate-save\r\n"
+		"\tSaves a checkpoint of the mission under the given index.  Checkpoints are stored per pilot and mission, and a "
+		"checkpoint already stored under that index is replaced.  A checkpoint holds the complete state of the mission: all "
+		"ships (including support ships), wings, weapons, events, goals, variables, messages, music, background and more.  "
+		"It is saved at the end of the current frame.\r\n\r\n"
+		"Names given after the index are excluded: when the checkpoint is loaded, they are put back to their mission-start "
+		"state instead.  Ships, wings, variables and containers share this list.  An excluded ship that was present at "
+		"mission start is created again as at mission start; one that arrives later waits for its arrival cue again.  "
+		"Excluding a ship that is part of a wing resets the whole wing, and excluding a ship docked to others at mission "
+		"start resets the whole docked group.  The player's ship and wing can't be excluded.\r\n\r\n"
+		"An excluded ship destroyed or departed before saving comes back with no record of having left (operators like "
+		"is-destroyed treat it as never destroyed), but the mission log still lists its departure.\r\n\r\n"
+		"With the mission flag \"Offer Checkpoints\", the game offers the pilot's checkpoints of the mission by itself: once "
+		"the player has entered the mission, and through a \"Load Checkpoint\" button in the death popup (not in red alert "
+		"missions, which use that button for the previous mission).  The offer lists \"Start from beginning\" and the "
+		"checkpoints with the lowest indexes, up to five, under the names given with savestate-set-name, and is skipped "
+		"if there are none.  It isn't shown in a mission loaded from a checkpoint.\r\n\r\n"
+		"Differences from SaveLoadX's lua-savestate-save: everything is saved, not only ships and variables.  Events about "
+		"excluded ships keep their saved state (an excluded ship destroyed before saving comes back, while the event that saw "
+		"it destroyed stays true); flag such events \"not checkpointed\" in the event editor to reset them as well.  "
+		"Listing a wing's ships in addition to the wing is not needed.  A ship that is dying when the checkpoint is saved "
+		"(e.g. in its death roll) is still dying when it is loaded and is then destroyed, whereas SaveLoadX saved it as "
+		"alive.  See savestate-load for migrating a mission from SaveLoadX.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tIndex to save the checkpoint under.  Use savestate-get-next-free-index to avoid replacing a checkpoint.\r\n"
+		"\tRest:\t(optional) Names of ships, wings, variables or containers to exclude.\r\n"
+	},
+
+	{ OP_SAVESTATE_LOAD, "savestate-load\r\n"
+		"\tLoads the checkpoint saved under the given index in this mission.  The mission is loaded again and put into the "
+		"saved state at the end of the current frame.  If there is no such checkpoint, nothing happens and the event goes on "
+		"with its next action.\r\n\r\n"
+		"Once a load is requested, the rest of the event is skipped: no action after this one runs, at any nesting level.  "
+		"What happens to the event after the load depends on its \"not checkpointed\" flag:\r\n"
+		"\t- Not flagged: the event has the state it had when the checkpoint was saved, like every other checkpointed "
+		"event.  The actions after savestate-load never run.\r\n"
+		"\t- Flagged \"not checkpointed\": once the checkpoint is loaded, the event runs all of its actions again on the "
+		"loaded mission, without evaluating its condition and skipping this savestate-load, and then counts as having fired "
+		"(it is true, and one repetition is used up).  Actions before savestate-load therefore run twice: once before the "
+		"mission is reloaded, where their effect is lost (except savestate-assist, which is meant for this), and once after.  "
+		"This only works for events whose operator is when or every-time; other flagged events (e.g. when-argument) behave as "
+		"if not flagged, with a warning.  It runs after the On Checkpoint Load scripting hook.\r\n\r\n"
+		"Pitfall: an event like \"when savestate-check 1, savestate-load 1\" that hasn't fired yet when the checkpoint is "
+		"saved is restored as not fired, fires right away and would load again and again.  Loads requested in the first frame "
+		"after a checkpoint was loaded are therefore ignored with a warning.  Better, flag such events \"not checkpointed\", "
+		"or check savestate-getindex, or limit them to the start of the mission (e.g. mission-time below 1 second).\r\n\r\n"
+		"Migrating from SaveLoadX:\r\n"
+		"\t- Replace each lua-savestate-* operator by the savestate-* one of the same name; the arguments are the same.  "
+		"lua-savestate-load-external and lua-savestate-load-external-var have no counterpart, since checkpoints belong to one "
+		"mission.\r\n"
+		"\t- SaveLoadX never saved events, so missions using it are built around events starting over when a save state is "
+		"loaded after a restart.  Flag every event \"not checkpointed\" in the event editor: they then start over as at "
+		"mission start when the checkpoint is loaded, and the event that loads it runs and becomes true as described above, "
+		"so events and arrival cues that check it keep working.  Missions built for checkpoints leave events checkpointed and "
+		"never need to remember that a checkpoint was loaded.\r\n"
+		"\t- Everything else is restored as saved: all ships (including support ships and ships being destroyed), wings "
+		"with their waves, AI orders including waypoints, weapons in flight, goals, variables, messages, music, background and "
+		"the mission time.  Hull, ammunition and positions are exact rather than SaveLoadX's whole percentages.\r\n"
+		"\t- The mission time is the one saved in the checkpoint, not the time since the restart.  In events that start "
+		"over, conditions on mission-time or has-time-elapsed see the checkpoint's time: an event limited to the first second "
+		"of the mission doesn't fire again, and one waiting for a time already past fires right away.\r\n"
+		"\t- Ships destroyed or departed before saving stay gone and ships not yet arrived wait for their arrival cues, so "
+		"savestate-shipstatus is no longer needed in arrival cues.  See savestate-shipstatus for a difference to old SaveLoadX "
+		"versions.\r\n"
+		"\t- A ship that is dying when the checkpoint is saved is still dying when it is loaded, and is destroyed; SaveLoadX "
+		"saved it as alive.\r\n"
+		"\t- Script (Lua) state is neither saved nor reset by a load; scripts keep what they need with mn.Checkpoints.setData.  "
+		"Scripted prompts that remember a choice still remember it after the load.\r\n"
+		"\t- A scripted prompt at mission start that asks which save state to load (e.g. lua-call-prompt followed by events "
+		"calling lua-savestate-load) can be replaced by the mission flag \"Offer Checkpoints\" (see savestate-save) and "
+		"savestate-set-name, which also offers the checkpoints when the player dies.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tIndex of the checkpoint to load.\r\n"
+	},
+
+	{ OP_SAVESTATE_SHIPSTATUS, "savestate-shipstatus\r\n"
+		"\tReturns true if the ship or wing is in the mission or yet to arrive in the checkpoint the mission was loaded from, "
+		"or in the given checkpoint, and false if it was destroyed or departed.  Returns true if no checkpoint was loaded, if "
+		"the checkpoint doesn't exist, or if the ship or wing isn't in it.\r\n\r\n"
+		"Differences from SaveLoadX's lua-savestate-shipstatus: none compared to SaveLoadX since September 2026.  Older "
+		"versions (e.g. the one included with Shepherds 1.2.1) returned false for a ship or wing that had not arrived yet when "
+		"the save state was made, contrary to their documentation.  Missions relying on that, e.g. with hidden ships whose "
+		"arrival cue is \"the load event is true and lua-savestate-shipstatus\" to remember that something had happened, need "
+		"those cues changed: such ships now arrive.  Since a loaded checkpoint restores the arrival state of every ship and "
+		"wing, using savestate-shipstatus in arrival cues is no longer necessary.\r\n\r\n"
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1:\tShip or wing to check.\r\n"
+		"\t2:\t(optional) Index of a checkpoint of this mission to look at instead of the loaded one.\r\n"
+	},
+
+	{ OP_SAVESTATE_GETINDEX, "savestate-getindex\r\n"
+		"\tReturns the index of the checkpoint the mission was loaded from, or 0 if it wasn't loaded from a checkpoint.  "
+		"Same as SaveLoadX's lua-savestate-getindex.\r\n\r\n"
+		"Takes no arguments.\r\n"
+	},
+
+	{ OP_SAVESTATE_CHECK, "savestate-check\r\n"
+		"\tWithout arguments, returns true if the pilot has any checkpoint of this mission.  With an index, returns true if "
+		"that checkpoint exists.  With an index and a mission filename, returns true if that checkpoint exists for the other "
+		"mission.  Same as SaveLoadX's lua-savestate-check.\r\n\r\n"
+		"Takes 0 to 2 arguments...\r\n"
+		"\t1:\t(optional) Index of the checkpoint.\r\n"
+		"\t2:\t(optional) Filename of another mission (the .fs2 extension is optional).\r\n"
+	},
+
+	{ OP_SAVESTATE_ASSIST, "savestate-assist\r\n"
+		"\tAnti-frustration measure: when a checkpoint is loaded later in this mission, the given ships get at least this "
+		"percentage of their hull, and of the ammunition of their banks and turrets.  Call it before savestate-load.  It may "
+		"be called several times to add ships; the latest percentages apply to all of them.\r\n\r\n"
+		"Differences from SaveLoadX's lua-savestate-assist: it applies to the ships present in the loaded checkpoint; ships "
+		"arriving later arrive as set up in the mission.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tMinimum hull, in percent.\r\n"
+		"\t2:\tMinimum ammunition, in percent.\r\n"
+		"\tRest:\tShips to assist.\r\n"
+	},
+
+	{ OP_SAVESTATE_CLEAR, "savestate-clear\r\n"
+		"\tWithout arguments, removes all of the pilot's checkpoints of this mission.  With an index, removes that "
+		"checkpoint.  A checkpoint the mission was loaded from stays in effect.  Same as SaveLoadX's lua-savestate-clear.\r\n\r\n"
+		"Takes 0 or 1 arguments...\r\n"
+		"\t1:\t(optional) Index of the checkpoint to remove.\r\n"
+	},
+
+	{ OP_SAVESTATE_GET_NEXT_FREE_INDEX, "savestate-get-next-free-index\r\n"
+		"\tReturns the lowest index from 1 up that has no checkpoint in this mission, so savestate-save can store a new "
+		"checkpoint without replacing one.\r\n\r\n"
+		"Takes no arguments.\r\n"
+	},
+
+	{ OP_SAVESTATE_SET_NAME, "savestate-set-name\r\n"
+		"\tNames the next checkpoint saved with savestate-save.  The name is shown when the game offers the pilot's "
+		"checkpoints of this mission (mission flag \"Offer Checkpoints\").  It applies to one save only, and is forgotten "
+		"when the mission starts or a checkpoint is loaded; a checkpoint saved without a name is shown as \"Checkpoint\" "
+		"followed by its index.  Like all sexp text, the name can have at most 31 characters; scripts can give longer "
+		"names with mn.Checkpoints.save.  Names that don't fit their button are shortened.  Not part of SaveLoadX.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the checkpoint (at most 31 characters).\r\n"
+	},
+
 	// Goober5000
 	{ OP_CHANGE_BACKGROUND, "change-background\r\n"
 		"\tSets the displayed suns and bitmaps to one of the stored mission backgrounds.  Takes 1 argument...\r\n"
@@ -43197,6 +43703,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{ "Special Effects",                CHANGE_SUBCATEGORY_SPECIAL_EFFECTS              },
 	{ "Variables",                      CHANGE_SUBCATEGORY_VARIABLES                    },
 	{ "Containers",                     CHANGE_SUBCATEGORY_CONTAINERS                   },
+	{ "Checkpoints",                    CHANGE_SUBCATEGORY_CHECKPOINTS                  },
 	{ "Other",                          CHANGE_SUBCATEGORY_OTHER                        },
 	{ "Mission",                        STATUS_SUBCATEGORY_MISSION                      },
 	{ "Cutscenes",                      STATUS_SUBCATEGORY_CUTSCENES                    },

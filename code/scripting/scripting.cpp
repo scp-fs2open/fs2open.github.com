@@ -35,6 +35,7 @@ bool Output_scripting_meta = false;
 bool Output_scripting_json = false;
 bool Output_scripting_luastub = false;
 bool Scripting_game_init_run = false;
+bool Scripting_hooks_suppressed = false;
 
 flag_def_list Script_conditions[] = 
 {

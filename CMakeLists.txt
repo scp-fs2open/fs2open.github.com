@@ -84,6 +84,7 @@ endif()
 INCLUDE(globals)
 INCLUDE(toolchain)
 include(embed_file)
+include(checkpoint_fields)
 
 IF(RESET_INSTALL_PREFIX)
 	IF(NOT $ENV{FS2PATH} STREQUAL "")

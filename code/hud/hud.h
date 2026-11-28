@@ -211,6 +211,18 @@ void hud_toggle_contrast();
 void hud_set_contrast(bool high);
 void hud_toggle_shadows();
 
+// The state of a gauge that sexps and scripts change during a mission, for checkpoints
+struct hud_gauge_mission_state {	// @checkpoint fields
+	bool active = true;
+	bool sexp_override = false;
+	bool pop_up = false;
+	SCP_string custom_text;
+	int position[2] = {0, 0};
+	int frame_offset = 0;
+	color gauge_color{};
+	bool lock_color = false;
+};
+
 class HudGauge 
 {
 protected:
@@ -341,6 +353,9 @@ public:
 	void updateCustomGaugeText(const char* txt);
 	void updateCustomGaugeText(const SCP_string& txt);
 	const char* getCustomGaugeText() const;
+
+	hud_gauge_mission_state getMissionState() const;
+	void setMissionState(const hud_gauge_mission_state& state);
 
 	void startPopUp(int time=4000);
 	int popUpActive() const;

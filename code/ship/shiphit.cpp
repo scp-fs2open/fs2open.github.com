@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include "asteroid/asteroid.h"
+#include "checkpoint/registry.h"
 #include "debris/debris.h"
 #include "fireball/fireballs.h"
 #include "freespace.h"
@@ -70,7 +71,9 @@ typedef struct spark_pair {
 #define	BIG_SHIP_MIN_RADIUS	80.0f	//	ship radius above which death rolls can't be shortened by excessive damage
 
 vec3d	Dead_camera_pos;
+CHECKPOINT_GLOBAL(Dead_camera_pos);
 vec3d	Original_vec_to_deader;
+CHECKPOINT_GLOBAL(Original_vec_to_deader);
 
 static bool global_damage = false;
 

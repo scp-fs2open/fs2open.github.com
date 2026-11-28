@@ -22,7 +22,7 @@ class model_draw_list;
 
 #define MAX_DEBRIS_ARCS 8
 
-FLAG_LIST(Debris_Flags) {
+FLAG_LIST(Debris_Flags) {	// @checkpoint fields
 	Used,
 	OnHullDebrisList,
 	DoNotExpire,		// This debris piece has been placed in FRED and should not expire automatically
@@ -37,7 +37,7 @@ struct debris_electrical_arc
 	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
 };
 
-typedef struct debris {
+typedef struct debris {	// @checkpoint fields
 	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
 	int		source_objnum;			// What object this came from
 	int		damage_type_idx;		// Damage type of this debris
@@ -46,8 +46,8 @@ typedef struct debris {
 	gamesnd_id ambient_sound;		// Ambient looping sound
 	int		objnum = -1;			// What object this is linked to
 	float		lifeleft;			// When 0 or less object dies
-	int		model_num;				// What model this uses
-	int		model_instance_num;		// What model instance this uses - needed for arcs
+	int		model_num;				// What model this uses @checkpoint skip: model numbers differ between sessions; hull debris takes its ship class's model again
+	int		model_instance_num;		// What model instance this uses - needed for arcs @checkpoint skip: re-acquired after loading
 	int		submodel_num;			// What submodel this uses
 	TIMESTAMP	arc_next_time;		// When the next damage/emp arc will be created.
 	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment

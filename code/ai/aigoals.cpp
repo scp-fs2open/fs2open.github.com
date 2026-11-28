@@ -12,6 +12,7 @@
 
 #include "ai/aigoals.h"
 #include "ai/ailua.h"
+#include "checkpoint/registry.h"
 #include "globalincs/linklist.h"
 #include "globalincs/utility.h"
 #include "mission/missionlog.h"
@@ -82,6 +83,7 @@ constexpr int MIN_GOAL_PRIORITY = 1;
 // code
 
 int	Ai_goal_signature = 0;
+CHECKPOINT_GLOBAL(Ai_goal_signature);
 int	Num_ai_dock_names = 0;
 char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
@@ -766,6 +768,22 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
+void ai_lua_parameters_rebuild(ai_lua_parameters& parameters)
+{
+	parameters.arguments.clear();
+	if (parameters.sexp_op < 0)
+		return;
+
+	auto luaAIMode = ai_lua_find_mode(parameters.sexp_op);
+	if (luaAIMode == nullptr)
+		return;
+
+	int node = parse_sexp_argument_list(parameters.sexp_arguments.c_str());
+	parameters.arguments = luaAIMode->sexp.getSEXPArgumentList(node);
+	if (node >= 0)
+		free_sexp2(node);
+}
+
 void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, int int_data, float float_data, const ai_lua_parameters& lua_target )
 {
 	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
@@ -1314,6 +1332,8 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 			aigp->priority = eval_num(localnode, priority_is_nan, priority_is_nan_forever);
 
 			aigp->lua_ai_target = { std::move(target), luaAIMode->sexp.getSEXPArgumentList(CDR(localnode)) };
+			aigp->lua_ai_target.sexp_op = op;
+			convert_sexp_to_string(aigp->lua_ai_target.sexp_arguments, CDR(localnode), SEXP_SAVE_MODE);
 		}
 		else {
 			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);

@@ -18,7 +18,7 @@
 
 // defined for different mission log entries
 
-enum LogType {
+enum LogType {	// @checkpoint fields
 	LOG_SHIP_DESTROYED                  = 1,
 	LOG_WING_DESTROYED                  = 2,
 	LOG_SHIP_ARRIVED                    = 3,
@@ -54,7 +54,7 @@ enum LogType {
 #define LOG_COLOR_BRIGHT 1
 #define LOG_COLOR_OTHER 2
 
-struct log_entry {
+struct log_entry {	// @checkpoint fields
 	LogType type;            // one of the log #defines in MissionLog.h
 	int flags;               // flags used for status of this log entry
 	fix timestamp;           // time in fixed seconds when entry was made from beginning of mission

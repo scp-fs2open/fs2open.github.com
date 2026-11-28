@@ -128,7 +128,7 @@ extern SCP_vector<player_order> Player_orders;
 
 
 
-typedef struct squadmsg_history {
+typedef struct squadmsg_history {	// @checkpoint fields
 	int order_to;			// ship/wing that received the order
 	int order;				// order that the ship/wing received (see defines above)
 	int target;				// target of the order

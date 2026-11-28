@@ -14,6 +14,7 @@
 
 #include <cstdlib>
 
+#include "checkpoint/access.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
@@ -32,16 +33,16 @@ class model_draw_list;
 
 #define JN_DEFAULT_MODEL            "subspacenode.pof"
 
-class CJumpNode
+class CJumpNode	// @checkpoint fields
 {
 private:
 	char m_name[NAME_LENGTH];
 	char m_display[NAME_LENGTH];
 	float m_radius {0.0f};
 
-	int	m_modelnum {-1};
+	int	m_modelnum {-1};	// @checkpoint skip: re-acquired from the saved model name
 	int m_objnum {-1};                 // objnum of this jump node
-	int m_polymodel_instance_num {-1}; // polymodel instance number, used for rotations 
+	int m_polymodel_instance_num {-1}; // polymodel instance number, used for rotations @checkpoint skip: re-acquired from the saved model name
 
 	int m_flags {0};
 	color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
@@ -49,6 +50,9 @@ private:
 
 	// jumpnode_delete() detaches the node from its object by resetting m_objnum
 	friend void jumpnode_delete(object *objp);
+
+	template <typename>
+	friend struct checkpoint::Fields;
 
 public:
 	//Constructors
@@ -78,6 +82,8 @@ public:
 	//Setting
 	void SetAlphaColor(int r, int g, int b, int alpha);
 	void SetModel(const char *model_name, bool show_polys = false);
+	// loads a model for the node and creates its model instance, without changing the node's flags
+	bool AcquireModel(const char *model_name);
 	void SetName(const char *new_name);
 	void SetDisplayName(const char* new_name);
 	void SetVisibility(bool enabled);

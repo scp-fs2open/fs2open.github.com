@@ -55,6 +55,7 @@ private slots:
 	void on_chainedCheckBox_stateChanged(int state);
 	void on_chainDelayBox_valueChanged(int value);
 	void on_useMsecsCheckBox_stateChanged(int state);
+	void on_notCheckpointedCheckBox_stateChanged(int state);
 	void on_scoreBox_valueChanged(int value);
 	void on_teamCombo_currentIndexChanged(int index);
 	

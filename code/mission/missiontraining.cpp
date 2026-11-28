@@ -11,6 +11,7 @@
 
 
 #include "cfile/cfile.h"
+#include "checkpoint/registry.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/utility.h"
@@ -83,26 +84,42 @@ int Training_voice_soundstream = -1;
 sound_handle Training_voice_snd_handle;
 int Training_flag = 0;
 int Training_failure = 0;
+CHECKPOINT_GLOBAL(Training_failure);
 int Training_message_queue_count = 0;
 int Training_bind_warning = -1;  // Missiontime at which we last gave warning
+CHECKPOINT_GLOBAL(Training_bind_warning);
 int Training_message_visible;
 training_message_queue Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX];
 
 int	Training_context = 0;
+CHECKPOINT_GLOBAL(Training_context);
 int	Training_context_speed_set;
+CHECKPOINT_GLOBAL(Training_context_speed_set);
 int	Training_context_speed_min;
+CHECKPOINT_GLOBAL(Training_context_speed_min);
 int	Training_context_speed_max;
+CHECKPOINT_GLOBAL(Training_context_speed_max);
 TIMESTAMP	Training_context_speed_timestamp;
+CHECKPOINT_GLOBAL(Training_context_speed_timestamp);
 int Training_context_waypoint_path;
+CHECKPOINT_GLOBAL(Training_context_waypoint_path);
 int Training_context_goal_waypoint;
+CHECKPOINT_GLOBAL(Training_context_goal_waypoint);
 int Training_context_at_waypoint;
+CHECKPOINT_GLOBAL(Training_context_at_waypoint);
 float	Training_context_distance;
+CHECKPOINT_GLOBAL(Training_context_distance);
 
 int Players_target = UNINITIALIZED;
+CHECKPOINT_GLOBAL(Players_target);
 int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
+CHECKPOINT_GLOBAL(Players_mlocked);
 ship_subsys *Players_targeted_subsys;
+CHECKPOINT_GLOBAL(Players_targeted_subsys);
 TIMESTAMP Players_target_timestamp;
+CHECKPOINT_GLOBAL(Players_target_timestamp);
 TIMESTAMP Players_mlocked_timestamp;
+CHECKPOINT_GLOBAL(Players_mlocked_timestamp);
 
 
 // coordinates for training messages

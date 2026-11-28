@@ -6,6 +6,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "def_files/def_files.h"
 #include "hud/hud.h"
 #include "iff_defs/iff_defs.h"
@@ -18,6 +19,7 @@
 extern int radar_target_id_flags;
 
 SCP_vector<iff_info> Iff_info;
+CHECKPOINT_GLOBAL(Iff_info);
 SCP_vector<const char *> Iff_info_names;		// to be filled in from Iff_info
 
 int Iff_traitor;
@@ -119,6 +121,22 @@ int iff_init_color(int r, int g, int b)
 
 	// return the new slot
 	return idx;
+}
+
+std::tuple<int, int, int> iff_color_ref::checkpoint_key() const
+{
+	if (!SCP_vector_inbounds(Iff_colors, index))
+		return {-1, -1, -1};
+	const auto& c = Iff_colors[index].first;
+	return {c.red, c.green, c.blue};
+}
+
+iff_color_ref iff_color_ref::from_checkpoint_key(const std::tuple<int, int, int>& rgb)
+{
+	auto [r, g, b] = rgb;
+	if (r < 0 || g < 0 || b < 0)
+		return {};
+	return iff_init_color(r, g, b);
 }
 
 //Initialize this as the retail default - Mjn

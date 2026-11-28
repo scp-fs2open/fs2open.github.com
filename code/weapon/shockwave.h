@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/session_index.h"
 
 #include "gamesnd/gamesnd.h"
 
@@ -48,8 +49,17 @@ typedef struct shockwave_info
 	}
 } shockwave_info;
 
-typedef struct shockwave {
-	shockwave	*next, *prev;
+// An index into Shockwave_info, which grows as shockwaves are first used
+struct shockwave_info_ref : session_index {
+	using session_index::session_index;
+
+	// the effect's file name, and whether it is a model
+	std::pair<SCP_string, bool> checkpoint_key() const;
+	static shockwave_info_ref from_checkpoint_key(const std::pair<SCP_string, bool>& key);
+};
+
+typedef struct shockwave {	// @checkpoint fields
+	shockwave	*next, *prev;	// @checkpoint skip: list link, rebuilt when the element is linked in again
 	int			flags;
 	int			objnum;					// index into Objects[] for shockwave
 	SCP_vector<std::pair<int, int>>			obj_sig_hitlist;
@@ -61,13 +71,13 @@ typedef struct shockwave {
 	vec3d		pos;
 	float		blast;					// amount of blast to apply
 	int			next_blast;				// timestamp for when to apply next blast damage
-	int			shockwave_info_index;
-	int			current_bitmap;
+	shockwave_info_ref	shockwave_info_index;
+	int			current_bitmap;	// @checkpoint skip: set up from table data when created, or every frame
 	float		time_elapsed;			// in seconds
 	float		total_time;				// total lifetime of animation in seconds
 	int			delay_stamp;			// for delayed shockwaves
 	angles		rot_angles;
-	int			model_id;
+	int			model_id;	// @checkpoint skip: set up from table data when created, or every frame
 	gamesnd_id  blast_sound_id;
 } shockwave;
 

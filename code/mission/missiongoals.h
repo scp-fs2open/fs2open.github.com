@@ -50,7 +50,7 @@ extern const char *Goal_type_text(int n);
 
 #define	MGF_NO_MUSIC	(1<<0)		// don't play any event music when goal is achieved
 
-typedef struct mission_goal {
+typedef struct mission_goal {	// @checkpoint fields
 	SCP_string name;                        // used for storing status of goals in player file
 	int  type = PRIMARY_GOAL;               // primary/secondary/bonus
 	int  satisfied = GOAL_INCOMPLETE;       // has this goal been satisfied
@@ -82,6 +82,7 @@ enum class EventStatus : int
 #define MEF_USE_MSECS				(1 << 4)		// Goober5000 - interval and chain delay are in milliseconds, not seconds
 #define MEF_TIMESTAMP_HAS_INTERVAL	(1 << 5)		// Goober5000 - flag to simulate Volition's gloriously buggy hack
 #define MEF_EVENT_IS_DONE			(1 << 6)		// Goober5000 - originally indicated by setting formula to -1
+#define MEF_NOT_CHECKPOINTED		(1 << 7)		// a checkpoint load resets the event to its mission-start state
 
 #define MAX_MISSION_EVENT_LOG_FLAGS		9			// this must be changed if a mission log flag is added below
 
@@ -97,7 +98,7 @@ enum class EventStatus : int
 
 #define MLF_ALL_REPETITION_FLAGS (MLF_FIRST_REPEAT_ONLY | MLF_LAST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY | MLF_LAST_TRIGGER_ONLY) 
 
-typedef struct mission_event {
+typedef struct mission_event {	// @checkpoint fields
 	SCP_string name;                                    // used for storing status of events in player file
 	int  formula = -1;                                  // index into sexpression array for this formula
 	int  result = 0;                                    // result of most recent evaluation of event
@@ -165,6 +166,9 @@ void mission_event_unset_directive_special(int event);
 
 // Cyborg - set the directive completion sound timestamp
 void mission_event_set_completion_sound_timestamp();
+
+// Updates an event as if it had just been evaluated as true, without evaluating it.
+void mission_event_set_fired(int event);
 
 // Maybe play a directive success sound... need to poll since the sound is delayed from when
 // the directive is actually satisfied.

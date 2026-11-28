@@ -10,6 +10,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
@@ -80,6 +81,21 @@ vec3d Nebl_bolt_strike;			// strike point of the bolt being generated
 
 // the type of active storm
 storm_type *Storm = NULL;
+
+// the storm is a table entry, so it is saved by name
+static void storm_checkpoint_save(checkpoint::Writer& w)
+{
+	checkpoint::save(w, SCP_string(Storm != nullptr ? Storm->name : ""));
+}
+
+static void storm_checkpoint_load(checkpoint::Reader& r)
+{
+	SCP_string name;
+	checkpoint::load(r, name);
+	nebl_set_storm(name.c_str());
+}
+
+CHECKPOINT_GLOBAL_FUNCTIONS(storm_checkpoint_save, storm_checkpoint_load);
 
 // vars
 DCF(b_scale, "Sets the scale factor for debug nebula bolts")

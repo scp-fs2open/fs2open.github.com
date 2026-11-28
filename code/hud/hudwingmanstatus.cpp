@@ -9,6 +9,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "hud/hudconfig.h"
@@ -45,6 +46,8 @@ struct wingman_status
 };
 
 wingman_status HUD_wingman_status[MAX_SQUADRON_WINGS];
+CHECKPOINT_LOCAL_RAW(wingman_status);
+CHECKPOINT_GLOBAL(HUD_wingman_status);
 
 #define HUD_WINGMAN_UPDATE_STATUS_INTERVAL	200
 static int HUD_wingman_update_timer;

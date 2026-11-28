@@ -76,6 +76,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_end_to_mainhall = FALSE;
 	m_override_hashcommand = FALSE;
 	m_preload_subspace = FALSE;
+	m_offer_checkpoints = FALSE;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 	m_contrail_threshold_flag = FALSE;
 	//}}AFX_DATA_INIT
@@ -126,6 +127,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_END_TO_MAINHALL, m_end_to_mainhall);
 	DDX_Check(pDX, IDC_OVERRIDE_HASHCOMMAND, m_override_hashcommand);
 	DDX_Check(pDX, IDC_PRELOAD_SUBSPACE, m_preload_subspace);
+	DDX_Check(pDX, IDC_OFFER_CHECKPOINTS, m_offer_checkpoints);
 	DDX_Text(pDX, IDC_CONTRAIL_THRESHOLD, m_contrail_threshold);
 	DDV_MinMaxInt(pDX, m_contrail_threshold, 0, 1000);
 	DDX_Check(pDX, IDC_CONTRAIL_THRESHOLD_CHECK, m_contrail_threshold_flag);
@@ -292,6 +294,7 @@ void CMissionNotesDlg::OnOK()
 
 	// Preload Subspace Tunnel
 	The_mission.flags.set(Mission::Mission_Flags::Preload_subspace, m_preload_subspace != 0);
+	The_mission.flags.set(Mission::Mission_Flags::Offer_checkpoints, m_offer_checkpoints != 0);
 
 	if ( flags != The_mission.flags ){
 		set_modified();
@@ -403,6 +406,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_end_to_mainhall = (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ? 1 : 0;
 	m_override_hashcommand = (The_mission.flags[Mission::Mission_Flags::Override_hashcommand]) ? 1 : 0;
 	m_preload_subspace = (The_mission.flags[Mission::Mission_Flags::Preload_subspace]) ? 1 : 0;
+	m_offer_checkpoints = (The_mission.flags[Mission::Mission_Flags::Offer_checkpoints]) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);

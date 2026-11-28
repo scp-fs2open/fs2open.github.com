@@ -18,7 +18,7 @@ class ship;
 class ship_info;
 
 // Model Animation Position settings
-enum EModelAnimationPosition {
+enum EModelAnimationPosition {	// @checkpoint fields
 	MA_POS_NOT_SET = 0,	// not yet setup
 	MA_POS_SET = 1,	// set, but is moving
 	MA_POS_READY = 2     // set, done with move
@@ -337,6 +337,23 @@ namespace animation {
 
 		static void stopAnimations(polymodel_instance* pmi = nullptr);
 
+		// The playback state of an animation running on a model instance, for checkpoints
+		struct RunningAnimationState {
+			unsigned int id;
+			unsigned int occurrence;	// which of the set's animations with this id
+			ModelAnimation::instance_data state;
+		};
+
+		// The animations running on a model instance, in the order they were started.  Animations without a unique id
+		// (moveables) are not included.
+		static SCP_vector<RunningAnimationState> getRunningAnimationStates(const polymodel_instance* pmi);
+
+		// Resumes saved animations on a model instance whose initial states have been set up
+		static void restoreRunningAnimationStates(polymodel_instance* pmi, const SCP_vector<RunningAnimationState>& states);
+
+		// Records the current pose of the model instance as the base that animations are applied to
+		void captureBaseState(polymodel_instance* pmi) const;
+
 		void clearShipData(polymodel_instance* pmi);
 
 		class AnimationList {
@@ -433,7 +450,9 @@ namespace animation {
 	//Type -> Name + Requires reset flag (== will never be triggered in reverse)
 	extern const SCP_unordered_map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
 
-	void anim_set_initial_states(ship* shipp);
+	// Sets up the animations of a newly created ship.  A ship restored from a checkpoint doesn't start its spawn
+	// animations again, and gets its base pose recorded so that the saved pose can be put on top of it.
+	void anim_set_initial_states(ship* shipp, bool start_spawn_animations = true);
 	
 	//Returns function bindings to start the targeted animation, and to get its runtime
 	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy);

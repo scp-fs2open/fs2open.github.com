@@ -28,7 +28,8 @@
 #include "ui/ui.h"
 
 
-#define POPUP_MAX_CHOICES			3					// max number of buttons allowed on popup
+constexpr int POPUP_MAX_CHOICES = 6;				// max number of buttons allowed on popup
+constexpr int POPUP_ROWS = 3;						// rows of buttons; with more choices, a second column is used
 
 #define POPUP_MAX_LINE_CHARS		256				// max chars of msg text allowed per line
 #define POPUP_MAX_LINES				30					// max lines of text allowed
@@ -177,7 +178,43 @@ static int Button_coords[GR_NUM_RESOLUTIONS][3][2] =
 	}
 };
 
-static popup_background Popup_background[GR_NUM_RESOLUTIONS][3] = 
+// With more than POPUP_ROWS choices, the first POPUP_ROWS are placed in a column on the left, on the rows of the
+// buttons on the right, with their text to the right of the icon.
+static int Button_coords_left[GR_NUM_RESOLUTIONS][POPUP_ROWS][2] =
+{
+	{ // GR_640
+		{137, 224},
+		{137, 258},
+		{137, 286}
+	},
+	{ // GR_1024
+		{219, 358},
+		{219, 413},
+		{219, 458}
+	}
+};
+
+// distance from the left edge of a left-column icon to its text
+static int Button_left_text_offset[GR_NUM_RESOLUTIONS] = { 42, 60 };
+
+// the widest button text in a two-column popup, so the columns don't overlap
+static int Button_column_text_width[GR_NUM_RESOLUTIONS] = { 140, 228 };
+
+static bool popup_button_in_left_column(const popup_info *pi, int i)
+{
+	return pi->nchoices > POPUP_ROWS && i < POPUP_ROWS;
+}
+
+// the row of the button for choice i
+static int popup_button_row(const popup_info *pi, int i, int flags)
+{
+	// a single positive icon sits in the second row
+	if ( (pi->nchoices == 1) && (flags & PF_USE_AFFIRMATIVE_ICON) )
+		return 1;
+	return (pi->nchoices > POPUP_ROWS && i >= POPUP_ROWS) ? i - POPUP_ROWS : i;
+}
+
+static popup_background Popup_background[GR_NUM_RESOLUTIONS][3] =
 {
 	{ // GR_640
 		{ "Pop2",	{ 129, 99 } },
@@ -433,18 +470,9 @@ const char *popup_get_button_filename(popup_info *pi, int i, int flags)
 
 		break;
 
-	case 3:
-		switch(i) {
-		case 0:
-			fname = Popup_button_filenames[gr_screen.res][is_tiny][BUTTON_GENERIC_FIRST];
-			break;
-		case 1:
-			fname = Popup_button_filenames[gr_screen.res][is_tiny][BUTTON_GENERIC_SECOND];
-			break;
-		case 2:
-			fname = Popup_button_filenames[gr_screen.res][is_tiny][BUTTON_GENERIC_THIRD];
-			break;
-		}
+	default:
+		// three or more choices: each row has its own icon
+		fname = Popup_button_filenames[gr_screen.res][is_tiny][BUTTON_GENERIC_FIRST + popup_button_row(pi, i, flags)];
 		break;
 	}
 
@@ -467,7 +495,7 @@ int popup_init(popup_info *pi, int flags)
 	if(pi->nchoices == 0){
 		pbg = &Popup_background[gr_screen.res][0];
 	} else {
-		pbg = &Popup_background[gr_screen.res][pi->nchoices-1];
+		pbg = &Popup_background[gr_screen.res][MIN(pi->nchoices, POPUP_ROWS)-1];
 	}
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
@@ -511,7 +539,7 @@ int popup_init(popup_info *pi, int flags)
 					positivity = 1;
 				break;
 			default:
-				//For 0 or 3 buttons, all buttons are netural
+				//For 0 or 3 or more buttons, all buttons are netural
 				break;
 			}
 			button.addValue("Positivity", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), positivity));
@@ -541,15 +569,23 @@ int popup_init(popup_info *pi, int flags)
 	Popup_window.create(pbg->coords[0], pbg->coords[1], Popup_text_coords[gr_screen.res][2]+100, Popup_text_coords[gr_screen.res][3]+50, 0);
 	Popup_window.set_foreground_bmap(pbg->filename);
 
-	// create buttons
+	// create buttons; their text is drawn in FONT1, so it is measured in it
+	font::set_font(font::FONT1);
 	for (i=0; i<pi->nchoices; i++) {
-		b = &Popup_buttons[i];
-		// accommodate single-choice positive icon being positioned differently
-		if ( (pi->nchoices == 1) && (flags&PF_USE_AFFIRMATIVE_ICON) ) {
-			b->create(&Popup_window, "", Button_coords[gr_screen.res][i+1][0], Button_coords[gr_screen.res][i+1][1], 30, 25, 0, 1);
-		} else {
-			b->create(&Popup_window, "", Button_coords[gr_screen.res][i][0], Button_coords[gr_screen.res][i][1], 30, 25, 0, 1);
+		int row = popup_button_row(pi, i, flags);
+		bool left = popup_button_in_left_column(pi, i);
+		int bx = left ? Button_coords_left[gr_screen.res][row][0] : Button_coords[gr_screen.res][row][0];
+
+		// in two columns, the text of each button has half the width
+		if ( pi->nchoices > POPUP_ROWS ) {
+			font::force_fit_string(pi->button_text[i], strlen(pi->button_text[i]), Button_column_text_width[gr_screen.res]);
+			if ( pi->shortcut_index[i] >= (int)strlen(pi->button_text[i]) ) {
+				pi->shortcut_index[i] = -1;
+			}
 		}
+
+		b = &Popup_buttons[i];
+		b->create(&Popup_window, "", bx, Button_coords[gr_screen.res][row][1], 30, 25, 0, 1);
 
 		fname = popup_get_button_filename(pi, i, flags);
 		b->set_bmaps(fname, 3, 0);
@@ -559,18 +595,18 @@ int popup_init(popup_info *pi, int flags)
 		}
 
 		// create invisible buttons to detect mouse presses... can't use mask since button region is dynamically sized
-		int lx, w, h;
+		int lx, rx, w, h;
 
 		gr_get_string_size(&w, &h, pi->button_text[i]);
-		lx = Button_regions[gr_screen.res][i][0] - w;
-		b = &Popup_button_regions[i];	
-
-		// accommodate single-choice positive icon being positioned differently
-		if ( (pi->nchoices == 1) && (flags&PF_USE_AFFIRMATIVE_ICON) ) {
-			b->create(&Popup_window, "", lx, Button_regions[gr_screen.res][i+1][1], Button_regions[gr_screen.res][i+1][2]-lx, Button_regions[gr_screen.res][i+1][3]-Button_regions[gr_screen.res][i+1][1], 0, 1);
+		if ( left ) {
+			lx = bx;
+			rx = bx + Button_left_text_offset[gr_screen.res] + w;
 		} else {
-			b->create(&Popup_window, "", lx, Button_regions[gr_screen.res][i][1], Button_regions[gr_screen.res][i][2]-lx, Button_regions[gr_screen.res][i][3]-Button_regions[gr_screen.res][i][1], 0, 1);
+			lx = Button_regions[gr_screen.res][row][0] - w;
+			rx = Button_regions[gr_screen.res][row][2];
 		}
+		b = &Popup_button_regions[i];
+		b->create(&Popup_window, "", lx, Button_regions[gr_screen.res][row][1], rx-lx, Button_regions[gr_screen.res][row][3]-Button_regions[gr_screen.res][row][1], 0, 1);
 
 		b->hide();
 	}
@@ -805,13 +841,13 @@ void popup_draw_button_text(popup_info *pi, int flags)
 	for ( i=0; i < pi->nchoices; i++ ) {
 		gr_get_string_size(&w, &h, pi->button_text[i]);
 
-		if ( (pi->nchoices == 1) && (flags&PF_USE_AFFIRMATIVE_ICON) ) {
-			sx = Button_regions[gr_screen.res][i+1][0]-w;
-			sy = Button_regions[gr_screen.res][i+1][1]+4;
+		int row = popup_button_row(pi, i, flags);
+		if ( popup_button_in_left_column(pi, i) ) {
+			sx = Button_coords_left[gr_screen.res][row][0] + Button_left_text_offset[gr_screen.res];
 		} else {
-			sx = Button_regions[gr_screen.res][i][0]-w;
-			sy = Button_regions[gr_screen.res][i][1]+4;
+			sx = Button_regions[gr_screen.res][row][0]-w;
 		}
+		sy = Button_regions[gr_screen.res][row][1]+4;
 
 		gr_string(sx, sy, pi->button_text[i], GR_RESIZE_MENU);
 
@@ -1118,11 +1154,13 @@ void popup_maybe_assign_keypress(popup_info *pi, int n, char *str)
 // typical usage:
 //
 //	rval = popup(0, 2, POPUP_OK, POPUP_CANCEL, "Sorry %s, try again", pl->callsign);
+static int popup_run(int flags);
+
 int popup(int flags, int nchoices, ... )
 {
- 	int			i, choice;
+ 	int			i;
 	char			*format, *s;
-	va_list		args;	
+	va_list		args;
 
 	if ( Popup_is_active ) {
 		Int3();		// should never happen
@@ -1148,7 +1186,38 @@ int popup(int flags, int nchoices, ... )
 	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text), format, args);
 	va_end(args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
-	
+
+	return popup_run(flags);
+}
+
+int popup(int flags, const SCP_vector<SCP_string>& choices, const char *text)
+{
+	if ( Popup_is_active ) {
+		Int3();		// should never happen
+		return -1;
+	}
+
+	Popup_flags = flags;
+
+	Assert( !choices.empty() && choices.size() <= POPUP_MAX_CHOICES );
+	Popup_info.nchoices = MIN((int)choices.size(), POPUP_MAX_CHOICES);
+
+	for (int i = 0; i < Popup_info.nchoices; i++) {
+		Popup_info.button_text[i] = nullptr;
+		popup_maybe_assign_keypress(&Popup_info, i, const_cast<char *>(choices[i].c_str()));
+	}
+
+	strncpy(Popup_info.raw_text, text, sizeof(Popup_info.raw_text) - 1);
+	Popup_info.raw_text[sizeof(Popup_info.raw_text) - 1] = '\0';
+
+	return popup_run(flags);
+}
+
+// shows the popup set up in Popup_info until a choice is made
+static int popup_run(int flags)
+{
+	int choice;
+
 	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 
 	io::mouse::CursorManager::get()->pushStatus();
@@ -1156,9 +1225,9 @@ int popup(int flags, int nchoices, ... )
 	Popup_is_active = 1;
 
 	choice = popup_do( &Popup_info, flags );
-	
+
 	io::mouse::CursorManager::get()->popStatus();
-	
+
 	switch(choice) {
 	case POPUP_ABORT:
 		return -1;

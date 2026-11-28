@@ -94,17 +94,17 @@ namespace Weapon::Proximity {
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
 
-struct homing_cache_info {
+struct homing_cache_info {	// @checkpoint fields
 	TIMESTAMP next_update;
 	vec3d expected_pos;
 	bool valid;
 	bool skip_future_refinements;
 };
 
-typedef struct weapon {
+typedef struct weapon {	// @checkpoint fields
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
-	int		model_instance_num;				// model instance number, if we have any intrinsic-moving submodels
+	int		model_instance_num;				// model instance number, if we have any intrinsic-moving submodels @checkpoint skip: re-acquired after loading
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired thisz
 	float		lifeleft;						// life left on this weapon	
@@ -118,7 +118,7 @@ typedef struct weapon {
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
 	std::unique_ptr<swarm_info>		swarm_info_ptr;	// index into swarm missile info, -1 if not WIF_SWARM
-	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
+	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile @checkpoint skip: re-acquired after loading
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
 	int		group_id;						// Which group this is in.

@@ -7,6 +7,7 @@
  *
  */
 
+#include "checkpoint/registry.h"
 #include "gamesnd/eventmusic.h"
 
 #include "cmdline/cmdline.h"
@@ -33,6 +34,7 @@
 // Globals
 ////////////////////////////
 int Event_Music_battle_started = 0;
+CHECKPOINT_GLOBAL(Event_Music_battle_started);
 float Default_music_volume = 0.5f;							// range is 0->1
 float Master_event_music_volume = Default_music_volume;
 
@@ -100,6 +102,29 @@ static TIMESTAMP Mission_over_timestamp;
 static bool Victory2_music_played;
 static TIMESTAMP Next_arrival_timestamp;
 static TIMESTAMP Check_for_battle_music;	// this timestamp is actually never set
+
+CHECKPOINT_GLOBAL(Num_enemy_arrivals);
+CHECKPOINT_GLOBAL(Num_friendly_arrivals);
+CHECKPOINT_GLOBAL(Battle_over_timestamp);
+CHECKPOINT_GLOBAL(Mission_over_timestamp);
+CHECKPOINT_GLOBAL(Victory2_music_played);
+CHECKPOINT_GLOBAL(Next_arrival_timestamp);
+
+// The music that plays is restored by switching to the saved soundtrack and pattern, the way sexps change them.
+static std::pair<SCP_string, int> event_music_checkpoint_capture()
+{
+	return {SCP_vector_inbounds(Soundtracks, Current_soundtrack_num) ? Soundtracks[Current_soundtrack_num].name : "", Current_pattern};
+}
+
+static void event_music_checkpoint_apply(const std::pair<SCP_string, int>& music)
+{
+	if (!music.first.empty())
+		event_sexp_change_soundtrack(music.first.c_str());
+	if (music.second >= 0)
+		event_music_change_pattern(music.second);
+}
+
+CHECKPOINT_STATE(event_music_checkpoint_capture, event_music_checkpoint_apply, AfterRestore);
 
 typedef struct pattern_info
 {

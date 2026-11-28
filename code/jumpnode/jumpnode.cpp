@@ -8,12 +8,35 @@
 */ 
 
 
+#include "checkpoint/registry.h"
 #include "hud/hud.h"
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "model/modelrender.h"
 
 SCP_vector<CJumpNode> Jump_nodes;
+CHECKPOINT_GLOBAL(Jump_nodes);
+
+// Sexps and scripts can add, rename, recolor, hide and change the model of jump nodes.  The nodes are saved as a global
+// and refer to their objects by slot; each object saves the node's model by name, since model numbers differ between
+// sessions, and loads it again.
+static void jumpnode_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	auto jn = jumpnode_get_by_objnum(OBJ_INDEX(&objp));
+	auto modelnum = (jn != nullptr) ? jn->GetModelNumber() : -1;
+	checkpoint::save(w, SCP_string(modelnum >= 0 ? model_get(modelnum)->filename : ""));
+}
+
+static void jumpnode_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	SCP_string model;
+	checkpoint::load(r, model);
+	auto jn = jumpnode_get_by_objnum(OBJ_INDEX(&objp));
+	if (jn != nullptr && !model.empty())
+		jn->AcquireModel(model.c_str());
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_JUMP_NODE, jumpnode_checkpoint_save, jumpnode_checkpoint_restore, nullptr, nullptr);
 
 /**
  * Constructor for CJumpNode class, default
@@ -198,15 +221,35 @@ void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
  */
 void CJumpNode::SetModel(const char *model_name, bool show_polys)
 {
+	if (!AcquireModel(model_name))
+		return;
+
+	m_flags |= JN_SPECIAL_MODEL;
+
+	//Do we want to change poly showing?
+	if(show_polys)
+		m_flags |= JN_SHOW_POLYS;
+	else
+		m_flags &= ~JN_SHOW_POLYS;
+}
+
+/**
+ * Load a model for the jump node and create its model instance, keeping the node's flags
+ *
+ * @param model_name Name of model file to load
+ * @return Whether the model could be loaded
+ */
+bool CJumpNode::AcquireModel(const char *model_name)
+{
 	Assert(model_name != NULL);
-	
+
 	//Try to load the new model; if we can't, then we can't set it
 	int new_model = model_load(model_name, nullptr, ErrorType::WARNING);
-	
+
 	if(new_model == -1)
 	{
 		Warning(LOCATION, "Couldn't load model file %s for jump node %s", model_name, m_name);
-		return;
+		return false;
 	}
 
 	//If there's an old model, unload it
@@ -214,7 +257,6 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 
 	//Now actually set stuff
 	m_modelnum = new_model;
-	m_flags |= JN_SPECIAL_MODEL;
 	m_radius = model_get_radius(m_modelnum);
 
 	// keep the engine-side object radius in sync with the new model.  The
@@ -227,18 +269,14 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 		Objects[m_objnum].radius = m_radius;
 	}
 
-	//Do we want to change poly showing?
-	if(show_polys)
-		m_flags |= JN_SHOW_POLYS;
-	else
-		m_flags &= ~JN_SHOW_POLYS;
-
 	// refresh the model instance
 	auto pm = model_get(m_modelnum);
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION)
 		m_polymodel_instance_num = model_create_instance(m_objnum, m_modelnum);
 	else
 		m_polymodel_instance_num = -1;
+
+	return true;
 }
 
 /**

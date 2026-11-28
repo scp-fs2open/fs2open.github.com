@@ -1,6 +1,7 @@
 #include "prop.h"
 
 #include "asteroid/asteroid.h"
+#include "checkpoint/registry.h"
 #include "debris/debris.h"
 #include "freespace.h"
 #include "model/model.h"
@@ -21,6 +22,32 @@ bool Props_inited = false;
 SCP_vector<prop_info> Prop_info;
 
 SCP_vector<std::optional<prop>> Props;
+
+static void prop_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	const prop& propp = *Props[objp.instance];
+	checkpoint::save(w, propp);
+	checkpoint::save(w, object_get_model_instance(&objp));
+}
+
+static void prop_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	if (objp.instance >= static_cast<int>(Props.size()))
+		Props.resize(objp.instance + 1);
+
+	Props[objp.instance] = prop();
+	prop& propp = *Props[objp.instance];
+	checkpoint::load(r, propp);
+
+	// like prop_create, every prop holds a reference to its class's model
+	auto& pip = Prop_info[propp.prop_info_index];
+	pip.model_num = model_load(pip.pof_file.c_str());
+	propp.model_instance_num = model_create_instance(OBJ_INDEX(&objp), pip.model_num);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_PROP, prop_checkpoint_save, prop_checkpoint_restore, nullptr, nullptr, MAX_OBJECTS);
 
 SCP_vector<prop_category> Prop_categories;
 

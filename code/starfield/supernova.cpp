@@ -9,6 +9,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
@@ -31,14 +32,20 @@
 
 // countdown for supernova
 static float Supernova_time_total = -1.0f;
+CHECKPOINT_GLOBAL(Supernova_time_total);
 static float Supernova_time_left = -1.0f;	// this is no longer updated directly, but calculated in supernova_process()
+CHECKPOINT_GLOBAL(Supernova_time_left);
 static TIMESTAMP Supernova_timestamp;
+CHECKPOINT_GLOBAL(Supernova_timestamp);
 static TIMESTAMP Supernova_fade_to_white_timestamp;
+CHECKPOINT_GLOBAL(Supernova_fade_to_white_timestamp);
 static TIMESTAMP Supernova_particle_timestamp;
+CHECKPOINT_GLOBAL(Supernova_particle_timestamp);
 
 static particle::ParticleEffectHandle Supernova_particle_effect;
 
 auto Supernova_status = SUPERNOVA_STAGE::NONE;
+CHECKPOINT_GLOBAL(Supernova_status);
 
 // --------------------------------------------------------------------------------------------------------------------------
 // SUPERNOVA FUNCTIONS

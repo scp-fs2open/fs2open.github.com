@@ -21,6 +21,12 @@ add_file_folder("Bmpman"
     bmpman/test_eff.cpp
 )
 
+add_file_folder("Checkpoint"
+    checkpoint/test_codec.cpp
+    checkpoint/test_store.cpp
+    checkpoint/test_timer.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )

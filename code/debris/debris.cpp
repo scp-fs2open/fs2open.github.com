@@ -9,6 +9,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "fireball/fireballs.h"
@@ -234,6 +235,50 @@ void debris_remove_from_hull_list(debris *db)
  * This is only ever called via obj_delete().  Do not call directly.
  * Use debris_start_death_roll() if you want to force a debris piece to die.
  */
+// only hull debris matters for gameplay; small debris is a visual effect and is not saved
+static bool debris_checkpoint_is_saved(const object& objp)
+{
+	return Debris[objp.instance].is_hull;
+}
+
+static void debris_checkpoint_save(checkpoint::Writer& w, const object& objp)
+{
+	const debris *db = &Debris[objp.instance];
+	checkpoint::save(w, *db);
+	checkpoint::save(w, object_get_model_instance(&objp));
+}
+
+static void debris_checkpoint_restore(checkpoint::Reader& r, object& objp)
+{
+	if (objp.instance >= static_cast<int>(Debris.size()))
+		Debris.resize(objp.instance + 1);
+
+	debris *db = &Debris[objp.instance];
+	*db = debris();
+	checkpoint::load(r, *db);
+
+	// hull debris is a piece of its ship's model
+	if (SCP_vector_inbounds(Ship_info, db->ship_info_index)) {
+		auto sip = &Ship_info[db->ship_info_index];
+		if (sip->model_num < 0)
+			sip->model_num = model_load(sip->pof_file, sip);
+		db->model_num = sip->model_num;
+	}
+
+	db->model_instance_num = model_create_instance(OBJ_INDEX(&objp), db->model_num);
+	auto pmi = object_get_model_instance(&objp);
+	checkpoint::load(r, pmi);
+
+	db->flags.remove(Debris_Flags::OnHullDebrisList);
+	debris_add_to_hull_list(db);
+
+	// an ambient sound that was already playing is assigned again by the next frame
+	if (db->ambient_sound.isValid() && !db->sound_delay.isValid())
+		db->sound_delay = TIMESTAMP::immediate();
+}
+
+CHECKPOINT_OBJECT_TYPE(OBJ_DEBRIS, debris_checkpoint_save, debris_checkpoint_restore, nullptr, debris_checkpoint_is_saved, MAX_OBJECTS);
+
 void debris_delete( object * obj )
 {
 	int		num;

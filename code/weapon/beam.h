@@ -26,7 +26,7 @@ struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;
 
-enum class WeaponState : uint32_t
+enum class WeaponState : uint32_t	// @checkpoint fields
 {
 	INVALID,
 
@@ -51,7 +51,7 @@ struct WeaponStateHash {
 	}
 };
 
-typedef enum class BeamType {
+typedef enum class BeamType {	// @checkpoint fields
 	DIRECT_FIRE,	// unidirectional beam; used to be BEAM_TYPE_A
 	SLASHING,		// "slash" in one direction; used to be BEAM_TYPE_B
 	TARGETING,		// targeting lasers (only lasts one frame); used to be BEAM_TYPE_C
@@ -153,7 +153,7 @@ typedef struct beam_collision {
 #define BF_FINISHED_GROWING				(1<<7)     // to stop grow from re-triggering
 
 // beam struct (the actual weapon/object)
-typedef struct beam {
+typedef struct beam {	// @checkpoint fields
 	// low-level data
 	int		objnum;					// our own objnum
 	int		weapon_info_index;
@@ -165,7 +165,7 @@ typedef struct beam {
 	vec3d	target_pos2;				// if we're targeting a location in space (optional second point)
 	int		target_sig;				// target sig
 	ship_subsys *subsys;				// subsys its being fired from
-	beam		*next, *prev;			// link list stuff
+	beam		*next, *prev;			// link list stuff @checkpoint skip: list link, rebuilt when the element is linked in again
 	vec3d	local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	

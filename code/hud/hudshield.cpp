@@ -10,6 +10,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "gamesnd/gamesnd.h"
 #include "hud/hudescort.h"
 #include "hud/hudparse.h"
@@ -112,6 +113,7 @@ int Shield_mini_loaded = 0;
 hud_frames Shield_mini_gauge;
 
 static shield_hit_info	Shield_hit_data[num_shield_gauge_types];
+CHECKPOINT_GLOBAL(Shield_hit_data);
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
 ubyte Quadrant_xlate[DEFAULT_SHIELD_SECTIONS] = {1,0,2,3};

@@ -9,6 +9,7 @@
 
 
 
+#include "checkpoint/registry.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "object/object.h"
@@ -38,8 +39,10 @@
 
 
 turret_swarm_info Turret_swarm_info[MAX_TURRET_SWARM_INFO];
+CHECKPOINT_GLOBAL(Turret_swarm_info);
 
 int Turret_swarm_validity_next_check_time;
+CHECKPOINT_GLOBAL(Turret_swarm_validity_next_check_time);
 
 // ------------------------------------------------------------------
 // swarm_level_init()

@@ -118,7 +118,7 @@ struct model_electrical_arc : electrical_arc
 };
 
 // Data specific to a particular instance of a submodel.
-struct submodel_instance
+struct submodel_instance	// @checkpoint fields
 {
 	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
 	float	turret_idle_angle = 0.0f;				// If this is a turret, this is the expected idling angle of the submodel
