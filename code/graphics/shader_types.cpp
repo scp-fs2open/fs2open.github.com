@@ -121,7 +121,7 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
 
-	// Vulkan-only: the CORTAO screen-space ambient occlusion passes
+	// The CORTAO screen-space ambient occlusion passes (Vulkan and OpenGL)
 	{ SDR_TYPE_CORTAO_PREPASS, "post-v.sdr", "cortao-prepass-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "CORTAO prepass", false },
 

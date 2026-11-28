@@ -16,6 +16,7 @@ struct cortao_prepass_uniforms {
 	uint32_t mipLevel;
 	float nearPlane;
 };
+static_assert(sizeof(cortao_prepass_uniforms) == 16, "cortao_prepass_uniforms must match the std140 layout of cortao-prepass-f.sdr");
 
 // The genericData block of cortao-main-f.sdr: CORTAOMainPassParameters (CORTAOMainPass.h), then
 // the intensity.
@@ -48,6 +49,7 @@ struct cortao_filter_uniforms {
 	float normalSensitivity;
 	uint32_t padding0;
 };
+static_assert(sizeof(cortao_filter_uniforms) == 16, "cortao_filter_uniforms must match the std140 layout of cortao-filter-f.sdr");
 
 // The prepass writes at most this many mip levels. This is also the CORTAO maximum.
 constexpr uint32_t CORTAO_MAX_MIP_LEVELS = 8;

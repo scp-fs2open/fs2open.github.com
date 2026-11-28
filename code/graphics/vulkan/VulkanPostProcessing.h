@@ -672,8 +672,8 @@ private:
  * (R32_SFLOAT that holds uint bits). The main pass writes the raw occlusion and bent normal
  * (R8G8B8A8_UNORM), and the optional filter pass filters them. The ambient light reads the last one.
  *
- * GPU resources are created on the first execute(), so a session without SSAO does not use memory
- * for them.
+ * GPU resources are created on the first execute(), so a session that never enables SSAO does not
+ * use memory for them. After that, they stay until shutdown, also when SSAO is turned off.
  */
 class VulkanCortao {
 public:

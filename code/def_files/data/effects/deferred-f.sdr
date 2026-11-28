@@ -75,6 +75,8 @@ uniform globalDeferredData {
 
 	float rayBiasMin;
 	float rayBiasMax;
+	float padding1;
+	float padding2;
 };
 
 #include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"

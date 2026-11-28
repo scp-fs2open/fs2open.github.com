@@ -45,8 +45,11 @@ struct deferred_global_data {
 
 	float rayBiasMin;
 	float rayBiasMax;
+	// std140 rounds the size of a block up to 16 bytes, and OpenGL binds exactly sizeof() bytes.
+	float padding1;
+	float padding2;
 };
-static_assert(offsetof(deferred_global_data, rayViewOrigin) == 80 && sizeof(deferred_global_data) == 104,
+static_assert(offsetof(deferred_global_data, rayViewOrigin) == 80 && sizeof(deferred_global_data) == 112,
 	"deferred_global_data must match the std140 layout of the globalDeferredData block in deferred-f.sdr");
 
 /**
