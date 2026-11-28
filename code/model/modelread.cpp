@@ -2444,6 +2444,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				char props[MAX_PROP_LEN];
 
 				int gpb_num = pof_read_count(fp, filename, "glow point banks");
+				int invalid_glow_points = 0;
+				int first_bad_bank = -1;
 
 				pm->n_glow_point_banks = gpb_num;
 				pm->glow_point_banks = nullptr;
@@ -2521,9 +2523,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 					}
 
+					// bad points are dropped, not zeroed: a zeroed point would still draw and light at the model origin
+					int kept = 0;
 					for (j = 0; j < bank->num_points; j++)
 					{
-						glow_point *p = &bank->points[j];
+						glow_point* p = &bank->points[kept];
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
@@ -2533,8 +2537,22 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							vm_vec_zero(&temp_vec);
 						p->norm = temp_vec;
 						p->radius = cfread_float( fp);
+						if (is_valid_vec(&p->pnt) && is_valid_vec(&p->norm) && std::isfinite(p->radius)) {
+							kept++;
+						} else {
+							invalid_glow_points++;
+							if (first_bad_bank < 0)
+								first_bad_bank = gpb;
+						}
 					}
+					bank->num_points = kept;
 				}
+				if (invalid_glow_points > 0)
+					Warning(LOCATION,
+						"Model '%s': removed %d glow point(s) with a NaN or infinite value (first in bank %d).",
+						filename,
+						invalid_glow_points,
+						first_bad_bank);
 				break;					
 			 }
 
@@ -2543,6 +2561,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				pm->n_thrusters = pof_read_count(fp, filename, "thruster banks");
 
 				if (pm->n_thrusters > 0) {
+					int invalid_thruster_points = 0;
+					int first_bad_bank = -1;
 					pm->thrusters = make_shared<thruster_bank[]>(pm->n_thrusters);
 
 					for (i = 0; i < pm->n_thrusters; i++ ) {
@@ -2578,8 +2598,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							}
 						}
 
+						// as with glow points, bad points are dropped so no glow, particle or wash comes from them
+						int kept = 0;
 						for (j = 0; j < bank->num_points; j++) {
-							glow_point *p = &bank->points[j];
+							glow_point* p = &bank->points[kept];
 
 							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &temp_vec, fp );
@@ -2592,9 +2614,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							} else {
 								p->radius = 1.0f;
 							}
+
+							if (is_valid_vec(&p->pnt) && is_valid_vec(&p->norm) && std::isfinite(p->radius)) {
+								kept++;
+							} else {
+								invalid_thruster_points++;
+								if (first_bad_bank < 0)
+									first_bad_bank = i;
+							}
 						}
+						bank->num_points = kept;
 						//mprintf(( "Num slots = %d\n", bank->num_slots ));
 					}
+					if (invalid_thruster_points > 0)
+						Warning(LOCATION,
+							"Model '%s': removed %d thruster point(s) with a NaN or infinite value (first in bank %d).",
+							filename,
+							invalid_thruster_points,
+							first_bad_bank);
 				}
 				break;
 
@@ -2812,6 +2849,50 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						} 
 						
 					}
+				}
+
+				{
+					int invalid_verts = 0;
+					int first_bad_path = -1;
+					int unlinked_paths = 0;
+					for (i = 0; i < pm->n_paths; i++) {
+						int bad_positions = 0;
+						for (j = 0; j < pm->paths[i].nverts; j++) {
+							bool bad_pos = !is_valid_vec(&pm->paths[i].verts[j].pos);
+							bool bad_radius = !std::isfinite(pm->paths[i].verts[j].radius);
+							if (bad_pos || bad_radius) {
+								invalid_verts++;
+								if (first_bad_path < 0)
+									first_bad_path = i;
+							}
+							if (bad_pos) {
+								vm_vec_zero(&pm->paths[i].verts[j].pos);
+								bad_positions++;
+							}
+							if (bad_radius)
+								pm->paths[i].verts[j].radius = 0.0f;
+						}
+						// a path with no valid position leads nowhere, so it is unlinked from its parent
+						if (bad_positions > 0 && bad_positions == pm->paths[i].nverts) {
+							pm->paths[i].parent_name[0] = '\0';
+							pm->paths[i].parent_submodel = -1;
+							unlinked_paths++;
+						}
+					}
+					if (unlinked_paths > 0)
+						Warning(LOCATION,
+							"Model '%s': zeroed NaN or infinite values in %d path point(s) (first in path '%s'); "
+							"unlinked %d path(s) with no valid position from their parent.",
+							filename,
+							invalid_verts,
+							pm->paths[first_bad_path].name,
+							unlinked_paths);
+					else if (invalid_verts > 0)
+						Warning(LOCATION,
+							"Model '%s': zeroed NaN or infinite values in %d path point(s) (first in path '%s').",
+							filename,
+							invalid_verts,
+							pm->paths[first_bad_path].name);
 				}
 				break;
 
@@ -3656,6 +3737,18 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		auto* tree = model_get_bsp_collision_tree(sm->collision_tree_index);
 		model_collide_parse_bsp(tree, bsp_data, pm->version);
 		Macro_ubyte_bounds = nullptr;
+
+		int invalid_normals = 0;
+		for (int k = 0; k < tree->n_leaves; ++k) {
+			if (!is_valid_vec(&tree->leaf_list[k].plane_norm))
+				invalid_normals++;
+		}
+		// stock MediaVPs models trigger this
+		if (invalid_normals > 0)
+			mprintf(("Submodel '%s' of model '%s' has polygons with an invalid normal (%d).\n",
+				sm->name,
+				filename,
+				invalid_normals));
 	}
 
 	// clear bsp_data cache
