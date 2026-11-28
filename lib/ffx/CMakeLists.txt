@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(ffx_portable LANGUAGES CXX)
 
-set(FFX_PORTABLE_BACKEND "AUTO" CACHE STRING "How FSR is provided: AUTO, DYNAMIC (load AMD's library at runtime on Windows), SHIM (load AMD's Windows DLL on Linux) or DIRECT (link AMD's library)")
-set_property(CACHE FFX_PORTABLE_BACKEND PROPERTY STRINGS AUTO DYNAMIC SHIM DIRECT UNAVAILABLE)
+set(FFX_PORTABLE_BACKEND "AUTO" CACHE STRING "Vulkan upscaler backend (AUTO prefers AMD FidelityFX where available, otherwise uses Arm ASR)")
+set_property(CACHE FFX_PORTABLE_BACKEND PROPERTY STRINGS AUTO DYNAMIC SHIM DIRECT ARM_ASR UNAVAILABLE)
 set(FFX_PORTABLE_AMD_LIBRARY "" CACHE FILEPATH "DIRECT: AMD library to link. Empty uses AMD's Windows import library")
 set(FFX_PORTABLE_AMD_RUNTIME_FILES "" CACHE STRING "DIRECT: runtime files to deploy. Empty uses AMD's Windows DLLs")
 option(FFX_PORTABLE_BUILD_TESTS "Build the ffx-portable smoke client" OFF)
@@ -53,7 +53,8 @@ function(ffx_portable_fetch name expected_hash out_var)
         message(FATAL_ERROR "ffx-portable: could not download ${name}: ${status_text}\n"
             "URL: ${FFX_PORTABLE_DOWNLOAD_URL}/${name}\n"
             "To build offline, place the file with SHA-256 ${expected_hash} at ${cached}\n"
-            "To build without FSR instead, configure with -DFSO_BUILD_WITH_FFX=OFF")
+            "To build with Arm ASR instead, configure with -DFFX_PORTABLE_BACKEND=ARM_ASR\n"
+            "To disable temporal upscaling in FSO, configure with -DFSO_BUILD_WITH_FFX=OFF")
     endif()
     file(SHA256 "${partial}" actual_hash)
     if(NOT actual_hash STREQUAL expected_hash)
@@ -71,8 +72,13 @@ function(ffx_portable_fetch_windows_runtime out_var)
     set(${out_var} "${loader};${upscaler}" PARENT_SCOPE)
 endfunction()
 
-string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" FFX_PORTABLE_ARCH)
-if(FFX_PORTABLE_ARCH MATCHES "^(x86_64|amd64)$" AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+if(WIN32 AND CMAKE_CXX_COMPILER_ARCHITECTURE_ID)
+    # CMAKE_SYSTEM_PROCESSOR can describe the host when building for Windows with MSVC.
+    string(TOLOWER "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}" FFX_PORTABLE_ARCH)
+else()
+    string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" FFX_PORTABLE_ARCH)
+endif()
+if(FFX_PORTABLE_ARCH MATCHES "^(x64|x86_64|amd64)$" AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(FFX_PORTABLE_X64 ON)
 else()
     set(FFX_PORTABLE_X64 OFF)
@@ -80,12 +86,12 @@ endif()
 
 set(FFX_PORTABLE_SELECTED "${FFX_PORTABLE_BACKEND}")
 if(FFX_PORTABLE_SELECTED STREQUAL "AUTO")
-    if(WIN32)
+    if(WIN32 AND FFX_PORTABLE_X64)
         set(FFX_PORTABLE_SELECTED DYNAMIC)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND FFX_PORTABLE_X64)
         set(FFX_PORTABLE_SELECTED SHIM)
     else()
-        set(FFX_PORTABLE_SELECTED UNAVAILABLE)
+        set(FFX_PORTABLE_SELECTED ARM_ASR)
     endif()
 endif()
 
@@ -130,6 +136,12 @@ elseif(FFX_PORTABLE_SELECTED STREQUAL "SHIM")
     target_link_libraries(ffx_portable PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
     target_compile_definitions(ffx_portable PRIVATE FFX_PORTABLE_UPSCALER_SHA256="${FFX_PORTABLE_UPSCALER_SHA256}")
     ffx_portable_fetch(amd_fidelityfx_upscaler_vk.dll ${FFX_PORTABLE_UPSCALER_SHA256} FFX_PORTABLE_RUNTIME)
+elseif(FFX_PORTABLE_SELECTED STREQUAL "ARM_ASR")
+    add_subdirectory(third_party/arm-asr)
+    add_library(ffx_portable STATIC src/arm_asr.cpp)
+    target_compile_definitions(ffx_portable PUBLIC FFX_PORTABLE_ARM_ASR=1 PRIVATE VK_NO_PROTOTYPES)
+    target_link_libraries(ffx_portable PRIVATE ffx_portable_arm_asr)
+    set(FFX_PORTABLE_ARM_ASR_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/arm-asr/LICENSES/arm-asr.txt")
 elseif(FFX_PORTABLE_SELECTED STREQUAL "UNAVAILABLE")
     add_library(ffx_portable STATIC src/unavailable.cpp)
 else()
@@ -137,6 +149,7 @@ else()
 endif()
 
 message(STATUS "ffx-portable backend: ${FFX_PORTABLE_SELECTED}")
+set_property(TARGET ffx_portable PROPERTY FFX_PORTABLE_SELECTED_BACKEND "${FFX_PORTABLE_SELECTED}")
 
 if(NOT FFX_PORTABLE_SELECTED STREQUAL "DIRECT")
     target_include_directories(ffx_portable PUBLIC ${FFX_PORTABLE_INCLUDES})
@@ -153,9 +166,14 @@ endif()
 
 # Stored globally because the functions below run in the client's CMake scope, not this one.
 set_property(GLOBAL PROPERTY FFX_PORTABLE_RUNTIME_FILES "${FFX_PORTABLE_RUNTIME}")
-set_property(GLOBAL PROPERTY FFX_PORTABLE_NOTICE_FILES
-    ${FFX_PORTABLE_AMD_DIR}/Kits/FidelityFX/docs/license.md
-    ${FFX_PORTABLE_AMD_DIR}/3rdpartynotice.md)
+set_property(GLOBAL PROPERTY FFX_PORTABLE_ARM_ASR_NOTICE "${FFX_PORTABLE_ARM_ASR_LICENSE}")
+if(FFX_PORTABLE_ARM_ASR_LICENSE)
+    set_property(GLOBAL PROPERTY FFX_PORTABLE_NOTICE_FILES "${FFX_PORTABLE_ARM_ASR_LICENSE}")
+else()
+    set_property(GLOBAL PROPERTY FFX_PORTABLE_NOTICE_FILES
+        ${FFX_PORTABLE_AMD_DIR}/Kits/FidelityFX/docs/license.md
+        ${FFX_PORTABLE_AMD_DIR}/3rdpartynotice.md)
+endif()
 
 # For clients with their own deployment logic. Runtime files belong next to the executable, or in a "lib"
 # directory beside it or one level up on Linux. Notice files must ship with any redistribution.

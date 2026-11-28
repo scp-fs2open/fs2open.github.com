@@ -115,11 +115,12 @@ MACRO(COPY_FILES_TO_TARGET _target)
 	# Third party licenses that have to accompany the copied binaries
 	get_property(_ffx_license GLOBAL PROPERTY FSO_FFX_LICENSE_FILE)
 	if (_ffx_license)
+		get_property(_ffx_license_name GLOBAL PROPERTY FSO_FFX_LICENSE_NAME)
 		ADD_CUSTOM_COMMAND(
 			TARGET ${_target} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${_target}>/license"
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_ffx_license}" "$<TARGET_FILE_DIR:${_target}>/license/amd_ffx.txt"
-			COMMENT "copying AMD FidelityFX license..."
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_ffx_license}" "$<TARGET_FILE_DIR:${_target}>/license/${_ffx_license_name}"
+			COMMENT "copying temporal upscaler license..."
 			VERBATIM
 		)
 	endif()

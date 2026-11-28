@@ -27,6 +27,7 @@ extern "C" const char* ffxPortableLoadError();
 
 struct ffxPortableVkRequirements
 {
+    bool     supported = true;
     uint32_t minApiVersion;  // The instance and device must be created with at least this version.
     bool     fp8Capable;     // The device can run the FP8 model, given these requirements are applied.
     bool     int8Capable;    // The device can run an INT8 model, given these requirements are applied.
@@ -114,6 +115,13 @@ namespace ffx_portable_detail
 
 // Fills `out` with what FSR needs and this device supports. Call before vkCreateDevice. Takes the
 // client's loader entry point so that VK_NO_PROTOTYPES clients work.
+#if defined(FFX_PORTABLE_ARM_ASR)
+void ffxPortableVkGetDeviceRequirements(VkInstance instance, VkPhysicalDevice gpu,
+                                       PFN_vkGetInstanceProcAddr getInstanceProcAddr,
+                                       ffxPortableVkRequirements* out);
+inline constexpr bool ffxPortableUsesArmAsr() { return true; }
+#else
+inline constexpr bool ffxPortableUsesArmAsr() { return false; }
 inline void ffxPortableVkGetDeviceRequirements(VkInstance instance, VkPhysicalDevice gpu, PFN_vkGetInstanceProcAddr getInstanceProcAddr,
                                                ffxPortableVkRequirements* out)
 {
@@ -287,6 +295,8 @@ inline void ffxPortableVkGetDeviceRequirements(VkInstance instance, VkPhysicalDe
     }
 #endif
 }
+
+#endif
 
 // Adds the requirements to a device create info, merging with what the client already requests.
 // Handles both pEnabledFeatures and VkPhysicalDeviceFeatures2, and existing feature structs including

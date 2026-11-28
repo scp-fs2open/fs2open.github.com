@@ -530,7 +530,7 @@ public:
 	// The contexts were made for a different version or mode than the one now chosen
 	bool settingsChanged() const
 	{
-		return hasContext() && (m_contextMajorVersion != Gr_fsr_major_version || m_contextMode != Gr_fsr_mode);
+		return hasContext() && (m_contextProvider != Gr_upscaler_provider || m_contextMode != Gr_fsr_mode);
 	}
 	bool createResources();
 	bool hasResources() const;
@@ -562,7 +562,7 @@ private:
 
 	PostProcessContext* m_ctx = nullptr;
 	std::array<View, 2> m_views;
-	int m_contextMajorVersion = 0;
+	int m_contextProvider = 0;
 	FsrMode m_contextMode = FsrMode::Off;
 	int m_jitterPhaseCount = 1;
 };
