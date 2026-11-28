@@ -2939,6 +2939,7 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 		outView = nullptr;
 		deletionQueue->queueImage(outImage, outAlloc);
 		outImage = nullptr;
+		outAlloc = VulkanAllocation{};
 		return false;
 	}
 
