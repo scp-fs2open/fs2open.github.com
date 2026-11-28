@@ -1,0 +1,7 @@
+#HUD SETTINGS
+
+$Available squad orders:
+    +Order Type: Message All Bombers
+    +Text: XSTR("Bombers", 9999)
+
+#End
