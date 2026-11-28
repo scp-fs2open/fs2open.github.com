@@ -2266,6 +2266,13 @@ void hud_squadmsg_ship_command()
 			ship* shipp;
 			bool partial_accept, all_accept;            // value which tells us what to do with menu item
 
+			auto flavor = SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS;
+			if (Msg_instance == MESSAGE_ALL_FIGHTERS) {
+				flavor = SmallCraftFlavor::ALL_FIGHTERS;
+			} else if (Msg_instance == MESSAGE_ALL_BOMBERS) {
+				flavor = SmallCraftFlavor::ALL_BOMBERS;
+			}
+
 			all_accept = true;
 			partial_accept = false;
 			for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
@@ -2280,20 +2287,8 @@ void hud_squadmsg_ship_command()
 				if (!ship_can_take_flavor_order(shipp, Player_ship))
 					continue;
 
-				// don't send message to non fighter or bomber wings
-				bool is_valid = true;
-				switch (Msg_instance) {
-					case MESSAGE_ALL_FIGHTERS_BOMBERS:
-						is_valid = Ship_info[shipp->ship_info_index].is_fighter_bomber();
-						break;
-					case MESSAGE_ALL_FIGHTERS:
-						is_valid = Ship_info[shipp->ship_info_index].is_fighter();
-						break;
-					case MESSAGE_ALL_BOMBERS:
-						is_valid = Ship_info[shipp->ship_info_index].is_bomber();
-						break;
-				}
-				if (!is_valid) {
+				// don't send message to craft of the wrong type
+				if (!is_smallcraft_flavor(&Ship_info[shipp->ship_info_index], flavor)) {
 					continue;
 				}
 
