@@ -247,7 +247,7 @@ bool twinIsSaved(const SCP_string& guid, int axes, int buttons, int hats, int nu
 		SCP_string other_guid_str(other_guid);
 		SCP_toupper(other_guid_str);
 		if (other_guid_str == guid && other_axes == axes && other_buttons == buttons && other_hats == hats &&
-			other_number != number) {
+			other_number != 0 && other_number != number) {
 			return true;
 		}
 	}
@@ -267,13 +267,15 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int a
 		if (!stick->isAttached() || stick->getGUID() != guid) {
 			continue;
 		}
-		// A saved serial rules out sticks with another one; an unnumbered setting can still take a lone stick by GUID
+		// A saved serial rules out sticks with another one, not a stick that hasn't sent its serial yet
 		if (!serial.empty()) {
-			if (serialHex(stick.get()) != serial) {
+			const auto stick_serial = serialHex(stick.get());
+			if (stick_serial == serial) {
+				by_serial = stick.get();
+				++serial_hits;
+			} else if (!stick_serial.empty()) {
 				continue;
 			}
-			by_serial = stick.get();
-			++serial_hits;
 		}
 		if (axes >= 0 && stick->numAxes() == axes && stick->numButtons() == buttons && stick->numHats() == hats) {
 			by_counts = stick.get();
@@ -697,8 +699,7 @@ bool device_event_handler(const SDL_Event &evt)
 
 			// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID.
 			// prefer the one with the same serial, then the same counts: it was this stick, so its label stays.
-			// An entry with other counts was another stick; taking it could move this one ahead of its twins and
-			// renumber them
+			// Among twins an entry with other counts is left alone: taking it could move this stick ahead of them
 			auto reuse = joysticks.end();
 			int reuse_rank = 0;
 			int same_guid = 0;
@@ -738,8 +739,7 @@ bool device_event_handler(const SDL_Event &evt)
 					reuse_rank = rank;
 				}
 			}
-			// with no other stick of its GUID there are no twins to renumber, so a stick whose counts changed while
-			// unplugged (a reconfigured vJoy device) gets its own entry back
+			// a lone stick has no twins to renumber, so it may retake an entry whose counts changed (reconfigured vJoy)
 			if (reuse == joysticks.end() && same_guid == 1)
 			{
 				reuse = changed_counts;
