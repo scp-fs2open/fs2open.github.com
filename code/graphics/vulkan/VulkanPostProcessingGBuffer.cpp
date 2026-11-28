@@ -412,8 +412,12 @@ bool VulkanDeferredGBuffer::createVelocityTargets(const RenderTarget& drawnMotio
 			m_velocityMsaaFramebuffer = createGbufFramebuffer(m_velocityMsaaRenderPass, false, true, &m_msaaVelocity);
 			m_velocityResolveFramebuffer = createGbufFramebuffer(m_velocityResolveRenderPass, false, false, &drawnMotion);
 
-			getTextureManager()->transitionImageLayout(m_msaaVelocity.image, m_msaaVelocity.format,
-				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+			if (!getTextureManager()->transitionImageLayout(m_msaaVelocity.image, m_msaaVelocity.format,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)) {
+				nprintf(("vulkan", "VulkanDeferredGBuffer: Failed to transition the MSAA motion vector image\n"));
+				destroyVelocityTargets();
+				return false;
+			}
 		}
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanDeferredGBuffer: Failed to create motion vector framebuffers: %s\n", e.what()));

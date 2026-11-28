@@ -228,8 +228,9 @@ public:
 
 	/**
 	 * @brief Transition image layout
+	 * @return false if the transition could not be recorded or submitted
 	 */
-	void transitionImageLayout(vk::Image image, vk::Format format,
+	bool transitionImageLayout(vk::Image image, vk::Format format,
 	                           vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
 	                           uint32_t mipLevels = 1, uint32_t arrayLayers = 1);
 
@@ -275,20 +276,21 @@ private:
 
 	/**
 	 * @brief Begin single-time command buffer
-	 * @note Throws vk::SystemError because transitionImageLayout's callers catch it; use
-	 * tryBeginSingleTimeCommands to get a null command buffer instead.
+	 * @return the command buffer, or a null one if it could not be allocated or begun
 	 */
 	vk::CommandBuffer beginSingleTimeCommands();
 
-	/**
-	 * @brief Begin single-time command buffer, returning a null one instead of throwing if that fails
-	 */
-	vk::CommandBuffer tryBeginSingleTimeCommands();
+	enum class SingleTimeResult {
+		Finished,    //!< the commands ran and the GPU is done with everything they used
+		Failed,      //!< not submitted, or the device was lost; nothing the commands used is still in use
+		Unconfirmed, //!< submitted, but waiting failed; what they used may still be in use and must not be freed
+	};
 
 	/**
 	 * @brief End and submit single-time command buffer (synchronous, blocks on waitIdle)
+	 * @note Frees the command buffer unless the result is Unconfirmed, in which case it is leaked.
 	 */
-	void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+	SingleTimeResult endSingleTimeCommands(vk::CommandBuffer commandBuffer);
 
 	/**
 	 * @brief Create a host-visible staging buffer (eTransferSrc) sized for an upload
@@ -401,14 +403,9 @@ private:
 		vk::Fence fence;
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
-
-	/**
-	 * @brief Free an upload's staging resources and command buffer, and keep its fence for reuse
-	 */
-	void releasePendingUpload(PendingCommandBuffer& pending);
 	size_t m_pendingUploadBytes = 0;
 	static constexpr size_t MAX_PENDING_UPLOADS = 64;
-	// signaled fences available for reuse by the next upload
+	// completed fences are kept for reuse because creating one per upload is slow on some drivers
 	SCP_vector<vk::Fence> m_freeUploadFences;
 
 	vk::Device m_device;

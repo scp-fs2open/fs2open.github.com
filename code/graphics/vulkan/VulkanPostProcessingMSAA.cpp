@@ -278,12 +278,16 @@ bool VulkanDeferredGBuffer::createMsaaTargets()
 			&m_msaaSpecular, &m_msaaEmissive,
 		};
 		for (auto* t : colorTargets) {
-			texMgr->transitionImageLayout(t->image, t->format,
-				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+			if (!texMgr->transitionImageLayout(t->image, t->format,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)) {
+				return false;
+			}
 		}
 
-		texMgr->transitionImageLayout(m_msaaDepthImage, m_ctx->depthFormat,
-			vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		if (!texMgr->transitionImageLayout(m_msaaDepthImage, m_ctx->depthFormat,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal)) {
+			return false;
+		}
 	}
 
 	return true;

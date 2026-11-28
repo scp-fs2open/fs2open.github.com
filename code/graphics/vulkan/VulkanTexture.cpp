@@ -313,34 +313,8 @@ void VulkanTextureManager::shutdown()
 	}
 	// Upload ownership is independent of frame retirement. Complete and reclaim
 	// it before destroying the command pool or allocator during shutdown.
-	bool queueIdle = true;
-	try {
-		m_graphicsQueue.waitIdle();
-	} catch (const vk::DeviceLostError& e) {
-		// on a lost device the spec counts submitted work as no longer pending, so every pending upload can be released
-		nprintf(("vulkan", "VulkanTexture: device lost while waiting for pending uploads at shutdown: %s\n", e.what()));
-	} catch (const vk::SystemError& e) {
-		queueIdle = false;
-		nprintf(("vulkan", "VulkanTexture: failed waiting for pending uploads at shutdown: %s\n", e.what()));
-	}
-	if (queueIdle) {
-		for (auto& pending : m_pendingCommandBuffers) {
-			releasePendingUpload(pending);
-		}
-		m_pendingCommandBuffers.clear();
-	} else {
-		try {
-			processPendingCommandBuffers();
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanTexture: failed checking pending uploads at shutdown: %s\n", e.what()));
-		}
-		// the queue may still be running these, so leak them rather than free them under it
-		if (!m_pendingCommandBuffers.empty()) {
-			nprintf(("vulkan",
-				"VulkanTexture: leaking %zu texture uploads that may still be in use at shutdown\n",
-				m_pendingCommandBuffers.size()));
-		}
-	}
+	m_graphicsQueue.waitIdle();
+	processPendingCommandBuffers();
 	for (auto fence : m_freeUploadFences) {
 		m_device.destroyFence(fence);
 	}
@@ -786,7 +760,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy and submit async
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1002,7 +976,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy and submit async
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1132,7 +1106,7 @@ bool VulkanTextureManager::upload3DTexture(int handle, bitmap* bm, int texDepth)
 	region.imageOffset = vk::Offset3D(0, 0, 0);
 	region.imageExtent = vk::Extent3D(width, height, depth3D);
 
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1439,7 +1413,7 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy (+ optional mipmap generation) and submit async
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -1820,14 +1794,22 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 
 	// Transition image to eShaderReadOnlyOptimal so it's in a valid layout
 	// if sampled before being rendered into (render pass expects this initial layout)
-	transitionImageLayout(ts->image, format, vk::ImageLayout::eUndefined,
-	                      vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels, arrayLayers);
+	if (!transitionImageLayout(ts->image, format, vk::ImageLayout::eUndefined,
+	                           vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels, arrayLayers)) {
+		// bm_free_data reads this to know a cubemap's framebuffer is the face 0 framebuffer it already frees
+		ts->isCubemap = isCubemapRT;
+		bm_free_data(slot, false);
+		return 0;
+	}
 
 	// Put the depth image in the layout the render pass expects as its initial layout.
 	// It stays there across frames (finalLayout matches), so no per-pass transition.
 	if (hasDepth) {
-		transitionImageLayout(ts->depthImage, depthFormat, vk::ImageLayout::eUndefined,
-		                      vk::ImageLayout::eDepthStencilAttachmentOptimal, 1, 1);
+		if (!transitionImageLayout(ts->depthImage, depthFormat, vk::ImageLayout::eUndefined,
+		                           vk::ImageLayout::eDepthStencilAttachmentOptimal, 1, 1)) {
+			bm_free_data(slot, false);
+			return 0;
+		}
 	}
 
 	// Update slot info
@@ -1965,7 +1947,7 @@ void VulkanTextureManager::update_texture(int bitmap_handle, int bpp, const ubyt
 	m_memoryManager->unmapMemory(stagingAllocation);
 
 	// Record transitions + copy into a single command buffer and submit async
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAllocation);
@@ -2119,7 +2101,7 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 
 	// ---- record layout-transition + copy command ----
 	const vk::ImageLayout oldLayout = ts->currentLayout;
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
@@ -2180,7 +2162,15 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 		cmdImageBarrier(cmd, barrier);
 	}
 
-	endSingleTimeCommands(cmd); // synchronous submit + waitIdle
+	const auto submitted = endSingleTimeCommands(cmd); // synchronous submit + waitIdle
+	if (submitted != SingleTimeResult::Finished) {
+		if (submitted == SingleTimeResult::Failed) {
+			m_device.destroyBuffer(stagingBuffer);
+			m_memoryManager->freeAllocation(stagingAlloc);
+		}
+		vm_free(data_out);
+		return nullptr;
+	}
 
 	// ---- read back & convert ----
 	void* mapped = m_memoryManager->mapMemory(stagingAlloc);
@@ -2502,13 +2492,16 @@ vk::Format VulkanTextureManager::bppToVkFormat(int bpp, bool compressed, int com
 	}
 }
 
-void VulkanTextureManager::transitionImageLayout(vk::Image image, vk::Format format,
+bool VulkanTextureManager::transitionImageLayout(vk::Image image, vk::Format format,
                                                   vk::ImageLayout oldLayout,
                                                   vk::ImageLayout newLayout,
                                                   uint32_t mipLevels,
                                                   uint32_t arrayLayers)
 {
 	vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
+	if (!commandBuffer) {
+		return false;
+	}
 
 	ImageBarrier2 barrier;
 	barrier.image = image;
@@ -2573,7 +2566,8 @@ void VulkanTextureManager::transitionImageLayout(vk::Image image, vk::Format for
 
 	cmdImageBarrier(commandBuffer, barrier);
 
-	endSingleTimeCommands(commandBuffer);
+	// an unconfirmed barrier was still submitted, and later work on this queue is ordered after it
+	return endSingleTimeCommands(commandBuffer) != SingleTimeResult::Failed;
 }
 
 void vulkan_generate_mipmap_chain(vk::CommandBuffer cmd, vk::Image image,
@@ -2672,7 +2666,12 @@ void VulkanTextureManager::frameStart()
 	try {
 		processPendingCommandBuffers();
 	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanTexture: checking pending texture uploads failed: %s\n", e.what()));
+		// a lost device fails this every frame, so one line is enough
+		static bool logged = false;
+		if (!logged) {
+			nprintf(("vulkan", "VulkanTexture: checking pending texture uploads failed: %s\n", e.what()));
+			logged = true;
+		}
 	}
 }
 
@@ -2826,7 +2825,7 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 		regions.push_back(region);
 	}
 
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
@@ -2837,10 +2836,20 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 	}
 	recordUploadCommands(cmd, outImage, stagingBuffer, vk::Format::eR8G8B8A8Unorm,
 	                     1, 1, 1, vk::ImageLayout::eUndefined, false, regions, arrayLayers);
-	endSingleTimeCommands(cmd);
+	const auto submitted = endSingleTimeCommands(cmd);
+	if (submitted == SingleTimeResult::Unconfirmed) {
+		// the copy may still be running, so its staging buffer is leaked and the image kept
+		return true;
+	}
 
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
+	if (submitted == SingleTimeResult::Failed) {
+		m_device.destroyImageView(outView);
+		m_device.destroyImage(outImage);
+		m_memoryManager->freeAllocation(outAlloc);
+		return false;
+	}
 
 	return true;
 }
@@ -2893,7 +2902,7 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 	region.imageOffset = vk::Offset3D(0, 0, 0);
 	region.imageExtent = vk::Extent3D(width, height, 1);
 
-	vk::CommandBuffer cmd = tryBeginSingleTimeCommands();
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
 	if (!cmd) {
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
@@ -2906,10 +2915,22 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 	}
 	recordUploadCommands(cmd, outImage, stagingBuffer, format, width, height,
 	                     1, vk::ImageLayout::eUndefined, false, {region}, 1);
-	endSingleTimeCommands(cmd);
+	const auto submitted = endSingleTimeCommands(cmd);
+	if (submitted == SingleTimeResult::Unconfirmed) {
+		// the copy may still be running, so its staging buffer is leaked and the image kept
+		return true;
+	}
 
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
+	if (submitted == SingleTimeResult::Failed) {
+		m_device.destroyImageView(outView);
+		outView = nullptr;
+		m_device.destroyImage(outImage);
+		outImage = nullptr;
+		m_memoryManager->freeAllocation(outAlloc);
+		return false;
+	}
 
 	return true;
 }
@@ -2969,42 +2990,57 @@ vk::CommandBuffer VulkanTextureManager::beginSingleTimeCommands()
 	allocInfo.commandPool = m_commandPool;
 	allocInfo.commandBufferCount = 1;
 
-	vk::CommandBuffer commandBuffer = m_device.allocateCommandBuffers(allocInfo)[0];
+	vk::CommandBuffer commandBuffer;
+	try {
+		commandBuffer = m_device.allocateCommandBuffers(allocInfo)[0];
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanTexture: failed to allocate a command buffer: %s\n", e.what()));
+		return nullptr;
+	}
 
 	vk::CommandBufferBeginInfo beginInfo;
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
 	try {
 		commandBuffer.begin(beginInfo);
-	} catch (const vk::SystemError&) {
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanTexture: failed to begin a command buffer: %s\n", e.what()));
 		m_device.freeCommandBuffers(m_commandPool, commandBuffer);
-		throw;
+		return nullptr;
 	}
 	return commandBuffer;
 }
 
-vk::CommandBuffer VulkanTextureManager::tryBeginSingleTimeCommands()
+VulkanTextureManager::SingleTimeResult VulkanTextureManager::endSingleTimeCommands(vk::CommandBuffer commandBuffer)
 {
-	try {
-		return beginSingleTimeCommands();
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanTexture: failed to begin a command buffer: %s\n", e.what()));
-		return nullptr;
-	}
-}
-
-void VulkanTextureManager::endSingleTimeCommands(vk::CommandBuffer commandBuffer)
-{
-	commandBuffer.end();
-
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	m_graphicsQueue.submit(submitInfo, nullptr);
-	m_graphicsQueue.waitIdle();
+	auto result = SingleTimeResult::Finished;
+	try {
+		commandBuffer.end();
+		m_graphicsQueue.submit(submitInfo, nullptr);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanTexture: failed to submit a command buffer: %s\n", e.what()));
+		result = SingleTimeResult::Failed;
+	}
+	if (result == SingleTimeResult::Finished) {
+		try {
+			m_graphicsQueue.waitIdle();
+		} catch (const vk::DeviceLostError& e) {
+			// on a lost device the spec counts submitted work as no longer pending, so it can be freed
+			nprintf(("vulkan", "VulkanTexture: device lost waiting for a command buffer: %s\n", e.what()));
+			result = SingleTimeResult::Failed;
+		} catch (const vk::SystemError& e) {
+			// the queue may still be running it, so leak it rather than free it under the GPU
+			nprintf(("vulkan", "VulkanTexture: failed waiting for a command buffer: %s\n", e.what()));
+			return SingleTimeResult::Unconfirmed;
+		}
+	}
 
 	m_device.freeCommandBuffers(m_commandPool, commandBuffer);
+	return result;
 }
 
 void VulkanTextureManager::recordUploadCommands(vk::CommandBuffer cmd, vk::Image image,
@@ -3148,21 +3184,17 @@ bool VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 	return true;
 }
 
-void VulkanTextureManager::releasePendingUpload(PendingCommandBuffer& pending)
-{
-	m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
-	m_device.destroyBuffer(pending.stagingBuffer);
-	m_memoryManager->freeAllocation(pending.stagingAllocation);
-	m_device.freeCommandBuffers(m_commandPool, pending.cb);
-	m_freeUploadFences.push_back(pending.fence);
-}
-
 void VulkanTextureManager::processPendingCommandBuffers()
 {
 	// each upload leaves the list as soon as it is released, so a throw from a later fence cannot release it twice
 	while (!m_pendingCommandBuffers.empty() &&
 	       m_device.getFenceStatus(m_pendingCommandBuffers.front().fence) == vk::Result::eSuccess) {
-		releasePendingUpload(m_pendingCommandBuffers.front());
+		auto& pending = m_pendingCommandBuffers.front();
+		m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
+		m_device.destroyBuffer(pending.stagingBuffer);
+		m_memoryManager->freeAllocation(pending.stagingAllocation);
+		m_device.freeCommandBuffers(m_commandPool, pending.cb);
+		m_freeUploadFences.push_back(pending.fence);
 		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin());
 	}
 	Assert(m_pendingCommandBuffers.empty() == (m_pendingUploadBytes == 0));
