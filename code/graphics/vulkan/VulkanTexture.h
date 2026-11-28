@@ -285,7 +285,7 @@ private:
 		Failed,      //!< not submitted, or the device was lost (after waiting on what was submitted); nothing the
 		             //!< commands used is still in use
 		Unconfirmed, //!< submitted, but waiting failed; what they used may still be in use, so it must not be freed
-		             //!< now (callers hand it to the deletion queue)
+		             //!< now (callers defer freeing it)
 	};
 
 	/**
@@ -293,6 +293,14 @@ private:
 	 * @note Frees the command buffer unless the result is Unconfirmed, in which case it is leaked.
 	 */
 	SingleTimeResult endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+
+	/**
+	 * @brief After a submit threw, wait for the queue to finish if the error was a lost device
+	 * @param[in] error the error the submit threw
+	 * @note The spec counts a submit that reports a lost device as submitted, so its work must finish before
+	 * anything it used is freed. Other submit errors leave nothing pending, so this returns at once.
+	 */
+	void waitIfSubmitLostDevice(const vk::SystemError& error);
 
 	/**
 	 * @brief Create a host-visible staging buffer (eTransferSrc) sized for an upload

@@ -37,6 +37,12 @@ void VulkanDeletionQueue::shutdown()
 		return;
 	}
 
+	// a renderer torn down without its shutdown (an early exit) never waited, and queued work may still be running
+	try {
+		m_device.waitIdle();
+	} catch (const vk::SystemError&) {
+		// a lost device fails this wait, and the spec counts that failure as the work being done
+	}
 	flushAll();
 	m_initialized = false;
 }
