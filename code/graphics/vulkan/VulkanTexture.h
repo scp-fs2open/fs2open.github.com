@@ -228,7 +228,7 @@ public:
 
 	/**
 	 * @brief Transition image layout
-	 * @return false if the transition could not be recorded or submitted
+	 * @return false if the transition could not be recorded or submitted, or the device was lost
 	 */
 	bool transitionImageLayout(vk::Image image, vk::Format format,
 	                           vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
@@ -282,8 +282,10 @@ private:
 
 	enum class SingleTimeResult {
 		Finished,    //!< the commands ran and the GPU is done with everything they used
-		Failed,      //!< not submitted, or the device was lost; nothing the commands used is still in use
-		Unconfirmed, //!< submitted, but waiting failed; what they used may still be in use and must not be freed
+		Failed,      //!< not submitted, or the device was lost (after waiting on what was submitted); nothing the
+		             //!< commands used is still in use
+		Unconfirmed, //!< submitted, but waiting failed; what they used may still be in use, so it must not be freed
+		             //!< now (callers hand it to the deletion queue)
 	};
 
 	/**
@@ -394,6 +396,7 @@ private:
 	int m_bmDataLogCount = 0;       // bm_data entry trace
 	int m_uploadFmtLogCount = 0;    // uploadTexture2D format trace
 	int m_reuploadLogCount = 0;     // uploadTexture2D resident-texture re-upload notice
+	bool m_retireFailureLogged = false; // frameStart retire failure, logged once
 
 	// In-flight uploads in submission order, each with its own completion fence.
 	struct PendingCommandBuffer {

@@ -280,12 +280,14 @@ bool VulkanDeferredGBuffer::createMsaaTargets()
 		for (auto* t : colorTargets) {
 			if (!texMgr->transitionImageLayout(t->image, t->format,
 				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)) {
+				nprintf(("vulkan", "VulkanPostProcessor: Failed to transition an MSAA color target\n"));
 				return false;
 			}
 		}
 
 		if (!texMgr->transitionImageLayout(m_msaaDepthImage, m_ctx->depthFormat,
 			vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal)) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to transition the MSAA depth target\n"));
 			return false;
 		}
 	}

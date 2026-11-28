@@ -1745,6 +1745,7 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 				ts->cubeFaceFramebuffers[face] = m_device.createFramebuffer(framebufferInfo);
 			} catch (const vk::SystemError& e) {
 				nprintf(("vulkan", "Failed to create cubemap face %zu framebuffer: %s\n", face, e.what()));
+				bm_free_data(slot, false);
 				return 0;
 			}
 		}
@@ -1993,7 +1994,12 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 		// bm_data submits uploads asynchronously via submitUploadAsync.
 		// Wait for completion so the GPU layout matches ts->currentLayout
 		// before we record the readback barriers.
-		m_graphicsQueue.waitIdle();
+		try {
+			m_graphicsQueue.waitIdle();
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanTexture: failed waiting for an upload before readback: %s\n", e.what()));
+			return nullptr;
+		}
 	}
 
 	// Validate static-texture assumption: format must be one known
@@ -2162,11 +2168,14 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 		cmdImageBarrier(cmd, barrier);
 	}
 
-	const auto submitted = endSingleTimeCommands(cmd); // synchronous submit + waitIdle
-	if (submitted != SingleTimeResult::Finished) {
-		if (submitted == SingleTimeResult::Failed) {
+	const auto result = endSingleTimeCommands(cmd); // synchronous submit + waitIdle
+	if (result != SingleTimeResult::Finished) {
+		if (result == SingleTimeResult::Failed) {
 			m_device.destroyBuffer(stagingBuffer);
 			m_memoryManager->freeAllocation(stagingAlloc);
+		} else {
+			// the copy may still be running; the deletion queue frees the buffer once later frames have finished
+			getDeletionQueue()->queueBuffer(stagingBuffer, stagingAlloc);
 		}
 		vm_free(data_out);
 		return nullptr;
@@ -2667,10 +2676,9 @@ void VulkanTextureManager::frameStart()
 		processPendingCommandBuffers();
 	} catch (const vk::SystemError& e) {
 		// a lost device fails this every frame, so one line is enough
-		static bool logged = false;
-		if (!logged) {
+		if (!m_retireFailureLogged) {
 			nprintf(("vulkan", "VulkanTexture: checking pending texture uploads failed: %s\n", e.what()));
-			logged = true;
+			m_retireFailureLogged = true;
 		}
 	}
 }
@@ -2830,23 +2838,29 @@ bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllo
 		m_device.destroyBuffer(stagingBuffer);
 		m_memoryManager->freeAllocation(stagingAlloc);
 		m_device.destroyImageView(outView);
+		outView = nullptr;
 		m_device.destroyImage(outImage);
+		outImage = nullptr;
 		m_memoryManager->freeAllocation(outAlloc);
 		return false;
 	}
 	recordUploadCommands(cmd, outImage, stagingBuffer, vk::Format::eR8G8B8A8Unorm,
 	                     1, 1, 1, vk::ImageLayout::eUndefined, false, regions, arrayLayers);
-	const auto submitted = endSingleTimeCommands(cmd);
-	if (submitted == SingleTimeResult::Unconfirmed) {
-		// the copy may still be running, so its staging buffer is leaked and the image kept
+	const auto result = endSingleTimeCommands(cmd);
+	if (result == SingleTimeResult::Unconfirmed) {
+		// the copy may still be running: the deletion queue frees the staging buffer once later frames have
+		// finished, and the image is kept, since fallback textures are destroyed only after the device is idle
+		getDeletionQueue()->queueBuffer(stagingBuffer, stagingAlloc);
 		return true;
 	}
 
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
-	if (submitted == SingleTimeResult::Failed) {
+	if (result == SingleTimeResult::Failed) {
 		m_device.destroyImageView(outView);
+		outView = nullptr;
 		m_device.destroyImage(outImage);
+		outImage = nullptr;
 		m_memoryManager->freeAllocation(outAlloc);
 		return false;
 	}
@@ -2915,15 +2929,22 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 	}
 	recordUploadCommands(cmd, outImage, stagingBuffer, format, width, height,
 	                     1, vk::ImageLayout::eUndefined, false, {region}, 1);
-	const auto submitted = endSingleTimeCommands(cmd);
-	if (submitted == SingleTimeResult::Unconfirmed) {
-		// the copy may still be running, so its staging buffer is leaked and the image kept
-		return true;
+	const auto result = endSingleTimeCommands(cmd);
+	if (result == SingleTimeResult::Unconfirmed) {
+		// the copy may still be running, so the deletion queue takes everything it uses and frees it once later
+		// frames have finished; failing here keeps the caller from destroying the image under the copy
+		auto* deletionQueue = getDeletionQueue();
+		deletionQueue->queueBuffer(stagingBuffer, stagingAlloc);
+		deletionQueue->queueImageView(outView);
+		outView = nullptr;
+		deletionQueue->queueImage(outImage, outAlloc);
+		outImage = nullptr;
+		return false;
 	}
 
 	m_device.destroyBuffer(stagingBuffer);
 	m_memoryManager->freeAllocation(stagingAlloc);
-	if (submitted == SingleTimeResult::Failed) {
+	if (result == SingleTimeResult::Failed) {
 		m_device.destroyImageView(outView);
 		outView = nullptr;
 		m_device.destroyImage(outImage);
@@ -3023,6 +3044,14 @@ VulkanTextureManager::SingleTimeResult VulkanTextureManager::endSingleTimeComman
 		m_graphicsQueue.submit(submitInfo, nullptr);
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanTexture: failed to submit a command buffer: %s\n", e.what()));
+		if (e.code() == vk::Result::eErrorDeviceLost) {
+			// the spec counts a submit that reports a lost device as submitted, so let it finish before freeing
+			try {
+				m_graphicsQueue.waitIdle();
+			} catch (const vk::SystemError&) {
+				// this wait fails on a lost device too, and the spec counts that failure as the work being done
+			}
+		}
 		result = SingleTimeResult::Failed;
 	}
 	if (result == SingleTimeResult::Finished) {
@@ -3168,6 +3197,14 @@ bool VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 		m_graphicsQueue.submit(submitInfo, fence);
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "VulkanTexture: failed to submit a texture upload: %s\n", e.what()));
+		if (e.code() == vk::Result::eErrorDeviceLost) {
+			// the spec counts a submit that reports a lost device as submitted, so let it finish before freeing
+			try {
+				m_graphicsQueue.waitIdle();
+			} catch (const vk::SystemError&) {
+				// this wait fails on a lost device too, and the spec counts that failure as the work being done
+			}
+		}
 		if (fence) {
 			m_device.destroyFence(fence);
 		}
