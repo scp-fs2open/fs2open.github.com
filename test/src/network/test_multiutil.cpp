@@ -59,6 +59,50 @@ TEST_F(FindPlayerByCallsignTest, finds_listen_server_host)
 	EXPECT_EQ(found.second, -1);
 }
 
+class NewPlayerIdTest : public ::testing::Test {
+  protected:
+	void SetUp() override
+	{
+		_saved_id_num = Multi_id_num;
+		for (int i = 0; i < MAX_PLAYERS; ++i) {
+			_saved_flags[i] = Net_players[i].flags;
+			_saved_ids[i] = Net_players[i].player_id;
+			Net_players[i].flags = 0;
+		}
+	}
+
+	void TearDown() override
+	{
+		Multi_id_num = _saved_id_num;
+		for (int i = 0; i < MAX_PLAYERS; ++i) {
+			Net_players[i].flags = _saved_flags[i];
+			Net_players[i].player_id = _saved_ids[i];
+		}
+	}
+
+	static void add(int slot, int flags, short player_id)
+	{
+		Net_players[slot].flags = flags;
+		Net_players[slot].player_id = player_id;
+	}
+
+	short _saved_id_num = 0;
+	std::array<int, MAX_PLAYERS> _saved_flags{};
+	std::array<short, MAX_PLAYERS> _saved_ids{};
+};
+
+// the id counter starts over after 20000 while the server and long-connected players still hold low ids
+TEST_F(NewPlayerIdTest, skips_ids_of_connected_players_after_wrap)
+{
+	Multi_id_num = 20000;
+	add(0, NETINFO_FLAG_CONNECTED, 0);
+	add(3, NETINFO_FLAG_CONNECTED, 1);
+	add(4, 0, 2);
+
+	EXPECT_EQ(multi_get_new_id(), 20000);
+	EXPECT_EQ(multi_get_new_id(), 2);
+}
+
 // ships faster than 128 m/s (common in mods) must reach clients at their real speed
 TEST(VelocityPacking, fast_ship_round_trips)
 {
