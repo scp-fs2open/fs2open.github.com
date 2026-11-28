@@ -701,11 +701,18 @@ bool device_event_handler(const SDL_Event &evt)
 			// renumber them
 			auto reuse = joysticks.end();
 			int reuse_rank = 0;
+			int same_guid = 0;
+			auto changed_counts = joysticks.end();
 			const auto added_serial = added->getSerial();
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
 				const auto& old = *iter;
-				if (old->isAttached() || old->getGUID() != added->getGUID())
+				if (old->getGUID() != added->getGUID())
+				{
+					continue;
+				}
+				++same_guid;
+				if (old->isAttached())
 				{
 					continue;
 				}
@@ -721,11 +728,21 @@ bool device_event_handler(const SDL_Event &evt)
 				{
 					rank = 2;
 				}
+				else if (!same_counts && (added_serial.empty() || old_serial.empty()))
+				{
+					changed_counts = iter;
+				}
 				if (rank > reuse_rank)
 				{
 					reuse = iter;
 					reuse_rank = rank;
 				}
+			}
+			// with no other stick of its GUID there are no twins to renumber, so a stick whose counts changed while
+			// unplugged (a reconfigured vJoy device) gets its own entry back
+			if (reuse == joysticks.end() && same_guid == 1)
+			{
+				reuse = changed_counts;
 			}
 
 			if (reuse != joysticks.end())
