@@ -167,8 +167,9 @@ class OptionsManager {
 	/**
 	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
 	 * default, the value saved in the settings file (null if none), the value this launch uses (an enforced table
-	 * value or an override wins over the saved one), override source and reason, whether a mod enforces it, and
-	 * whether a change needs a restart, and what the option needs to be used with whether this machine has it.
+	 * value or an override wins over the saved one), override source and reason, whether a mod enforces it, whether
+	 * a change needs a restart, and what the option needs (the Vulkan renderer, ray tracing) with whether this machine
+	 * has it.
 	 * @note The restart flag is approximate, for information only: it is false only for options bound straight to a
 	 * variable, so an option whose own listener applies a change at once (HUD.BallisticGauge) still reports true.
 	 * @return A new JSON array the caller owns
