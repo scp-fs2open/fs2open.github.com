@@ -8,6 +8,7 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "mission/missiongrid.h"
+#include "utils/array_utils.h"
 
 #include <QMessageBox>
 
@@ -1306,25 +1307,14 @@ void BriefingEditorDialogModel::deleteCurrentIcon()
 	if (del < 0 || del >= s.num_icons)
 		return;
 
-	// Remove any lines that reference the icon being deleted
-	for (int i = s.num_lines - 1; i >= 0; --i) {
-		const int a = s.lines[i].start_icon;
-		const int b = s.lines[i].end_icon;
-		if (a == del || b == del) {
-			for (int k = i; k + 1 < s.num_lines; ++k) {
-				s.lines[k] = s.lines[k + 1];
-			}
-			--s.num_lines;
-		}
-	}
-
-	// Reindex remaining line endpoints
+	// Remove any lines that reference the icon being deleted, and reindex the rest
+	int kept = 0;
 	for (int i = 0; i < s.num_lines; ++i) {
-		if (s.lines[i].start_icon > del)
-			--s.lines[i].start_icon;
-		if (s.lines[i].end_icon > del)
-			--s.lines[i].end_icon;
+		auto& line = s.lines[i];
+		if (array_adjust_index_for_removal(line.start_icon, del) && array_adjust_index_for_removal(line.end_icon, del))
+			s.lines[kept++] = line;
 	}
+	s.num_lines = kept;
 
 	// Shift icons down to fill the gap
 	for (int i = del; i + 1 < s.num_icons; ++i) {

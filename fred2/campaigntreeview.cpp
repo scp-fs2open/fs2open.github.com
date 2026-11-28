@@ -17,6 +17,7 @@
 #include "CampaignTreeWnd.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+#include "utils/array_utils.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -1343,8 +1344,7 @@ void campaign_tree_view::OnDeleteRow()
 			remove_mission(i);
 
 	for (i=0; i<Campaign.num_missions; i++)
-		if (Campaign.missions[i].level > Context_mission)
-			Campaign.missions[i].level--;
+		array_adjust_index_for_removal(Campaign.missions[i].level, Context_mission);
 
 	total_levels--;
 	SetScrollSizes(MM_TEXT, CSize(total_width * CELL_WIDTH, total_levels * LEVEL_HEIGHT));
@@ -1358,8 +1358,7 @@ void campaign_tree_view::OnInsertRow()
 	int i;
 
 	for (i=0; i<Campaign.num_missions; i++)
-		if (Campaign.missions[i].level >= Context_mission)
-			Campaign.missions[i].level++;
+		array_adjust_index_for_insertion(Campaign.missions[i].level, Context_mission);
 
 	total_levels++;
 	SetScrollSizes(MM_TEXT, CSize(total_width * CELL_WIDTH, total_levels * LEVEL_HEIGHT));
