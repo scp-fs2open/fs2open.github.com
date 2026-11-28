@@ -222,7 +222,7 @@ namespace animation {
 			}
 
 			if (m_flags[Animation_Flags::Random_starting_phase]) {
-				instanceData.time = util::Random::next() * util::Random::INV_F_MAX_VALUE * instanceData.duration;
+				instanceData.time = frand() * instanceData.duration;
 				//Check if we might be on the way backwards
 				if (m_flags.any_of(Animation_Flags::Loop,Animation_Flags::Auto_Reverse) &&
 					!m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {

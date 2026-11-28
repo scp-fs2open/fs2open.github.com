@@ -50,6 +50,7 @@ TEST_F(VecmatTest, frandStaysBelowOne) {
 	Random::seed(10694);
 	Random::advance(745);
 	EXPECT_LT(frand(), 1.0f);
+	Random::seed(1);
 }
 
 TEST_F(VecmatTest, matrixInvert) {
