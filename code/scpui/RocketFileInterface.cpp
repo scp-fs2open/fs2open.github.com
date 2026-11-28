@@ -35,7 +35,8 @@ FileHandle RocketFileInterface::Open(const String& path)
 		return 0;
 	}
 
-	return (FileHandle)cfopen(name.c_str(), "rb", dir_type);
+	// open the copy in the current language's subfolder, if there is one
+	return (FileHandle)cfopen(name.c_str(), "rb", dir_type, true);
 }
 void RocketFileInterface::Close(FileHandle file) { cfclose((CFILE*)file); }
 size_t RocketFileInterface::Read(void* buffer, size_t size, FileHandle file)

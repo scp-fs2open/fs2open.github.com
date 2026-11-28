@@ -1,0 +1,11 @@
+#Supported Languages
+
+$Language: German
++Extension: gr
++Special Character Index: 164
+
+$Language: Chinese (TW)
++Extension: tw
++Special Character Index: 0
+
+#End

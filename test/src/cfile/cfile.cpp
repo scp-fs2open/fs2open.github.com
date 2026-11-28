@@ -1,10 +1,13 @@
 
 #include <cfile/cfile.h>
 #include <cfile/cfilesystem.h>
+#include <cmdline/cmdline.h>
 #include <globalincs/systemvars.h>
 #include <graphics/font.h>
 #include <gtest/gtest.h>
+#include <localization/localize.h>
 #include <osapi/dialogs.h>
+#include <sound/audiostr.h>
 #include <utils/finally.h>
 
 #include "util/FSTestFixture.h"
@@ -215,6 +218,145 @@ TEST_F(CFileTest, subfolder_list)
 	table_files.clear();
 	ASSERT_EQ(2, cf_get_file_list(table_files, CF_TYPE_TABLES, "*\\*.tbl", CF_SORT_NAME));
 	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
+}
+
+// Stacks two mods, cfile/<test name>/pack over cfile/<test name>/base, whose tables define the test languages.
+// In the test data, a file of 4 bytes ("base") is the original and a file of 9 bytes ("localized") is in a
+// language subfolder.
+class CFileLanguageSubdirTest : public test::FSTestFixture
+{
+ public:
+	CFileLanguageSubdirTest() : test::FSTestFixture(INIT_NONE) {}
+
+ protected:
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+
+		SCP_string test_dir = "cfile";
+		test_dir += DIR_SEPARATOR_CHAR;
+		test_dir += ::testing::UnitTest::GetInstance()->current_test_info()->name();
+		test_dir += DIR_SEPARATOR_CHAR;
+
+		// Cmdline_mod is a list of null-terminated names, ended by an empty name
+		SCP_string modlist = test_dir + "pack";
+		modlist += '\0';
+		modlist += test_dir + "base";
+		modlist += '\0';
+
+		delete[] Cmdline_mod;
+		Cmdline_mod = new char[modlist.size() + 1];
+		memcpy(Cmdline_mod, modlist.c_str(), modlist.size() + 1);
+
+		SCP_string cfile_dir(TEST_DATA_PATH);
+		cfile_dir += DIR_SEPARATOR_CHAR;
+		cfile_dir += "test"; // Cfile expects something after the path
+
+		ASSERT_FALSE(cfile_init(cfile_dir.c_str()));
+
+		lcl_init(-1);
+	}
+
+	void TearDown() override
+	{
+		test::FSTestFixture::TearDown();
+
+		cfile_close();
+	}
+};
+
+TEST_F(CFileLanguageSubdirTest, language_subdir_other_root)
+{
+	// the localized files can be found by naming the subfolder
+	auto loc = cf_find_file_location("gr/font01.vf", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(9u, loc.size);
+
+	loc = cf_find_file_location("tw/brief1.ogg", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(9u, loc.size);
+
+	// a bare name should find the original in the lower-priority root, not the localized file in the pack
+	loc = cf_find_file_location("font01.vf", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(4u, loc.size) << "found " << loc.full_name;
+
+	loc = cf_find_file_location("brief1.ogg", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(4u, loc.size) << "found " << loc.full_name;
+}
+
+TEST_F(CFileLanguageSubdirTest, language_subdir_only_localized)
+{
+	// only gr/only_gr.vf exists, so the bare name finds nothing
+	EXPECT_FALSE(cf_find_file_location("only_gr.vf", CF_TYPE_ANY).found);
+
+	auto loc = cf_find_file_location("gr/only_gr.vf", CF_TYPE_FONT);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(9u, loc.size);
+
+	SCP_vector<SCP_string> fonts;
+	cf_get_file_list(fonts, CF_TYPE_FONT, "*.vf", CF_SORT_NAME);
+	EXPECT_FALSE(fonts.empty());
+	EXPECT_EQ(std::find(fonts.begin(), fonts.end(), "only_gr"), fonts.end());
+
+	// listing the language subfolder includes the subfolder in each name, which SCPUI's font loading relies on
+	fonts.clear();
+	cf_get_file_list(fonts, CF_TYPE_FONT, "gr/*.vf", CF_SORT_NAME);
+	EXPECT_NE(std::find(fonts.begin(), fonts.end(), "gr" DIR_SEPARATOR_STR "only_gr"), fonts.end());
+
+	constexpr int max_fonts = 64;
+	char font_arr[max_fonts][MAX_FILENAME_LEN];
+	int num_fonts = cf_get_file_list_preallocated(max_fonts, font_arr, nullptr, CF_TYPE_FONT, "*.vf");
+	EXPECT_GT(num_fonts, 0);
+	for (int i = 0; i < num_fonts; ++i)
+		EXPECT_STRNE("only_gr", font_arr[i]);
+}
+
+TEST_F(CFileLanguageSubdirTest, localize_filename)
+{
+	auto restore_language = util::finally([] { lcl_set_language(LCL_DEFAULT); });
+
+	int german = lcl_find_lang_index_by_name("German");
+	ASSERT_GE(german, 0);
+	lcl_set_language(german);
+
+	auto localize = [](const char* filename) {
+		return cf_localize_filename(filename, CF_TYPE_ANY, NUM_AUDIO_EXT, audio_ext_list);
+	};
+	const SCP_string gr = "gr" DIR_SEPARATOR_STR;
+
+	EXPECT_EQ(gr + "same.ogg", localize("same.ogg"));
+
+	// a mod's override of the original doesn't hide the base game's localized copy
+	EXPECT_EQ(gr + "override.ogg", localize("override.ogg"));
+
+	EXPECT_EQ(gr + "only_localized.ogg", localize("only_localized.ogg"));
+	EXPECT_EQ("not_localized.ogg", localize("not_localized.ogg"));
+
+	// any audio extension counts, and the name keeps the one asked for
+	EXPECT_EQ(gr + "mismatch.wav", localize("mismatch.wav"));
+
+	// the localized name would be MAX_FILENAME_LEN characters
+	EXPECT_EQ("long_name_0123456789abcde.ogg", localize("long_name_0123456789abcde.ogg"));
+
+	// cfopen() with localize; 9 bytes is the localized copy, 4 the original
+	auto opened_size = [](const char* filename, uint32_t location_flags = CF_LOCATION_ALL) {
+		auto fp = cfopen(filename, "rb", CF_TYPE_ANY, true, location_flags);
+		if (fp == nullptr)
+			return -1;
+		int size = cfilelength(fp);
+		cfclose(fp);
+		return size;
+	};
+	EXPECT_EQ(9, opened_size("same.ogg"));
+
+	// the localized copy is only in base, which the location flags rule out, so the pack's original opens
+	EXPECT_EQ(9, opened_size("override.ogg"));
+	EXPECT_EQ(4, opened_size("override.ogg", CF_LOCATION_TYPE_PRIMARY_MOD));
+
+	lcl_set_language(LCL_DEFAULT);
+	EXPECT_EQ("same.ogg", localize("same.ogg"));
 }
 
 namespace {

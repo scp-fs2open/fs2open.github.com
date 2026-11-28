@@ -1023,7 +1023,10 @@ int audiostream_open( const char *filename, int type )
 
 	char fname[MAX_FILENAME_LEN];
 	// copy filename, since we might modify it
-	strcpy_s(fname, filename);
+	if (type == ASF_VOICE)
+		strcpy_s(fname, cf_localize_filename(filename, CF_TYPE_ANY, NUM_AUDIO_EXT, audio_ext_list).c_str());
+	else
+		strcpy_s(fname, filename);
 
 	switch (type)
 	{
