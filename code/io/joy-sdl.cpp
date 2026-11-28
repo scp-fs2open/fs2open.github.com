@@ -172,6 +172,141 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 	return joystickMatchesGuid(testStick, GUID);
 }
 
+// The ini reader ends a value at ';' or '#' and jansson needs UTF-8, so the serial is saved as hex
+SCP_string serialHex(const Joystick* stick)
+{
+	static const char digits[] = "0123456789ABCDEF";
+	SCP_string out;
+	for (unsigned char c : stick->getSerial()) {
+		out += digits[c >> 4];
+		out += digits[c & 0x0F];
+	}
+	return out;
+}
+
+bool sameModel(const Joystick* a, const Joystick* b)
+{
+	return a->getGUID() == b->getGUID() && a->numAxes() == b->numAxes() && a->numButtons() == b->numButtons() &&
+		   a->numHats() == b->numHats();
+}
+
+// identical sticks have nothing else to tell them apart; the place can change if they are listed in another order
+int twinNumber(const Joystick* stick)
+{
+	int number = 0;
+	for (auto& other : joysticks) {
+		if (sameModel(other.get(), stick)) {
+			++number;
+			if (other.get() == stick) {
+				return number;
+			}
+		}
+	}
+	return 0;
+}
+
+constexpr std::array<const char*, CID_JOY_MAX> JoystickOptionKeys = {"Input.Joystick",
+	"Input.Joystick1",
+	"Input.Joystick2",
+	"Input.Joystick3"};
+
+// true when another joystick setting names this model with another number, i.e. its twin is still wanted
+bool twinIsSaved(const SCP_string& guid, int axes, int buttons, int hats, int number)
+{
+	for (const char* key : JoystickOptionKeys) {
+		std::optional<std::unique_ptr<json_t>> setting;
+		try {
+			setting = options::OptionsManager::instance()->getValueFromConfig(key);
+		} catch (const std::exception&) {
+			// an unreadable setting can't want a stick
+			continue;
+		}
+		if (!setting.has_value()) {
+			continue;
+		}
+		const char* other_guid = nullptr;
+		json_int_t other_axes = 0;
+		json_int_t other_buttons = 0;
+		json_int_t other_hats = 0;
+		json_int_t other_number = 0;
+		if (json_unpack(setting->get(),
+				"{s:s, s:I, s:I, s:I, s?:I}",
+				"guid",
+				&other_guid,
+				"axes",
+				&other_axes,
+				"buttons",
+				&other_buttons,
+				"hats",
+				&other_hats,
+				"number",
+				&other_number) != 0) {
+			// without counts (older builds, launchers) a setting doesn't name one model of a GUID
+			continue;
+		}
+		SCP_string other_guid_str(other_guid);
+		SCP_toupper(other_guid_str);
+		if (other_guid_str == guid && other_axes == axes && other_buttons == buttons && other_hats == hats &&
+			other_number != 0 && other_number != number) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Identical sticks share a GUID; their serial, or failing that their axis, button and hat counts, tells them apart,
+// and sticks alike in both go by their place in the list. A count below zero means the setting has none.
+Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, int axes, int buttons, int hats, int number)
+{
+	Joystick* by_serial = nullptr;
+	Joystick* by_counts = nullptr;
+	Joystick* by_number = nullptr;
+	int serial_hits = 0;
+	int count_hits = 0;
+	for (auto& stick : joysticks) {
+		if (!stick->isAttached() || stick->getGUID() != guid) {
+			continue;
+		}
+		// A saved serial rules out sticks with another one, not a stick that hasn't sent its serial yet
+		if (!serial.empty()) {
+			const auto stick_serial = serialHex(stick.get());
+			if (stick_serial == serial) {
+				by_serial = stick.get();
+				++serial_hits;
+			} else if (!stick_serial.empty()) {
+				continue;
+			}
+		}
+		if (axes >= 0 && stick->numAxes() == axes && stick->numButtons() == buttons && stick->numHats() == hats) {
+			by_counts = stick.get();
+			++count_hits;
+			if (twinNumber(stick.get()) == number) {
+				by_number = stick.get();
+			}
+		}
+	}
+
+	if (serial_hits == 1) {
+		return by_serial;
+	}
+	// a numbered setting waits for its own place while another setting wants the twin; otherwise a lone stick will do
+	if (count_hits == 1 && (number == 0 || !twinIsSaved(guid, axes, buttons, hats, number))) {
+		return by_counts;
+	}
+	return by_number;
+}
+
+// a stick saved while it had no twin plugged in can match a lone stick of its model, as before twins were numbered
+int savedNumber(const Joystick* stick)
+{
+	for (auto& other : joysticks) {
+		if (other.get() != stick && other->isAttached() && sameModel(other.get(), stick)) {
+			return twinNumber(stick);
+		}
+	}
+	return 0;
+}
+
 /**
  * Reads/deserializes the given json line and retrieves the joystick that it references
  */
@@ -188,6 +323,26 @@ Joystick* joystick_deserialize(const json_t* value)
 		// because if we throw errors instead of returning nullptr
 		// then the listening functions short circuits and does not run.
 		return nullptr;
+	}
+
+	// Settings from older builds and from launchers don't have these
+	auto serial_json = json_object_get(value, "serial");
+	auto axes_json = json_object_get(value, "axes");
+	auto buttons_json = json_object_get(value, "buttons");
+	auto hats_json = json_object_get(value, "hats");
+	auto number_json = json_object_get(value, "number");
+	int number = json_is_integer(number_json) ? static_cast<int>(json_integer_value(number_json)) : 0;
+	bool has_counts = json_is_integer(axes_json) && json_is_integer(buttons_json) && json_is_integer(hats_json);
+	SCP_string guid_str(guid);
+	SCP_toupper(guid_str);
+	auto saved = findSavedStick(guid_str,
+		json_is_string(serial_json) ? json_string_value(serial_json) : "",
+		has_counts ? static_cast<int>(json_integer_value(axes_json)) : -1,
+		has_counts ? static_cast<int>(json_integer_value(buttons_json)) : -1,
+		has_counts ? static_cast<int>(json_integer_value(hats_json)) : -1,
+		number);
+	if (saved != nullptr || number > 0) {
+		return saved;
 	}
 
 	for (auto& test_stick : joysticks) {
@@ -208,7 +363,21 @@ json_t* joystick_serializer(Joystick* joystick)
 		return json_null();
 	}
 
-	return json_pack("{sssi}", "guid", joystick->getGUID().c_str(), "id", -1);
+	return json_pack("{sssisssisisisi}",
+		"guid",
+		joystick->getGUID().c_str(),
+		"id",
+		-1,
+		"serial",
+		serialHex(joystick).c_str(),
+		"axes",
+		joystick->numAxes(),
+		"buttons",
+		joystick->numButtons(),
+		"hats",
+		joystick->numHats(),
+		"number",
+		savedNumber(joystick));
 }
 
 /**
@@ -256,7 +425,34 @@ SCP_string joystick_display(Joystick* stick)
 	if (stick == nullptr) {
 		return XSTR("None", 1673);
 	}
-	return stick->getName();
+
+	// Sticks with the same name can't be told apart in the list. Their counts tell them apart and stay the same when
+	// they are plugged in again; only sticks whose counts match too get numbered by their place in the list.
+	int same_name = 0;
+	int number = 0;
+	int same_counts = 0;
+	for (auto& other : joysticks) {
+		if (other->getName() != stick->getName()) {
+			continue;
+		}
+		++same_name;
+		if (other->numAxes() == stick->numAxes() && other->numButtons() == stick->numButtons() &&
+			other->numHats() == stick->numHats()) {
+			++same_counts;
+			if (other.get() == stick) {
+				number = same_counts;
+			}
+		}
+	}
+	if (same_name < 2) {
+		return stick->getName();
+	}
+	SCP_string counts = "a:" + std::to_string(stick->numAxes()) + ", b:" + std::to_string(stick->numButtons()) +
+						", h:" + std::to_string(stick->numHats());
+	if (same_counts < 2) {
+		return stick->getName() + " (" + counts + ")";
+	}
+	return stick->getName() + " (" + counts + ", " + std::to_string(number) + ")";
 }
 
 /**
@@ -277,7 +473,7 @@ SCP_vector<Joystick*> joystick_enumerator()
  * These should be displayed as a dropdown box type widget
  */
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
+auto JoystickOption = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY0],
                      std::pair<const char*, int>{"Joystick 0", 1705},
                      std::pair<const char*, int>{"The current joystick 0", 1706})
                      .category(std::make_pair("Input", 1827))                    // Category this option shows up in the scripting heirachy
@@ -296,7 +492,7 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
+auto JoystickOption1 = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY1],
                      std::pair<const char*, int>{"Joystick 1", 1707},
                      std::pair<const char*, int>{"The current joystick 1", 1708})
                      .category(std::make_pair("Input", 1827))
@@ -315,7 +511,7 @@ auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
+auto JoystickOption2 = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY2],
                      std::pair<const char*, int>{"Joystick 2", 1709},
                      std::pair<const char*, int>{"The current joystick 2", 1710})
                      .category(std::make_pair("Input", 1827))
@@ -334,7 +530,7 @@ auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
+auto JoystickOption3 = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY3],
                      std::pair<const char*, int>{"Joystick 3", 1711},
                      std::pair<const char*, int>{"The current joystick 3", 1712})
                      .category(std::make_pair("Input", 1827))
@@ -501,19 +697,62 @@ bool device_event_handler(const SDL_Event &evt)
 			// Add the new device to our list
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
 
+			// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID.
+			// prefer the one with the same serial, then the same counts: it was this stick, so its label stays.
+			// Among twins an entry with other counts is left alone: taking it could move this stick ahead of them
+			auto reuse = joysticks.end();
+			int reuse_rank = 0;
+			int same_guid = 0;
+			auto changed_counts = joysticks.end();
+			const auto added_serial = added->getSerial();
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID
-				if (!(*iter)->isAttached() && (*iter)->getGUID() == added->getGUID())
+				const auto& old = *iter;
+				if (old->getGUID() != added->getGUID())
 				{
-					// Already have this stick
-					*(*iter) = std::move(*added);
-					oldHandles = std::move(added);
-					addedStick = iter->get();
-					mprintf(("A joystick has been reconnected:\n"));
-					addedStick->printInfo();
-					break;
+					continue;
 				}
+				++same_guid;
+				if (old->isAttached())
+				{
+					continue;
+				}
+				const auto old_serial = old->getSerial();
+				const bool same_counts = old->numAxes() == added->numAxes() &&
+										 old->numButtons() == added->numButtons() && old->numHats() == added->numHats();
+				int rank = same_counts ? 1 : 0;
+				if (!added_serial.empty() && old_serial == added_serial)
+				{
+					rank = 3;
+				}
+				else if (same_counts && (added_serial.empty() || old_serial.empty()))
+				{
+					rank = 2;
+				}
+				else if (!same_counts && (added_serial.empty() || old_serial.empty()))
+				{
+					changed_counts = iter;
+				}
+				if (rank > reuse_rank)
+				{
+					reuse = iter;
+					reuse_rank = rank;
+				}
+			}
+			// a lone stick has no twins to renumber, so it may retake an entry whose counts changed (reconfigured vJoy)
+			if (reuse == joysticks.end() && same_guid == 1)
+			{
+				reuse = changed_counts;
+			}
+
+			if (reuse != joysticks.end())
+			{
+				// Already have this stick
+				*(*reuse) = std::move(*added);
+				oldHandles = std::move(added);
+				addedStick = reuse->get();
+				mprintf(("A joystick has been reconnected:\n"));
+				addedStick->printInfo();
 			}
 
 			if (addedStick == nullptr)
@@ -540,24 +779,41 @@ bool device_event_handler(const SDL_Event &evt)
 			
 			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 			{
-				if (value[i] == addedStick)
+				// A returning stick retakes its slot; an identical stick arriving can change what a setting means
+				if (value[i] != nullptr && value[i]->isAttached() &&
+					(value[i] == addedStick ||
+						(value[i] != pJoystick[i] && value[i]->getGUID() == addedStick->getGUID())))
 				{
 					mprintf(("Joystick %i connected\n", i));
+					setPlayerJoystick(value[i], i);
+				}
+				else if (pJoystick[i] == addedStick)
+				{
+					// the slot still holds the reused object, whose old handles close below; force feedback must reopen
 					setPlayerJoystick(addedStick, i);
-					break;
 				}
 			}
 		}
 		else
 		{
 			// Legacy system requires setting joysticks in the launcher
+			short bound = -1;
 			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 			{
 				if (isPlayerJoystick(addedStick, i))
 				{
 					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
+					bound = i;
 					break;
+				}
+			}
+			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
+			{
+				// as above: a slot still holding the reused object must reopen force feedback
+				if (i != bound && pJoystick[i] == addedStick)
+				{
+					setPlayerJoystick(addedStick, i);
 				}
 			}
 		}
@@ -580,7 +836,6 @@ bool device_event_handler(const SDL_Event &evt)
 				// We just lost our joystick, reset the data
 				mprintf(("Joystick %i disconnected\n", i));
 				setPlayerJoystick(nullptr, i);
-				break;
 			}
 		}
 	}
@@ -829,6 +1084,13 @@ namespace joystick
 	SCP_string Joystick::getName() const
 	{
 		return _name;
+	}
+
+	// Read when needed: some devices only send their serial a moment after they are opened
+	SCP_string Joystick::getSerial() const
+	{
+		auto serial = SDL_GetJoystickSerial(_joystick);
+		return (serial != nullptr) ? serial : "";
 	}
 
 	SDL_JoystickID Joystick::getID() const

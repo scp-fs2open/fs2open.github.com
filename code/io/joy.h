@@ -236,6 +236,12 @@ namespace io
 			SCP_string getName() const;
 
 			/**
+			 * @brief Gets the serial number the device reports
+			 * @return The serial, or an empty string if the device has none
+			 */
+			SCP_string getSerial() const;
+
+			/**
 			 * @brief Gets the unique instance ID of the joystick
 			 * @return The instance ID
 			 */
