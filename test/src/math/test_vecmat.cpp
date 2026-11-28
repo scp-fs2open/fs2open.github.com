@@ -49,6 +49,9 @@ TEST_F(VecmatTest, frandStaysBelowOne) {
 	// seed and skip found by searching std::mt19937 for a draw of 0x7fffffc6, which used to round to exactly 1.0
 	Random::seed(10694);
 	Random::advance(745);
+	ASSERT_EQ(Random::next(), 0x7fffffc6);
+	Random::seed(10694);
+	Random::advance(745);
 	EXPECT_LT(frand(), 1.0f);
 	Random::seed(1);
 }
