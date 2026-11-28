@@ -118,6 +118,7 @@ namespace Mission {
 		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
 		SF_No_scanned_cargo,			// MjnMixael - cargo is never revealed, only shows scanned/not scanned (requires unified scanning)
 		SF_From_player_wing,			// set for ships that are members of any player starting wing
+		Class_swapped, // class replaced after parsing (loadout, red alert or a sexp); may differ from the mission file
 
 		NUM_VALUES
 	};

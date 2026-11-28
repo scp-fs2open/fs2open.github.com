@@ -1007,6 +1007,56 @@ int multi_ingame_handle_timeout(bool API_Access)
 
 #define INGAME_PACKET_SLOP		75				// slop value used for packets to ingame joiner
 
+// the joiner's parse objects come from its own mission file, so a class swap the server made must be copied over
+static bool process_ingame_parse_object(ubyte* data, int& offset)
+{
+	char name[NAME_LENGTH] = "";
+	short ship_class;
+	float hull, shields;
+	short primary[MAX_SHIP_PRIMARY_BANKS], secondary[MAX_SHIP_SECONDARY_BANKS];
+
+	GET_STRING(name);
+	GET_SHORT(ship_class);
+	GET_FLOAT(hull);
+	GET_FLOAT(shields);
+	for (auto& b : primary) {
+		GET_SHORT(b);
+	}
+	for (auto& b : secondary) {
+		GET_SHORT(b);
+	}
+
+	p_object* p_objp = mission_parse_find_parse_object(name);
+	bool bad = p_objp == nullptr || p_objp->subsys_index < 0 || ship_class < 0 || ship_class >= ship_info_size() ||
+		!(hull > 0.0f) || !(shields >= 0.0f);
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS; ++i) {
+		short bank = (i < MAX_SHIP_PRIMARY_BANKS) ? primary[i] : secondary[i - MAX_SHIP_PRIMARY_BANKS];
+		// a mission that keeps the class's weapons leaves this marker in each set's first bank
+		bool keep_class_weapons = (i == 0 || i == MAX_SHIP_PRIMARY_BANKS) && bank == SUBSYS_STATUS_NO_CHANGE;
+		bad = bad || ((bank < -1 || bank >= weapon_info_size()) && !keep_class_weapons);
+	}
+	if (bad) {
+		mprintf(("ABORTING in-game join since the server sent bad class data for parse object %s!\n", name));
+		multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+		return false;
+	}
+
+	p_objp->ship_class = ship_class;
+	if (p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_class;
+	}
+	p_objp->ship_max_hull_strength = hull;
+	p_objp->ship_max_shield_strength = shields;
+	subsys_status* sssp = &Subsys_status[p_objp->subsys_index];
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+		sssp->primary_banks[i] = primary[i];
+	}
+	for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
+		sssp->secondary_banks[i] = secondary[i];
+	}
+	return true;
+}
+
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
@@ -1039,13 +1089,23 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 	// go
 	GET_DATA( p_type );	
-	while ( p_type == INGAME_SHIP_NEXT ) {
+	while ( p_type == INGAME_SHIP_NEXT || p_type == INGAME_SHIP_PARSE_OBJECT ) {
+		if (p_type == INGAME_SHIP_PARSE_OBJECT) {
+			if (!process_ingame_parse_object(data, offset)) {
+				return;
+			}
+			GET_DATA(p_type);
+			continue;
+		}
+
 		p_object *p_objp;
 		int ship_num, objnum;
+		short ship_class;
 		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
+		GET_SHORT( ship_class );
 		GET_DATA( flag_size );
 
 		ubyte temp;
@@ -1078,6 +1138,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			return;
 		}
 
+		if (ship_class < 0 || ship_class >= ship_info_size()) {
+			mprintf(("ABORTING in-game join since the server sent class %d for ship %s!\n", ship_class, ship_name));
+			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			return;
+		}
+
 		// go ahead and create the parse object.  Set the network signature of this guy before
 		// creation
 
@@ -1085,6 +1151,11 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
+
+		// the server may have changed the class after the ship arrived;
+		// later packets index subsystems and weapon banks by the server's class
+		change_ship_type(ship_num, ship_class, 1);
+
 		Objects[objnum].flags.reset();
 		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
@@ -1121,9 +1192,11 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
 
 			if ( (team_val != -1) && (slot_index != -1) ) {
-				// change the ship type and the weapons
-				change_ship_type(objp->instance, Wss_slots_teams[team_val][slot_index].ship_class);
-				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
+				// the ship already has the server's class;
+				// the loadout's weapons fit only if it is still the loadout's class
+				if (Ships[idx].ship_info_index == Wss_slots_teams[team_val][slot_index].ship_class) {
+					wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
+				}
 	
 				// Be sure to mark this ship as as a could_be_player
 				obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player );
@@ -1160,6 +1233,35 @@ void send_ingame_ships_packet(net_player *player)
 
 	BUILD_HEADER( SHIPS_INGAME_PACKET );
 
+	// sent first so the joiner builds arrived ships from the same data; later waves use these too, so all are sent
+	for (const auto& p_obj : Parse_objects) {
+		if (!p_obj.flags[Mission::Parse_Object_Flags::Class_swapped] || p_obj.subsys_index < 0 ||
+			p_obj.subsys_count < 1) {
+			continue;
+		}
+		const subsys_status* sssp = &Subsys_status[p_obj.subsys_index];
+
+		p_type = INGAME_SHIP_PARSE_OBJECT;
+		ADD_DATA(p_type);
+		ADD_STRING(p_obj.name);
+		ADD_SHORT(static_cast<short>(p_obj.ship_class));
+		ADD_FLOAT(p_obj.ship_max_hull_strength);
+		ADD_FLOAT(p_obj.ship_max_shield_strength);
+		for (int bank : sssp->primary_banks) {
+			ADD_SHORT(static_cast<short>(bank));
+		}
+		for (int bank : sssp->secondary_banks) {
+			ADD_SHORT(static_cast<short>(bank));
+		}
+
+		if (packet_size > (MAX_PACKET_SIZE - INGAME_PACKET_SLOP)) {
+			p_type = INGAME_SHIP_LIST_EOP;
+			ADD_DATA(p_type);
+			multi_io_send_reliable(player, data, packet_size);
+			BUILD_HEADER(SHIPS_INGAME_PACKET);
+		}
+	}
+
 	// essentially, we are going to send a list of ship names to the joiner for ships that are not
 	// in wings.  The joiner will take the list, create any ships which should be created, and delete all
 	// other ships after the list is sent.
@@ -1185,6 +1287,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
+		ADD_SHORT( static_cast<short>(shipp->ship_info_index) );
 		
 		// this flag describes a lookup table in our own memory; it should not be passed to other clients
 		auto flags_to_send = shipp->flags;

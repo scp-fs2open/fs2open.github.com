@@ -80,6 +80,7 @@ struct header;
 #define INGAME_SHIP_WARP_SUPPORT				1			// support ship warping in
 #define INGAME_SHIP_LIST_EOP					2			// end of packet
 #define INGAME_SHIP_LIST_EOL					3			// end of list
+#define INGAME_SHIP_PARSE_OBJECT				4			// a parse object whose class was swapped follows
 
 #define INGAME_WING_NEXT						0			// another wing to follow
 #define INGAME_WING_LIST_EOP					1			// end of packet
