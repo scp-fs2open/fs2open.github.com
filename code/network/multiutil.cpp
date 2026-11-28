@@ -69,6 +69,7 @@
 #include "network/multi_team.h"
 #include "network/multi_respawn.h"
 #include "network/multi_ingame.h"
+#include "network/multi_obj.h"
 #include "network/multi_observer.h"
 #include "network/multi_pinfo.h"
 #include "network/multi_endgame.h"
@@ -2557,6 +2558,9 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 	// notify datarate
 	multi_rate_reset(net_player_num);
+
+	// otherwise a player joining mid-mission inherits what was sent to the slot's last player and misses updates
+	multi_oo_reset_player_records(net_player_num);
 }
 
 // if a player is trying to join a restricted game, evaluate the keypress (accept or not, etc)
