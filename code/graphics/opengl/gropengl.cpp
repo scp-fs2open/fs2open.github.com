@@ -48,6 +48,9 @@
 
 #include "backends/imgui_impl_opengl3.h"
 
+#ifdef __ANDROID__
+#include <SDL3/SDL_video.h>
+#endif
 #include <glad/glad.h>
 
 // minimum GL / GLES version we can reliably support is 3.2
@@ -160,12 +163,25 @@ void gr_opengl_flip()
 			present_source = GammaBlit_framebuffer;
 		}
 
+		int output_width = Cmdline_window_res->first;
+		int output_height = Cmdline_window_res->second;
+#ifdef __ANDROID__
+		// Android may size the drawable independently of the requested window size.
+		if (auto* window = current_viewport->toSDLWindow()) {
+			int drawable_width, drawable_height;
+			if (SDL_GetWindowSizeInPixels(window, &drawable_width, &drawable_height) && drawable_width > 0 && drawable_height > 0) {
+				output_width = drawable_width;
+				output_height = drawable_height;
+			}
+		}
+#endif
+
 		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
 		GL_state.BindFrameBuffer(present_source, GL_READ_FRAMEBUFFER);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_BACK);
-		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, output_width, output_height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		glDrawBuffer(GL_NONE);
 
 		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);

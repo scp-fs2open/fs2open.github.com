@@ -2180,25 +2180,38 @@ void gr_screen_resize(int width, int height)
 	gr_setup_viewport();
 }
 
+static std::optional<std::pair<int, int>> window_input_size()
+{
+#ifdef __ANDROID__
+	// SDL emits touch-as-mouse positions in window coordinates, even if Android
+	// sized the window differently from the resolution requested at creation.
+	if (auto* window = os::getSDLMainWindow()) {
+		int width, height;
+		if (SDL_GetWindowSize(window, &width, &height) && width > 0 && height > 0) {
+			return std::make_pair(width, height);
+		}
+	}
+#endif
+	if (Cmdline_window_res && Cmdline_window_res->first > 0 && Cmdline_window_res->second > 0) {
+		return Cmdline_window_res;
+	}
+	return std::nullopt;
+}
+
 void gr_window_to_render_pos(float& x, float& y)
 {
-	if (!Cmdline_window_res) {
-		// Rendering goes straight to the window, so the two spaces are the same
-		return;
+	if (const auto size = window_input_size()) {
+		x *= i2fl(gr_screen.max_w) / i2fl(size->first);
+		y *= i2fl(gr_screen.max_h) / i2fl(size->second);
 	}
-
-	x *= i2fl(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first);
-	y *= i2fl(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second);
 }
 
 void gr_render_to_window_pos(float& x, float& y)
 {
-	if (!Cmdline_window_res) {
-		return;
+	if (const auto size = window_input_size(); size && gr_screen.max_w > 0 && gr_screen.max_h > 0) {
+		x *= i2fl(size->first) / i2fl(gr_screen.max_w);
+		y *= i2fl(size->second) / i2fl(gr_screen.max_h);
 	}
-
-	x *= static_cast<float>(Cmdline_window_res->first) / i2fl(gr_screen.max_w);
-	y *= static_cast<float>(Cmdline_window_res->second) / i2fl(gr_screen.max_h);
 }
 
 int gr_get_resolution_class(int width, int height)

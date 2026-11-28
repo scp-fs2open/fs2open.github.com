@@ -695,6 +695,8 @@ namespace os
 		return mainViewPort;
 	}
 	void closeAllViewports() {
+		mainViewPort = nullptr;
+		mainSDLWindow = nullptr;
 		viewports.clear();
 	}
 
