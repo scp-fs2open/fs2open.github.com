@@ -228,8 +228,9 @@ public:
 
 	/**
 	 * @brief Transition image layout
+	 * @return false if the transition could not be recorded or submitted, or the device was lost
 	 */
-	void transitionImageLayout(vk::Image image, vk::Format format,
+	bool transitionImageLayout(vk::Image image, vk::Format format,
 	                           vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
 	                           uint32_t mipLevels = 1, uint32_t arrayLayers = 1);
 
@@ -275,13 +276,31 @@ private:
 
 	/**
 	 * @brief Begin single-time command buffer
+	 * @return the command buffer, or a null one if it could not be allocated or begun
 	 */
 	vk::CommandBuffer beginSingleTimeCommands();
 
+	enum class SingleTimeResult {
+		Finished,    //!< the commands ran and the GPU is done with everything they used
+		Failed,      //!< not submitted, or the device was lost (after waiting on what was submitted); nothing the
+		             //!< commands used is still in use
+		Unconfirmed, //!< submitted, but waiting failed; what they used may still be in use, so it must not be freed
+		             //!< now (callers defer freeing it)
+	};
+
 	/**
 	 * @brief End and submit single-time command buffer (synchronous, blocks on waitIdle)
+	 * @note Frees the command buffer unless the result is Unconfirmed, in which case it is leaked.
 	 */
-	void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+	SingleTimeResult endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+
+	/**
+	 * @brief After a submit threw, wait for the queue to finish if the error was a lost device
+	 * @param[in] error the error the submit threw
+	 * @note The spec counts a submit that reports a lost device as submitted, so its work must finish before
+	 * anything it used is freed. Other submit errors leave nothing pending, so this returns at once.
+	 */
+	void waitIfSubmitLostDevice(const vk::SystemError& error);
 
 	/**
 	 * @brief Create a host-visible staging buffer (eTransferSrc) sized for an upload
@@ -289,7 +308,8 @@ private:
 	 * Creates the buffer and allocates CpuOnly memory for it. On failure the
 	 * buffer is destroyed and false is returned (outBuffer left null). Callers
 	 * remain responsible for any image/view they allocated beforehand.
-	 * May wait on the oldest upload fence when the staging budget is full.
+	 * May wait on the oldest upload fence when the staging budget is full, and
+	 * returns false if waiting for or checking pending uploads fails.
 	 */
 	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
 
@@ -308,8 +328,10 @@ private:
 	 *
 	 * Owns staging resources until the submission's fence signals, even when
 	 * level loading does not advance render frames.
+	 * @return false if the submission failed; the command buffer and staging
+	 * resources are freed, and the caller still owns the destination image.
 	 */
-	void submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
+	bool submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
 	                       VulkanAllocation stagingAllocation);
 
 	/**
@@ -382,6 +404,7 @@ private:
 	int m_bmDataLogCount = 0;       // bm_data entry trace
 	int m_uploadFmtLogCount = 0;    // uploadTexture2D format trace
 	int m_reuploadLogCount = 0;     // uploadTexture2D resident-texture re-upload notice
+	bool m_retireFailureLogged = false; // frameStart retire failure, logged once
 
 	// In-flight uploads in submission order, each with its own completion fence.
 	struct PendingCommandBuffer {
@@ -392,6 +415,9 @@ private:
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
 	size_t m_pendingUploadBytes = 0;
+	static constexpr size_t MAX_PENDING_UPLOADS = 64;
+	// signaled fences available for reuse by the next upload
+	SCP_vector<vk::Fence> m_freeUploadFences;
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
