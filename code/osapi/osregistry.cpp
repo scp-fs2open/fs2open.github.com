@@ -1018,6 +1018,26 @@ void os_init_registry_stuff(const char* company, const char* app)
 
 	Os_reg_inited = 1;
 }
+
+SCP_string os_get_mod_settings_path()
+{
+	auto path = os_get_config_path(Mod_options_file_name);
+	// portable mode and legacy Windows give a path from the game folder, which a launcher may not be working in
+	if (path.compare(0, 2, "." DIR_SEPARATOR_STR) == 0) {
+		char* cwd = SDL_GetCurrentDirectory();
+		if (cwd != nullptr) {
+			path = SCP_string(cwd) + path.substr(2);
+			SDL_free(cwd);
+		}
+	}
+	return path;
+}
+
+bool os_mod_settings_inherited()
+{
+	return !Ingame_options_save_found && Mod_options_file_name != Osreg_config_file_name;
+}
+
 void os_deinit_registry_stuff()
 {
 	if (Osreg_profile != nullptr) {

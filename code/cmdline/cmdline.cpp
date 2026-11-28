@@ -1684,6 +1684,8 @@ bool cmdline_print_options()
 	json_object_set_new(root, "version", json_integer(1));
 	json_object_set_new(root, "mod", options::json_text(mods));
 	json_object_set_new(root, "in_game_options", json_boolean(Using_in_game_options));
+	json_object_set_new(root, "settings_file", options::json_text(os_get_mod_settings_path()));
+	json_object_set_new(root, "settings_inherited", json_boolean(os_mod_settings_inherited()));
 	// sound and joysticks were never started and there is no video, so ask the system for devices as -get_flags does
 	openal_fill_device_lists();
 	// enumerate only: the full init would take the player's stick and open its force feedback

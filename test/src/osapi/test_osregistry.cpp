@@ -231,3 +231,20 @@ TEST_F(OsRegistryTest, RetailQueryLoadsTheProfileStartupWould)
 	ASSERT_EQ(RetailProfileFolder::load(false), "none");
 	ASSERT_TRUE(RetailProfileFolder::profileExists());
 }
+
+// a launcher that writes a setting itself must copy fs2_open.ini first while the mod's file is inherited, or the game
+// would take its one-key file as the whole profile
+TEST_F(OsRegistryTest, ModSettingsFileIsReportedWithFullPathAndInheritance)
+{
+	char* cwd = SDL_GetCurrentDirectory();
+	ASSERT_NE(cwd, nullptr);
+	SCP_string expected = SCP_string(cwd) + "data" + DIR_SEPARATOR_STR +
+						  ::testing::UnitTest::GetInstance()->current_test_info()->name() + "_settings.ini";
+	SDL_free(cwd);
+	ASSERT_EQ(os_get_mod_settings_path(), expected);
+	ASSERT_TRUE(os_mod_settings_inherited());
+
+	os_config_write_string("Test", "First", "one", true);
+	reloadFromDisk();
+	ASSERT_FALSE(os_mod_settings_inherited());
+}

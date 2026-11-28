@@ -11,6 +11,8 @@
 #define _FS2_REGISTRY_HEADER_FILE
 
 
+#include "globalincs/vmallocator.h"
+
 #include <cstdlib>
 #include <optional>
 
@@ -40,6 +42,12 @@ std::optional<time_t> os_registry_get_last_modification_time();
 void os_init_registry_stuff( const char *company, const char *app);
 
 void os_deinit_registry_stuff();
+
+// Full path of the file the in-game options are read from and saved to, for the mod given on the command line
+SCP_string os_get_mod_settings_path();
+
+// True when that file was missing at startup, so its values came from fs2_open.ini; the first save copies them over
+bool os_mod_settings_inherited();
 
 // Writes a string to the registry
 void os_config_write_string(const char* section, const char* name, const char* value, bool use_mod_file = false);
