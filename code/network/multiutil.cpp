@@ -504,21 +504,6 @@ int find_player_index(short player_id)
 	return -1;
 }
 
-int find_other_player_index(short player_id)
-{
-	for (int i = 0; i < MAX_PLAYERS; i++) {
-		// a client can be given this machine's own id again once player ids wrap around
-		if (&Net_players[i] == Net_player) {
-			continue;
-		}
-		if (MULTI_CONNECTED(Net_players[i]) && (Net_players[i].player_id == player_id)) {
-			return i;
-		}
-	}
-
-	return -1;
-}
-
 // note this is only valid to do on a server!
 int find_player_socket(PSNET_SOCKET_RELIABLE sock)
 {

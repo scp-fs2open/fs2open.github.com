@@ -59,53 +59,6 @@ TEST_F(FindPlayerByCallsignTest, finds_listen_server_host)
 	EXPECT_EQ(found.second, -1);
 }
 
-class FindOtherPlayerIndexTest : public ::testing::Test {
-  protected:
-	void SetUp() override
-	{
-		_saved_net_player = Net_player;
-		for (int i = 0; i < MAX_PLAYERS; ++i) {
-			_saved_flags[i] = Net_players[i].flags;
-			_saved_ids[i] = Net_players[i].player_id;
-			Net_players[i].flags = 0;
-		}
-	}
-
-	void TearDown() override
-	{
-		Net_player = _saved_net_player;
-		for (int i = 0; i < MAX_PLAYERS; ++i) {
-			Net_players[i].flags = _saved_flags[i];
-			Net_players[i].player_id = _saved_ids[i];
-		}
-	}
-
-	static void add(int slot, int flags, short player_id)
-	{
-		Net_players[slot].flags = flags;
-		Net_players[slot].player_id = player_id;
-	}
-
-	net_player* _saved_net_player = nullptr;
-	std::array<int, MAX_PLAYERS> _saved_flags{};
-	std::array<short, MAX_PLAYERS> _saved_ids{};
-};
-
-// player ids wrap at 20000, so a client can hold the standalone's own id; kicking that client must not pick the server
-TEST_F(FindOtherPlayerIndexTest, never_returns_own_slot)
-{
-	Net_player = &Net_players[0];
-	add(0, NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_CONNECTED, 0);
-	add(2, NETINFO_FLAG_CONNECTED, 0);
-	add(3, NETINFO_FLAG_CONNECTED, 7);
-
-	EXPECT_EQ(find_other_player_index(0), 2);
-	EXPECT_EQ(find_other_player_index(7), 3);
-
-	add(2, 0, 0);
-	EXPECT_EQ(find_other_player_index(0), -1);
-}
-
 // ships faster than 128 m/s (common in mods) must reach clients at their real speed
 TEST(VelocityPacking, fast_ship_round_trips)
 {

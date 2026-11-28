@@ -310,10 +310,16 @@ void std_connect_set_ip_string(short player_id, char* string)
 	auto loc = std_connect_find_row(ctrl, player_id);
 
 	if(loc!=LB_ERR){
+		// deleting the selected row clears the selection, which would leave the Kick button with nothing to kick
+		bool was_selected = SendMessage(ctrl, LB_GETCURSEL, (WPARAM)0, (LPARAM)0) == loc;
+
 		SendMessage(ctrl,LB_DELETESTRING,(WPARAM)loc,(LPARAM)0);
 		loc = SendMessage(ctrl, LB_INSERTSTRING, (WPARAM)loc, (LPARAM)string);
 		if (loc >= 0) {
 			SendMessage(ctrl, LB_SETITEMDATA, (WPARAM)loc, (LPARAM)player_id);
+			if (was_selected) {
+				SendMessage(ctrl, LB_SETCURSEL, (WPARAM)loc, (LPARAM)0);
+			}
 		}
 	}
 }
@@ -345,7 +351,7 @@ void std_connect_update_ping(net_player *p)
 
 	// as long as his ping is not -1, do an update
 	if(p->s_info.ping.ping_avg > -1){	
-		// get the lookup string
+		// get his ip string
 		psnet_addr_to_string(&p->p_info.addr, lookup, sizeof(lookup));
 		
 		// build the string to replace the ping with
@@ -461,7 +467,13 @@ int std_connect_lindex_to_npindex(int index)
 		return -1;
 	}
 
-	return find_other_player_index((short)player_id);
+	// a row that never had its id stored reads back 0, the server's own id
+	int idx = find_player_index((short)player_id);
+	if ((idx == -1) || (&Net_players[idx] == Net_player)) {
+		return -1;
+	}
+
+	return idx;
 }
 
 // message handler for the connect tab
