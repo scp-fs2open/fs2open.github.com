@@ -71,19 +71,29 @@ class CFileTest : public test::FSTestFixture {
 
 TEST_F(CFileTest, list_files_in_vps_and_dirs) {
 	SCP_vector<SCP_string> table_files;
+	SCP_vector<file_list_info> info;
 	extern bool Skip_memory_files;
 
 	// For this test we need to skip the memory files to keep the results consistent
 	Skip_memory_files = true;
-	ASSERT_EQ(4, cf_get_file_list(table_files, CF_TYPE_TABLES, "*", CF_SORT_NAME));
+	ASSERT_EQ(4, cf_get_file_list(table_files, CF_TYPE_TABLES, "*", CF_SORT_NAME, &info));
 
 	ASSERT_EQ((size_t)4, table_files.size());
+	ASSERT_EQ(table_files.size(), info.size());
 
 	ASSERT_STREQ("dir", table_files[0].c_str());
 	ASSERT_STREQ("dir2", table_files[1].c_str());
 
 	ASSERT_STREQ("test", table_files[2].c_str());
 	ASSERT_STREQ("test2", table_files[3].c_str());
+
+	for (size_t i = 0; i < table_files.size(); ++i) {
+		const auto filename = table_files[i] + ".tbl";
+		SCOPED_TRACE(filename.c_str());
+		const auto location = cf_find_file_location(filename.c_str(), CF_TYPE_TABLES);
+		ASSERT_TRUE(location.found);
+		EXPECT_EQ(location.size, info[i].size);
+	}
 
 	table_files.clear();
 	extern int Skip_packfile_search;

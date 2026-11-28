@@ -211,7 +211,7 @@ void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int clr
 	float scalef, wf, hf, xf, yf;
 	vec3d blip_scaler;
 
-	if(bm_get_info(idx, &w, &h) < 0)
+	if(bm_get_original_size(idx, &w, &h) < 0)
 	{
 		// Just if something goes terribly wrong
 		drawContactCircle(x, y, rad);
@@ -274,7 +274,7 @@ void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int clr
 
 	if ( idx >= 0 ) {
 		gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
-		renderBitmap( x, y );
+		renderBitmap(x, y, 1.0f, false, /*use_original_size=*/true);
 	}
 
 	if ( clr_idx >= 0 ) {

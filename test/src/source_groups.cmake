@@ -25,6 +25,14 @@ add_file_folder("CFile"
     cfile/cfile.cpp
 )
 
+add_file_folder("Texture Cache"
+    texcache/test_tex_cache.cpp
+)
+
+add_file_folder("DDS Utils"
+    ddsutils/test_ddsutils.cpp
+)
+
 add_file_folder("Controlconfig"
     controlconfig/test_bindings.cpp
 )

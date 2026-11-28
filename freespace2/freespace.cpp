@@ -196,6 +196,7 @@
 #include "starfield/supernova.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
+#include "texcache/tex_cache.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "utils/Random.h"
@@ -206,7 +207,6 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
-
 
 #include <SDL3/SDL_main.h>
 
@@ -2027,6 +2027,9 @@ void game_init()
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
 
+	if (Cmdline_no_transcode_cache) {
+		tex_cache_disable_option();
+	}
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
