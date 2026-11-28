@@ -257,49 +257,64 @@ void std_connect_set_host_connect_status()
 }
 
 // add an ip string to the connect page listbox
-void std_connect_add_ip_string(char *string)
+void std_connect_add_ip_string(char* string, short player_id)
 {
    HWND ctrl;
-	
+
 	// add the item
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE], (int)(uintptr_t)MAKEINTRESOURCE(IDC_CONPING));
-	SendMessage(ctrl, LB_ADDSTRING, (WPARAM)0, (LPARAM)(LPCTSTR)string);
+	auto loc = SendMessage(ctrl, LB_ADDSTRING, (WPARAM)0, (LPARAM)(LPCTSTR)string);
+
+	// rows are found by player id, since an address can be the start of a longer one or shared by two players
+	if (loc >= 0) {
+		SendMessage(ctrl, LB_SETITEMDATA, (WPARAM)loc, (LPARAM)player_id);
+	}
 }
 
-// remove an ip string from the connect page listbox
-void std_connect_remove_ip_string(char *string)
+static LRESULT std_connect_find_row(HWND ctrl, short player_id)
+{
+	auto count = SendMessage(ctrl, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
+
+	for (LRESULT row = 0; row < count; row++) {
+		if (SendMessage(ctrl, LB_GETITEMDATA, (WPARAM)row, (LPARAM)0) == player_id) {
+			return row;
+		}
+	}
+
+	return LB_ERR;
+}
+
+// remove a player's ip string from the connect page listbox
+void std_connect_remove_ip_string(short player_id)
 {
 	HWND ctrl;
-	
+
 	// get the control handle
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE], (int)(uintptr_t)MAKEINTRESOURCE(IDC_CONPING));
 
-	// NOTE the use of FINDSTRING and _not_ FINDSTRINGEXACT !!
-	// since we've appended the ping to the end of the string, we can only check the 
-	// "prefix" which is the net_players name
-	auto loc = SendMessage(ctrl, LB_FINDSTRING, (WPARAM)-1, (LPARAM)(LPCTSTR)string);
+	auto loc = std_connect_find_row(ctrl, player_id);
 
 	if(loc!=LB_ERR){
 		SendMessage(ctrl, LB_DELETESTRING, (WPARAM)loc, (LPARAM)0);
 	}
 }
 
-// set an ip string on the connect page listbox
-void std_connect_set_ip_string(char *lookup,char *string)
+// set a player's ip string on the connect page listbox
+void std_connect_set_ip_string(short player_id, char* string)
 {
 	HWND ctrl;
 
 	// get the control handle
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE],(int)(uintptr_t)MAKEINTRESOURCE(IDC_CONPING));
- 
-	// NOTE the use of FINDSTRING and _not_ FINDSTRINGEXACT !!
-	// since we've appended the ping to the end of the string, we can only check the 
-	// "prefix" which is the net_players name
-	auto loc = SendMessage(ctrl,LB_FINDSTRING,(WPARAM)-1,(LPARAM)(LPCTSTR)lookup);
+
+	auto loc = std_connect_find_row(ctrl, player_id);
 
 	if(loc!=LB_ERR){
 		SendMessage(ctrl,LB_DELETESTRING,(WPARAM)loc,(LPARAM)0);
-		SendMessage(ctrl,LB_INSERTSTRING,(WPARAM)loc,(LPARAM)string);
+		loc = SendMessage(ctrl, LB_INSERTSTRING, (WPARAM)loc, (LPARAM)string);
+		if (loc >= 0) {
+			SendMessage(ctrl, LB_SETITEMDATA, (WPARAM)loc, (LPARAM)player_id);
+		}
 	}
 }
 
@@ -348,7 +363,7 @@ void std_connect_update_ping(net_player *p)
 		}
 
 		// set the string
-		std_connect_set_ip_string(lookup,str);
+		std_connect_set_ip_string(p->player_id, str);
 	}
 }
 
@@ -437,34 +452,16 @@ void std_connect_handle_passwd_change()
 int std_connect_lindex_to_npindex(int index)
 {
 	HWND ctrl;			
-	// a line on this list holds an IPv6 address of up to 45 characters and a ping
-	char list_text[100];
-	char addr_text[INET6_ADDRSTRLEN];
-	int ret,idx;
 
 	// get the control handle
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE],(int)(uintptr_t)MAKEINTRESOURCE(IDC_CONPING));
 
-	// get the string contained at a given index	
-	SendMessage(ctrl,LB_GETTEXT,(WPARAM)index,(LPARAM)(LPSTR)list_text);
-
-	// look through the net players array and compare address strings (yuck)
-	ret = -1;
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		// only look at connected players
-		if(MULTI_CONNECTED(Net_players[idx])){
-			strcpy_s(addr_text,"");
-			psnet_addr_to_string(&Net_players[idx].p_info.addr, addr_text, sizeof(addr_text));
-
-			// if we found the match
-			if((addr_text[0] != '\0') && (strstr(list_text,addr_text) != NULL)){
-				ret = idx;
-				break;
-			}
-		}
+	auto player_id = SendMessage(ctrl, LB_GETITEMDATA, (WPARAM)index, (LPARAM)0);
+	if (player_id == LB_ERR) {
+		return -1;
 	}
 
-	return ret;
+	return find_other_player_index((short)player_id);
 }
 
 // message handler for the connect tab
@@ -1637,7 +1634,7 @@ void std_add_player(net_player *p)
 	
 	// get his ip string and add it to the list
 	psnet_addr_to_string(&p->p_info.addr, ip_string, sizeof(ip_string));
-	std_connect_add_ip_string(ip_string);
+	std_connect_add_ip_string(ip_string, p->player_id);
 
 	// add to the player info player list box, and update his info
 	std_pinfo_add_player_list_item(p);
@@ -1657,11 +1654,9 @@ void std_add_player(net_player *p)
 int std_remove_player(net_player *p)
 {	
 	int count;
-	char ip_string[60];	
-   
-	// determine his ip string and remove it from the list
-	psnet_addr_to_string(&p->p_info.addr, ip_string, sizeof(ip_string));
-	std_connect_remove_ip_string(ip_string);
+
+	// remove his ip string from the list
+	std_connect_remove_ip_string(p->player_id);
 
 	// remove from the player info player list box
 	std_pinfo_remove_player_list_item(p);
