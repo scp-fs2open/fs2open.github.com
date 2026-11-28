@@ -2529,28 +2529,26 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
-						bool bad_pnt = !is_valid_vec(&p->pnt);
-						bool bad_norm = !is_valid_vec(&temp_vec);
-						if (bad_pnt || bad_norm) {
-							invalid_glow_points++;
-							if (first_bad_bank < 0)
-								first_bad_bank = gpb;
-						}
-						if (bad_pnt)
-							vm_vec_zero(&p->pnt);
-						if (bad_norm)
-							vm_vec_zero(&temp_vec);
 						if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
 							vm_vec_normalize(&temp_vec);
 						else
 							vm_vec_zero(&temp_vec);
 						p->norm = temp_vec;
 						p->radius = cfread_float( fp);
+						if (!is_valid_vec(&p->pnt) || !is_valid_vec(&p->norm) || !std::isfinite(p->radius)) {
+							invalid_glow_points++;
+							if (first_bad_bank < 0)
+								first_bad_bank = gpb;
+							// radius 0 draws nothing; a zero normal alone would draw the point from every angle
+							vm_vec_zero(&p->pnt);
+							vm_vec_zero(&p->norm);
+							p->radius = 0.0f;
+						}
 					}
 				}
 				if (invalid_glow_points > 0)
 					Warning(LOCATION,
-						"Model %s has glow points with an invalid position or normal (%d, first in bank %d).",
+						"Model '%s' has glow points with an invalid position, normal or radius (%d, first in bank %d).",
 						filename,
 						invalid_glow_points,
 						first_bad_bank);
@@ -2604,17 +2602,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &temp_vec, fp );
-							bool bad_pnt = !is_valid_vec(&p->pnt);
-							bool bad_norm = !is_valid_vec(&temp_vec);
-							if (bad_pnt || bad_norm) {
-								invalid_thruster_points++;
-								if (first_bad_bank < 0)
-									first_bad_bank = i;
-							}
-							if (bad_pnt)
-								vm_vec_zero(&p->pnt);
-							if (bad_norm)
-								vm_vec_zero(&temp_vec);
 							vm_vec_normalize_safe(&temp_vec);
 							p->norm = temp_vec;
 
@@ -2624,12 +2611,23 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							} else {
 								p->radius = 1.0f;
 							}
+
+							if (!is_valid_vec(&p->pnt) || !is_valid_vec(&p->norm) || !std::isfinite(p->radius)) {
+								invalid_thruster_points++;
+								if (first_bad_bank < 0)
+									first_bad_bank = i;
+								// a zero normal also keeps engine wash and afterburner trails off this point
+								vm_vec_zero(&p->pnt);
+								vm_vec_zero(&p->norm);
+								p->radius = 0.0f;
+							}
 						}
 						//mprintf(( "Num slots = %d\n", bank->num_slots ));
 					}
 					if (invalid_thruster_points > 0)
 						Warning(LOCATION,
-							"Model %s has thruster points with an invalid position or normal (%d, first in bank %d).",
+							"Model '%s' has thruster points with an invalid position, normal or radius (%d, first in "
+							"bank %d).",
 							filename,
 							invalid_thruster_points,
 							first_bad_bank);
@@ -2857,17 +2855,19 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					int first_bad_path = -1;
 					for (i = 0; i < pm->n_paths; i++) {
 						for (j = 0; j < pm->paths[i].nverts; j++) {
-							if (!is_valid_vec(&pm->paths[i].verts[j].pos)) {
+							if (!is_valid_vec(&pm->paths[i].verts[j].pos) ||
+								!std::isfinite(pm->paths[i].verts[j].radius)) {
 								invalid_verts++;
 								if (first_bad_path < 0)
 									first_bad_path = i;
 								vm_vec_zero(&pm->paths[i].verts[j].pos);
+								pm->paths[i].verts[j].radius = 0.0f;
 							}
 						}
 					}
 					if (invalid_verts > 0)
 						Warning(LOCATION,
-							"Model %s has path vertices with an invalid position (%d, first in path '%s').",
+							"Model '%s' has path vertices with an invalid position or radius (%d, first in path '%s').",
 							filename,
 							invalid_verts,
 							pm->paths[first_bad_path].name);
@@ -3723,7 +3723,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		}
 		// stock MediaVPs models trigger this
 		if (invalid_normals > 0)
-			mprintf(("Submodel '%s' of model %s has polygons with an invalid normal (%d).\n",
+			mprintf(("Submodel '%s' of model '%s' has polygons with an invalid normal (%d).\n",
 				sm->name,
 				filename,
 				invalid_normals));
