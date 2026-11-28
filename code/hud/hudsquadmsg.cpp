@@ -190,6 +190,11 @@ static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFl
 		return true;
 	}
 
+	// a wing order is also given to the wing's later waves, whose craft may not be of this flavor
+	if (wing_entry.current_wave < wing_entry.num_waves) {
+		return false;
+	}
+
 	bool any_recipient = false;
 	for (int j = 0; j < wing_entry.current_count; j++) {
 		int shipnum = wing_entry.ship_index[j];
