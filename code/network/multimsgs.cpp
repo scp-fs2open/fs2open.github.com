@@ -4410,8 +4410,9 @@ void send_player_order_packet(int type, int index, int cmd)
 	val = (ubyte)type;
 	ADD_DATA(val);         // ship order or wing order, or message all fighters
 
-	// for a ship order the index is the ship's net signature and for a wing order the wingnum; for SQUAD_MSG_ALL
-	// it is the SmallCraftFlavor, so that all-fighters and all-bombers don't degrade to fighters-and-bombers
+	// for a ship order the index is the ship's net signature, for a wing order the wingnum, and for a reinforcement
+	// call the reinforcement index; for SQUAD_MSG_ALL it is the SmallCraftFlavor, so that all-fighters and all-bombers
+	// don't degrade to fighters-and-bombers
 	ADD_INT(index);
 
 	ADD_INT(cmd);         // the command itself
@@ -4469,7 +4470,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
-	// an observer, or a player who is still joining, has no ship
+	// a player with no object yet (still joining, or an observer before its object exists)
 	if ( Net_players[player_num].m_player->objnum < 0 ) {
 		nprintf(("Network", "Received player order packet from a player with no ship\n"));
 		return;
@@ -4551,7 +4552,6 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	aip->targeted_subsys = targeted_subsys;
 
 	if ( type == SQUAD_MSG_SHIP ) {
-		// here the index is the ordered ship's net signature
 		object *ordered_objp = nullptr;
 		if ( (index > 0) && (index <= USHRT_MAX) ) {
 			ordered_objp = multi_get_network_object(static_cast<ushort>(index));

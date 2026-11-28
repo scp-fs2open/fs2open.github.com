@@ -166,7 +166,8 @@ static constexpr int ORDER_TO_ALL_FIGHTERS_BOMBERS = -1;
 static constexpr int ORDER_TO_ALL_FIGHTERS = -2;
 static constexpr int ORDER_TO_ALL_BOMBERS = -3;
 
-static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavor) {
+static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavor)
+{
 	switch (flavor) {
 		case SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS:
 			return sinfop->is_fighter_bomber();
@@ -177,6 +178,20 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 	}
 	UNREACHABLE("Invalid SmallCraftFlavor of %i in 'is_smallcraft_flavor()'", static_cast<int>(flavor));
 	return false;
+}
+
+static SmallCraftFlavor msg_instance_flavor(int msg_instance)
+{
+	switch (msg_instance) {
+		case MESSAGE_ALL_FIGHTERS:
+			return SmallCraftFlavor::ALL_FIGHTERS;
+		case MESSAGE_ALL_BOMBERS:
+			return SmallCraftFlavor::ALL_BOMBERS;
+		default:
+			Assertion(msg_instance == MESSAGE_ALL_FIGHTERS_BOMBERS, "Msg_instance %d is not a message-all instance",
+				msg_instance);
+			return SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS;
+	}
 }
 
 static bool ship_can_take_flavor_order(const ship* shipp, const ship* ordering_shipp)
@@ -235,7 +250,7 @@ void hud_init_comm_orders()
 		for (const auto& parsed : Parsed_comm_orders) {
 			SCP_string text;
 			lcl_ext_localize(parsed.second, text);
-			// a translation can be longer than the English text the table parse already cut to size
+			// the table parse cuts only plain text, so a translation or an XSTR's own text is cut here
 			if (text.size() >= MAX_MENU_ITEM_TEXT_SIZE) {
 				text.resize(MAX_MENU_ITEM_TEXT_SIZE - 1);
 			}
@@ -1088,7 +1103,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 
 	// check for multiplayer mode
 	if(MULTIPLAYER_CLIENT) {
-		// for SQUAD_MSG_ALL the index field is unused, so it carries the flavor to the server
+		// a message-all order has no ship or wing to name, so the index field carries the flavor instead
 		send_player_order_packet(SQUAD_MSG_ALL, static_cast<int>(flavor), command);
 		return;
 	}
@@ -1191,7 +1206,6 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 			&& (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Gone] || Wings[shipp->wingnum].flags[Ship::Wing_Flags::Departing]) )
 			continue;
 
-		// don't send message to craft of the wrong type
 		if (!is_smallcraft_flavor(&Ship_info[shipp->ship_info_index], flavor)) {
 			continue;
 		}
@@ -2272,12 +2286,7 @@ void hud_squadmsg_ship_command()
 			ship* shipp;
 			bool partial_accept, all_accept;            // value which tells us what to do with menu item
 
-			auto flavor = SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS;
-			if (Msg_instance == MESSAGE_ALL_FIGHTERS) {
-				flavor = SmallCraftFlavor::ALL_FIGHTERS;
-			} else if (Msg_instance == MESSAGE_ALL_BOMBERS) {
-				flavor = SmallCraftFlavor::ALL_BOMBERS;
-			}
+			const auto flavor = msg_instance_flavor(Msg_instance);
 
 			all_accept = true;
 			partial_accept = false;
@@ -2293,7 +2302,6 @@ void hud_squadmsg_ship_command()
 				if (!ship_can_take_flavor_order(shipp, Player_ship))
 					continue;
 
-				// don't send message to craft of the wrong type
 				if (!is_smallcraft_flavor(&Ship_info[shipp->ship_info_index], flavor)) {
 					continue;
 				}
@@ -2325,12 +2333,9 @@ void hud_squadmsg_ship_command()
 		Assert ( k < sz2i(MsgItems.size()) );
 		// when messaging all fighters or ignoring target, call the send_to_all_fighters routine
 		// Goober5000 - ignore no longer sends to all fighters
-		if (Msg_instance == MESSAGE_ALL_FIGHTERS_BOMBERS) {
-			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
-		} else if (Msg_instance == MESSAGE_ALL_FIGHTERS) {
-			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, SmallCraftFlavor::ALL_FIGHTERS);
-		} else if (Msg_instance == MESSAGE_ALL_BOMBERS) {
-			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, SmallCraftFlavor::ALL_BOMBERS);
+		if (Msg_instance == MESSAGE_ALL_FIGHTERS_BOMBERS || Msg_instance == MESSAGE_ALL_FIGHTERS ||
+			Msg_instance == MESSAGE_ALL_BOMBERS) {
+			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, msg_instance_flavor(Msg_instance));
 		} else
 			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, 1, SQUADMSG_HISTORY_ADD_ENTRY);
 
@@ -2709,7 +2714,6 @@ int hud_squadmsg_do_frame( )
 		return 0;
 }
 
-// helper for the two functions below: pushes a history entry with an already-resolved order_to
 static void hud_add_issued_order_to(int order_to, int order)
 {
 	squadmsg_history latest_order;
@@ -2727,7 +2731,6 @@ void hud_add_issued_order(const char *name, int order)
 	hud_add_issued_order_to(get_parse_name_index(name), order);
 }
 
-// for the "message all <x>" orders, which have no single named recipient
 void hud_add_issued_order(SmallCraftFlavor flavor, int order)
 {
 	switch (flavor) {
@@ -2766,7 +2769,7 @@ void hud_update_last_order(const char *target, int order_source, int special_ind
 
 int hud_query_order_issued(const char *to, const char *order_name, const char *target_name, int timestamp, const char *from, const char *special_argument)
 {
-	int i, order = -1, ship_or_wing = ORDER_TO_ALL_FIGHTERS_BOMBERS, target = -1, source = -1;
+	int i, order = -1, ship_or_wing, target = -1, source = -1;
 
 	// the "message all <x>" orders have no named recipient, so they are matched by sentinel instead
 	if (!strcmp(to, SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS)) {
