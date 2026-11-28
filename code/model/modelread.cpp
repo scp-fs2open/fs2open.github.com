@@ -2529,11 +2529,17 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
-						if (!is_valid_vec(&p->pnt) || !is_valid_vec(&temp_vec)) {
+						bool bad_pnt = !is_valid_vec(&p->pnt);
+						bool bad_norm = !is_valid_vec(&temp_vec);
+						if (bad_pnt || bad_norm) {
 							invalid_glow_points++;
 							if (first_bad_bank < 0)
 								first_bad_bank = gpb;
 						}
+						if (bad_pnt)
+							vm_vec_zero(&p->pnt);
+						if (bad_norm)
+							vm_vec_zero(&temp_vec);
 						if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
 							vm_vec_normalize(&temp_vec);
 						else
@@ -2543,7 +2549,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					}
 				}
 				if (invalid_glow_points > 0)
-					Warning(LOCATION, "Model %s has glow points with an invalid position or normal (%d, first in bank %d).", pm->filename, invalid_glow_points, first_bad_bank);
+					Warning(LOCATION,
+						"Model %s has glow points with an invalid position or normal (%d, first in bank %d).",
+						filename,
+						invalid_glow_points,
+						first_bad_bank);
 				break;					
 			 }
 
@@ -2552,6 +2562,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				pm->n_thrusters = pof_read_count(fp, filename, "thruster banks");
 
 				if (pm->n_thrusters > 0) {
+					int invalid_thruster_points = 0;
+					int first_bad_bank = -1;
 					pm->thrusters = make_shared<thruster_bank[]>(pm->n_thrusters);
 
 					for (i = 0; i < pm->n_thrusters; i++ ) {
@@ -2592,6 +2604,17 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &temp_vec, fp );
+							bool bad_pnt = !is_valid_vec(&p->pnt);
+							bool bad_norm = !is_valid_vec(&temp_vec);
+							if (bad_pnt || bad_norm) {
+								invalid_thruster_points++;
+								if (first_bad_bank < 0)
+									first_bad_bank = i;
+							}
+							if (bad_pnt)
+								vm_vec_zero(&p->pnt);
+							if (bad_norm)
+								vm_vec_zero(&temp_vec);
 							vm_vec_normalize_safe(&temp_vec);
 							p->norm = temp_vec;
 
@@ -2604,6 +2627,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						}
 						//mprintf(( "Num slots = %d\n", bank->num_slots ));
 					}
+					if (invalid_thruster_points > 0)
+						Warning(LOCATION,
+							"Model %s has thruster points with an invalid position or normal (%d, first in bank %d).",
+							filename,
+							invalid_thruster_points,
+							first_bad_bank);
 				}
 				break;
 
@@ -2832,11 +2861,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 								invalid_verts++;
 								if (first_bad_path < 0)
 									first_bad_path = i;
+								vm_vec_zero(&pm->paths[i].verts[j].pos);
 							}
 						}
 					}
 					if (invalid_verts > 0)
-						Warning(LOCATION, "Model %s has path vertices with an invalid position (%d, first in path '%s').", pm->filename, invalid_verts, pm->paths[first_bad_path].name);
+						Warning(LOCATION,
+							"Model %s has path vertices with an invalid position (%d, first in path '%s').",
+							filename,
+							invalid_verts,
+							pm->paths[first_bad_path].name);
 				}
 				break;
 
@@ -3687,9 +3721,12 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 			if (!is_valid_vec(&tree->leaf_list[k].plane_norm))
 				invalid_normals++;
 		}
-		// a log line, not a Warning: degenerate polygons are common, MediaVPs models included
+		// stock MediaVPs models trigger this
 		if (invalid_normals > 0)
-			mprintf(("Submodel '%s' of model %s has polygons with an invalid normal (%d).\n", sm->name, pm->filename, invalid_normals));
+			mprintf(("Submodel '%s' of model %s has polygons with an invalid normal (%d).\n",
+				sm->name,
+				filename,
+				invalid_normals));
 	}
 
 	// clear bsp_data cache
