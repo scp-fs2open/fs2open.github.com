@@ -42,6 +42,7 @@ add_file_folder("Graphics"
 	   graphics/test_material.cpp
 	   graphics/test_post_processing.cpp
 	   graphics/test_shader_types.cpp
+	   graphics/test_lens_flare.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
@@ -96,6 +97,7 @@ add_file_folder("OSAPI"
 add_file_folder("Parse"
     parse/test_parselo.cpp
     parse/test_replace.cpp
+    parse/test_sexp_lens.cpp
 )
 
 add_file_folder("Pilotfile"
@@ -157,5 +159,6 @@ add_file_folder("Utils"
 )
 
 add_file_folder("Weapon"
+    weapon/test_beam.cpp
     weapon/weapons.cpp
 )

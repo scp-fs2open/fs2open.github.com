@@ -781,23 +781,79 @@ void shipfx_warpout_frame( object *objp, float frametime )
 
 
 #define w(p)	(*((int *) (p)))
+
+// Set *ray_end to a point on the ray from ray_start along dir, just past the bounding sphere of objp.
+// Return false if the sphere does not touch the ray, or is fully behind ray_start. Then objp cannot be
+// on the ray, and the caller skips the model test.
+static bool shipfx_ray_end_past_object(const vec3d* ray_start, const vec3d* dir, const object* objp, vec3d* ray_end)
+{
+	vec3d to_obj;
+	vm_vec_sub(&to_obj, &objp->pos, ray_start);
+
+	const float along = vm_vec_dot(&to_obj, dir);
+	if (along < -objp->radius) {
+		return false;
+	}
+
+	const float dist_sq = vm_vec_mag_squared(&to_obj) - along * along;
+	if (dist_sq > objp->radius * objp->radius) {
+		return false;
+	}
+
+	vm_vec_scale_add(ray_end, ray_start, dir, along + objp->radius);
+	return true;
+}
+
+// Set *ray_end for the shadow test of objp. With any_distance, the ray reaches objp at any distance.
+// Without it, the ray stops at ten times the radius of objp, as the legacy sun glare and glow expect.
+static bool shipfx_shadow_ray_end(const vec3d* ray_start, const vec3d* dir, const object* objp, bool any_distance,
+	vec3d* ray_end)
+{
+	if (any_distance) {
+		return shipfx_ray_end_past_object(ray_start, dir, objp, ray_end);
+	}
+	vm_vec_scale_add(ray_end, ray_start, dir, objp->radius * 10.0f);
+	return true;
+}
+
+static bool shipfx_eye_in_shadow_internal(const vec3d* eye_pos, const object* src_obj, const vec3d* to_light,
+	bool any_distance);
+
 /**
  * Given world point see if it is in a shadow.
  */
 bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 {
+	// get the light dir
+	vec3d light_dir;
+	if(!light_get_global_dir(&light_dir, light_n)){
+		return false;
+	}
+
+	return shipfx_eye_in_shadow_internal(eye_pos, src_obj, &light_dir, false);
+}
+
+/**
+ * Given world point see if it is in a shadow of a light from the direction to_light (unit length).
+ *
+ * The test ray goes from the point toward the light and has no fixed length. Thus an object at any
+ * distance between the point and the light puts the point in its shadow.
+ */
+bool shipfx_eye_in_shadow_dir(const vec3d* eye_pos, const object* src_obj, const vec3d* to_light)
+{
+	return shipfx_eye_in_shadow_internal(eye_pos, src_obj, to_light, true);
+}
+
+static bool shipfx_eye_in_shadow_internal(const vec3d* eye_pos, const object* src_obj, const vec3d* to_light,
+	bool any_distance)
+{
 	object *objp;
 	ship_obj *so;
 
 	vec3d rp0, rp1;
-	vec3d light_dir;
+	const vec3d light_dir = *to_light;
 
 	rp0 = *eye_pos;
-	
-	// get the light dir
-	if(!light_get_global_dir(&light_dir, light_n)){
-		return false;
-	}
 
 	// Find rp1
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )	{
@@ -808,7 +864,9 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 		if ( src_obj != objp )	{
 			mc_info mc;
 
-			vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+			if (!shipfx_shadow_ray_end(&rp0, &light_dir, objp, any_distance, &rp1)) {
+				continue;
+			}
 
 			mc.model_instance_num = Ships[objp->instance].model_instance_num;
 			mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
@@ -833,7 +891,9 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 			if (src_obj != objp) {
 				mc_info mc;
 
-				vm_vec_scale_add(&rp1, &rp0, &light_dir, objp->radius * 10.0f);
+				if (!shipfx_shadow_ray_end(&rp0, &light_dir, objp, any_distance, &rp1)) {
+					continue;
+				}
 
 				mc.model_instance_num = p->model_instance_num;
 				mc.model_num = Prop_info[p->prop_info_index].model_num;
@@ -858,7 +918,9 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 
 		objp = &Objects[db.objnum];
 
-		vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+		if (!shipfx_shadow_ray_end(&rp0, &light_dir, objp, any_distance, &rp1)) {
+			continue;
+		}
 
 		mc_info mc;
 

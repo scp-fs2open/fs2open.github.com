@@ -1,0 +1,26 @@
+; Mirrors the shape a mod actually writes: a +nocreate entry that adds nothing
+; but a thruster flare to a species some earlier table defined.
+
+#SPECIES DEFS
+
+$Species_Name: ThrusterFlareTestSpecies
++nocreate
+$Thruster Flare:
+	+Intensity: 6.0
+	+Afterburner Intensity: 15.0
+	+Color: ( 170, 205, 255 )
+
+; A species nothing has defined: must be discarded, not created, so a table
+; written for one mod is harmless in another
+$Species_Name: NoSuchSpecies
++nocreate
+$Thruster Flare:
+	+Intensity: 99.0
+
+; An entry that opts in without setting anything, which must land on the
+; defaults rather than on zero
+$Species_Name: ThrusterFlareDefaultsSpecies
++nocreate
+$Thruster Flare:
+
+#End

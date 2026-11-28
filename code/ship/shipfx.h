@@ -119,8 +119,13 @@ extern float shipfx_calculate_arrival_warp_distance(object *objp);
 //          SHIP SHADOW EFFECT STUFF
 // =================================================
 
-// Given world point see if it is in a shadow.
+// Given world point see if it is in a shadow. The test ray stops at ten times the radius of each object.
 bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int light_n);
+
+// Like shipfx_eye_in_shadow(), but for a light from the direction to_light (unit length), and an object at
+// any distance on the ray puts the point in its shadow. Use this when the light is not in the light list, for
+// example for a sun before stars_draw_sun() adds its light.
+bool shipfx_eye_in_shadow_dir(const vec3d* eye_pos, const object* src_obj, const vec3d* to_light);
 
 
 // =================================================

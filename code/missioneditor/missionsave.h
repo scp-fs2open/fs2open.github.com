@@ -192,6 +192,29 @@ class Fred_mission_save {
 	 */
 	int fout_version(const char* format, ...);
 
+	/**
+	 * @brief Writes one "+Token: value" line of a camera-lens override block
+	 *
+	 * Follows the usual round-trip convention: reuse the token's existing position
+	 * and comments if the file already had one, otherwise append.
+	 *
+	 * @param[in] token The "+Something:" token, including the colon
+	 * @param[in] val   The value to write
+	 */
+	void fout_lens_field(const char* token, float val);
+	void fout_lens_field(const char* token, int val);
+	void fout_lens_field(const char* token, bool val);
+
+	/**
+	 * @brief As above, but emits nothing when the value still equals @a def
+	 *
+	 * For blocks that are overridden as a whole, where a field left at its default
+	 * carries no information and would only bloat the file.
+	 */
+	void fout_lens_field(const char* token, float val, float def);
+	void fout_lens_field(const char* token, int val, int def);
+	void fout_lens_field(const char* token, bool val, bool def);
+
   private:
 
 	/**
