@@ -21,7 +21,9 @@ retail release, and our foremost aim is to maintain backwards compatibility with
 
 When making gameplay changes, existing behaviours should be preserved - changes that
 might affect existing gameplay should be gated behind optional table flags, new scripting API
-calls or new sexp functions. 
+calls or new sexp functions. When a change alters a default, gate the new default behind
+`mod_supports_version(...)` (`mod_table/mod_table.h`), so that only mods that target the new
+version get it.
 
 As a retro gaming engine, the userbase spans the gamut of available hardware, from low
 performing systems to high-end gaming PCs. Features that require certain hardware features
@@ -105,8 +107,8 @@ CI reference: `ci/linux/run_tests.sh` (Debug builds on non-macOS run under valgr
 
 ## Code style
 
-Formatting is enforced via `.clang-format` (LLVM-based, customized) and
-`.editorconfig`. Key conventions:
+New code should match `.clang-format` (LLVM-based, customized) and `.editorconfig`.
+Where a file uses a different style, match the file. Key conventions:
 
 - **Indentation:** tabs (width 4) for `.h`/`.cpp`/`.sdr`; spaces (2) for YAML.
 - **Column limit:** 120.
@@ -114,7 +116,7 @@ Formatting is enforced via `.clang-format` (LLVM-based, customized) and
 - **Braces:** opening brace on its own line for functions; same line for
   control statements/namespaces/classes.
 - **Includes:** sorted and regrouped; `globalincs/*.h` always come first.
-  Let clang-format handle include ordering.
+  Order includes by hand.
 
 Match these conventions by hand in code you write; don't run `clang-format`
 yourself — reformatting whole files introduces unrelated changes to existing
@@ -235,9 +237,13 @@ following:
 - Cross-platform matters: code must compile on GCC, Clang, and MSVC. Avoid
   platform-specific APIs outside `osapi/`, `windows_stub/`, and platform guards.
 - Add or update unit tests under `test/src` when changing testable logic.
+- For agent-driven changes that affect what the game shows or does, add a regression
+  check where it applies: run the same mission on master and on the branch, compare
+  the visible result side by side, and diff the logs. Describe the check in the PR.
 - When available, prefer mcp usage over manual exploration of the codebase or
   performing build tasks.
-- After making changes, verify the existing documentation and update it if necessary.
+- Update a module guide or skill only when your change makes something in it false.
+  Do not put unrelated documentation edits into a PR (one PR, one topic).
 
 ## Useful references
 
