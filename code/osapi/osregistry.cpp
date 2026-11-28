@@ -891,7 +891,14 @@ static bool mod_settings_file_can_be_opened(const SCP_string& path)
 			return false;
 		}
 		const auto folder = path.substr(0, path.find_last_of(DIR_SEPARATOR_CHAR));
-		return SDL_GetPathInfo(folder.c_str(), &info) && info.type == SDL_PATHTYPE_DIRECTORY;
+		if (!SDL_GetPathInfo(folder.c_str(), &info) || info.type != SDL_PATHTYPE_DIRECTORY) {
+			return false;
+		}
+#ifdef SCP_UNIX
+		return access(folder.c_str(), W_OK) == 0;
+#else
+		return true;
+#endif
 	}
 	FILE* fp = fopen(path.c_str(), "a");
 	if (fp == nullptr) {
@@ -1019,14 +1026,26 @@ void os_init_registry_stuff(const char* company, const char* app)
 	Os_reg_inited = 1;
 }
 
+static bool path_is_absolute(const SCP_string& path)
+{
+#ifdef WIN32
+	const bool drive = path.size() >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/');
+	return drive || path.compare(0, 2, "\\\\") == 0;
+#else
+	return !path.empty() && path[0] == '/';
+#endif
+}
+
 SCP_string os_get_mod_settings_path()
 {
 	auto path = os_get_config_path(Mod_options_file_name);
-	// portable mode and legacy Windows give a path from the game folder, which a launcher may not be working in
-	if (path.compare(0, 2, "." DIR_SEPARATOR_STR) == 0) {
+	// portable mode, legacy Windows and a relative FSO_PREFERENCES_PATH give a path from the game folder, which a
+	// launcher may not be working in
+	if (!path_is_absolute(path)) {
 		char* cwd = SDL_GetCurrentDirectory();
 		if (cwd != nullptr) {
-			path = SCP_string(cwd) + path.substr(2);
+			const bool dot = path.compare(0, 2, "." DIR_SEPARATOR_STR) == 0;
+			path = SCP_string(cwd) + (dot ? path.substr(2) : path);
 			SDL_free(cwd);
 		}
 	}

@@ -10,6 +10,11 @@
 #include <cstdio>
 #include <fstream>
 
+#ifdef SCP_UNIX
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 class OsRegistryTest : public test::FSTestFixture
 {
   public:
@@ -224,8 +229,22 @@ TEST_F(OsRegistryTest, RetailQueryLoadsTheProfileStartupWould)
 	ASSERT_EQ(RetailProfileFolder::load(true), "global");
 	ASSERT_EQ(RetailProfileFolder::load(false), "global");
 
-	// with the folder there, startup creates an empty profile and reads that
 	ASSERT_TRUE(folder.makeDataFolder());
+#ifdef SCP_UNIX
+	// a folder it cannot write to leaves startup unable to create the profile too
+	const auto data_folder = os_get_config_path("retail_query_test/data");
+	ASSERT_EQ(chmod(data_folder.c_str(), 0555), 0);
+	const bool writable_anyway = access(data_folder.c_str(), W_OK) == 0;
+	const auto query_read_only = RetailProfileFolder::load(true);
+	const auto startup_read_only = RetailProfileFolder::load(false);
+	ASSERT_EQ(chmod(data_folder.c_str(), 0755), 0);
+	if (!writable_anyway) {
+		ASSERT_EQ(query_read_only, "global");
+		ASSERT_EQ(startup_read_only, "global");
+	}
+#endif
+
+	// with the folder there, startup creates an empty profile and reads that
 	ASSERT_EQ(RetailProfileFolder::load(true), "none");
 	ASSERT_FALSE(RetailProfileFolder::profileExists());
 	ASSERT_EQ(RetailProfileFolder::load(false), "none");

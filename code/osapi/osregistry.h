@@ -46,7 +46,8 @@ void os_deinit_registry_stuff();
 // Full path of the file the in-game options are read from and saved to, for the mod given on the command line
 SCP_string os_get_mod_settings_path();
 
-// True when that file was missing at startup, so its values came from fs2_open.ini; the first save copies them over
+// True when that file was missing or not writable at startup, so its values came from fs2_open.ini; the first save
+// that succeeds copies them all into it
 bool os_mod_settings_inherited();
 
 // Writes a string to the registry
