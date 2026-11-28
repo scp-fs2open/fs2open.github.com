@@ -205,10 +205,15 @@ int twinNumber(const Joystick* stick)
 	return 0;
 }
 
+constexpr std::array<const char*, CID_JOY_MAX> JoystickOptionKeys = {"Input.Joystick",
+	"Input.Joystick1",
+	"Input.Joystick2",
+	"Input.Joystick3"};
+
 // true when another joystick setting names this model with another number, i.e. its twin is still wanted
 bool twinIsSaved(const SCP_string& guid, int axes, int buttons, int hats, int number)
 {
-	for (const char* key : {"Input.Joystick", "Input.Joystick1", "Input.Joystick2", "Input.Joystick3"}) {
+	for (const char* key : JoystickOptionKeys) {
 		std::optional<std::unique_ptr<json_t>> setting;
 		try {
 			setting = options::OptionsManager::instance()->getValueFromConfig(key);
@@ -466,7 +471,7 @@ SCP_vector<Joystick*> joystick_enumerator()
  * These should be displayed as a dropdown box type widget
  */
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
+auto JoystickOption = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY0],
                      std::pair<const char*, int>{"Joystick 0", 1705},
                      std::pair<const char*, int>{"The current joystick 0", 1706})
                      .category(std::make_pair("Input", 1827))                    // Category this option shows up in the scripting heirachy
@@ -485,7 +490,7 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
+auto JoystickOption1 = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY1],
                      std::pair<const char*, int>{"Joystick 1", 1707},
                      std::pair<const char*, int>{"The current joystick 1", 1708})
                      .category(std::make_pair("Input", 1827))
@@ -504,7 +509,7 @@ auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
+auto JoystickOption2 = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY2],
                      std::pair<const char*, int>{"Joystick 2", 1709},
                      std::pair<const char*, int>{"The current joystick 2", 1710})
                      .category(std::make_pair("Input", 1827))
@@ -523,7 +528,7 @@ auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
+auto JoystickOption3 = options::OptionBuilder<Joystick*>(JoystickOptionKeys[CID_JOY3],
                      std::pair<const char*, int>{"Joystick 3", 1711},
                      std::pair<const char*, int>{"The current joystick 3", 1712})
                      .category(std::make_pair("Input", 1827))
