@@ -885,7 +885,9 @@ void os_remove_deferred_cutscene_key_events() {
 	deferred_events.erase(
 		std::remove_if(deferred_events.begin(), deferred_events.end(), [](const SDL_Event &event)
 		{
-			return (event.type == SDL_EVENT_KEY_UP) && (
+			// Remove the whole press: a deferred key-down replayed into the movie would
+			// count as a press during playback, and its live release would then skip.
+			return (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) && (
 				event.key.key == SDLK_KP_ENTER ||
 				event.key.key == SDLK_RETURN ||
 				event.key.key == SDLK_SPACE
