@@ -294,13 +294,19 @@ static SCP_vector<std::shared_ptr<const options::OptionBase>> raytracing_options
 void shadows_mark_launcher_requirements(bool card_has_raytracing)
 {
 	auto* mgr = options::OptionsManager::instance();
+	// ray-traced ambient occlusion needs the same; rtao_remove_unsupported_options() drops it on the same hardware
+	SCP_vector<SCP_string> keys{"Graphics.RtaoQuality"};
 	for (const auto& option : raytracing_options()) {
+		keys.push_back(option->getConfigKey());
+	}
+	for (const auto& key : keys) {
 		if (card_has_raytracing) {
-			mgr->setRequirement(option->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
+			mgr->setRequirement(key, "vulkan", XSTR("Needs the Vulkan renderer", -1));
 		} else {
-			mgr->setRequirement(option->getConfigKey(),
+			mgr->setRequirement(key,
 				"raytracing",
-				XSTR("Needs the Vulkan renderer and a graphics card with ray tracing; stays off on other hardware", -1));
+				XSTR("Needs the Vulkan renderer and a graphics card with ray tracing; stays off on other hardware",
+					-1));
 		}
 	}
 }

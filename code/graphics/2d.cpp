@@ -2797,7 +2797,10 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		return false;
 	}
 
-	fsr_resolve_cmdline_setting();
+	// the stub renderer offers no FSR, so a query reports the mode the flag asked for rather than Off
+	if (!Cmdline_get_options) {
+		fsr_resolve_cmdline_setting();
+	}
 
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
@@ -2890,6 +2893,10 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 				options_mgr->setRequirement(option->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
 			}
 			options_mgr->removeOption(option);
+		}
+		// kept in the menu with Off as its only choice, so only a launcher needs to know why
+		if (Cmdline_get_options) {
+			options_mgr->setRequirement(FsrOption->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
 		}
 	}
 	shadows_remove_unsupported_options();
