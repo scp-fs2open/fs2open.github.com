@@ -117,7 +117,8 @@ struct PostProcessContext {
 	                                 const vk::ImageView* views, uint32_t viewCount,
 	                                 const void* uboData, size_t uboSize,
 	                                 vk::Sampler sampler = nullptr,
-	                                 uint32_t colorAttachmentCount = 1);
+	                                 uint32_t colorAttachmentCount = 1,
+	                                 int blendMode = ALPHA_BLEND_NONE);
 
 	/**
 	 * @brief Generate a mip chain for an image (transitions mip 0 first)
@@ -778,8 +779,15 @@ public:
 	/**
 	 * @brief Lightshafts (god rays), additively blended onto Scene_ldr
 	 * @param cmd Active command buffer (must be outside a render pass)
+	 * @param cockpitDepth The cockpit's depth, or null when no cockpit was drawn this frame
 	 */
-	void executeLightshafts(vk::CommandBuffer cmd);
+	void executeLightshafts(vk::CommandBuffer cmd, vk::ImageView cockpitDepth);
+
+	/**
+	 * @brief Whether executeLightshafts() will draw this frame
+	 * @param sunPos If not null, receives the sun's position in the pass's texture space
+	 */
+	bool lightshaftsActive(vec2d* sunPos = nullptr) const;
 
 	/**
 	 * @brief Buffer FXAA/SMAA edge detection should read for luma computation:
@@ -1117,7 +1125,11 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void executeLightshafts(vk::CommandBuffer cmd) { m_ldr.executeLightshafts(cmd); }
+	void executeLightshafts(vk::CommandBuffer cmd)
+	{
+		m_ldr.executeLightshafts(cmd, m_cockpitDepthValid ? m_cockpitDepth.view : nullptr);
+		m_cockpitDepthValid = false;
+	}
 
 	/**
 	 * @brief Update distortion ping-pong textures
@@ -1180,12 +1192,13 @@ public:
 	/**
 	 * @brief Put the depth that saveSceneDepth() parked back into the scene depth buffer
 	 *
-	 * Discards whatever the cockpit wrote, which is the point: the post-processing
-	 * passes that sample scene depth (lightshafts) must see the scene, not the cockpit.
+	 * The post-processing passes that sample scene depth must see the scene, not the
+	 * cockpit. When lightshafts will run, what the cockpit wrote is copied to m_cockpitDepth
+	 * first, which that pass uses as its cockpit mask, like Cockpit_depth_texture in OpenGL.
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void restoreSceneDepth(vk::CommandBuffer cmd) const;
+	void restoreSceneDepth(vk::CommandBuffer cmd);
 
 	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)
@@ -1372,6 +1385,9 @@ private:
 	RenderTarget m_sceneDepth;      // Depth buffer for scene
 	RenderTarget m_sceneDepthCopy;  // Samplable copy of scene depth (for soft particles)
 	RenderTarget m_sceneDepthBackup; // Scene depth parked across the cockpit render (transfer only)
+	RenderTarget m_cockpitDepth;    // Cockpit depth from the last restoreSceneDepth(), the lightshaft mask
+	bool m_cockpitDepthValid = false; // m_cockpitDepth holds this frame's cockpit
+	bool m_cockpitDepthWritten = false; // m_cockpitDepth has been copied to since it was created
 	RenderTarget m_sceneEffect;     // RGBA16F effect/composite (snapshot of scene color)
 
 	// Scene render pass and framebuffer

@@ -498,6 +498,20 @@ bool VulkanPostProcessor::createSceneTargets(vk::Extent2D extent)
 	m_sceneDepthBackup.width = extent.width;
 	m_sceneDepthBackup.height = extent.height;
 
+	// Cockpit depth (copy of the depth the cockpit drew, sampled by lightshafts)
+	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eDepth,
+	                 m_cockpitDepth.image, m_cockpitDepth.view, m_cockpitDepth.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create cockpit depth image!\n"));
+		return false;
+	}
+	m_cockpitDepth.format = m_ctx.depthFormat;
+	m_cockpitDepth.width = extent.width;
+	m_cockpitDepth.height = extent.height;
+	m_cockpitDepthValid = false;
+	m_cockpitDepthWritten = false;
+
 	return true;
 }
 
@@ -516,6 +530,9 @@ void VulkanPostProcessor::destroySceneTargets()
 	m_ctx.destroyTarget(m_sceneDepth);
 	m_ctx.destroyTarget(m_sceneDepthCopy);
 	m_ctx.destroyTarget(m_sceneDepthBackup);
+	m_ctx.destroyTarget(m_cockpitDepth);
+	m_cockpitDepthValid = false;
+	m_cockpitDepthWritten = false;
 }
 
 bool VulkanPostProcessor::createSceneFramebuffer()
@@ -847,8 +864,20 @@ void VulkanPostProcessor::saveSceneDepth(vk::CommandBuffer cmd) const
 		imageAspectFromFormat(m_ctx.depthFormat));
 }
 
-void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd) const
+void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd)
 {
+	if (m_ldr.lightshaftsActive()) {
+		// Once written, the old layout makes the copy wait for an earlier light-shaft pass still sampling it
+		const auto cockpitOldLayout = m_cockpitDepthWritten ? vk::ImageLayout::eShaderReadOnlyOptimal : vk::ImageLayout::eUndefined;
+		copyImageToImage(cmd,
+			m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
+			m_cockpitDepth.image, cockpitOldLayout, vk::ImageLayout::eShaderReadOnlyOptimal,
+			m_ctx.sceneExtent,
+			imageAspectFromFormat(m_ctx.depthFormat));
+		m_cockpitDepthWritten = true;
+		m_cockpitDepthValid = true;
+	}
+
 	// The backup was left in eTransferSrcOptimal by saveSceneDepth() and stays there --
 	// the next save transitions it from eUndefined anyway.
 	copyImageToImage(cmd,
