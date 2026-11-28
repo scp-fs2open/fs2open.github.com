@@ -43,6 +43,10 @@ void VulkanDeletionQueue::shutdown()
 	} catch (const vk::SystemError& e) {
 		if (e.code() != vk::Result::eErrorDeviceLost) {
 			// the GPU may still be using what is queued, so leak it at exit rather than free it under the GPU
+			nprintf(("vulkan",
+				"VulkanDeletionQueue: device wait failed at shutdown, leaving %zu queued objects: %s\n",
+				m_pendingDestructions.size(),
+				e.what()));
 			m_initialized = false;
 			return;
 		}
