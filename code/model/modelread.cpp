@@ -2872,7 +2872,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							if (bad_radius)
 								pm->paths[i].verts[j].radius = 0.0f;
 						}
-						// a path with no valid position leads nowhere, so its subsystem is attacked directly
+						// a path with no valid position leads nowhere, so it is unlinked from its parent
 						if (bad_positions > 0 && bad_positions == pm->paths[i].nverts) {
 							pm->paths[i].parent_name[0] = '\0';
 							pm->paths[i].parent_submodel = -1;
@@ -2881,7 +2881,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					}
 					if (unlinked_paths > 0)
 						Warning(LOCATION,
-							"Model '%s': zeroed %d path point(s) with a NaN or infinite value (first in path '%s'); "
+							"Model '%s': zeroed NaN or infinite values in %d path point(s) (first in path '%s'); "
 							"unlinked %d path(s) with no valid position from their parent.",
 							filename,
 							invalid_verts,
@@ -2889,7 +2889,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							unlinked_paths);
 					else if (invalid_verts > 0)
 						Warning(LOCATION,
-							"Model '%s': zeroed %d path point(s) with a NaN or infinite value (first in path '%s').",
+							"Model '%s': zeroed NaN or infinite values in %d path point(s) (first in path '%s').",
 							filename,
 							invalid_verts,
 							pm->paths[first_bad_path].name);
