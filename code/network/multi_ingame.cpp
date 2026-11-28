@@ -39,6 +39,9 @@
 #include "network/multi_endgame.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
+#include "hud/hudwingmanstatus.h"
+#include "object/objectdock.h"
+#include "object/parseobjectdock.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
@@ -86,6 +89,8 @@
 
 
 LOCAL	int	Ingame_ships_deleted = 0;
+LOCAL	bool	Ingame_ship_listed[MAX_SHIPS];
+LOCAL	bool	Ingame_unlisted_deleted = false;
 //LOCAL	int	Ingame_ships_to_delete[MAX_SHIPS];
 
 SCP_vector<int> Ingame_ship_choices;
@@ -287,6 +292,7 @@ void multi_ingame_sync_init()
 	send_file_sig_packet(Multi_current_file_checksum,Multi_current_file_length);
 	
 	Ingame_ships_deleted = 0;
+	Ingame_unlisted_deleted = false;
 }
 
 // mission sync screen do function for ingame joining
@@ -1007,6 +1013,73 @@ int multi_ingame_handle_timeout(bool API_Access)
 
 #define INGAME_PACKET_SLOP		75				// slop value used for packets to ingame joiner
 
+static void ingame_ships_packet_abort(header* hinfo)
+{
+	multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+
+	// stops multi_process_bigdata from reading the rest of the buffer as more packets
+	hinfo->bytes_processed = 10000;
+}
+
+static void ingame_forget_ship(ship* shipp)
+{
+	// ship_create marks the entry present again if the list recreates this ship
+	int entry_index = ship_registry_get_index(shipp->ship_name);
+	if (entry_index >= 0) {
+		Ship_registry[entry_index].status = ShipStatus::EXITED;
+		Ship_registry[entry_index].objnum = -1;
+		Ship_registry[entry_index].shipnum = -1;
+	}
+
+	if ((shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0)) {
+		hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+	}
+}
+
+// creating a docked group from its leader also brings back members the server doesn't list (destroyed, departed or
+// dying), so every ship without a record of its own is deleted
+static void ingame_delete_unlisted_ships()
+{
+	if (Ingame_unlisted_deleted) {
+		return;
+	}
+	Ingame_unlisted_deleted = true;
+
+	for (int idx = 0; idx < MAX_SHIPS; idx++) {
+		if (Ships[idx].objnum < 0 || Ingame_ship_listed[idx]) {
+			continue;
+		}
+		nprintf(("Network", "Deleting %s, which the server did not list\n", Ships[idx].ship_name));
+		int entry_index = ship_registry_get_index(Ships[idx].ship_name);
+		p_object* p_objp = entry_index >= 0 ? Ship_registry[entry_index].p_objp_or_null() : nullptr;
+		if (p_objp != nullptr && p_objp->created_object == &Objects[Ships[idx].objnum]) {
+			p_objp->created_object = nullptr;
+		}
+		ingame_forget_ship(&Ships[idx]);
+		dock_undock_all(&Objects[Ships[idx].objnum]);
+		obj_delete(Ships[idx].objnum);
+	}
+}
+
+// the joiner never created wings that arrived after the mission started, so their ships get gauge slots here; a ship
+// that already has a slot keeps it, which is right only while no later wave has reused a first-wave slot
+static void ingame_set_wing_gauge_slots(wing* wingp)
+{
+	for (int i = 0; i < wingp->current_count; i++) {
+		ship* shipp = &Ships[wingp->ship_index[i]];
+		if (shipp->wing_status_wing_index >= 0) {
+			continue;
+		}
+		auto entry = ship_registry_get(shipp->ship_name);
+		p_object* p_objp = entry != nullptr ? entry->p_objp_or_null() : nullptr;
+		hud_wingman_status_set_index(wingp, shipp, p_objp);
+		if (p_objp != nullptr) {
+			p_objp->wing_status_wing_index = shipp->wing_status_wing_index;
+			p_objp->wing_status_wing_pos = shipp->wing_status_wing_pos;
+		}
+	}
+}
+
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
@@ -1028,8 +1101,24 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		// delete all ships
 		for(idx=0; idx<MAX_SHIPS; idx++){
 			if((Ships[idx].objnum >= 0) && (Ships[idx].objnum < MAX_OBJECTS)){
+				ingame_forget_ship(&Ships[idx]);
 				obj_delete(Ships[idx].objnum);
 			}
+		}
+
+		for (int i = 0; i < Num_wings; i++) {
+			for (int& shipnum : Wings[i].ship_index) {
+				shipnum = -1;
+			}
+			Wings[i].current_count = 0;
+		}
+
+		// the deleted ships' parse objects can be created again
+		for (auto& p_obj : Parse_objects) {
+			p_obj.created_object = nullptr;
+		}
+		for (bool& listed : Ingame_ship_listed) {
+			listed = false;
 		}
 
 		Ingame_ships_deleted = 1;
@@ -1039,7 +1128,26 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 	// go
 	GET_DATA( p_type );	
-	while ( p_type == INGAME_SHIP_NEXT ) {
+	while ( p_type == INGAME_SHIP_NEXT || p_type == INGAME_SHIP_WING ) {
+		if (p_type == INGAME_SHIP_WING) {
+			short wingnum;
+			wing_membership members;
+			GET_SHORT(wingnum);
+			bool members_ok = wingnum >= 0 && wingnum < Num_wings &&
+				get_wing_membership(data, offset, hinfo->bytes_available, members);
+			if (!members_ok) {
+				mprintf(("ABORTING in-game join on a bad member list for wing %d!\n", wingnum));
+				ingame_ships_packet_abort(hinfo);
+				return;
+			}
+			obj_merge_created_list();
+			ingame_delete_unlisted_ships();
+			set_wing_membership(&Wings[wingnum], members);
+			ingame_set_wing_gauge_slots(&Wings[wingnum]);
+			GET_DATA(p_type);
+			continue;
+		}
+
 		p_object *p_objp;
 		int ship_num, objnum;
 		ubyte flag_size;
@@ -1065,8 +1173,20 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		GET_INT( team );		
 		GET_SHORT( wing_data );
+		if (wing_data < -1 || wing_data >= Num_wings) {
+			mprintf(("ABORTING in-game join since the server put ship %s in bad wing %d!\n", ship_name, wing_data));
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
 		if(wing_data >= 0){
-			GET_INT(Wings[wing_data].current_wave);			
+			int current_wave;
+			GET_INT(current_wave);
+			if (current_wave < 0 || current_wave > Wings[wing_data].num_waves) {
+				mprintf(("ABORTING in-game join on bad wave %d for wing %s!\n", current_wave, Wings[wing_data].name));
+				ingame_ships_packet_abort(hinfo);
+				return;
+			}
+			Wings[wing_data].current_wave = current_wave;
 		}
 
 		// lookup ship in the registry
@@ -1074,7 +1194,18 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		p_objp = entry ? entry->p_objp_or_null() : nullptr;
 		if (p_objp == nullptr) {
 			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
-			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
+
+		// docked group members hold provisional signatures, so only an already-listed ship counts as a repeat
+		object* existing = multi_get_network_object(net_signature);
+		bool sig_listed = existing != nullptr && existing->type == OBJ_SHIP && Ingame_ship_listed[existing->instance];
+		bool name_listed =
+			entry->status == ShipStatus::PRESENT && entry->shipnum >= 0 && Ingame_ship_listed[entry->shipnum];
+		if (sig_listed || name_listed) {
+			mprintf(("ABORTING in-game join on a repeated ship record for %s!\n", ship_name));
+			ingame_ships_packet_abort(hinfo);
 			return;
 		}
 
@@ -1083,8 +1214,23 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// multi_set_network_signature uncommented by Kazan on 11-04-2004
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
-		objnum = parse_create_object( p_objp );
+
+		// docked ships are created as a group from the dock leader; the group may already exist from an earlier record
+		if (!object_is_docked(p_objp) || p_objp->created_object == nullptr) {
+			parse_create_object(object_is_docked(p_objp) ? parse_object_find_dock_leader(p_objp) : p_objp);
+		}
+		if (p_objp->created_object == nullptr) {
+			mprintf(("ABORTING in-game join since ship %s was not created with its docked group!\n", ship_name));
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
+		objnum = OBJ_INDEX(p_objp->created_object);
 		ship_num = Objects[objnum].instance;
+		if (Ingame_ship_listed[ship_num]) {
+			mprintf(("ABORTING in-game join on a second record for ship %s!\n", ship_name));
+			ingame_ships_packet_abort(hinfo);
+			return;
+		}
 		Objects[objnum].flags.reset();
 		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
@@ -1098,6 +1244,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		Ships[ship_num].flags.set_from_vector(ship_flags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
+		Ingame_ship_listed[ship_num] = true;
 
 		GET_DATA( p_type );
 	}
@@ -1108,6 +1255,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	if ( p_type == INGAME_SHIP_LIST_EOL ) {		
 		// merge all created list
 		obj_merge_created_list();
+		ingame_delete_unlisted_ships();
 
 		// fixup player ship stuff
 		for(idx=0; idx<MAX_SHIPS; idx++){
@@ -1164,10 +1312,11 @@ void send_ingame_ships_packet(net_player *player)
 	// in wings.  The joiner will take the list, create any ships which should be created, and delete all
 	// other ships after the list is sent.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
 		ship *shipp = &Ships[Objects[so->objnum].instance];
+
+		// a ship being deleted or dying is left out: the joiner can't recreate a death roll in progress
+		if (ship_is_leaving(shipp))
+			continue;
 
 		// skip all wings.
 		// if ( shipp->wingnum != -1 ){
@@ -1226,6 +1375,24 @@ void send_ingame_ships_packet(net_player *player)
 			multi_io_send_reliable(player, data, packet_size);
 			BUILD_HEADER( SHIPS_INGAME_PACKET );
 		}
+	}
+
+	// each wing's members and leader, after every ship record, so the joiner can rebuild the wing from them
+	for (int i = 0; i < Num_wings; i++) {
+		if (Wings[i].current_wave == 0) {
+			continue;
+		}
+		if (packet_size > (MAX_PACKET_SIZE - INGAME_PACKET_SLOP)) {
+			p_type = INGAME_SHIP_LIST_EOP;
+			ADD_DATA(p_type);
+			multi_io_send_reliable(player, data, packet_size);
+			BUILD_HEADER(SHIPS_INGAME_PACKET);
+		}
+		p_type = INGAME_SHIP_WING;
+		ADD_DATA(p_type);
+		auto wingnum = static_cast<short>(i);
+		ADD_SHORT(wingnum);
+		add_wing_membership(data, packet_size, &Wings[i]);
 	}
 
 	// end of the ship list!!!

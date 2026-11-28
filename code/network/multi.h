@@ -77,9 +77,13 @@ class player;
 // Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
+// Version 64 - 11/24/2026 - Wing create packet carries the wing's count of skipped ships and which positions were
+// skipped, its ship count is the count before skips, and it carries the wing's members and leader, so clients create,
+// number and list the same ships as the server; the in-game join ship list carries each wing's members and leader and
+// leaves out dying ships, and post-sync data leaves them out too
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							63
+#define MULTI_FS_SERVER_VERSION							64
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -398,6 +402,7 @@ typedef struct header {
 	ubyte		addr[sizeof(in6_addr)];														// obtained from network-layer header
 	uint16_t	port;															// obtained from network-layer header
 	short		id;															// will be stuffed with player_id (short)
+	int		bytes_available = 0;									// bytes from this packet to the buffer's end
 } header;
 
 // NETPLAYER INFORMATION THE SERVER AND THE INDIVIDUAL CLIENT MUST HAVE

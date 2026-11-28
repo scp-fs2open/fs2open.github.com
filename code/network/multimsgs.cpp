@@ -10,6 +10,7 @@
 
 
 
+#include <algorithm>
 #include <climits>
 
 #include "globalincs/pstypes.h"
@@ -2800,8 +2801,103 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 	}
 }
 
+bool ship_is_leaving(const ship* shipp)
+{
+	return Objects[shipp->objnum].flags[Object::Object_Flags::Should_be_dead] || shipp->flags[Ship::Ship_Flags::Dying];
+}
+
+void add_wing_membership(ubyte* data, int& packet_size, const wing* wingp)
+{
+	ushort sigs[MAX_SHIPS_PER_WING];
+	ubyte count = 0;
+	ushort leader = 0;
+
+	// dying ships are left out, so the leader is the one ship_wing_cleanup will move special_ship to once they go
+	int leader_pos = wingp->special_ship;
+	for (int i = wingp->current_count - 1; i >= 0; i--) {
+		if (ship_is_leaving(&Ships[wingp->ship_index[i]]) && leader_pos > 0 && leader_pos >= i) {
+			leader_pos--;
+		}
+	}
+
+	for (int i = 0; i < wingp->current_count; i++) {
+		const ship* shipp = &Ships[wingp->ship_index[i]];
+		if (ship_is_leaving(shipp)) {
+			continue;
+		}
+		sigs[count] = Objects[shipp->objnum].net_signature;
+		if (count == leader_pos) {
+			leader = sigs[count];
+		}
+		count++;
+	}
+
+	ADD_DATA(count);
+	for (int i = 0; i < count; i++) {
+		ADD_USHORT(sigs[i]);
+	}
+	ADD_USHORT(leader);
+}
+
+bool get_wing_membership(ubyte* data, int& offset, int bytes_available, wing_membership& members)
+{
+	ubyte count;
+	if (offset + static_cast<int>(sizeof(count)) > bytes_available) {
+		return false;
+	}
+	GET_DATA(count);
+	if (count > MAX_SHIPS_PER_WING || offset + (count + 1) * static_cast<int>(sizeof(ushort)) > bytes_available) {
+		return false;
+	}
+	members.count = count;
+	for (int i = 0; i < count; i++) {
+		GET_USHORT(members.sigs[i]);
+	}
+	GET_USHORT(members.leader);
+	return true;
+}
+
+void set_wing_membership(wing* wingp, const wing_membership& members)
+{
+	int wingnum = WING_INDEX(wingp);
+	int count = 0;
+	int leader = 0;
+	int old_ships[MAX_SHIPS_PER_WING];
+	std::copy(std::begin(wingp->ship_index), std::end(wingp->ship_index), std::begin(old_ships));
+	for (int i = 0; i < members.count; i++) {
+		object* objp = multi_get_network_object(members.sigs[i]);
+		if (objp == nullptr || objp->type != OBJ_SHIP || Ships[objp->instance].wingnum != wingnum) {
+			continue;
+		}
+		if (ship_is_leaving(&Ships[objp->instance])) {
+			continue;
+		}
+		if (std::find(wingp->ship_index, wingp->ship_index + count, objp->instance) != wingp->ship_index + count) {
+			continue;
+		}
+		if (members.sigs[i] == members.leader) {
+			leader = count;
+		}
+		wingp->ship_index[count++] = objp->instance;
+	}
+	for (int i = count; i < MAX_SHIPS_PER_WING; i++) {
+		wingp->ship_index[i] = -1;
+	}
+	for (int shipnum : old_ships) {
+		bool kept = std::find(wingp->ship_index, wingp->ship_index + count, shipnum) != wingp->ship_index + count;
+		if (shipnum >= 0 && !kept) {
+			nprintf(("Network", "Dropping %s from wing %s\n", Ships[shipnum].ship_name, wingp->name));
+		}
+	}
+	wingp->current_count = count;
+	wingp->special_ship = leader;
+	if (count > 0) {
+		wingp->special_ship_ship_info_index = Ships[wingp->ship_index[leader]].ship_info_index;
+	}
+}
+
 // send a packet indicating a wing of ships should be created
-void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_count )
+void send_wing_create_packet( wing *wingp, int num_created, int num_requested, ubyte skipped_positions, int pre_create_count, int pre_create_skipped )
 {
 	int packet_size, index, ship_instance;
 	ubyte data[MAX_PACKET_SIZE];
@@ -2811,19 +2907,23 @@ void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_cou
 	// for creating wing -- we just send the index into the wing array of this wing.
 	// all players load the same mission, and so their array's should all match. We also
 	// need to send the signature of the first ship that was created.  We can find this by
-	// looking num_to_create places back in the ship_index field in the wing structure.
+	// looking num_created places back in the ship_index field in the wing structure.
 
 	index = WING_INDEX(wingp);
-	ship_instance = wingp->ship_index[wingp->current_count - num_to_create];
+	ship_instance = wingp->ship_index[wingp->current_count - num_created];
 	signature = Objects[Ships[ship_instance].objnum].net_signature;
 
 	BUILD_HEADER( WING_CREATE );
 	ADD_INT(index);
-	ADD_INT(num_to_create);
+	// clients skip the ships named in skipped_positions, so they need the count before the skips
+	ADD_INT(num_requested);
 	ADD_USHORT(signature);		
 	ADD_INT(pre_create_count);
 	val = wingp->current_wave - 1;
 	ADD_INT(val);
+	ADD_INT(pre_create_skipped);
+	ADD_DATA(skipped_positions);
+	add_wing_membership(data, packet_size, wingp);
 	
 	multi_io_send_to_all_reliable(data, packet_size);	
 }
@@ -2833,7 +2933,8 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 {
 	int offset, index, num_to_create;
 	ushort signature;
-	int total_arrived_count, current_wave;
+	int total_arrived_count, current_wave, red_alert_skipped_ships;
+	ubyte skipped_positions;
 
 	offset = HEADER_LENGTH;
 	GET_INT(index);
@@ -2841,8 +2942,24 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	GET_USHORT(signature);	
 	GET_INT(total_arrived_count);
 	GET_INT(current_wave);
+	GET_INT(red_alert_skipped_ships);
+	GET_DATA(skipped_positions);
+	wing_membership members;
+	bool members_ok = get_wing_membership(data, offset, hinfo->bytes_available, members);
 
 	PACKET_SET_SIZE();
+
+	if (!members_ok) {
+		nprintf(("Network", "Bad member list in the wing create packet\n"));
+		hinfo->bytes_processed = 10000;
+		return;
+	}
+
+	int sender = find_player_index(hinfo->id);
+	if (MULTIPLAYER_MASTER || sender < 0 || !(Net_players[sender].flags & NETINFO_FLAG_AM_MASTER)) {
+		nprintf(("Network", "Ignoring a wing create packet that did not come from the server\n"));
+		return;
+	}
 
 	// do a sanity check on the wing to be sure that we are actually working on a valid wing
 	if ( (index < 0) || (index >= Num_wings) || (Wings[index].num_waves == -1) ) {
@@ -2854,17 +2971,29 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
+	// the server is creating this wave, so clear a local Gone mark and cannot-arrive marks on the wing's ships
+	Wings[index].flags.remove(Ship::Wing_Flags::Gone);
+	for (auto& p_obj : Parse_objects) {
+		if (p_obj.wingnum == index) {
+			p_obj.flags.remove(Mission::Parse_Object_Flags::SF_Cannot_arrive);
+		}
+	}
+
+	// keep only the ships the server still has in the wing, so the new wave has room
+	set_wing_membership(&Wings[index], members);
+
 	// bash some info
-	Wings[index].current_count = 0;
 	Wings[index].total_arrived_count = total_arrived_count;
 	Wings[index].current_wave = current_wave;
+	Wings[index].red_alert_skipped_ships = red_alert_skipped_ships;
 
 	// set the network signature that was passed.  The client should create ships in the same order
 	// as the server -- so all ships should get the same sigs as assigned by the server.  We also
 	// need to set some timestamps and cues correctly to be sure that these things get created on
 	// the clients correctly
 	multi_set_network_signature( signature, MULTI_SIG_SHIP );
-	parse_wing_create_ships( &Wings[index], num_to_create, true );
+	parse_wing_create_ships( &Wings[index], num_to_create, true, false, -1, skipped_positions );
+	set_wing_membership(&Wings[index], members);
 }
 
 // packet indicating a ship is departing
@@ -5951,9 +6080,11 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	// ship count	
 	ship_count = 0;
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
-		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
+		// leaving ships are left out to match the in-game join list, whose joiner deletes ships it doesn't list;
+		// at mission start, when every client gets this packet, they are left out the same way
+		if (ship_is_leaving(shipp))
+			continue;
 
 		// don't process non player wing ships
 		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
@@ -5968,9 +6099,10 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 
 	// add ship class information (85 bytes max)	
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
-		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
+		// the same ships as counted above
+		if (ship_is_leaving(shipp))
+			continue;
 
 		// don't process non player wing ships
 		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
@@ -5989,9 +6121,10 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 
 	// add weapon state information for all starting ships (277 bytes max)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
+		// the same ships as counted above
+		if (ship_is_leaving(shipp))
+			continue;
 
 		// don't process non player wing ships
 		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
@@ -6104,6 +6237,18 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	}
 }
 
+// bad post-sync data leaves the game: an in-game joiner with the same error as a bad join ship list, any other
+// machine (a client at mission start, or the standalone reading the host's data) with the mission load error
+static void post_sync_data_abort(header* hinfo)
+{
+	bool joining = (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) != 0;
+	int err_code = joining ? MULTI_END_ERROR_INGAME_BOGUS : MULTI_END_ERROR_LOAD_FAIL;
+	multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, err_code);
+
+	// stops multi_process_bigdata from reading the rest of the buffer as more packets
+	hinfo->bytes_processed = 10000;
+}
+
 void process_post_sync_data_packet(ubyte *data, header *hinfo)
 {
 	ubyte val, ts_index;
@@ -6115,6 +6260,17 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	int ship_count;
 	short val_short, sinfo_index;
+
+	// on the master, only the game host sends post-sync data (a standalone routes it on to everyone)
+	if (MULTIPLAYER_MASTER) {
+		int sender = find_player_index(hinfo->id);
+		// compare the pointer: the host flag can be set by an unchecked host-transfer packet
+		if (sender < 0 || &Net_players[sender] != Netgame.host) {
+			nprintf(("Network", "Ignoring post sync data that did not come from the game host\n"));
+			hinfo->bytes_processed = 10000;
+			return;
+		}
+	}
 
 	// packet routing information
 	GET_DATA(val);
@@ -6135,23 +6291,37 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 
 	// add all deleted ships
 	GET_DATA(val);
-	Multi_ts_num_deleted = (int)val;
-	for(idx=0;idx<Multi_ts_num_deleted;idx++){
+	int num_listed = (int)val;
+	if (num_listed > MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS) {
+		mprintf(("Post sync data lists %d deleted ships, more than there are slots\n", num_listed));
+		post_sync_data_abort(hinfo);
+		return;
+	}
+	// every signature is read; an in-game joiner deletes nothing, because its join list already decided which ships
+	// exist and a reused object slot can carry a live ship's signature
+	bool joining = (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) != 0;
+	Multi_ts_num_deleted = 0;
+	for(idx=0;idx<num_listed;idx++){
 		// get the ship's objnum
 		GET_USHORT(sval);
+		if (joining) {
+			continue;
+		}
 		objp = NULL;
 		objp = multi_get_network_object(sval);
-		if(objp != NULL){
+		if (objp != nullptr && objp->type == OBJ_SHIP) {
 			// delete the ship appropriately
 			// mark the object as having been deleted
-			Multi_ts_deleted_objnums[idx] = OBJ_INDEX(objp);
+			Multi_ts_deleted_objnums[Multi_ts_num_deleted] = OBJ_INDEX(objp);
 
 			// delete the ship
 			ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Player_deleted);
-			obj_delete(Multi_ts_deleted_objnums[idx]);			
-			ship_wing_cleanup(objp->instance,&Wings[Ships[objp->instance].wingnum]);
+			obj_delete(Multi_ts_deleted_objnums[Multi_ts_num_deleted]);
+			if (Ships[objp->instance].wingnum >= 0) {
+				ship_wing_cleanup(objp->instance, &Wings[Ships[objp->instance].wingnum]);
+			}
+			Multi_ts_num_deleted++;
 		} else {
-			Multi_ts_num_deleted--;
 			nprintf(("Network","Couldn't find object by net signature for ship delete in post sync data packet\n"));
 		}
 	}
@@ -6170,11 +6340,11 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		// attempt to get the object
 		objp = multi_get_network_object(net_sig);
 
-		// make sure we found a ship
-		Assertion(objp != NULL, "idx: %d, ship_count: %d, sinfo_index: %u, ts_index: %u, net_sig: %u",
-			idx, ship_count, sinfo_index, ts_index, net_sig);
-		Assertion(objp->type == OBJ_SHIP, "type: %d, idx: %d, ship_count: %d, sinfo_index: %u, ts_index: %u, net_sig: %u",
-			objp->type, idx, ship_count, sinfo_index, ts_index, net_sig);
+		// an in-game joiner lacks player-wing ships that arrived after its ship list went out
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
+			nprintf(("Network", "Skipping post sync ship class for unknown ship %d\n", net_sig));
+			continue;
+		}
 
 		// set the ship to be the right class
 		change_ship_type(objp->instance,(int)sinfo_index);
@@ -6191,20 +6361,36 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		// attempt to get the object
 		objp = multi_get_network_object(net_sig);
 
-		// make sure we found a ship
-		Assert((objp != NULL) && (objp->type == OBJ_SHIP));
+		// get number of primary and secondary banks
+		char num_primary, num_secondary;
+		GET_DATA(num_primary);
+		GET_DATA(num_secondary);
+		if (num_primary < 0 || num_primary > MAX_SHIP_PRIMARY_BANKS || num_secondary < 0 ||
+			num_secondary > MAX_SHIP_SECONDARY_BANKS) {
+			mprintf(("Post sync data has bad bank counts (%d, %d) for ship %d\n", num_primary, num_secondary, net_sig));
+			post_sync_data_abort(hinfo);
+			return;
+		}
+
+		// read past a record for a ship this client doesn't have, using the record's own bank counts
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
+			nprintf(("Network", "Skipping post sync weapons for unknown ship %d\n", net_sig));
+			GET_DATA(b);
+			GET_DATA(b);
+			for (j = 0; j < num_primary + num_secondary * 2; j++) {
+				GET_SHORT(val_short);
+			}
+			GET_DATA(val);
+			GET_USHORT(ship_ets);
+			continue;
+		}
 
 		// get a pointer to the ship
 		shipp = &Ships[objp->instance];
 
-		// get number of primary and secondary banks;
-		GET_DATA(b);
-		Assert( b != -1 );
-		shipp->weapons.num_primary_banks = static_cast<int>(b);
+		shipp->weapons.num_primary_banks = static_cast<int>(num_primary);
 
-		GET_DATA(b);
-		Assert( b != -1 );
-		shipp->weapons.num_secondary_banks = static_cast<int>(b);
+		shipp->weapons.num_secondary_banks = static_cast<int>(num_secondary);
 
 		// get bank selection info
 		GET_DATA(b);
