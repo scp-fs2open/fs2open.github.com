@@ -53,8 +53,8 @@ ADE_OBJ(l_Texture, texture_h, "texture", "Texture handle");
 
 ADE_FUNC(__eq, l_Texture, "texture, texture", "Checks if two texture handles refer to the same texture", "boolean", "True if textures are equal")
 {
-	texture_h* th;
-	texture_h* th2;
+	texture_h* th = nullptr;
+	texture_h* th2 = nullptr;
 
 	if (!ade_get_args(L, "oo", l_Texture.GetPtr(&th), l_Texture.GetPtr(&th2)))
 		return ADE_RETURN_NIL;
@@ -72,7 +72,7 @@ ADE_INDEXER(l_Texture, "number",
 			"texture",
 			"Texture handle, or invalid texture handle if index is invalid")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	int frame=-1;
 	int newframe=-1;	//WMC - Ignore for now
 	if (!ade_get_args(L, "oi|i", l_Texture.GetPtr(&th), &frame, &newframe))
@@ -103,7 +103,7 @@ ADE_INDEXER(l_Texture, "number",
 
 ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ADE_RETURN_NIL;
@@ -121,7 +121,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 
 ADE_FUNC(destroyRenderTarget, l_Texture, nullptr, "Destroys a texture's render target. Call this when done drawing to a texture, as it frees up resources.", nullptr, nullptr)
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ADE_RETURN_NIL;
@@ -141,7 +141,7 @@ ADE_FUNC(destroyRenderTarget, l_Texture, nullptr, "Destroys a texture's render t
 
 ADE_FUNC(getFilename, l_Texture, NULL, "Returns filename for texture", "string", "Filename, or empty string if handle is invalid")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ade_set_error(L, "s", "");
 
@@ -153,7 +153,7 @@ ADE_FUNC(getFilename, l_Texture, NULL, "Returns filename for texture", "string",
 
 ADE_FUNC(getWidth, l_Texture, NULL, "Gets texture width", "number", "Texture width, or 0 if handle is invalid")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ade_set_error(L, "i", 0);
 
@@ -170,7 +170,7 @@ ADE_FUNC(getWidth, l_Texture, NULL, "Gets texture width", "number", "Texture wid
 
 ADE_FUNC(getHeight, l_Texture, NULL, "Gets texture height", "number", "Texture height, or 0 if handle is invalid")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ade_set_error(L, "i", 0);
 
@@ -187,7 +187,7 @@ ADE_FUNC(getHeight, l_Texture, NULL, "Gets texture height", "number", "Texture h
 
 ADE_FUNC(getFPS, l_Texture, NULL,"Gets frames-per-second of texture", "number", "Texture FPS, or 0 if handle is invalid")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ade_set_error(L, "i", 0);
 
@@ -204,7 +204,7 @@ ADE_FUNC(getFPS, l_Texture, NULL,"Gets frames-per-second of texture", "number", 
 
 ADE_FUNC(getFramesLeft, l_Texture, NULL, "Gets number of frames left, from handle's position in animation", "number", "Frames left, or 0 if handle is invalid")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
 		return ADE_RETURN_NIL;
 
@@ -226,9 +226,9 @@ ADE_FUNC(getFrame, l_Texture, "number ElapsedTimeSeconds, [boolean Loop]",
          "of a single playback",
          "number", "Frame number")
 {
-	texture_h* th;
+	texture_h* th = nullptr;
 	int frame = 0;
-	float elapsed_time;
+	float elapsed_time = 0.0f;
 	bool loop = false;
 
 	if (!ade_get_args(L, "of|b", l_Texture.GetPtr(&th), &elapsed_time, &loop))

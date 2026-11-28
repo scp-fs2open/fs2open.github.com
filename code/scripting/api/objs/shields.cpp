@@ -11,7 +11,7 @@ ADE_OBJ(l_Shields, object_h, "shields", "Shields handle");
 
 ADE_FUNC(__len, l_Shields, nullptr, "Number of shield segments", "number", "Number of shield segments or -1 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 
 	if(!ade_get_args(L, "o", l_Shields.GetPtr(&objh)))
 		return ade_set_error(L, "i", -1);
@@ -24,7 +24,7 @@ ADE_FUNC(__len, l_Shields, nullptr, "Number of shield segments", "number", "Numb
 
 ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or SHIELD_NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float nval = -1.0f;
 
 	object *objp = NULL;
@@ -102,7 +102,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 //WMC - Ehh, screw it.
 ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for all segments combined)", "number", "Combined shield strength, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float nval = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
 		return ade_set_error(L, "f", 0.0f);
@@ -119,7 +119,7 @@ ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for
 
 ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all segments combined)", "number", "Combined maximum shield strength, or 0 if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	float nval = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
 		return 0;

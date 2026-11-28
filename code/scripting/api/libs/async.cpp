@@ -420,7 +420,7 @@ ADE_FUNC(combineContexts,
 {
 	SCP_vector<std::shared_ptr<executor::IExecutionContext>> contexts;
 	for (int i = 0; i < lua_gettop(L); ++i) {
-		execution_context_h* ctx;
+		execution_context_h* ctx = nullptr;
 		internal::Ade_get_args_skip = i;
 		if (!ade_get_args(L, "o", l_ExecutionContext.GetPtr(&ctx))) {
 			return ade_set_args(L, "o", l_ExecutionContext.Set(execution_context_h(nullptr)));

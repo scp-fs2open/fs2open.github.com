@@ -58,7 +58,7 @@ ADE_FUNC(clonePreset,
 	"Returns true if successful, false otherwise")
 {
 	preset_h current;
-	const char* newName;
+	const char* newName = nullptr;
 	bool overwrite = false;
 	if (!ade_get_args(L, "os|b", l_Preset.Get(&current), &newName, &overwrite)) {
 		return ADE_RETURN_FALSE;
@@ -140,7 +140,7 @@ ADE_FUNC(isBindInverted,
 	"True if inverted, false otherwise. False if the bind is not an axis.")
 {
 	control_h current;
-	int item;
+	int item = 0;
 	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
 		return ADE_RETURN_NIL;
 	}
@@ -344,7 +344,7 @@ ADE_FUNC(detectKeypress,
 	"1 if successful or ESC was pressed, 0 otherwise. Returns -1 if the keypress is invalid")
 {
 	control_h current;
-	int item;
+	int item = 0;
 	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
 		return ADE_RETURN_FALSE;
 	}
@@ -362,7 +362,7 @@ ADE_FUNC(clearBind,
 	"Returns true if successful, false otherwise")
 {
 	control_h current;
-	int item;
+	int item = 0;
 	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
 		return ADE_RETURN_FALSE;
 	}
@@ -432,7 +432,7 @@ ADE_FUNC(toggleInverted,
 	"Returns true if successful, false otherwise")
 {
 	control_h current;
-	int item;
+	int item = 0;
 	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
 		return ADE_RETURN_FALSE;
 	}

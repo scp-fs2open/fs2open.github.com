@@ -80,7 +80,7 @@ ADE_VIRTVAR(LastStart, l_Beam, "vector", "Start point of the beam", "vector", "v
 
 ADE_VIRTVAR(Target, l_Beam, "object", "Target of beam. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Beam target, or invalid object handle if beam handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -116,7 +116,7 @@ ADE_VIRTVAR(Target, l_Beam, "object", "Target of beam. Value may also be a deriv
 
 ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is targeting.", "subsystem", "Target subsystem, or invalid subsystem handle if beam handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_subsys_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
@@ -153,7 +153,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is target
 
 ADE_VIRTVAR(ParentShip, l_Beam, "object", "Parent of the beam.", "object", "Beam parent, or invalid object handle if beam handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -189,7 +189,7 @@ ADE_VIRTVAR(ParentShip, l_Beam, "object", "Parent of the beam.", "object", "Beam
 
 ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired from.", "subsystem", "Parent subsystem, or invalid subsystem handle if beam handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_subsys_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
@@ -243,7 +243,7 @@ ADE_VIRTVAR(Team, l_Beam, "team", "Beam's team", "team", "Beam team, or invalid 
 
 ADE_FUNC(getCollisionCount, l_Beam, NULL, "Get the number of collisions in frame.", "number", "Number of beam collisions")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
@@ -258,8 +258,8 @@ ADE_FUNC(getCollisionCount, l_Beam, NULL, "Get the number of collisions in frame
 
 ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the defined collision.", "vector", "World vector")
 {
-	object_h *objh;
-	int idx;
+	object_h *objh = nullptr;
+	int idx = 0;
 	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -281,8 +281,8 @@ ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the define
 ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision information of the specified collision",
          "collision_info", "handle to information or invalid handle on error")
 {
-	object_h *objh;
-	int idx;
+	object_h *objh = nullptr;
+	int idx = 0;
 	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
 		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
@@ -303,8 +303,8 @@ ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision informati
 
 ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined collision.", "object", "Object the beam collided with")
 {
-	object_h *objh;
-	int idx;
+	object_h *objh = nullptr;
+	int idx = 0;
 	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
@@ -325,8 +325,8 @@ ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined co
 
 ADE_FUNC(isExitCollision, l_Beam, "number", "Checks if the defined collision was exit collision.", "boolean", "True if the collision was exit collision, false if entry, nil otherwise")
 {
-	object_h *objh;
-	int idx;
+	object_h *objh = nullptr;
+	int idx = 0;
 	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
 		return ADE_RETURN_NIL;
 
@@ -350,7 +350,7 @@ ADE_FUNC(isExitCollision, l_Beam, "number", "Checks if the defined collision was
 
 ADE_FUNC(getStartDirectionInfo, l_Beam, NULL, "Gets the start information about the direction. The vector is a normalized vector from LastStart showing the start direction of a slashing beam", "vector", "The start direction or null vector if invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -367,7 +367,7 @@ ADE_FUNC(getStartDirectionInfo, l_Beam, NULL, "Gets the start information about 
 
 ADE_FUNC(getEndDirectionInfo, l_Beam, NULL, "Gets the end information about the direction. The vector is a normalized vector from LastStart showing the end direction of a slashing beam", "vector", "The start direction or null vector if invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -384,7 +384,7 @@ ADE_FUNC(getEndDirectionInfo, l_Beam, NULL, "Gets the end information about the 
 
 ADE_FUNC(vanish, l_Beam, nullptr, "Vanishes this beam from the mission.", "boolean", "True if the deletion was successful, false otherwise.")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	if (!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
 		return ADE_RETURN_FALSE;
 

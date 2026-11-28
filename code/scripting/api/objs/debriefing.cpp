@@ -3,7 +3,7 @@
 namespace scripting {
 namespace api {
 
-debrief_stage_h::debrief_stage_h() {}
+debrief_stage_h::debrief_stage_h() : stage(nullptr) {}
 debrief_stage_h::debrief_stage_h(debrief_stage* db_stage) : stage(db_stage) {}
 debrief_stage* debrief_stage_h::getStage() const
 {
@@ -94,7 +94,7 @@ ADE_INDEXER(l_Debrief,
 	"debriefing_stage",
 	"The stage at the specified location.")
 {
-	int debriefIdx;
+	int debriefIdx = 0;
 	int index = -1;
 	if (!ade_get_args(L, "oi", l_Debrief.Get(&debriefIdx), &index)) {
 		return ADE_RETURN_NIL;
@@ -117,7 +117,7 @@ ADE_INDEXER(l_Debrief,
 
 ADE_FUNC(__len, l_Debrief, nullptr, "The number of stages in the debriefing", "number", "The number of stages.")
 {
-	int debrief;
+	int debrief = 0;
 	if (!ade_get_args(L, "o", l_Debrief.Get(&debrief))) {
 		return ADE_RETURN_NIL;
 	}

@@ -80,7 +80,7 @@ ADE_INDEXER(l_CmdBrief,
 	"cmd_briefing_stage",
 	"The stage at the specified location.")
 {
-	int briefIdx;
+	int briefIdx = 0;
 	int index        = -1;
 	if (!ade_get_args(L, "oi", l_CmdBrief.Get(&briefIdx), &index)) {
 		return ADE_RETURN_NIL;
@@ -103,7 +103,7 @@ ADE_INDEXER(l_CmdBrief,
 
 ADE_FUNC(__len, l_CmdBrief, nullptr, "The number of stages in the command briefing", "number", "The number of stages.")
 {
-	int brief;
+	int brief = 0;
 	if (!ade_get_args(L, "o", l_CmdBrief.Get(&brief))) {
 		return ADE_RETURN_NIL;
 	}

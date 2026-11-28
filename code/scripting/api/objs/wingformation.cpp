@@ -17,7 +17,7 @@ ADE_OBJ_VALIDATOR_RANGE(l_WingFormation, sz2i(Wing_formations.size()) + 1);	// +
 
 ADE_FUNC(__tostring, l_WingFormation, nullptr, "Wing formation name", "string", "Wing formation name, or an empty string if handle is invalid")
 {
-	int formation_id;
+	int formation_id = 0;
 	if (!ade_get_args(L, "o", l_WingFormation.Get(&formation_id)))
 		return ade_set_error(L, "s", "");
 
@@ -34,7 +34,7 @@ ADE_FUNC(__tostring, l_WingFormation, nullptr, "Wing formation name", "string", 
 
 ADE_FUNC(__eq, l_WingFormation, "wingformation, wingformation", "Checks if the two formations are equal", "boolean", "true if equal, false otherwise")
 {
-	int idx1, idx2;
+	int idx1 = 0, idx2 = 0;
 	if (!ade_get_args(L, "oo", l_WingFormation.Get(&idx1), l_WingFormation.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -49,7 +49,7 @@ ADE_FUNC(__eq, l_WingFormation, "wingformation, wingformation", "Checks if the t
 
 ADE_VIRTVAR(Name, l_WingFormation, "string", "Wing formation name", "string", "Wing formation name, or empty string if handle is invalid")
 {
-	int formation_id;
+	int formation_id = 0;
 	if (!ade_get_args(L, "o", l_WingFormation.Get(&formation_id)))
 		return ade_set_error(L, "s", "");
 

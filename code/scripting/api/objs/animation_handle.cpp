@@ -12,7 +12,7 @@ ADE_FUNC(start, l_AnimationHandle, "[boolean forwards = true, boolean resetOnSta
 	"boolean",
 	"True if successful, false if no animation was started or nil on failure")
 {
-	animation_handle_h* anim_set;
+	animation_handle_h* anim_set = nullptr;
 	bool forwards = true;
 	bool forced = false;
 	bool instant = false;
@@ -32,7 +32,7 @@ ADE_FUNC(getTime, l_AnimationHandle, nullptr,
 	"number",
 	"The time this animation will take to complete")
 {
-	animation_handle_h* anim_set;
+	animation_handle_h* anim_set = nullptr;
 
 	if (!ade_get_args(L, "o", l_AnimationHandle.GetPtr(&anim_set)))
 		return ADE_RETURN_NIL;
@@ -48,7 +48,7 @@ ADE_FUNC(setSpeed, l_AnimationHandle, "[number speedMultiplier = 1.0]",
 	nullptr,
 	nullptr)
 {
-	animation_handle_h* anim_set;
+	animation_handle_h* anim_set = nullptr;
 	float speed = 1.0f;
 
 	if (!ade_get_args(L, "o|f", l_AnimationHandle.GetPtr(&anim_set), &speed))
@@ -66,7 +66,7 @@ ADE_FUNC(stopNextLoop, l_AnimationHandle, nullptr,
 	"Will stop this looping animation on its next repeat.",
 	nullptr, nullptr)
 {
-	animation_handle_h* anim_set;
+	animation_handle_h* anim_set = nullptr;
 
 	if (!ade_get_args(L, "o", l_AnimationHandle.GetPtr(&anim_set)))
 		return ADE_RETURN_NIL;

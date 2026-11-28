@@ -19,7 +19,7 @@ ADE_VIRTVAR(Name, l_Species, "string", "Species name", "string", "Species name, 
 		return ade_set_error(L, "s", "");
 
 	const char* s = nullptr;
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o|s", l_Species.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 

@@ -15,7 +15,7 @@ ADE_OBJ_VALIDATOR(l_Team, idx, Iff_info.in_bounds(idx));
 
 ADE_FUNC(__eq, l_Team, "team, team", "Checks whether two teams are the same team", "boolean", "true if equal, false otherwise")
 {
-	int t1, t2;
+	int t1 = 0, t2 = 0;
 	if(!ade_get_args(L, "oo", l_Team.Get(&t1), l_Team.Get(&t2)))
 		return ADE_RETURN_FALSE;
 
@@ -48,7 +48,7 @@ ADE_FUNC(getColor,
 	"number, number, number, number | color",
 	"rgb color for the specified team or nil if invalid")
 {
-	int idx;
+	int idx = 0;
 	bool rc = false;
 	if(!ade_get_args(L, "o|b", l_Team.Get(&idx), &rc))
 		return ADE_RETURN_NIL;
@@ -67,7 +67,7 @@ ADE_FUNC(getColor,
 
 ADE_FUNC(getBreedName, l_Team, nullptr, "Gets the FreeSpace type name", "string", "'Team', or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Team.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
@@ -79,7 +79,7 @@ ADE_FUNC(getBreedName, l_Team, nullptr, "Gets the FreeSpace type name", "string"
 
 ADE_FUNC(attacks, l_Team, "team", "Checks the IFF status of another team", "boolean", "True if this team attacks the specified team")
 {
-	int x, y;
+	int x = 0, y = 0;
 	ade_get_args(L, "oo", l_Team.Get(&x), l_Team.Get(&y));
 	if (iff_x_attacks_y(x, y))
 		return ADE_RETURN_TRUE;

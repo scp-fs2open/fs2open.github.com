@@ -110,7 +110,7 @@ ADE_INDEXER(l_Brief,
 	"briefing_stage",
 	"The stage at the specified location.")
 {
-	int briefIdx;
+	int briefIdx = 0;
 	int index = -1;
 	if (!ade_get_args(L, "oi", l_Brief.Get(&briefIdx), &index)) {
 		return ADE_RETURN_NIL;
@@ -133,7 +133,7 @@ ADE_INDEXER(l_Brief,
 
 ADE_FUNC(__len, l_Brief, nullptr, "The number of stages in the briefing", "number", "The number of stages.")
 {
-	int brief;
+	int brief = 0;
 	if (!ade_get_args(L, "o", l_Brief.Get(&brief))) {
 		return ADE_RETURN_NIL;
 	}

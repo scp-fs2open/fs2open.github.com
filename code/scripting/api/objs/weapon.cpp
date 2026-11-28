@@ -98,7 +98,7 @@ ADE_VIRTVAR(FlakDetonationRange, l_Weapon, "number", "Range at which flak will d
 
 ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Weapon target, or invalid object handle if weapon handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -132,7 +132,7 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 
 ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon.", "subsystem", "Turret subsystem handle, or an invalid handle if the weapon not fired from a turret")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_subsys_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
@@ -169,7 +169,7 @@ ADE_VIRTVAR(ParentTurret, l_Weapon, "subsystem", "Turret which fired this weapon
 
 ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in on. Value may also be a deriviative of the 'object' class, such as 'ship'", "object", "Object that weapon is homing in on, or an invalid object handle if weapon is not homing or the weapon handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -207,7 +207,7 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home in on (World vector), setting this without a homing object in place will not have any effect!",
 			"vector", "Homing point, or null vector if weapon handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	vec3d *v3 = nullptr;
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -243,7 +243,7 @@ ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home 
 
 ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will home in on.", "subsystem", "Homing subsystem, or invalid subsystem handle if weapon is not homing or weapon handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	ship_subsys_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
@@ -369,7 +369,7 @@ ADE_FUNC(triggerSubmodelAnimation, l_Weapon, "string type, string triggeredBy, [
 	"boolean",
 	"True if successful, false or nil otherwise")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	const char* type = nullptr;
 	const char* trigger = nullptr;
 	bool forwards = true;
@@ -397,7 +397,7 @@ ADE_FUNC(triggerSubmodelAnimation, l_Weapon, "string type, string triggeredBy, [
 
 ADE_FUNC(getSubmodelAnimationTime, l_Weapon, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if weapon handle is invalid")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	const char* type = nullptr;
 	const char* trigger = nullptr;
 	if (!ade_get_args(L, "oss", l_Weapon.GetPtr(&objh), &type, &trigger))

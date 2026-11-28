@@ -41,7 +41,7 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 
 ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, vector hitpos=nil]", "Kills the asteroid. Set \"killer\" to designate a specific ship as having been the killer, and \"hitpos\" to specify the world position of the hit location; if nil, the asteroid center is used.", "boolean", "True if successful, false or nil otherwise")
 {
-	object_h *victim,*killer=NULL;
+	object_h *victim = nullptr,*killer=NULL;
 	vec3d *hitpos=NULL;
 	if(!ade_get_args(L, "o|oo", l_Asteroid.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;

@@ -577,7 +577,7 @@ ADE_FUNC(__len, l_ShipOrders, NULL, "Number of ship orders", "number", "Number o
 ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Order, or invalid order handle on failure")
 {
 	object_h *objh = NULL;
-	int i;
+	int i = 0;
 
 	if (!ade_get_args(L, "oi", l_ShipOrders.GetPtr(&objh), &i))
 		return ade_set_error(L, "o", l_Order.Set(order_h()));

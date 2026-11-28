@@ -51,7 +51,7 @@ ADE_OBJ(l_Subsystem, ship_subsys_h, "subsystem", "Ship subsystem handle");
 
 ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "Subsystem name, or empty string if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "s", "");
 
@@ -63,7 +63,7 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 
 ADE_FUNC(__eq, l_Subsystem, "subsystem, subsystem", "Checks if the two subsystem handles refer to the same subsystem", "boolean", "true if equal, false otherwise")
 {
-	ship_subsys_h *sso1, *sso2;
+	ship_subsys_h *sso1 = nullptr, *sso2 = nullptr;
 	if (!ade_get_args(L, "oo", l_Subsystem.GetPtr(&sso1), l_Subsystem.GetPtr(&sso2)))
 		return ade_set_error(L, "b", false);
 
@@ -75,7 +75,7 @@ ADE_FUNC(__eq, l_Subsystem, "subsystem, subsystem", "Checks if the two subsystem
 
 ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	const char* s    = nullptr;
 	const char *name = nullptr;
 
@@ -105,7 +105,7 @@ ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", 
 
 ADE_VIRTVAR(AWACSIntensity, l_Subsystem, "number", "Subsystem AWACS intensity", "number", "AWACS intensity, or 0 if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -121,7 +121,7 @@ ADE_VIRTVAR(AWACSIntensity, l_Subsystem, "number", "Subsystem AWACS intensity", 
 
 ADE_VIRTVAR(AWACSRadius, l_Subsystem, "number", "Subsystem AWACS radius", "number", "AWACS radius, or 0 if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -137,7 +137,7 @@ ADE_VIRTVAR(AWACSRadius, l_Subsystem, "number", "Subsystem AWACS radius", "numbe
 
 ADE_VIRTVAR(Submodel, l_Subsystem, "submodel", "The submodel corresponding to this subsystem, if one exists", "submodel", "Submodel handle, or invalid submodel handle if this subsystem does not have a submodel, or if the subsystem handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
@@ -152,7 +152,7 @@ ADE_VIRTVAR(Submodel, l_Subsystem, "submodel", "The submodel corresponding to th
 
 ADE_VIRTVAR(SubmodelInstance, l_Subsystem, "submodel_instance", "The submodel instance corresponding to this subsystem, if one exists", "submodel_instance", "Submodel instance handle, or invalid submodel instance handle if this subsystem does not have a submodel instance, or if the subsystem handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
@@ -169,7 +169,7 @@ ADE_VIRTVAR(SubmodelInstance, l_Subsystem, "submodel_instance", "The submodel in
 
 ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base", "orientation", "Subsystem orientation, or identity orientation if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	matrix_h *mh = nullptr;
 	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
@@ -203,7 +203,7 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 
 ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret gun", "orientation", "Gun orientation, or null orientation if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	matrix_h *mh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
@@ -235,7 +235,7 @@ ADE_VIRTVAR(TranslationOffset,
 	"vector",
 	"Offset, or zero vector if handle is not valid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	vec3d *vec = nullptr;
 	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -264,7 +264,7 @@ ADE_VIRTVAR(TranslationOffset,
 
 ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -293,7 +293,7 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 
 ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "number", "Max hitpoints, or 0 if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -313,7 +313,7 @@ ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "num
 
 ADE_VIRTVAR(Position, l_Subsystem, "vector", "Subsystem position with regards to main ship (Local Vector)", "vector", "Subsystem position, or null vector if subsystem handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	vec3d *v = NULL;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -333,7 +333,7 @@ ADE_VIRTVAR(WorldPosition, l_Subsystem, "vector",
             "Subsystem position in world space. This handles subsystem attached to a rotating submodel properly.",
             "vector", "Subsystem position, or null vector if subsystem handle is invalid")
 {
-	ship_subsys_h* sso;
+	ship_subsys_h* sso = nullptr;
 	vec3d* v = nullptr;
 	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -349,7 +349,7 @@ ADE_VIRTVAR(WorldPosition, l_Subsystem, "vector",
 
 ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with regards to main ship (Local vector)", "vector", "Gun position, or null vector if subsystem handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	vec3d *v = NULL;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -373,7 +373,7 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with reg
 
 ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem name, or an empty string if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");
@@ -391,7 +391,7 @@ ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem 
 
 ADE_VIRTVAR(NameOnHUD, l_Subsystem, "string", "Subsystem name as it would be displayed on the HUD", "string", "Subsystem name on HUD, or an empty string if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "s", "");
@@ -407,7 +407,7 @@ ADE_VIRTVAR(NameOnHUD, l_Subsystem, "string", "Subsystem name as it would be dis
 
 ADE_VIRTVAR(CanonicalName, l_Subsystem, "string", "Canonical subsystem name that can be used to reference this subsystem in a SEXP or script", "string", "Canonical subsystem name, or an empty string if handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "s", "");
@@ -423,7 +423,7 @@ ADE_VIRTVAR(CanonicalName, l_Subsystem, "string", "Canonical subsystem name that
 
 ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "number", "Number of fire points, or 0 if handle is invalid")
 {
-	ship_subsys_h* sso;
+	ship_subsys_h* sso = nullptr;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "i", 0);
 
@@ -440,8 +440,8 @@ ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "numbe
 
 ADE_VIRTVAR(FireRateMultiplier, l_Subsystem, "number", "Factor by which turret's rate of fire is multiplied.  This can also be set with the turret-set-rate-of-fire SEXP.  As with the SEXP, assigning a negative value will cause this to be reset to default.", "number", "Firing rate multiplier, or 0 if handle is invalid")
 {
-	ship_subsys_h* sso;
-	float multiplier;
+	ship_subsys_h* sso = nullptr;
+	float multiplier = 0.0f;
 	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &multiplier))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -462,7 +462,7 @@ ADE_VIRTVAR(FireRateMultiplier, l_Subsystem, "number", "Factor by which turret's
 
 ADE_FUNC(getModelName, l_Subsystem, nullptr, "Returns the original name of the subsystem as defined in the ship class, which could possibly correspond to a submodel in the model file.  This is the same as CanonicalName.", "string", "name or empty string on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "s", "");
 
@@ -474,7 +474,7 @@ ADE_FUNC(getModelName, l_Subsystem, nullptr, "Returns the original name of the s
 
 ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary banks, or invalid weaponbanktype handle if subsystem handle is invalid")
 {
-	ship_subsys_h *sso, *sso2 = nullptr;
+	ship_subsys_h *sso = nullptr, *sso2 = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Subsystem.GetPtr(&sso2)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
@@ -504,7 +504,7 @@ ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapo
 
 ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary weapon banks", "weaponbanktype", "Secondary banks, or invalid weaponbanktype handle if subsystem handle is invalid")
 {
-	ship_subsys_h *sso, *sso2 = nullptr;
+	ship_subsys_h *sso = nullptr, *sso2 = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Subsystem.GetPtr(&sso2)))
 		return ade_set_error(L, "o", l_WeaponBankType.Set(ship_banktype_h()));
 
@@ -536,7 +536,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 
 ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target or clear it, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -565,7 +565,7 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 
 ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies whether this turrets resets after a certain time of inactivity", "boolean", "true if turret resets, false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	bool newVal = false;
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ADE_RETURN_FALSE;
@@ -586,7 +586,7 @@ ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies whether this turret
 
 ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds) after that the turret resets itself", "number", "Reset delay")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	int newVal = -1;
 	if (!ade_get_args(L, "o|i", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "i", -1);
@@ -608,7 +608,7 @@ ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds)
 
 ADE_VIRTVAR(TurnRate, l_Subsystem, "number", "The turn rate", "number", "Turnrate or -1 on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float newVal = -1.0f;
 	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "f", -1.0f);
@@ -626,7 +626,7 @@ ADE_VIRTVAR(TurnRate, l_Subsystem, "number", "The turn rate", "number", "Turnrat
 
 ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem", "boolean", "true if targetable, false otherwise or on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	bool newVal = false;
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
@@ -644,7 +644,7 @@ ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem
 
 ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "number", "The radius or 0 on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -661,7 +661,7 @@ ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "numb
 
 ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked. Setting to true locks the turret; setting to false frees it.", "boolean", "True if turret is locked, false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	bool newVal = false;
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
@@ -679,7 +679,7 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 
 ADE_VIRTVAR(TurretLockedWithTimestamp, l_Subsystem, "boolean", "Behaves like TurretLocked, but when the turret is freed, there will be a short random delay (between 50 and 4000 milliseconds) before firing, to be consistent with SEXP behavior.", "boolean", "True if turret is locked, false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	bool newVal = false;
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
@@ -697,7 +697,7 @@ ADE_VIRTVAR(TurretLockedWithTimestamp, l_Subsystem, "boolean", "Behaves like Tur
 
 ADE_VIRTVAR(BeamFree, l_Subsystem, "boolean", "Whether the turret is beam-freed. Setting to true beam-frees the turret; setting to false beam-locks it.", "boolean", "True if turret is beam-freed, false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	bool newVal = false;
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
@@ -715,7 +715,7 @@ ADE_VIRTVAR(BeamFree, l_Subsystem, "boolean", "Whether the turret is beam-freed.
 
 ADE_VIRTVAR(BeamFreeWithTimestamp, l_Subsystem, "boolean", "Behaves like BeamFree, but when the turret is freed, there will be a short random delay (between 50 and 4000 milliseconds) before firing, to be consistent with SEXP behavior.", "boolean", "True if turret is beam-freed, false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	bool newVal = false;
 	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "b", false);
@@ -733,7 +733,7 @@ ADE_VIRTVAR(BeamFreeWithTimestamp, l_Subsystem, "boolean", "Behaves like BeamFre
 
 ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float newVal = -1.0f;
 	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &newVal))
 		return ade_set_error(L, "f", -1.0f);
@@ -761,7 +761,7 @@ ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret 
 ADE_VIRTVAR(ModelPath, l_Subsystem, "modelpath", "The model path points belonging to this subsystem", "modelpath",
             "The model path of this subsystem")
 {
-	ship_subsys_h* sso;
+	ship_subsys_h* sso = nullptr;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "o", l_ModelPath.Set(model_path_h()));
 
@@ -788,7 +788,7 @@ ADE_VIRTVAR(ModelPath, l_Subsystem, "modelpath", "The model path points belongin
 ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
 {
 	bool targetOverride = false;
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "ob", l_Subsystem.GetPtr(&sso), &targetOverride))
 		return ADE_RETURN_FALSE;
 
@@ -808,8 +808,8 @@ ADE_FUNC(getModelFlag,
 	"boolean", 
 	"Returns whether all flags are set, or nil if the subsystem is not valid")
 {
-	ship_subsys_h* sso;
-	const char* flag_name;
+	ship_subsys_h* sso = nullptr;
+	const char* flag_name = nullptr;
 
 	if (!ade_get_args(L, "os", l_Subsystem.GetPtr(&sso), &flag_name))
 		return ADE_RETURN_NIL;
@@ -846,7 +846,7 @@ ADE_FUNC(getModelFlag,
 
 ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
@@ -863,7 +863,7 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 
 ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret", "boolean", "true if subsystem is turret, false otherwise or nil on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
@@ -875,7 +875,7 @@ ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret"
 
 ADE_FUNC(isMultipartTurret, l_Subsystem, NULL, "Determines if this subsystem is a multi-part turret", "boolean", "true if subsystem is multi-part turret, false otherwise or nil on error")
 {
-	ship_subsys_h* sso;
+	ship_subsys_h* sso = nullptr;
 	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
 
@@ -887,7 +887,7 @@ ADE_FUNC(isMultipartTurret, l_Subsystem, NULL, "Determines if this subsystem is 
 
 ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	object_h *newh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&newh)))
 		return ADE_RETURN_NIL;
@@ -908,7 +908,7 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 
 ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a position is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
 {
-	ship_subsys_h* sso;
+	ship_subsys_h* sso = nullptr;
 	vec3d target = vmd_zero_vector;
 	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.Get(&target)))
 		return ADE_RETURN_NIL;
@@ -931,7 +931,7 @@ ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a positio
 
 ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100, vector OverrideFiringVec]", "Fires weapon on turret", nullptr, nullptr)
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	int wnum = 1;
 	float flak_range = 100.0f;
 	vec3d* override_gvec = nullptr;
@@ -984,7 +984,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 
 ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "boolean", "true on success false otherwise")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	vec3d pos = vmd_zero_vector;
 	bool reset = false;
 	if (!ade_get_args(L, "oo|b", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
@@ -1012,7 +1012,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 
 ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector in the ship's reference frame or null vector on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -1036,7 +1036,7 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", "number, number, number",
          "Standard FOV, maximum barrel elevation, turret base fov.")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	float fov, fov_e, fov_y;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;
@@ -1058,7 +1058,7 @@ ADE_FUNC(
     "Retrieves the next position and firing normal this turret will fire from. This function returns a world position",
     "vector, vector", "vector or null vector on error")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Vector.Set(vmd_zero_vector));
 
@@ -1074,7 +1074,7 @@ ADE_FUNC(
 
 ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turret matrix", "orientation", "Turret matrix.")
 {
-	ship_subsys_h *sso;
+	ship_subsys_h *sso = nullptr;
 	matrix m;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
 		return ADE_RETURN_NIL;

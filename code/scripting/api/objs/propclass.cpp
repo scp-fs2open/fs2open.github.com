@@ -16,7 +16,7 @@ ADE_FUNC(__tostring,
 	"string",
 	"Prop class name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Propclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -34,7 +34,7 @@ ADE_FUNC(__eq,
 	"boolean",
 	"true if equal, false otherwise")
 {
-	int idx1, idx2;
+	int idx1 = 0, idx2 = 0;
 	if (!ade_get_args(L, "oo", l_Propclass.Get(&idx1), l_Propclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -54,7 +54,7 @@ ADE_VIRTVAR(Name,
 	"string",
 	"Prop class name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Propclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -100,7 +100,7 @@ ADE_VIRTVAR(CustomData,
 	"table",
 	"The prop class's custom data table")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Propclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -125,7 +125,7 @@ ADE_FUNC(hasCustomData,
 	"boolean",
 	"true if the propclass's custom_data is not empty, false otherwise")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Propclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -147,7 +147,7 @@ ADE_VIRTVAR(CustomStrings,
 	"table",
 	"The prop's custom data table")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Propclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -185,7 +185,7 @@ ADE_FUNC(hasCustomStrings,
 	"boolean",
 	"true if the prop's custom_strings is not empty, false otherwise")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Propclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
@@ -206,9 +206,9 @@ ADE_FUNC(renderTechModel,
 	"boolean",
 	"Whether prop was rendered")
 {
-	int x1, y1, x2, y2;
+	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
-	int idx;
+	int idx = 0;
 	float zoom = 1.3f;
 	bool lighting = true;
 	if (!ade_get_args(L,
@@ -256,8 +256,8 @@ ADE_FUNC(renderTechModel2,
 	"boolean",
 	"Whether prop was rendered")
 {
-	int x1, y1, x2, y2;
-	int idx;
+	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+	int idx = 0;
 	float zoom = 1.3f;
 	matrix_h* mh = nullptr;
 	if (!ade_get_args(L, "oiiiio|f", l_Propclass.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
@@ -283,7 +283,7 @@ ADE_FUNC(isModelLoaded,
 	"boolean",
 	"If the model is loaded or not")
 {
-	int idx;
+	int idx = 0;
 	bool load_check = false;
 	if (!ade_get_args(L, "o|b", l_Propclass.Get(&idx), &load_check))
 		return ADE_RETURN_FALSE;
@@ -310,7 +310,7 @@ ADE_FUNC(getPropClassIndex,
 	"number",
 	"index value of the prop class")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "o", l_Propclass.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 

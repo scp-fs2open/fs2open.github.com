@@ -15,7 +15,7 @@ ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Mode
 
 ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of textures on a model instance", "number", "Number of textures on the model instance, or 0 if handle is invalid")
 {
-	modelinstance_h *mih;
+	modelinstance_h *mih = nullptr;
 	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
 		return ade_set_error(L, "i", 0);
 
@@ -32,8 +32,8 @@ ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of textures on a model
 
 ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Array of model instance textures", "texture", "Texture, or invalid texture handle on failure")
 {
-	modelinstance_h *mih;
-	const char* s;
+	modelinstance_h *mih = nullptr;
+	const char* s = nullptr;
 	texture_h* tdx = nullptr;
 	if (!ade_get_args(L, "os|o", l_ModelInstanceTextures.GetPtr(&mih), &s, l_Texture.GetPtr(&tdx)))
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
@@ -189,8 +189,8 @@ bool submodelinstance_h::isValid() const
 
 ADE_FUNC(__eq, l_ModelInstance, "model_instance, model_instance", "Checks if two model instance handles refer to the same model instance", "boolean", "True if model instances are equal")
 {
-	modelinstance_h* mih1;
-	modelinstance_h* mih2;
+	modelinstance_h* mih1 = nullptr;
+	modelinstance_h* mih2 = nullptr;
 
 	if (!ade_get_args(L, "oo", l_ModelInstance.GetPtr(&mih1), l_ModelInstance.GetPtr(&mih2)))
 		return ADE_RETURN_NIL;
@@ -203,8 +203,8 @@ ADE_FUNC(__eq, l_ModelInstance, "model_instance, model_instance", "Checks if two
 
 ADE_FUNC(__eq, l_SubmodelInstance, "submodel_instance, submodel_instance", "Checks if two submodel instance handles refer to the same submodel instance", "boolean", "True if submodel instances are equal")
 {
-	submodelinstance_h* smih1;
-	submodelinstance_h* smih2;
+	submodelinstance_h* smih1 = nullptr;
+	submodelinstance_h* smih2 = nullptr;
 
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih1), l_SubmodelInstance.GetPtr(&smih2)))
 		return ADE_RETURN_NIL;
@@ -217,7 +217,7 @@ ADE_FUNC(__eq, l_SubmodelInstance, "submodel_instance, submodel_instance", "Chec
 
 ADE_FUNC(getModel, l_ModelInstance, nullptr, "Returns the model used by this instance", "model", "A model")
 {
-	modelinstance_h *mih;
+	modelinstance_h *mih = nullptr;
 	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
@@ -226,7 +226,7 @@ ADE_FUNC(getModel, l_ModelInstance, nullptr, "Returns the model used by this ins
 
 ADE_FUNC(getObject, l_ModelInstance, nullptr, "Returns the object that this instance refers to", "object", "An object")
 {
-	modelinstance_h *mih;
+	modelinstance_h *mih = nullptr;
 	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
@@ -239,7 +239,7 @@ ADE_FUNC(getObject, l_ModelInstance, nullptr, "Returns the object that this inst
 ADE_VIRTVAR(Textures, l_ModelInstance, "modelinstancetextures", "Gets model instance textures", "modelinstancetextures", "Model instance textures, or invalid modelinstancetextures handle if modelinstance handle is invalid")
 {
 	modelinstance_h *sh = nullptr;
-	modelinstance_h *dh;
+	modelinstance_h *dh = nullptr;
 	if(!ade_get_args(L, "o|o", l_ModelInstance.GetPtr(&dh), l_ModelInstance.GetPtr(&sh)))
 		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
 
@@ -271,7 +271,7 @@ ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "
 
 ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance of this submodel", "model_instance", "A model instancve")
 {
-	submodelinstance_h* smih;
+	submodelinstance_h* smih = nullptr;
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
 
@@ -283,7 +283,7 @@ ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance
 
 ADE_FUNC(getSubmodel, l_SubmodelInstance, nullptr, "Gets the submodel of this instance", "submodel", "A submodel")
 {
-	submodelinstance_h* smih;
+	submodelinstance_h* smih = nullptr;
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
@@ -295,7 +295,7 @@ ADE_FUNC(getSubmodel, l_SubmodelInstance, nullptr, "Gets the submodel of this in
 
 ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the submodel instance orientation", "orientation", "Orientation, or identity orientation if handle is not valid")
 {
-	submodelinstance_h *smih;
+	submodelinstance_h *smih = nullptr;
 	matrix_h *mh = nullptr;
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
@@ -331,7 +331,7 @@ ADE_VIRTVAR(TranslationOffset,
 	"vector",
 	"Offset, or zero vector if handle is not valid")
 {
-	submodelinstance_h *smih;
+	submodelinstance_h *smih = nullptr;
 	vec3d *vec = nullptr;
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -356,8 +356,8 @@ ADE_VIRTVAR(TranslationOffset,
 
 ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coordinates of a point in a submodel's frame of reference", "vector", "Point, or empty vector if handle is not valid")
 {
-	submodelinstance_h *smih;
-	vec3d pnt, outpnt;
+	submodelinstance_h *smih = nullptr;
+	vec3d pnt = vmd_zero_vector, outpnt;
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&pnt)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -375,8 +375,8 @@ ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coo
 
 ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direction of a vector in a submodel's frame of reference", "vector", "Vector, or empty vector if handle is not valid")
 {
-	submodelinstance_h *smih;
-	vec3d dir, outdir;
+	submodelinstance_h *smih = nullptr;
+	vec3d dir = vmd_zero_vector, outdir;
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&dir)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -394,9 +394,9 @@ ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direc
 
 bool findObjectPointAndOrientationSub(lua_State *L, bool use_object, vec3d *outpnt, matrix *outorient)
 {
-	submodelinstance_h *smih;
-	vec3d local_pnt;
-	matrix_h *local_orient;
+	submodelinstance_h *smih = nullptr;
+	vec3d local_pnt = vmd_zero_vector;
+	matrix_h *local_orient = nullptr;
 	if (!ade_get_args(L, "ooo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&local_pnt), l_Matrix.GetPtr(&local_orient)))
 		return false;
 
@@ -439,9 +439,9 @@ ADE_FUNC(findLocalPointAndOrientation, l_SubmodelInstance, "vector, orientation,
 	vec3d local_pnt;
 	matrix local_orient;
 
-	submodelinstance_h* smih;
-	vec3d global_pnt;
-	matrix_h* global_orient;
+	submodelinstance_h* smih = nullptr;
+	vec3d global_pnt = vmd_zero_vector;
+	matrix_h* global_orient = nullptr;
 	bool fromWorld = true;
 
 	if (!ade_get_args(L, "ooo|b", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&global_pnt), l_Matrix.GetPtr(&global_orient), &fromWorld))
@@ -467,7 +467,7 @@ modelsubmodelinstances_h::modelsubmodelinstances_h() : modelinstance_h(){}
 
 ADE_FUNC(__len, l_ModelSubmodelInstances, nullptr, "Number of submodel instances on model", "number", "Number of model submodel instances")
 {
-	modelsubmodelinstances_h *msih;
+	modelsubmodelinstances_h *msih = nullptr;
 	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
 		return ade_set_error(L, "i", 0);
 
@@ -513,7 +513,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 	}
 	else
 	{
-		submodel_h *smh;
+		submodel_h *smh = nullptr;
 
 		if (!ade_get_args(L, "oo", l_ModelSubmodelInstances.GetPtr(&msih), l_Submodel.GetPtr(&smh)))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));

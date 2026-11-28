@@ -29,7 +29,7 @@ ADE_FUNC(addHook,
 {
 	using namespace luacpp;
 
-	const char* hook_name;
+	const char* hook_name = nullptr;
 	LuaFunction hook;
 	LuaTable conditionals;
 	LuaFunction override_func;

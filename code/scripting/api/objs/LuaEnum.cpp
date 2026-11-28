@@ -25,7 +25,7 @@ ADE_OBJ(l_LuaEnum, lua_enum_h, "LuaEnum", "Lua Enum handle");
 ADE_VIRTVAR(Name, l_LuaEnum, "string", "The enum name", "string", "The enum name or nil if handle is invalid")
 {
 	lua_enum_h lua_enum;
-	const char* enum_name;
+	const char* enum_name = nullptr;
 	if (!ade_get_args(L, "o|s", l_LuaEnum.Get(&lua_enum), &enum_name))
 		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
 
@@ -79,7 +79,7 @@ ADE_FUNC(addEnumItem,
 	"Returns true if successful, false otherwise")
 {
 	lua_enum_h lua_enum;
-	const char* item_name;
+	const char* item_name = nullptr;
 	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum) , &item_name))
 		return ADE_RETURN_FALSE;
 
@@ -106,7 +106,7 @@ ADE_FUNC(removeEnumItem,
 	"Returns true if successful, false otherwise")
 {
 	lua_enum_h lua_enum;
-	const char* item_name;
+	const char* item_name = nullptr;
 	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum), &item_name))
 		return ADE_RETURN_FALSE;
 

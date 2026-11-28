@@ -196,7 +196,7 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 
 ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script, and returns the result as a boolean", "boolean", "true if the SEXP returned SEXP_TRUE or SEXP_KNOWN_TRUE; false if the SEXP returned anything else (even a number)")
 {
-	const char* s;
+	const char* s = nullptr;
 	int r_val;
 
 	if(!ade_get_args(L, "s", &s))
@@ -212,7 +212,7 @@ ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script, and r
 
 ADE_FUNC(evaluateNumericSEXP, l_Mission, "string", "Runs the defined SEXP script, and returns the result as a number", "number", "the value of the SEXP result (or NaN if the SEXP returned SEXP_NAN or SEXP_NAN_FOREVER)")
 {
-	const char* s;
+	const char* s = nullptr;
 	int r_val;
 	bool got_nan;
 
@@ -229,7 +229,7 @@ ADE_FUNC(evaluateNumericSEXP, l_Mission, "string", "Runs the defined SEXP script
 
 ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `when` operator", "boolean", "if the operation was successful")
 {
-	const char* s;
+	const char* s = nullptr;
 	int r_val;
 	SCP_string buf;
 
@@ -336,7 +336,7 @@ ADE_INDEXER(l_Mission_Comm_Items,
 	"comm_item",
 	"Comm Item handle, or invalid handle if invalid index specified")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
@@ -394,7 +394,7 @@ ADE_LIB_DERIV(l_Mission_EscortShips, "EscortShips", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_EscortShips, "number Index", "Gets escort ship at specified index on escort list", "ship", "Specified ship, or invalid ship handle if invalid index")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
@@ -422,7 +422,7 @@ ADE_LIB_DERIV(l_Mission_Events, "Events", nullptr, "Events", l_Mission);
 
 ADE_INDEXER(l_Mission_Events, "number/string IndexOrName", "Indexes mission events list", "mission_event", "Event handle, or invalid event handle if index was invalid")
 {
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Event.Set(-1));
 
@@ -451,7 +451,7 @@ ADE_LIB_DERIV(l_Mission_Goals, "Goals", nullptr, "Goals", l_Mission);
 
 ADE_INDEXER(l_Mission_Goals, "number/string IndexOrName", "Indexes mission goals list", "mission_goal", "Goal handle, or invalid goal handle if index was invalid")
 {
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Goal.Set(-1));
 
@@ -529,7 +529,7 @@ ADE_LIB_DERIV(l_Mission_ShipRegistry, "ShipRegistry", nullptr, "The mission's sh
 
 ADE_INDEXER(l_Mission_ShipRegistry, "number/string IndexOrName", "Gets ship registry entry", "ship_registry_entry", "Ship registry entry handle, or invalid handle if index was invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_ShipRegistryEntry.Set(-1));
 
@@ -558,7 +558,7 @@ ADE_LIB_DERIV(l_Mission_Ships, "Ships", NULL, "Ships in the mission", l_Mission)
 
 ADE_INDEXER(l_Mission_Ships, "number/string IndexOrName", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
@@ -594,7 +594,7 @@ ADE_LIB_DERIV(l_Mission_ParsedShips, "ParsedShips", nullptr, "Parsed ships (aka 
 
 ADE_INDEXER(l_Mission_ParsedShips, "number/string IndexOrName", "Gets parsed ship", "parse_object", "Parsed ship handle, or invalid handle if index was invalid")
 {
-	const char *name;
+	const char *name = nullptr;
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
 
@@ -633,7 +633,7 @@ ADE_LIB_DERIV(l_Mission_Props, "Props", nullptr, "Props in the mission", l_Missi
 
 ADE_INDEXER(l_Mission_Props, "number/string IndexOrName", "Gets prop", "prop", "Prop handle, or invalid prop handle if index was invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 
@@ -670,7 +670,7 @@ ADE_LIB_DERIV(l_Mission_Waypoints, "Waypoints", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Waypoints, "number Index", "Array of waypoints in the current mission", "waypoint", "Waypoint handle, or invalid waypoint handle if index was invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Waypoint.Set(object_h()));
 
@@ -715,7 +715,7 @@ ADE_LIB_DERIV(l_Mission_WaypointLists, "WaypointLists", NULL, NULL, l_Mission);
 ADE_INDEXER(l_Mission_WaypointLists, "number/string IndexOrWaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
 {
 	waypointlist_h wpl;
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
@@ -747,7 +747,7 @@ ADE_LIB_DERIV(l_Mission_Weapons, "Weapons", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Weapons, "number Index", "Gets handle to a weapon object in the mission.", "weapon", "Weapon handle, or invalid weapon handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 
@@ -767,7 +767,7 @@ ADE_LIB_DERIV(l_Mission_Beams, "Beams", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Beams, "number Index", "Gets handle to a beam object in the mission.", "beam", "Beam handle, or invalid beam handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Beam.Set(object_h()));
 
@@ -787,7 +787,7 @@ ADE_LIB_DERIV(l_Mission_Wings, "Wings", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Wings, "number/string IndexOrWingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
@@ -816,7 +816,7 @@ ADE_LIB_DERIV(l_Mission_Teams, "Teams", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
 {
-	const char* name;
+	const char* name = nullptr;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
@@ -975,7 +975,7 @@ ADE_LIB_DERIV(l_Mission_Fireballs, "Fireballs", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball object in the mission.", "fireball", "Fireball handle, or invalid fireball handle if index is invalid")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 
@@ -1843,7 +1843,7 @@ ADE_FUNC(createBolt,
 	"boolean",
 	"True if successful, false if the bolt couldn't be created.")
 {
-	const char* boltname;
+	const char* boltname = nullptr;
 	vec3d origin = vmd_zero_vector;
 	vec3d dest = vmd_zero_vector;
 	bool playSound = true;
@@ -1978,7 +1978,7 @@ ADE_VIRTVAR(MissionHUDTimerPadding,
 	"number",
 	"the padding in seconds")
 {
-	int pad;
+	int pad = 0;
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*i", &pad)) {
 		The_mission.HUD_timer_padding = pad;
@@ -1990,7 +1990,7 @@ ADE_VIRTVAR(MissionHUDTimerPadding,
 //WMC - These are in freespace.cpp
 ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
 {
-	const char* s;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "b", false);
 
@@ -2198,9 +2198,9 @@ ADE_FUNC(addDefaultCustomData,
 	"boolean",
 	"returns true if sucessful, false otherwise. Returns nil if not running in FRED.")
 {
-	const char* key;
-	const char* value;
-	const char* desc;
+	const char* key = nullptr;
+	const char* value = nullptr;
+	const char* desc = nullptr;
 	if (!ade_get_args(L, "sss", &key, &value, &desc))
 		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
 
@@ -2409,7 +2409,7 @@ ADE_LIB_DERIV(l_Mission_BackgroundSuns, "BackgroundSuns", nullptr, "Suns in the 
 
 ADE_INDEXER(l_Mission_BackgroundSuns, "number Index", "Gets background sun at specified index in current background", "background_element", "Specified background element, or invalid handle if invalid index")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
 
@@ -2432,7 +2432,7 @@ ADE_LIB_DERIV(l_Mission_BackgroundBitmaps, "BackgroundBitmaps", nullptr, "Bitmap
 
 ADE_INDEXER(l_Mission_BackgroundBitmaps, "number Index", "Gets background bitmap at specified index in current background", "background_element", "Specified background element, or invalid handle if invalid index")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
 
@@ -2731,7 +2731,7 @@ ADE_FUNC(getMusicScore, l_Mission, "enumeration score /* SCORE_* */", "Returns t
 ADE_FUNC(setMusicScore, l_Mission, "enumeration score /* SCORE_* */, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
 {
 	enum_h score;
-	const char *name;
+	const char *name = nullptr;
 	if (!ade_get_args(L, "os", l_Enum.Get(&score), &name))
 		return ADE_RETURN_NIL;
 
@@ -2747,7 +2747,7 @@ ADE_FUNC(setMusicScore, l_Mission, "enumeration score /* SCORE_* */, string name
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
-	vec3d from, to;
+	vec3d from = vmd_zero_vector, to = vmd_zero_vector;
 	luacpp::LuaTable excludedObjects;
 	bool testForShields = false, testForHull = true;
 	float threshold = 10.0f;
@@ -2957,7 +2957,7 @@ ADE_FUNC(addLuaEnum,
 	"LuaEnum",
 	"Returns the enum handle or an invalid handle if the name was not unique.")
 {
-	const char* enum_name;
+	const char* enum_name = nullptr;
 	if (!ade_get_args(L, "s", &enum_name))
 		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
 

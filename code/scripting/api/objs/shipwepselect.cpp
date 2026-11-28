@@ -127,7 +127,7 @@ ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used i
 ADE_VIRTVAR(isFilled, l_Loadout_Wing_Slot, "boolean", "If the slot is empty or filled. true if filled, false if empty", "boolean", "The slot filled status")
 {
 	ss_slot_info_h current;
-	bool setv;
+	bool setv = false;
 	if (!ade_get_args(L, "o|b", l_Loadout_Wing_Slot.Get(&current), &setv) || !current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
@@ -249,7 +249,7 @@ ADE_INDEXER(l_Loadout_Amount,
 {
 	wss_unit_count_h current;
 	int idx = -1;
-	int amount;
+	int amount = 0;
 	if (!ade_get_args(L, "oi|i", l_Loadout_Amount.Get(&current), &idx, &amount))
 		return ADE_RETURN_NIL;
 
@@ -439,7 +439,7 @@ ADE_VIRTVAR(Weapons,
 	"loadout_weapon",
 	"The weapons array or nil if handle is invalid")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Loadout_Ship.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -458,7 +458,7 @@ ADE_VIRTVAR(Amounts,
 	"loadout_amount",
 	"The weapon amounts array or nil if handle is invalid")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Loadout_Ship.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -480,7 +480,7 @@ ADE_INDEXER(l_Loadout_Wing,
 	"loadout slot handle, or invalid handle if index is invalid")
 {
 	ss_wing_info_h current;
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "oi", l_Loadout_Wing.Get(&current), &idx))
 		return ade_set_error(L, "s", "");
 	if (!current.isValid() || idx < 1 || idx > MAX_WING_SLOTS)

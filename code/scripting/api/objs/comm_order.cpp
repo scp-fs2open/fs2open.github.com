@@ -10,7 +10,7 @@ ADE_OBJ_VALIDATOR(l_Comm_Item, idx, MsgItems.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Comm_Item, nullptr, "The name of the comm item", "string", "The comm item name")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
@@ -27,7 +27,7 @@ ADE_VIRTVAR(Name, l_Comm_Item, nullptr, "The name of the comm item", "string", "
 
 ADE_VIRTVAR(Active, l_Comm_Item, nullptr, "Whether or not the item is active", "boolean", "The active status")
 {
-	int current;
+	int current = 0;
 	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}

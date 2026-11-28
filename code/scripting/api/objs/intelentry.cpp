@@ -14,7 +14,7 @@ ADE_OBJ_VALIDATOR_RANGE(l_Intelentry, intel_info_size());
 
 ADE_FUNC(__tostring, l_Intelentry, nullptr, "Intel entry name", "string", "Intel entry name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -27,7 +27,7 @@ ADE_FUNC(__tostring, l_Intelentry, nullptr, "Intel entry name", "string", "Intel
 
 ADE_FUNC(__eq, l_Intelentry, "intel_entry, intel_entry", "Checks if the two entries are equal", "boolean", "true if equal, false otherwise")
 {
-	int idx1,idx2;
+	int idx1 = 0,idx2 = 0;
 	if(!ade_get_args(L, "oo", l_Intelentry.Get(&idx1), l_Intelentry.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
@@ -42,7 +42,7 @@ ADE_FUNC(__eq, l_Intelentry, "intel_entry, intel_entry", "Checks if the two entr
 
 ADE_VIRTVAR(Name, l_Intelentry, "string", "Intel entry name", "string", "Intel entry name, or an empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -61,7 +61,7 @@ ADE_VIRTVAR(Name, l_Intelentry, "string", "Intel entry name", "string", "Intel e
 
 ADE_VIRTVAR(Description, l_Intelentry, "string", "Intel entry description", "string", "Description, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -82,7 +82,7 @@ ADE_VIRTVAR(Description, l_Intelentry, "string", "Intel entry description", "str
 
 ADE_VIRTVAR(AnimFilename, l_Intelentry, "string", "Intel entry animation filename", "string", "Filename, or empty string if handle is invalid")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -105,8 +105,8 @@ ADE_VIRTVAR(AnimFilename, l_Intelentry, "string", "Intel entry animation filenam
 
 ADE_VIRTVAR(InTechDatabase, l_Intelentry, "boolean", "Gets or sets whether this intel entry is visible in the tech room", "boolean", "True or false")
 {
-	int idx;
-	bool new_value;
+	int idx = 0;
+	bool new_value = false;
 	if (!ade_get_args(L, "o|b", l_Intelentry.Get(&idx), &new_value))
 		return ade_set_error(L, "b", false);
 
@@ -131,7 +131,7 @@ ADE_VIRTVAR(CustomData,
 	"table",
 	"The entry's custom data table")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -159,7 +159,7 @@ ADE_FUNC(hasCustomData,
 	"boolean",
 	"true if the entry's custom_data is not empty, false otherwise")
 {
-	int idx;
+	int idx = 0;
 	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Intelentry.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
@@ -177,7 +177,7 @@ ADE_FUNC(hasCustomData,
 
 ADE_FUNC(getIntelEntryIndex, l_Intelentry, nullptr, "Gets the index value of the intel entry", "number", "index value of the intel entry")
 {
-	int idx;
+	int idx = 0;
 	if(!ade_get_args(L, "o", l_Intelentry.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 

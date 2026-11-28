@@ -62,8 +62,8 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
 {
 	using namespace luacpp;
 
-	const char* dir;
-	const char* filter;
+	const char* dir = nullptr;
+	const char* filter = nullptr;
 	if (!ade_get_args(L, "ss", &dir, &filter)) {
 		return ADE_RETURN_NIL;
 	}

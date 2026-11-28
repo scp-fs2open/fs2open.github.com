@@ -126,9 +126,9 @@ ADE_FUNC_DEPRECATED(createParticle,
 	"Not available in the testing library anymore. Use gr.createPersistentParticle instead.")
 {
 	// Need to consume tracer_length parameter but it isn't used anymore
-	vec3d pos, vel;
-	float lifetime, rad;
-	float temp;
+	vec3d pos = vmd_zero_vector, vel = vmd_zero_vector;
+	float lifetime = 0.0f, rad = 0.0f;
+	float temp = 0.0f;
 
 	enum_h *type = NULL;
 	bool rev=false;
@@ -169,7 +169,7 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified filename string to play. Should really only be used in a non-gameplay state (i.e. start of GS_STATE_BRIEFING) otherwise odd side effects may occur. Highly Experimental.", "string", NULL)
 {
 	//This whole thing is a quick hack and can probably be done way better, but is currently functioning fine for my purposes.
-	const char* filename;
+	const char* filename = nullptr;
 
 	if (!ade_get_args(L, "s", &filename))
 		return ADE_RETURN_FALSE;

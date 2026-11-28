@@ -65,8 +65,8 @@ bool submodel_h::isValid() const
 
 ADE_FUNC(__eq, l_Model, "model, model", "Checks if two model handles refer to the same model", "boolean", "True if models are equal")
 {
-	model_h* mdl1;
-	model_h* mdl2;
+	model_h* mdl1 = nullptr;
+	model_h* mdl2 = nullptr;
 
 	if (!ade_get_args(L, "oo", l_Model.GetPtr(&mdl1), l_Model.GetPtr(&mdl2)))
 		return ADE_RETURN_NIL;
@@ -79,8 +79,8 @@ ADE_FUNC(__eq, l_Model, "model, model", "Checks if two model handles refer to th
 
 ADE_FUNC(__eq, l_Submodel, "submodel, submodel", "Checks if two submodel handles refer to the same submodel", "boolean", "True if submodels are equal")
 {
-	submodel_h* smh1;
-	submodel_h* smh2;
+	submodel_h* smh1 = nullptr;
+	submodel_h* smh2 = nullptr;
 
 	if (!ade_get_args(L, "oo", l_Submodel.GetPtr(&smh1), l_Submodel.GetPtr(&smh2)))
 		return ADE_RETURN_NIL;
@@ -312,7 +312,7 @@ ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culli
 
 ADE_FUNC(getDetailRoot, l_Model, "[number detailLevel]", "Returns the root submodel of the specified detail level - 0 for detail0, etc.", "submodel", "A submodel, or an invalid submodel if handle is not valid")
 {
-	model_h *mdl;
+	model_h *mdl = nullptr;
 	int detail = 0;
 	if (!ade_get_args(L, "o|i", l_Model.GetPtr(&mdl), &detail))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
@@ -537,7 +537,7 @@ ADE_OBJ(l_ModelSubmodels, model_h, "submodels", "Array of submodels");
 
 ADE_FUNC(__len, l_ModelSubmodels, nullptr, "Number of submodels on model", "number", "Number of model submodels")
 {
-	model_h *msh;
+	model_h *msh = nullptr;
 	if (!ade_get_args(L, "o", l_ModelSubmodels.GetPtr(&msh)))
 		return ade_set_error(L, "i", 0);
 
@@ -594,7 +594,7 @@ ADE_OBJ(l_ModelTextures, model_h, "textures", "Array of textures");
 
 ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", "Number of model textures")
 {
-	model_h *mth;
+	model_h *mth = nullptr;
 	if (!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
 		return ade_set_error(L, "i", 0);
 
@@ -699,7 +699,7 @@ ADE_OBJ(l_ModelThrusters, model_h, "thrusters", "The thrusters of a model");
 
 ADE_FUNC(__len, l_ModelThrusters, NULL, "Number of thruster banks on the model", "number", "Number of thrusterbanks")
 {
-	model_h *mdl;
+	model_h *mdl = nullptr;
 	if (!ade_get_args(L, "o", l_ModelThrusters.GetPtr(&mdl)))
 		return ade_set_error(L, "i", -1);
 

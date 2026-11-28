@@ -25,7 +25,7 @@ namespace scripting {
 			"The recipient will be used as the default recipient for this RPC, but can be overridden on a per-call basis. "
 			"Valid are: RPC_SERVER, RPC_CLIENTS, RPC_BOTH", "rpc", "An RPC object, or an invalid RPC object on failure.")
 		{
-			const char* name;
+			const char* name = nullptr;
 			luacpp::LuaFunction func;
 			enum_h recipient{LE_RPC_BOTH}, mode{LE_RPC_RELIABLE};
 			if (!ade_get_args(L, "su|oo", &name, &func, l_Enum.Get(&mode), l_Enum.Get(&recipient))) {

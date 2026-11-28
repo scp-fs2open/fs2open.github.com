@@ -61,7 +61,7 @@ ADE_OBJ(l_Player, player_h, "player", "Player handle");
 
 
 ADE_VIRTVAR(Stats, l_Player, "scoring_stats stats", "The scoring stats of this player (read-only)", "scoring_stats", "The player stats or invalid handle") {
-	player_h* plr;
+	player_h* plr = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "o", l_ScoringStats.Set(scoring_stats_h()));
 
@@ -74,7 +74,7 @@ ADE_VIRTVAR(Stats, l_Player, "scoring_stats stats", "The scoring stats of this p
 ADE_VIRTVAR(ImageFilename, l_Player, "string name", "The image filename of this pilot", "string",
             "Player image filename, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	const char* filename = nullptr;
 	if (!ade_get_args(L, "o|s", l_Player.GetPtr(&plr), &filename))
 		return ade_set_error(L, "s", "");
@@ -92,7 +92,7 @@ ADE_VIRTVAR(ImageFilename, l_Player, "string name", "The image filename of this 
 ADE_VIRTVAR(SingleSquadFilename, l_Player, "string name", "The singleplayer squad filename of this pilot", "string",
             "singleplayer squad image filename, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	const char* filename = nullptr;
 	if (!ade_get_args(L, "o|s", l_Player.GetPtr(&plr), &filename))
 		return ade_set_error(L, "s", "");
@@ -110,7 +110,7 @@ ADE_VIRTVAR(SingleSquadFilename, l_Player, "string name", "The singleplayer squa
 ADE_VIRTVAR(MultiSquadFilename, l_Player, "string name", "The multiplayer squad filename of this pilot", "string",
             "Multiplayer squad image filename, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	const char* filename = nullptr;
 	if (!ade_get_args(L, "o|s", l_Player.GetPtr(&plr), &filename))
 		return ade_set_error(L, "s", "");
@@ -126,7 +126,7 @@ ADE_VIRTVAR(MultiSquadFilename, l_Player, "string name", "The multiplayer squad 
 }
 
 ADE_VIRTVAR(IsMultiplayer, l_Player, "boolean value", "Determines if this player is currently configured for multiplayer.", "boolean", "true if this is a multiplayer pilot, false otherwise or if the handle is invalid") {
-	player_h* plr;
+	player_h* plr = nullptr;
 	bool value = false;
 	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
 		return ADE_RETURN_FALSE;
@@ -146,7 +146,7 @@ ADE_VIRTVAR(IsMultiplayer, l_Player, "boolean value", "Determines if this player
 }
 
 ADE_VIRTVAR(WasMultiplayer, l_Player, "boolean value", "Determines if this player is currently configured for multiplayer.", "boolean", "true if this is a multiplayer pilot, false otherwise or if the handle is invalid") {
-	player_h* plr;
+	player_h* plr = nullptr;
 	bool value = false;
 	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
 		return ADE_RETURN_FALSE;
@@ -168,7 +168,7 @@ ADE_VIRTVAR(AutoAdvance,
 	"boolean",
 	"true if auto advance is enabled, false otherwise or if the handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	bool value = false;
 	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
 		return ADE_RETURN_FALSE;
@@ -190,7 +190,7 @@ ADE_VIRTVAR(ShowSkipPopup,
 	"boolean",
 	"true if it should be shown, false otherwise or if the handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	bool value = false;
 	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
 		return ADE_RETURN_FALSE;
@@ -207,7 +207,7 @@ ADE_VIRTVAR(ShowSkipPopup,
 
 ADE_FUNC(getName, l_Player, NULL, "Gets current player name", "string", "Player name, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "s", "");
 
@@ -219,7 +219,7 @@ ADE_FUNC(getName, l_Player, NULL, "Gets current player name", "string", "Player 
 
 ADE_FUNC(getCampaignFilename, l_Player, NULL, "Gets current player campaign filename", "string", "Campaign name, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "s", "");
 
@@ -231,7 +231,7 @@ ADE_FUNC(getCampaignFilename, l_Player, NULL, "Gets current player campaign file
 
 ADE_FUNC(getImageFilename, l_Player, NULL, "Gets current player image filename", "string", "Player image filename, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "s", "");
 
@@ -270,7 +270,7 @@ ADE_FUNC(getMainHallIndex, l_Player, NULL, "Gets player's current main hall numb
 
 ADE_FUNC(getSquadronName, l_Player, NULL, "Gets current player squad name", "string", "Squadron name, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "s", "");
 
@@ -282,7 +282,7 @@ ADE_FUNC(getSquadronName, l_Player, NULL, "Gets current player squad name", "str
 
 ADE_FUNC(getMultiSquadronName, l_Player, NULL, "Gets current player multi squad name", "string", "Squadron name, or empty string if handle is invalid")
 {
-	player_h* plr;
+	player_h* plr = nullptr;
 	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
 		return ade_set_error(L, "s", "");
 
@@ -295,7 +295,7 @@ ADE_FUNC(getMultiSquadronName, l_Player, NULL, "Gets current player multi squad 
 ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loads the specified campaign save file.",
          "boolean", "true on success, false otherwise")
 {
-	player_h* plh;
+	player_h* plh = nullptr;
 	const char* savefile = nullptr;
 	if (!ade_get_args(L, "o|s", l_Player.GetPtr(&plh), &savefile)) {
 		return ADE_RETURN_FALSE;
@@ -331,7 +331,7 @@ ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loa
 
 ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaign file and return to it's mainhall.", "boolean", "true on success, false otherwise")
 {
-	player_h* plh;
+	player_h* plh = nullptr;
 	const char* filename = nullptr;
 	if (!ade_get_args(L, "os", l_Player.GetPtr(&plh), &filename)) {
 		return ADE_RETURN_FALSE;
@@ -387,7 +387,7 @@ ADE_OBJ(l_ScoringStats, scoring_stats_h, "scoring_stats", "Player related scorin
 
 ADE_VIRTVAR(Score, l_ScoringStats, "number", "The current score.", "number", "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -406,7 +406,7 @@ ADE_VIRTVAR(Score, l_ScoringStats, "number", "The current score.", "number", "Th
 ADE_VIRTVAR(PrimaryShotsFired, l_ScoringStats, "number", "The number of primary shots that have been fired.", "number",
             "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -421,7 +421,7 @@ ADE_VIRTVAR(PrimaryShotsFired, l_ScoringStats, "number", "The number of primary 
 ADE_VIRTVAR(PrimaryShotsHit, l_ScoringStats, "number", "The number of primary shots that have hit.", "number",
             "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -436,7 +436,7 @@ ADE_VIRTVAR(PrimaryShotsHit, l_ScoringStats, "number", "The number of primary sh
 ADE_VIRTVAR(PrimaryFriendlyHit, l_ScoringStats, "number", "The number of primary friendly fire hits.", "number",
             "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -451,7 +451,7 @@ ADE_VIRTVAR(PrimaryFriendlyHit, l_ScoringStats, "number", "The number of primary
 ADE_VIRTVAR(SecondaryShotsFired, l_ScoringStats, "number", "The number of secondary shots that have been fired.",
             "number", "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -466,7 +466,7 @@ ADE_VIRTVAR(SecondaryShotsFired, l_ScoringStats, "number", "The number of second
 ADE_VIRTVAR(SecondaryShotsHit, l_ScoringStats, "number", "The number of secondary shots that have hit.", "number",
             "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -481,7 +481,7 @@ ADE_VIRTVAR(SecondaryShotsHit, l_ScoringStats, "number", "The number of secondar
 ADE_VIRTVAR(SecondaryFriendlyHit, l_ScoringStats, "number", "The number of secondary friendly fire hits.", "number",
             "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -495,7 +495,7 @@ ADE_VIRTVAR(SecondaryFriendlyHit, l_ScoringStats, "number", "The number of secon
 
 ADE_VIRTVAR(TotalKills, l_ScoringStats, "number", "The total number of kills.", "number", "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -509,7 +509,7 @@ ADE_VIRTVAR(TotalKills, l_ScoringStats, "number", "The total number of kills.", 
 
 ADE_VIRTVAR(Assists, l_ScoringStats, "number", "The total number of assists.", "number", "The score value")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -527,8 +527,8 @@ ADE_FUNC(getShipclassKills, l_ScoringStats, "shipclass class",
 {
 	using namespace luacpp;
 
-	scoring_stats_h* ssh;
-	int ship_idx;
+	scoring_stats_h* ssh = nullptr;
+	int ship_idx = 0;
 	if (!ade_get_args(L, "oo", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -552,8 +552,8 @@ ADE_VIRTVAR(MissionPrimaryShotsFired,
 	"number",
 	"The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -582,8 +582,8 @@ ADE_VIRTVAR(MissionPrimaryShotsHit,
 	"number",
 	"The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -612,8 +612,8 @@ ADE_VIRTVAR(MissionPrimaryFriendlyHit,
 	"number",
 	"The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -642,8 +642,8 @@ ADE_VIRTVAR(MissionSecondaryShotsFired,
 	"number",
 	"The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -672,8 +672,8 @@ ADE_VIRTVAR(MissionSecondaryShotsHit,
 	"number",
 	"The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -702,8 +702,8 @@ ADE_VIRTVAR(MissionSecondaryFriendlyHit,
 	"number",
 	"The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -727,8 +727,8 @@ ADE_VIRTVAR(MissionSecondaryFriendlyHit,
 
 ADE_VIRTVAR(MissionTotalKills, l_ScoringStats, "number", "The total number of kills in the current mission.", "number", "The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -752,8 +752,8 @@ ADE_VIRTVAR(MissionTotalKills, l_ScoringStats, "number", "The total number of ki
 
 ADE_VIRTVAR(MissionAssists, l_ScoringStats, "number", "The total number of assists in the current mission.", "number", "The score value")
 {
-	scoring_stats_h* ssh;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int setv = 0;
 	if (!ade_get_args(L, "o|i", l_ScoringStats.GetPtr(&ssh), &setv)) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -784,8 +784,8 @@ ADE_FUNC(getMissionShipclassKills,
 {
 	using namespace luacpp;
 
-	scoring_stats_h* ssh;
-	int ship_idx;
+	scoring_stats_h* ssh = nullptr;
+	int ship_idx = 0;
 	if (!ade_get_args(L, "oo", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx))) {
 		return ade_set_error(L, "i", -1);
 	}
@@ -811,9 +811,9 @@ ADE_FUNC(setMissionShipclassKills,
 {
 	using namespace luacpp;
 
-	scoring_stats_h* ssh;
-	int ship_idx;
-	int setv;
+	scoring_stats_h* ssh = nullptr;
+	int ship_idx = 0;
+	int setv = 0;
 	if (!ade_get_args(L, "ooi", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx), &setv)) {
 		return ADE_RETURN_FALSE;
 	}
@@ -842,7 +842,7 @@ ADE_VIRTVAR(Medals,
 	"{ number => number ... }",
 	"The medals table")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ADE_RETURN_NIL;
 	}
@@ -870,7 +870,7 @@ ADE_VIRTVAR(Rank,
 	"rank",
 	"The current rank")
 {
-	scoring_stats_h* ssh;
+	scoring_stats_h* ssh = nullptr;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ADE_RETURN_NIL;
 	}

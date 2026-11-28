@@ -20,7 +20,7 @@ ADE_OBJ(l_ColInfo, mc_info_h, "collision_info", "Information about a collision")
 
 ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model, or an invalid model if the handle is not valid")
 {
-	mc_info_h* info;
+	mc_info_h* info = nullptr;
 	model_h * mh = nullptr;
 
 	if(!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Model.GetPtr(&mh)))
@@ -46,7 +46,7 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 
 ADE_FUNC(getCollisionSubmodel, l_ColInfo, nullptr, "The submodel where the collision occurred, if applicable", "submodel", "The submodel, or nil if none or if the handle is not valid")
 {
-	mc_info_h *info;
+	mc_info_h *info = nullptr;
 	submodel_h *sh = nullptr;
 
 	if (!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Submodel.GetPtr(&sh)))
@@ -65,7 +65,7 @@ ADE_FUNC(getCollisionSubmodel, l_ColInfo, nullptr, "The submodel where the colli
 
 ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest collision point", "number", "distance or -1 on error")
 {
-	mc_info_h* info;
+	mc_info_h* info = nullptr;
 
 	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
 		return ade_set_error(L, "f", -1.0f);
@@ -87,7 +87,7 @@ ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest col
 
 ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point of this information (local to the object if boolean is set to <i>true</i>)", "vector", "The collision point, or nil if none or if the handle is not valid")
 {
-	mc_info_h* info;
+	mc_info_h* info = nullptr;
 	bool local = false;
 
 	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))
@@ -113,7 +113,7 @@ ADE_FUNC(getCollisionPoint, l_ColInfo, "[boolean local]", "The collision point o
 
 ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal of this information (local to object if boolean is set to <i>true</i>)", "vector", "The collision normal, or nil if none or if the handle is not valid")
 {
-	mc_info_h* info;
+	mc_info_h* info = nullptr;
 	bool local = false;
 
 	if(!ade_get_args(L, "o|b", l_ColInfo.GetPtr(&info), &local))

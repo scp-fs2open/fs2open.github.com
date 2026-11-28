@@ -79,7 +79,7 @@ ADE_FUNC(turnTowardsPoint,
 	nullptr)
 {
 	object_h ship;
-	vec3d* target;
+	vec3d* target = nullptr;
 	bool diffTurn = true;
 	vec3d* modifier = nullptr;
 	float bank = 0.0f;
@@ -101,7 +101,7 @@ ADE_FUNC(turnTowardsOrientation,
 	nullptr)
 {
 	object_h ship;
-	matrix_h* target;
+	matrix_h* target = nullptr;
 	bool diffTurn = true;
 	vec3d* modifier = nullptr;
 

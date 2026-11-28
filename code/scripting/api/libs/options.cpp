@@ -155,7 +155,7 @@ ADE_FUNC(writeIPAddressTable, l_Options, "table", "Saves the table to the multip
 ADE_FUNC(verifyIPAddress, l_Options, "string", "Verifies if a string is a valid IP address", "boolean", "True if valid, false otherwise")
 {
 	
-	const char* ip;
+	const char* ip = nullptr;
 
 	if (!ade_get_args(L, "s", &ip)) {
 		return ADE_RETURN_FALSE;

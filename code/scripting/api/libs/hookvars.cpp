@@ -17,7 +17,7 @@ ADE_INDEXER(l_HookVar,
 	"any",
 	"The hook variable value or nil if hook variable is not defined")
 {
-	const char* name;
+	const char* name = nullptr;
 	if (!ade_get_args(L, "*s", &name)) {
 		return ADE_RETURN_NIL;
 	}
@@ -53,7 +53,7 @@ ADE_INDEXER(l_HookVar_Globals,
 	"string",
 	"Hookvariable name, or empty string if invalid index specified")
 {
-	int idx;
+	int idx = 0;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 

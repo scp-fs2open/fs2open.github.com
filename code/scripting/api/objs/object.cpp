@@ -53,7 +53,7 @@ ADE_OBJ(l_Object, object_h, "object", "Object handle");
 
 ADE_FUNC(__eq, l_Object, "object, object", "Checks whether two object handles are for the same object", "boolean", "True if equal, false if not or a handle is invalid")
 {
-	object_h *o1, *o2;
+	object_h *o1 = nullptr, *o2 = nullptr;
 	if(!ade_get_args(L, "oo", l_Object.GetPtr(&o1), l_Object.GetPtr(&o2)))
 		return ADE_RETURN_FALSE;
 
@@ -65,7 +65,7 @@ ADE_FUNC(__eq, l_Object, "object, object", "Checks whether two object handles ar
 
 ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string", "Object name, or empty string if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "s", "");
 
@@ -119,7 +119,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 
 ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Parent handle, or invalid handle if object is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *newparenth = NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Object.GetPtr(&newparenth)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
@@ -166,7 +166,7 @@ ADE_VIRTVAR(Radius, l_Object, "number", "Radius of an object", "number", "Radius
 
 ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -191,7 +191,7 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 
 ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last frame (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
@@ -208,7 +208,7 @@ ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last 
 
 ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	matrix_h *mh=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
@@ -228,7 +228,7 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 
 ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation as of last frame (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	matrix_h *mh=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
@@ -245,7 +245,7 @@ ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation 
 
 ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this object", "model_instance", "Model instance, nil if this object does not have one, or invalid model instance handle if object handle is invalid")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
 
@@ -264,7 +264,7 @@ ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this objec
 
 ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship between frames", "physics", "Physics data, or invalid physics handle if object handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	physics_info_h *pih = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Physics.GetPtr(&pih)))
 		return ade_set_error(L, "o", l_Physics.Set(physics_info_h()));
@@ -317,7 +317,7 @@ ADE_VIRTVAR(SimHitpointsLeft, l_Object, "number", "Simulated hitpoints an object
 
 ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle, or invalid shields handle if object handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	object_h *sobjh = nullptr;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Shields.GetPtr(&sobjh)))
 		return ade_set_error(L, "o", l_Shields.Set(object_h()));
@@ -343,7 +343,7 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 
 ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the object's unique numeric signature, or -1 if invalid.  Useful for creating a metadata system")
 {
-	object_h *oh;
+	object_h *oh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
 		return ade_set_error(L, "i", -1);
 
@@ -355,7 +355,7 @@ ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "nu
 
 ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the should-be-dead flag set, which will cause it to be deleted within one frame", "boolean", "true or false according to the flag, or nil if a syntax/type error occurs")
 {
-	object_h* oh;
+	object_h* oh = nullptr;
 	if (!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
 		return ADE_RETURN_NIL;
 
@@ -367,7 +367,7 @@ ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the shoul
 
 ADE_FUNC(getBreedName, l_Object, nullptr, "Gets the FreeSpace type name", "string", "FreeSpace type name ('Ship', 'Weapon', etc.), or empty string if handle is invalid")
 {
-	object_h *objh;
+	object_h *objh = nullptr;
 	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return ade_set_error(L, "s", "");
 
@@ -398,7 +398,7 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
 {
 	object_h *objh = nullptr;
-	int group;
+	int group = 0;
 
 	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &group))
 		return ADE_RETURN_NIL;
@@ -417,7 +417,7 @@ ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the
 ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this object from the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
 {
 	object_h *objh = nullptr;
-	int group;
+	int group = 0;
 
 	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &group))
 		return ADE_RETURN_NIL;
@@ -506,7 +506,7 @@ ADE_FUNC(
 	object_h *objh = nullptr;
 	submodel_h *smh = nullptr;
 	int model_num = -1, model_instance_num = -1, submodel_num = -1, temp = 0;
-	vec3d *v3a, *v3b;
+	vec3d *v3a = nullptr, *v3b = nullptr;
 	bool local = false, checkSubmodelChildren = false;
 	if(!ade_get_args(L, "ooo|bob", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local, l_Submodel.GetPtr(&smh), &checkSubmodelChildren))
 		return ADE_RETURN_NIL;
@@ -673,7 +673,7 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned sound from this object.", nullptr, "Returns nothing.")
 {
 	object_h* objh = nullptr;
-	int snd_idx;
+	int snd_idx = 0;
 
 	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &snd_idx))
 		return ADE_RETURN_NIL;
@@ -738,7 +738,7 @@ ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType",
 	"number, number, number, number | color", 
 	"IFF rgb color of the object or nil if object invalid")
 {
-	object_h* objh;
+	object_h* objh = nullptr;
 	bool rc = false;
 
 	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &rc))
@@ -759,8 +759,8 @@ ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType",
 
 ADE_FUNC(findWorldPoint, l_Object, "vector", "Calculates the world coordinates of a point in the object's frame of reference", "vector", "Point, or empty vector if handle is not valid")
 {
-	object_h *objh;
-	vec3d pnt, outpnt;
+	object_h *objh = nullptr;
+	vec3d pnt = vmd_zero_vector, outpnt;
 	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.Get(&pnt)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
@@ -775,8 +775,8 @@ ADE_FUNC(findWorldPoint, l_Object, "vector", "Calculates the world coordinates o
 
 ADE_FUNC(findObjectPoint, l_Object, "vector", "Calculates the coordinates in an object's frame of reference, of a point in world coordinates", "vector", "Point, or empty vector if handle is not valid")
 {
-	object_h *objh;
-	vec3d pnt, outpnt;
+	object_h *objh = nullptr;
+	vec3d pnt = vmd_zero_vector, outpnt;
 	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.Get(&pnt)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
