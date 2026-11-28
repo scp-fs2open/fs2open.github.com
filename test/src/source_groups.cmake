@@ -33,6 +33,7 @@ add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
+    globalincs/test_utility.cpp
     globalincs/test_version.cpp
 )
 
@@ -79,7 +80,9 @@ add_file_folder("model"
 )
 
 add_file_folder("network"
+    network/test_multi_lua.cpp
     network/test_multiutil.cpp
+    network/test_psnet2.cpp
 )
 
 add_file_folder("Options"

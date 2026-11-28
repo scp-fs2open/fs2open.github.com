@@ -494,7 +494,6 @@ void gr_opengl_deferred_lighting_finish()
 				deferred_light_sphere_icount,
 				GL_UNSIGNED_SHORT,
 				0);
-			opengl_draw_sphere();
 			++element_index;
 		}
 		if (!cylinder_lights.empty()) {

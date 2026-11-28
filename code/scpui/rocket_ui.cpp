@@ -14,6 +14,7 @@
 
 #include "cfile/cfile.h"
 #include "io/mouse.h"
+#include "localization/localize.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "scpui/IncludeNodeHandler.h"
@@ -134,22 +135,40 @@ int get_modifier_state()
 	return mods;
 }
 
-void load_fonts()
+// the fonts with this extension, including those that only exist in the current language's subfolder
+SCP_vector<SCP_string> list_fonts(const char* ext)
 {
 	SCP_vector<SCP_string> files;
-	cf_get_file_list(files, CF_TYPE_FONT, "*.ttf");
+	const SCP_string filter = SCP_string("*") + ext;
+	cf_get_file_list(files, CF_TYPE_FONT, filter.c_str());
 
-	for (auto& name : files) {
-		// The file extension gets removed by CFile
-		FontDatabase::LoadFontFace((name + ".ttf").c_str());
+	const int lang = lcl_get_current_lang_index();
+	if (Lcl_languages.in_bounds(lang) && Lcl_languages[lang].lang_ext[0] != '\0')
+	{
+		SCP_vector<SCP_string> localized;
+		cf_get_file_list(localized, CF_TYPE_FONT, (SCP_string(Lcl_languages[lang].lang_ext) + DIR_SEPARATOR_STR + filter).c_str());
+
+		for (const auto& name : localized)
+		{
+			// a listing of a subfolder includes the subfolder in each name
+			auto bare = name.substr(name.rfind(DIR_SEPARATOR_CHAR) + 1);
+			if (!SCP_vector_contains_lcase(files, bare))
+				files.push_back(std::move(bare));
+		}
 	}
 
-	files.clear();
-	cf_get_file_list(files, CF_TYPE_FONT, "*.otf");
+	return files;
+}
 
-	for (auto& name : files) {
-		// The file extension gets removed by CFile
-		FontDatabase::LoadFontFace((name + ".otf").c_str());
+void load_fonts()
+{
+	for (auto ext : { ".ttf", ".otf" })
+	{
+		for (const auto& name : list_fonts(ext))
+		{
+			// The file extension gets removed by CFile
+			FontDatabase::LoadFontFace((name + ext).c_str());
+		}
 	}
 }
 
