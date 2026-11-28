@@ -97,14 +97,19 @@ float current_exposure()
 	return _current.exposure;
 }
 
-float current_rtao_radius()
+float current_ssao_max_radius()
 {
-	return _current.rtao_radius;
+	return _current.ssao_max_radius;
 }
 
-float current_rtao_strength()
+float current_ssao_screen_radius()
 {
-	return _current.rtao_strength;
+	return _current.ssao_screen_radius;
+}
+
+float current_ssao_intensity()
+{
+	return _current.ssao_intensity;
 }
 
 piecewise_power_curve_intermediates current_piecewise_intermediates()
@@ -221,14 +226,19 @@ void lab_set_exposure(float exIn)
 	_current.exposure = exIn;
 }
 
-void lab_set_rtao_radius(float radius)
+void lab_set_ssao_max_radius(float radius)
 {
-	_current.rtao_radius = radius;
+	_current.ssao_max_radius = radius;
 }
 
-void lab_set_rtao_strength(float strength)
+void lab_set_ssao_screen_radius(float radius)
 {
-	_current.rtao_strength = strength;
+	_current.ssao_screen_radius = radius;
+}
+
+void lab_set_ssao_intensity(float intensity)
+{
+	_current.ssao_intensity = intensity;
 }
 
 void lab_set_tonemapper(TonemapperAlgorithm tnin)
@@ -401,18 +411,25 @@ void profile::parse(const char* filename, const SCP_string& profile_name, const 
 		parsed |= parse_optional_float_into("$PPC Shoulder Angle:", &ppc_values.shoulder_angle);
 		parsed |= parse_optional_float_into("$Exposure:", &exposure);
 
-		if (parse_optional_float_into("$RTAO Radius:", &rtao_radius)) {
+		if (parse_optional_float_into("$SSAO Max Radius:", &ssao_max_radius)) {
 			parsed = true;
-			if (rtao_radius < 0.0f) {
-				error_display(0, "$RTAO Radius: must be >= 0 (got %f); using 0.", rtao_radius);
-				rtao_radius = 0.0f;
+			if (ssao_max_radius <= 0.0f) {
+				error_display(0, "$SSAO Max Radius: must be > 0 (got %f); using 1000000.", ssao_max_radius);
+				ssao_max_radius = 1.0e6f;
 			}
 		}
-		if (parse_optional_float_into("$RTAO Strength:", &rtao_strength)) {
+		if (parse_optional_float_into("$SSAO Screen Radius:", &ssao_screen_radius)) {
 			parsed = true;
-			if (rtao_strength < 0.0f) {
-				error_display(0, "$RTAO Strength: must be >= 0 (got %f); using 0.", rtao_strength);
-				rtao_strength = 0.0f;
+			if (ssao_screen_radius <= 0.0f) {
+				error_display(0, "$SSAO Screen Radius: must be > 0 (got %f); using 0.2.", ssao_screen_radius);
+				ssao_screen_radius = 0.2f;
+			}
+		}
+		if (parse_optional_float_into("$SSAO Intensity:", &ssao_intensity)) {
+			parsed = true;
+			if (ssao_intensity <= 0.0f) {
+				error_display(0, "$SSAO Intensity: must be > 0 (got %f); using 1.", ssao_intensity);
+				ssao_intensity = 1.0f;
 			}
 		}
 
@@ -479,8 +496,10 @@ void profile::reset()
 
 	exposure = 4.0f;
 
-	rtao_radius = 20.0f;
-	rtao_strength = 1.0f;
+	// The CORTAO recommendations: a screen radius of 0.1 to 0.25 of the screen height
+	ssao_max_radius = 1.0e6f;
+	ssao_screen_radius = 0.2f;
+	ssao_intensity = 1.0f;
 
 	missile_light_brightness.reset();
 	missile_light_radius.reset();

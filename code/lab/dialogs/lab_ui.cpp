@@ -8,6 +8,7 @@
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
+#include "graphics/ssao.h"
 #include "lab/labv2_internal.h"
 #include "lighting/lighting_profiles.h"
 #include "ship/shiphit.h"
@@ -649,33 +650,64 @@ void LabUi::build_shadow_penumbra_sliders()
 	}
 }
 
-void LabUi::build_rtao_sliders()
+void LabUi::build_ssao_controls()
 {
-	// Unlike the RT shadow sliders, RTAO (raytraced ambient occlusion) does not depend on
-	// the shadow method or the shadow quality. It only needs ray-query support.
-	if (!rtao_supported()) {
+	if (!ssao_supported()) {
 		return;
 	}
 
-	int samples = Rtao_samples;
-	if (SliderInt("Ambient Occlusion Rays", &samples, 0, 16)) {
-		LabRenderer::setRtaoSamples(samples);
+	// The same values as the "Screen-Space Ambient Occlusion" option
+	static const int sample_counts[] = {0, 4, 8, 16};
+	static const char* sample_names[] = {"Off", "Low (4 samples)", "Medium (8 samples)", "High (16 samples)"};
+	int quality_index = 0;
+	for (int i = 0; i < IM_ARRAYSIZE(sample_counts); ++i) {
+		if (Ssao_samples >= sample_counts[i]) {
+			quality_index = i;
+		}
+	}
+	if (Combo("Screen-Space Ambient Occlusion", &quality_index, sample_names, IM_ARRAYSIZE(sample_names))) {
+		LabRenderer::setSsaoSamples(sample_counts[quality_index]);
+	}
+	if (Ssao_samples <= 0) {
+		return;
+	}
+	// The mod-owned lighting-profile values ($SSAO Max Radius: and the others). These override the
+	// active profile for this session only, as the exposure and tonemapper controls do.
+	float screen_radius = lighting_profiles::current_ssao_screen_radius();
+	if (SliderFloat("SSAO Screen Radius", &screen_radius, 0.01f, 0.5f)) {
+		lighting_profiles::lab_set_ssao_screen_radius(screen_radius);
+	}
+	float max_radius = lighting_profiles::current_ssao_max_radius();
+	if (SliderFloat("SSAO Max Radius", &max_radius, 1.0f, 1.0e6f, "%.0f", ImGuiSliderFlags_Logarithmic)) {
+		lighting_profiles::lab_set_ssao_max_radius(max_radius);
+	}
+	// pow(occlusion, 0) is not defined for an occlusion of 0, so the minimum is above 0.
+	float intensity = lighting_profiles::current_ssao_intensity();
+	if (SliderFloat("SSAO Intensity", &intensity, 0.05f, 4.0f)) {
+		lighting_profiles::lab_set_ssao_intensity(intensity);
 	}
 
-	// Radius/strength are the mod-owned lighting-profile values ($RTAO Radius /
-	// $RTAO Strength); these override the active profile for this session only,
-	// same as the exposure/tonemapper controls below.
-	float radius = lighting_profiles::current_rtao_radius();
-	if (SliderFloat("Ambient Occlusion Radius", &radius, 0.0f, 200.0f)) {
-		lighting_profiles::lab_set_rtao_radius(radius);
+	ssao_settings settings = Ssao_settings;
+	bool changed = false;
+	static const char* filter_names[] = {"Auto", "Off", "5 taps", "13 taps"};
+	int filter = static_cast<int>(settings.filter);
+	if (Combo("SSAO Filter", &filter, filter_names, IM_ARRAYSIZE(filter_names))) {
+		settings.filter = static_cast<SsaoFilterMode>(filter);
+		changed = true;
 	}
-
-	float strength = lighting_profiles::current_rtao_strength();
-	if (SliderFloat("Ambient Occlusion Strength", &strength, 0.0f, 2.0f)) {
-		lighting_profiles::lab_set_rtao_strength(strength);
+	static const char* noise_names[] = {"Auto", "Constant", "Animated"};
+	int noise = static_cast<int>(settings.noise);
+	if (Combo("SSAO Noise", &noise, noise_names, IM_ARRAYSIZE(noise_names))) {
+		settings.noise = static_cast<SsaoNoiseMode>(noise);
+		changed = true;
+	}
+	TextUnformatted("Auto: 5 taps and animated noise with FSR, 13 taps and constant noise without.");
+	changed |= Checkbox("SSAO Bent Normals (needs an environment map)", &settings.bent_normals);
+	changed |= Checkbox("Show SSAO Only (set the emissive factor to 0)", &settings.debug_view);
+	if (changed) {
+		LabRenderer::setSsaoSettings(settings);
 	}
 }
-
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -783,7 +815,7 @@ void LabUi::show_render_options()
 
 			build_shadow_penumbra_sliders();
 
-			build_rtao_sliders();
+			build_ssao_controls();
 
 			build_tone_mapper_combobox();
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "graphics/cortao_params.h"
 #include "lighting/lighting.h"
 #include "VulkanMemory.h"
 #include "VulkanConstants.h"
@@ -595,8 +596,9 @@ public:
 	/**
 	 * @brief Accumulate all scene lights into the G-buffer composite
 	 * @param cmd Active command buffer (must be outside a render pass)
+	 * @param ssaoView The CORTAO occlusion for the ambient light, or a null view for no SSAO
 	 */
-	void render(vk::CommandBuffer cmd);
+	void render(vk::CommandBuffer cmd, vk::ImageView ssaoView);
 
 private:
 	bool createLightAccumFramebuffer();
@@ -660,6 +662,89 @@ private:
 	vk::RenderPass m_lightAccumRenderPass;    // Single RGBA16F color, loadOp=eLoad, additive blend
 	vk::Framebuffer m_lightAccumFramebuffer;  // Composite image as attachment 0
 	bool m_lightVolumesInitialized = false;
+};
+
+/**
+ * @brief CORTAO screen-space ambient occlusion (see graphics/ssao.h)
+ *
+ * Runs the CORTAO prepass, main pass and filter pass as fullscreen fragment passes on the G-buffer,
+ * before the deferred light pass. The prepass writes each mip level of the packed data buffer
+ * (R32_SFLOAT that holds uint bits). The main pass writes the raw occlusion and bent normal
+ * (R8G8B8A8_UNORM), and the optional filter pass filters them. The ambient light reads the last one.
+ *
+ * GPU resources are created on the first execute(), so a session that never enables SSAO does not
+ * use memory for them. After that, they stay until shutdown, also when SSAO is turned off.
+ */
+class VulkanCortao {
+public:
+	void init(PostProcessContext& ctx, const VulkanDeferredGBuffer& gbuffer);
+	void shutdown();
+
+	/**
+	 * @brief Recreate the extent-sized targets after a resize
+	 *
+	 * Call after the G-buffer resize. Does nothing while the resources do not exist.
+	 */
+	bool onResize();
+
+	/**
+	 * @brief Write the occlusion of the current G-buffer, if SSAO is enabled
+	 *
+	 * The G-buffer position and normal targets must be in eShaderReadOnlyOptimal.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 * @param temporalFilterActive True when FSR runs this frame. It selects the Auto filter and noise modes.
+	 * @return The occlusion view for the deferred light pass, or a null view when SSAO is not active
+	 */
+	vk::ImageView execute(vk::CommandBuffer cmd, bool temporalFilterActive);
+
+private:
+	bool initResources();
+	bool createTargets();
+	void destroyTargets();
+	// Returns false when the pipeline or a descriptor set is not available. Then the pass did not draw.
+	bool drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
+	              vk::Extent2D extent, int shaderType, unsigned int shaderFlags,
+	              const vk::ImageView* views, uint32_t viewCount, vk::DeviceSize uboOffset, vk::DeviceSize uboSize);
+
+	static constexpr uint32_t MAX_MIP_LEVELS = CORTAO_MAX_MIP_LEVELS;
+	// One UBO block for each prepass mip level, one for the main pass and one for the filter pass.
+	static constexpr uint32_t UBO_BLOCKS_PER_REGION = MAX_MIP_LEVELS + 2;
+	// One region for each (frame in flight, lighting mode), because the scene and the cockpit
+	// passes both run CORTAO in one command buffer. In VR, each eye has UBO_REGIONS regions.
+	// See DEFERRED_UBO_REGIONS.
+	static constexpr uint32_t UBO_REGIONS = MAX_FRAMES_IN_FLIGHT * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES);
+
+	PostProcessContext* m_ctx = nullptr;
+	const VulkanDeferredGBuffer* m_gbuffer = nullptr;
+	bool m_resourcesInitialized = false;
+	// Set when the creation of the resources fails, so that execute() does not try again each frame.
+	// A resize or a change of Ssao_samples clears it.
+	bool m_initFailed = false;
+	int m_initFailedSamples = 0;
+
+	// Extent-independent resources
+	vk::RenderPass m_packedRenderPass;  // R32_SFLOAT, final layout eShaderReadOnlyOptimal
+	vk::RenderPass m_aoRenderPass;      // R8G8B8A8_UNORM, final layout eShaderReadOnlyOptimal
+	vk::Sampler m_nearestBorderSampler; // NEAREST filter and mipmaps, transparent black border
+	vk::Image m_lutImage;
+	vk::ImageView m_lutView;
+	VulkanAllocation m_lutAlloc;
+	vk::Buffer m_ubo;
+	VulkanAllocation m_uboAlloc;
+	vk::DeviceSize m_uboBlockSize = 0;
+
+	// Extent-sized resources
+	vk::Image m_packedImage;
+	VulkanAllocation m_packedAlloc;
+	vk::ImageView m_packedFullView;
+	std::array<vk::ImageView, MAX_MIP_LEVELS> m_packedMipViews{};
+	std::array<vk::Framebuffer, MAX_MIP_LEVELS> m_packedMipFramebuffers{};
+	uint32_t m_mipLevels = 0;
+	RenderTarget m_aoRaw;               // Main pass output
+	vk::Framebuffer m_aoRawFramebuffer;
+	RenderTarget m_ao;                  // Filter pass output
+	vk::Framebuffer m_aoFramebuffer;
 };
 
 /**
@@ -1258,7 +1343,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void renderDeferredLights(vk::CommandBuffer cmd) { m_lighting.render(cmd); }
+	void renderDeferredLights(vk::CommandBuffer cmd) { m_lighting.render(cmd, m_cortao.execute(cmd, m_upscalerActive)); }
 
 	// ========== Shadow Map ==========
 
@@ -1393,6 +1478,9 @@ private:
 
 	// ---- Deferred light accumulation (self-contained subsystem) ----
 	VulkanDeferredLighting m_lighting;
+
+	// ---- CORTAO screen-space ambient occlusion (self-contained subsystem) ----
+	VulkanCortao m_cortao;
 
 	// ---- Shadow map (cascaded VSM, self-contained subsystem) ----
 	VulkanShadowMap m_shadow;

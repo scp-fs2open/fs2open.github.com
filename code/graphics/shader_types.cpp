@@ -120,6 +120,16 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	// Vulkan-only
 	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
+
+	// The CORTAO screen-space ambient occlusion passes (Vulkan and OpenGL)
+	{ SDR_TYPE_CORTAO_PREPASS, "post-v.sdr", "cortao-prepass-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "CORTAO prepass", false },
+
+	{ SDR_TYPE_CORTAO_MAIN, "post-v.sdr", "cortao-main-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "CORTAO main pass", false },
+
+	{ SDR_TYPE_CORTAO_FILTER, "post-v.sdr", "cortao-filter-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "CORTAO filter pass", false },
 };
 // clang-format on
 
@@ -137,7 +147,21 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
 
-	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RTAO, "RTAO", {}, "Trace raytraced ambient occlusion in the ambient light pass"},
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO, "SSAO", {}, "Apply the CORTAO screen-space ambient occlusion in the ambient light pass"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO_DEBUG, "SSAO_DEBUG", {}, "Show only the CORTAO occlusion (debug view)"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO_BENT_NORMAL, "SSAO_BENT_NORMAL", {}, "Use the CORTAO bent normal for the irradiance map lookup"},
+
+	{SDR_TYPE_CORTAO_MAIN, false, SDR_FLAG_CORTAO_SAMPLES_4, "SAMPLES_4", {}, "CORTAO main pass with 4 samples"},
+
+	{SDR_TYPE_CORTAO_MAIN, false, SDR_FLAG_CORTAO_SAMPLES_8, "SAMPLES_8", {}, "CORTAO main pass with 8 samples"},
+
+	{SDR_TYPE_CORTAO_MAIN, false, SDR_FLAG_CORTAO_MAIN_BENT_NORMAL, "BENT_NORMAL", {}, "CORTAO main pass also writes the bent normal"},
+
+	{SDR_TYPE_CORTAO_FILTER, false, SDR_FLAG_CORTAO_LARGE_FILTER, "LARGE_FILTER", {}, "CORTAO 13-tap filter instead of the 5-tap filter"},
+
+	{SDR_TYPE_CORTAO_FILTER, false, SDR_FLAG_CORTAO_FILTER_BENT_NORMAL, "BENT_NORMAL", {}, "CORTAO filter pass also filters the bent normal"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
@@ -227,7 +251,7 @@ bool shader_variant_requires_raytracing(shader_type type, unsigned int flags)
 	case SDR_TYPE_MODEL:
 		return (flags & MODEL_SDR_FLAG_RT_SHADOWS) != 0;
 	case SDR_TYPE_DEFERRED_LIGHTING:
-		return (flags & (SDR_FLAG_DEFERRED_RT_SHADOWS | SDR_FLAG_DEFERRED_RTAO)) != 0;
+		return (flags & SDR_FLAG_DEFERRED_RT_SHADOWS) != 0;
 	default:
 		return false;
 	}

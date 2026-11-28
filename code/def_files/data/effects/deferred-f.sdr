@@ -25,6 +25,8 @@ layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
 #define NormalBuffer sTextures[1]
 #define PositionBuffer sTextures[2]
 #define SpecBuffer sTextures[3]
+// Screen-space ambient occlusion from the CORTAO passes. Only bound in the SSAO variant.
+#define SsaoBuffer sTextures[4]
 
 layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
 layout(set = 0, binding = 7) uniform sampler2DArray shadow_map_raw;
@@ -34,7 +36,7 @@ layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
 layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
 #endif
 
-#if defined(RT_SHADOWS) || defined(RTAO)
+#ifdef RT_SHADOWS
 layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
 #endif
 #else
@@ -42,6 +44,8 @@ uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
+// Screen-space ambient occlusion from the CORTAO passes. Only used in the SSAO variant.
+uniform sampler2D SsaoBuffer;
 uniform sampler2DArrayShadow shadow_map;
 uniform sampler2DArray shadow_map_raw;
 
@@ -62,17 +66,17 @@ uniform globalDeferredData {
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
-	int rtaoSampleCount;
+	int padding0;
 
-	// The ray-tracing inputs of this pass, for raytraced shadows and RTAO. See
-	// deferred_global_data in uniform_structs.h.
+	// The ray-tracing inputs of this pass, for raytraced shadows. See deferred_global_data in
+	// uniform_structs.h.
 	vec3 rayViewOrigin;
 	int rayCullMask;
 
 	float rayBiasMin;
 	float rayBiasMax;
-	float rtaoRadius;
-	float rtaoStrength;
+	float padding1;
+	float padding2;
 };
 
 #include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
@@ -229,7 +233,8 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 }
 
 #ifdef ENV_MAP
-void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 normal, vec4 baseColor, vec4 specColor, out vec3 envLight) {
+// irrNormal is the direction of the irradiance map lookup: the surface normal, or the SSAO bent normal.
+void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 normal, vec3 irrNormal, vec4 baseColor, vec4 specColor, out vec3 envLight) {
 	// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
 	// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
 	// to determine the mip bias.
@@ -267,7 +272,7 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 
 	vec3 kD = vec3(1.0)-fresnel;
 	kD *= (vec3(1.0) - specColor.rgb);
-	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(modelViewMatrix * vec4(normal, 0.0))).rgb);
+	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(modelViewMatrix * vec4(irrNormal, 0.0))).rgb);
 	vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * ao;
 	envLight = (specEnvLighting + diffEnvLighting) * baseColor.a;
 }
@@ -298,27 +303,41 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
-#ifdef RTAO
-		{
-			// Raytraced AO multiplies into the same ao term as the baked AO maps,
-			// so the env-map/IBL ambient below darkens consistently for free.
-			// Ray origin in TLAS-relative space, as for the shadow rays below.
-			vec3 worldPos = mat3(inv_view_matrix) * position + rayViewOrigin;
-			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
-			float rtaoBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
-			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
-				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(rayCullMask), gl_FragCoord.xy);
+		vec3 irrNormal = normal;
+#ifdef SSAO
+		// Screen-space AO multiplies into the same ao term as the baked AO maps, so the
+		// env-map ambient below gets the occlusion too.
+		// SsaoBuffer: RGB is the view-space bent normal as n * 0.5 + 0.5, A is the occlusion.
+		vec4 ssaoData = texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0);
+		ao *= ssaoData.a;
+#ifdef SSAO_BENT_NORMAL
+		// The average unoccluded direction gives a better irradiance lookup than the normal. The
+		// filter pass averages bent normals, so normalize again. Keep the normal if it is too short.
+		vec3 bentNormal = ssaoData.rgb * 2.0 - 1.0;
+		if (dot(bentNormal, bentNormal) > 0.01) {
+			irrNormal = normalize(bentNormal);
 		}
+#endif
+#endif
+#ifdef SSAO_DEBUG
+		// Debug view: show only the SSAO term, without the baked AO maps.
+		fragOut0 = vec4(vec3(ssaoData.a), 1.0);
+		return;
 #endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP
 		vec3 envLight;
-		ComputeEnvLight(alpha, ao, reflectDir, eyeDir, normal, diffuse, specColor, envLight);
+		ComputeEnvLight(alpha, ao, reflectDir, eyeDir, normal, irrNormal, diffuse, specColor, envLight);
 		fragmentColor.rgb += envLight;
 #endif
 	}
 	else {
+#ifdef SSAO_DEBUG
+		// Debug view: the other lights add nothing.
+		fragOut0 = vec4(0.0);
+		return;
+#endif
 		float fresnel = specColor.a;
 
 		vec3 lightDir;

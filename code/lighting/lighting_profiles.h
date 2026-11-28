@@ -59,13 +59,14 @@ class profile {
 	TonemapperAlgorithm tonemapper;
 	piecewise_power_curve_values ppc_values;
 	float exposure;
-	// Raytraced ambient occlusion tuning (only sampled when rtao_enabled(), see
-	// graphics/rtao.h). Radius is the AO ray length in world units -- it is
-	// content-scale-dependent (fighters vs. capships), which is why it lives in
-	// the mod-owned lighting profile rather than a user option. Strength is an
-	// exponent on the occlusion term (1 = physical, >1 darkens, <1 lightens).
-	float rtao_radius;
-	float rtao_strength;
+	// Screen-space ambient occlusion tuning (only sampled when ssao_enabled(), see
+	// graphics/ssao.h). The max radius is in world units. Its large default lets the
+	// screen radius (a fraction of the screen height) control the radius, because ship
+	// sizes go from a few meters to kilometers. The intensity is an exponent on the
+	// occlusion term (1 = physical, >1 darkens, <1 lightens).
+	float ssao_max_radius;
+	float ssao_screen_radius;
+	float ssao_intensity;
 	adjustment missile_light_brightness;
 	adjustment missile_light_radius;
 	adjustment laser_light_brightness;
@@ -104,11 +105,13 @@ const piecewise_power_curve_values& current_piecewise_values();
 piecewise_power_curve_intermediates current_piecewise_intermediates();
 piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
 float current_exposure();
-float current_rtao_radius();
-float current_rtao_strength();
+float current_ssao_max_radius();
+float current_ssao_screen_radius();
+float current_ssao_intensity();
 void lab_set_exposure(float exIn);
-void lab_set_rtao_radius(float radius);
-void lab_set_rtao_strength(float strength);
+void lab_set_ssao_max_radius(float radius);
+void lab_set_ssao_screen_radius(float radius);
+void lab_set_ssao_intensity(float intensity);
 void lab_set_tonemapper(TonemapperAlgorithm tnin);
 void lab_set_ppc(const piecewise_power_curve_values &ppcin);
 const piecewise_power_curve_values &lab_get_ppc();

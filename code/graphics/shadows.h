@@ -118,7 +118,7 @@ bool shadows_use_raytracing();
 // i.e. shadows_use_raytracing() is true AND the user has selected RTShadowQuality::High.
 bool shadows_use_raytraced_local_lights();
 
-// Whether this frame needs the ray-tracing TLAS: raytraced shadows with shadows on, or RTAO.
+// Whether this frame needs the ray-tracing TLAS: raytraced shadows with shadows on.
 // The Vulkan backend builds the TLAS one time in each frame when this is true. See
 // vulkan_scene_texture_begin().
 bool shadows_rt_scene_needed();
@@ -222,9 +222,9 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const sha
 void shadow_cascade_params_bind_deferred();
 
 // Writes the view and ray-tracing fields of the global data of the deferred lighting pass:
-// inv_view_matrix, the ray origin and cull mask of the current Lighting_mode, the ray bias,
-// and the RTAO settings. Both backends call this one time for each deferred lighting pass.
-// These fields do not depend on the shadow cascades, so RTAO also works with shadows off.
+// inv_view_matrix, the ray origin and cull mask of the current Lighting_mode, and the ray bias.
+// Both backends call this one time for each deferred lighting pass. These fields do not depend
+// on the shadow cascades.
 void shadows_fill_deferred_global_data(graphics::deferred_global_data& data);
 
 // True when the viewer's cockpit model also gets a shadow pass (raster and RT).
