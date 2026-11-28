@@ -28,10 +28,6 @@ class AiLuaGoalTest : public test::FSTestFixture {
 	}
 
 	void TearDown() override {
-		// Do not keep a value of a closed state, if a check failed before Clear().
-		Ai_info[0].lua_ai_target.arguments.clear();
-		Ai_info[0].goals[0].lua_ai_target.arguments.clear();
-		Wings[0].ai_goals[0].lua_ai_target.arguments.clear();
 		Script_system.Clear();
 
 		test::FSTestFixture::TearDown();
