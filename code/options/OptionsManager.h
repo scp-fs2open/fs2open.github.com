@@ -15,7 +15,19 @@ enum class OverrideSource {
 	CommandLine,
 	Mod
 };
+// Whether this machine can meet an option's requirement; Unknown when nothing could find out
+enum class RequirementSupport {
+	Unknown,
+	Supported,
+	Unsupported
+};
 using PostPersistHook = std::function<SCP_vector<const OptionBase*>(const SCP_vector<const OptionBase*>& changed)>;
+
+// A JSON string for text that may not be UTF-8: such text is read as Latin-1 instead of being dropped. Caller owns it.
+json_t* json_text(const SCP_string& text);
+
+// Writes root to out as one line of JSON ending in a newline; false if any of it could not be written
+bool json_write_line(const json_t* root, FILE* out, size_t flags);
 
 class OptionsManager {
 	OptionsManager();
@@ -38,6 +50,15 @@ class OptionsManager {
 	SCP_unordered_set<SCP_string> _enforcedOptions;
 
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
+
+	// what loadInitialValues() found: enforced and renderer-pruned options leave _options afterwards
+	SCP_vector<std::shared_ptr<const OptionBase>> _describedAtLoad;
+
+	// options the current renderer drops, for a launcher: what the player needs to use them, and a sentence saying so
+	SCP_unordered_map<SCP_string, std::pair<SCP_string, SCP_string>> _requirements;
+
+	// keyed by requirement ("vulkan", "raytracing"), as the windowless hardware query answered it
+	SCP_unordered_map<SCP_string, RequirementSupport> _requirementSupport;
 	bool _optionsSorted = false;
 
 	SCP_map<int, PostPersistHook> _post_persist_hooks;
@@ -45,12 +66,18 @@ class OptionsManager {
 
 	SCP_vector<const OptionBase*> runPostPersistHooks(const SCP_vector<const OptionBase*>& changed) const;
 
+	// adds the saved and effective values to an option's describeOptions() entry
+	void describeValues(const OptionBase& option, json_t* default_value, json_t* entry) const;
+
   public:
 	static OptionsManager* instance();
 
 	~OptionsManager();
 
 	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
+
+	// The value in the settings file only, ignoring overrides and pending edits; nullopt if the file has none
+	std::optional<std::unique_ptr<json_t>> getSavedValue(const SCP_string& key) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
@@ -138,7 +165,35 @@ class OptionsManager {
 
 	void loadInitialValues();
 
+	// For -get_options: records the options and defaults as they are now, before the renderer drops some of them.
+	// loadInitialValues() does this itself; call it instead when the game does not load in-game options.
+	void rememberOptionsForLauncher();
+
 	void printValues();
+
+	/**
+	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
+	 * this launch's default (after the mod's tables and the launch flags), the value saved in the settings file (null
+	 * if none), the value this launch uses (an enforced table value or an override wins over the saved one, and a
+	 * saved value the option cannot read gives the default), override source and reason, whether a mod enforces it,
+	 * whether a change needs a restart, and what the option needs (the Vulkan renderer, ray tracing) with whether
+	 * this machine has it.
+	 * @note When the mod does not use in-game options, the game never reads the settings file, so saved and the
+	 * value in use are null.
+	 * @note The restart flag is approximate, for information only: it is false only for options bound straight to a
+	 * variable, so an option whose own listener applies a change at once (HUD.BallisticGauge) still reports true.
+	 * @return A new JSON array the caller owns
+	 */
+	json_t* describeOptions();
+
+	// Notes what a player needs to use an option ("vulkan", "raytracing"), for describeOptions()
+	void setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation);
+
+	// Records whether this machine meets a requirement, for describeOptions(); requirements never recorded are Unknown
+	void setRequirementSupport(const SCP_string& requirement, RequirementSupport support);
+
+	// Puts back what loadInitialValues() removed and forgets its record. For tests, which share this singleton.
+	void forgetLoadedOptions();
 
 	void set_ingame_binary_option(SCP_string key, bool value);
 	void set_ingame_multi_option(SCP_string key, int value);

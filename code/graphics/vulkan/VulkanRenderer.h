@@ -83,6 +83,8 @@ struct PhysicalDeviceValues {
 	QueueIndex presentQueueIndex;
 };
 
+bool raytracedShadowsSupported(const PhysicalDeviceValues& values);
+
 class VulkanRenderer {
   public:
 	explicit VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsOps);

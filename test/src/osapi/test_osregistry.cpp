@@ -1,11 +1,19 @@
+#include "cmdline/cmdline.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "util/FSTestFixture.h"
 
+#include <SDL3/SDL_filesystem.h>
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <fstream>
+
+#ifdef SCP_UNIX
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 class OsRegistryTest : public test::FSTestFixture
 {
@@ -141,3 +149,121 @@ TEST_F(OsRegistryTest, MainFileKeepsEveryWriteWithoutASettingsFile)
 	ASSERT_EQ(os_config_read_uint("Test", "Fourth", 0), 4u);
 }
 #endif
+
+extern SCP_string Mod_options_file_name;
+
+namespace {
+// a fs2_open.ini and a retail profile in a fresh folder, so startup's fall back to fs2_open.ini can be seen
+class RetailProfileFolder {
+  public:
+	RetailProfileFolder()
+		: _modBefore(Cmdline_mod), _profileBefore(Mod_options_file_name), _mainBefore(Osreg_config_file_name)
+	{
+		_ok = SDL_CreateDirectory(os_get_config_path(Folder).c_str());
+		std::ofstream main(os_get_config_path(MainFile));
+		main << "[Test]\nValue=global\n";
+		_ok = _ok && main.good();
+		Cmdline_mod = nullptr;
+		Osreg_config_file_name = MainFile;
+	}
+	~RetailProfileFolder()
+	{
+		os_deinit_registry_stuff();
+		SDL_RemovePath(os_get_config_path(ProfileFile).c_str());
+		SDL_RemovePath(os_get_config_path(DataFolder).c_str());
+		SDL_RemovePath(os_get_config_path(MainFile).c_str());
+		SDL_RemovePath(os_get_config_path(Folder).c_str());
+		Cmdline_mod = _modBefore;
+		Mod_options_file_name = _profileBefore;
+		Osreg_config_file_name = _mainBefore;
+		Cmdline_get_options = false;
+	}
+
+	bool ok() const
+	{
+		return _ok;
+	}
+
+	bool makeDataFolder() const
+	{
+		return SDL_CreateDirectory(os_get_config_path(DataFolder).c_str());
+	}
+
+	static bool profileExists()
+	{
+		SDL_PathInfo info;
+		return SDL_GetPathInfo(os_get_config_path(ProfileFile).c_str(), &info);
+	}
+
+	// what a launch with no -mod reads for Test.Value, as a query or as the game
+	static SCP_string load(bool query)
+	{
+		os_deinit_registry_stuff();
+		Cmdline_get_options = query;
+		Ingame_options_save_found = true;
+		Mod_options_file_name = ProfileFile;
+		os_init_registry_stuff(Osreg_company_name, "Test");
+		return os_config_read_string("Test", "Value", "none", true);
+	}
+
+  private:
+	static constexpr const char* Folder = "retail_query_test";
+	static constexpr const char* DataFolder = "retail_query_test/data";
+	static constexpr const char* MainFile = "retail_query_test/fs2_open.ini";
+	static constexpr const char* ProfileFile = "retail_query_test/data/retail_fs2_settings.ini";
+
+	char* _modBefore;
+	SCP_string _profileBefore;
+	const char* _mainBefore;
+	bool _ok = false;
+};
+} // namespace
+
+// a launcher shows what the next launch will use, so the query must pick the profile startup picks, without creating it
+TEST_F(OsRegistryTest, RetailQueryLoadsTheProfileStartupWould)
+{
+	RetailProfileFolder folder;
+	ASSERT_TRUE(folder.ok());
+
+	// with no folder for the retail profile, startup cannot create it and falls back to fs2_open.ini
+	ASSERT_EQ(RetailProfileFolder::load(true), "global");
+	ASSERT_EQ(RetailProfileFolder::load(false), "global");
+
+	ASSERT_TRUE(folder.makeDataFolder());
+#ifdef SCP_UNIX
+	// a folder it cannot write to leaves startup unable to create the profile too
+	const auto data_folder = os_get_config_path("retail_query_test/data");
+	ASSERT_EQ(chmod(data_folder.c_str(), 0555), 0);
+	const bool writable_anyway = access(data_folder.c_str(), W_OK) == 0;
+	const auto query_read_only = RetailProfileFolder::load(true);
+	const auto startup_read_only = RetailProfileFolder::load(false);
+	ASSERT_EQ(chmod(data_folder.c_str(), 0755), 0);
+	if (!writable_anyway) {
+		ASSERT_EQ(query_read_only, "global");
+		ASSERT_EQ(startup_read_only, "global");
+	}
+#endif
+
+	// with the folder there, startup creates an empty profile and reads that
+	ASSERT_EQ(RetailProfileFolder::load(true), "none");
+	ASSERT_FALSE(RetailProfileFolder::profileExists());
+	ASSERT_EQ(RetailProfileFolder::load(false), "none");
+	ASSERT_TRUE(RetailProfileFolder::profileExists());
+}
+
+// a launcher that writes a setting itself must copy fs2_open.ini first while the mod's file is inherited, or the game
+// would take its one-key file as the whole profile
+TEST_F(OsRegistryTest, ModSettingsFileIsReportedWithFullPathAndInheritance)
+{
+	char* cwd = SDL_GetCurrentDirectory();
+	ASSERT_NE(cwd, nullptr);
+	SCP_string expected = SCP_string(cwd) + "data" + DIR_SEPARATOR_STR +
+						  ::testing::UnitTest::GetInstance()->current_test_info()->name() + "_settings.ini";
+	SDL_free(cwd);
+	ASSERT_EQ(os_get_mod_settings_path(), expected);
+	ASSERT_TRUE(os_mod_settings_inherited());
+
+	os_config_write_string("Test", "First", "one", true);
+	reloadFromDisk();
+	ASSERT_FALSE(os_mod_settings_inherited());
+}

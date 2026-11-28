@@ -22,4 +22,14 @@ void vulkan_build_frame_tlas();
 
 void cleanup();
 
+struct HardwareQuery {
+	bool usable_device = false;
+	bool raytraced_shadows = false;
+	float max_anisotropy = 0.0f;
+};
+
+// -get_options runs without a renderer, so a launcher would otherwise never see the hardware-dependent choices.
+// False if Vulkan could not be asked; true with usable_device unset if no card can run the Vulkan renderer.
+bool query_hardware_without_window(HardwareQuery& out);
+
 } // namespace graphics::vulkan

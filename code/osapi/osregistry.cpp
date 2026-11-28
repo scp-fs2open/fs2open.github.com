@@ -14,6 +14,7 @@
 #include "osregistry.h"
 #include "utils/encoding.h"
 
+#include <SDL3/SDL_filesystem.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -875,6 +876,38 @@ static void profile_save(Profile *profile, const char *file)
 static Profile* Osreg_profile = nullptr;
 static Profile* Mod_settings_profile = nullptr;
 
+static bool mod_settings_file_can_be_opened(const SCP_string& path)
+{
+	if (Cmdline_get_options) {
+		// a query must not create the file (a missing one makes the first launch inherit fs2_open.ini), so it asks
+		// what the append below would find: a file that opens for writing, or a folder to create one in
+		FILE* fp = fopen(path.c_str(), "r+");
+		if (fp != nullptr) {
+			fclose(fp);
+			return true;
+		}
+		SDL_PathInfo info;
+		if (SDL_GetPathInfo(path.c_str(), &info)) {
+			return false;
+		}
+		const auto folder = path.substr(0, path.find_last_of(DIR_SEPARATOR_CHAR));
+		if (!SDL_GetPathInfo(folder.c_str(), &info) || info.type != SDL_PATHTYPE_DIRECTORY) {
+			return false;
+		}
+#ifdef SCP_UNIX
+		return access(folder.c_str(), W_OK | X_OK) == 0;
+#else
+		return true;
+#endif
+	}
+	FILE* fp = fopen(path.c_str(), "a");
+	if (fp == nullptr) {
+		return false;
+	}
+	fclose(fp);
+	return true;
+}
+
 // initialize the registry. setup default keys to use
 void os_init_registry_stuff(const char* company, const char* app)
 {
@@ -978,10 +1011,7 @@ void os_init_registry_stuff(const char* company, const char* app)
 
 	// If the mod settings file doesn't exist create it if it doesn't so that the
 	// Mod_options_profile can be written to later during runtime.
-	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
-	if (fp != nullptr) {
-		fclose(fp);
-	} else {
+	if (!mod_settings_file_can_be_opened(os_get_config_path(Mod_options_file_name))) {
 		Ingame_options_save_found = false;
 	}
 
@@ -995,6 +1025,39 @@ void os_init_registry_stuff(const char* company, const char* app)
 
 	Os_reg_inited = 1;
 }
+
+static bool path_is_absolute(const SCP_string& path)
+{
+#ifdef WIN32
+	// a root-relative or drive-relative path is already tied to a drive, so joining it to the working folder breaks it
+	const bool drive = path.size() >= 2 && path[1] == ':';
+	return drive || (!path.empty() && (path[0] == '\\' || path[0] == '/'));
+#else
+	return !path.empty() && path[0] == '/';
+#endif
+}
+
+SCP_string os_get_mod_settings_path()
+{
+	auto path = os_get_config_path(Mod_options_file_name);
+	// portable mode, legacy Windows and a relative FSO_PREFERENCES_PATH give a path from the game folder, which a
+	// launcher may not be working in
+	if (!path_is_absolute(path)) {
+		char* cwd = SDL_GetCurrentDirectory();
+		if (cwd != nullptr) {
+			const bool dot = path.compare(0, 2, "." DIR_SEPARATOR_STR) == 0;
+			path = SCP_string(cwd) + (dot ? path.substr(2) : path);
+			SDL_free(cwd);
+		}
+	}
+	return path;
+}
+
+bool os_mod_settings_inherited()
+{
+	return !Ingame_options_save_found && Mod_options_file_name != Osreg_config_file_name;
+}
+
 void os_deinit_registry_stuff()
 {
 	if (Osreg_profile != nullptr) {

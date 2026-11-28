@@ -16,10 +16,12 @@
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
+#include "graphics/grstub.h"
 #include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "hud/hudconfig.h"
 #include "io/joy.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_log.h"
 #include "options/OptionsManager.h"
@@ -30,6 +32,10 @@
 #include "sound/openal.h"
 #include "sound/speech.h"
 #include "starfield/starfield.h"
+
+#ifdef WITH_VULKAN
+#include "graphics/vulkan/gr_vulkan.h"
+#endif
 
 #ifdef _WIN32
 #include <io.h>
@@ -126,6 +132,7 @@ enum BuildCaps
 
 #define PARSE_COMMAND_LINE_STRING	"-parse_cmdline_only"
 #define GET_FLAGS_STRING			"-get_flags"
+#define GET_OPTIONS_STRING			"-get_options"
 
 typedef struct
 {
@@ -575,6 +582,7 @@ bool Cmdline_retail_time_compression_range = false;
 bool Cmdline_benchmark_mode = false;
 const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
+bool Cmdline_get_options = false;
 bool Cmdline_json_profiling = false;
 bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
@@ -591,6 +599,8 @@ int Cmdline_multithreading = 1;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
+cmdline_parm get_options_arg(GET_OPTIONS_STRING, "Output the in-game options for a launcher", AT_STRING);
+cmdline_parm get_options_no_gpu_arg("-get_options_no_gpu", "With -get_options, skip the graphics card check", AT_NONE);
 cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 cmdline_parm output_script_json_arg("-output_script_json", nullptr, AT_NONE);	// m!m
@@ -899,7 +909,12 @@ void os_validate_parms(int argc, char *argv[])
 					char buffer[128];
 					sprintf(buffer, "Unrecognized command line parameter %s.", token);
 
-					os::dialogs::Message(os::dialogs::MESSAGEBOX_INFORMATION, buffer);
+					// a launcher's -get_options query has nobody to click the dialog away
+					if (Cmdline_get_options) {
+						fprintf(stderr, "%s\n", buffer);
+					} else {
+						os::dialogs::Message(os::dialogs::MESSAGEBOX_INFORMATION, buffer);
+					}
 				}
 			}
 		}
@@ -993,6 +1008,16 @@ void os_process_cmdline(char* cmdline)
 	delete[] argv;
 }
 
+bool cmdline_has_get_options(int argc, char* argv[])
+{
+	for (int i = 1; i < argc; ++i) {
+		if (!strcmp(argv[i], GET_OPTIONS_STRING)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool has_cmdline_only_or_get_flags(int argc, char *argv[])
 {
 	for (int i = 0; i < argc; ++i)
@@ -1023,6 +1048,9 @@ static void reset_cmdline_parms()
 // cmdline - command line string passed to the application
 void os_init_cmdline(int argc, char *argv[])
 {
+	// set before cmdline_fso.cfg is read, so its unknown flags and the legacy notice stay off a launcher's screen
+	Cmdline_get_options = !Fred_running && cmdline_has_get_options(argc, argv);
+
 	// Tests call this multiple times, so reset the params here.
 	// Otherwise e.g. the modlist just grows and grows...
 	reset_cmdline_parms();
@@ -1411,6 +1439,19 @@ static void json_add_flags(json_t* root) {
 	json_object_set_new(root, "flags", flags_array);
 }
 
+static void json_add_caps(json_t* root) {
+	auto caps_array = json_array();
+
+	json_array_append_new(caps_array, json_string("OpenAL"));
+	json_array_append_new(caps_array, json_string("No D3D"));
+	json_array_append_new(caps_array, json_string("New Sound"));
+	json_array_append_new(caps_array, json_string("SDL"));
+	json_array_append_new(caps_array, json_string("Multijoy"));
+	json_array_append_new(caps_array, json_string("GetOptions"));
+
+	json_object_set_new(root, "caps", caps_array);
+}
+
 static json_t* json_get_v1() {
 	auto root = json_object();
 
@@ -1418,17 +1459,7 @@ static json_t* json_get_v1() {
 	json_add_easy_flags(root);
 	json_add_flags(root);
 
-	{
-		auto caps_array = json_array();
-
-		json_array_append_new(caps_array, json_string("OpenAL"));
-		json_array_append_new(caps_array, json_string("No D3D"));
-		json_array_append_new(caps_array, json_string("New Sound"));
-		json_array_append_new(caps_array, json_string("SDL"));
-		json_array_append_new(caps_array, json_string("Multijoy"));
-
-		json_object_set_new(root, "caps", caps_array);
-	}
+	json_add_caps(root);
 	{
 		auto voices_array = json_array();
 
@@ -1528,7 +1559,7 @@ static json_t* json_get_v1() {
 	return root;
 }
 
-// json_v2 reports version, supported flags, and the preferences path for launchers,
+// json_v2 reports version, supported flags, build capabilities, and the preferences path
 // without querying graphics, audio, or joystick devices.
 static json_t* json_get_v2() {
 	auto root = json_object();
@@ -1536,6 +1567,7 @@ static json_t* json_get_v2() {
 	json_add_version(root);
 	json_add_easy_flags(root);
 	json_add_flags(root);
+	json_add_caps(root);
 	json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
 
 	return root;
@@ -1608,6 +1640,17 @@ static flag_output_type get_flags_output_type() {
 	}
 }
 
+#ifdef __ANDROID__
+static bool send_json_to_android(json_t* root, size_t flags) {
+	// NewStringUTF takes modified UTF-8, so the reply is sent as plain ASCII
+	char* dumped = json_dumps(root, flags | JSON_ENSURE_ASCII);
+	const bool written = dumped != nullptr;
+	os_android_set_flags_string(dumped);
+	free(dumped);
+	return written;
+}
+#endif
+
 static void write_flags() {
 	auto type = get_flags_output_type();
 
@@ -1619,14 +1662,69 @@ static void write_flags() {
 	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
 
 #ifdef __ANDROID__
-	char* dumped = json_dumps(root, JSON_INDENT(4));
-	os_android_set_flags_string(dumped ? dumped : "");
-	free(dumped);
+	(void)send_json_to_android(root, JSON_INDENT(4));
 #else
 	json_dumpf(root, stdout, JSON_INDENT(4));
 #endif
 
 	json_decref(root);
+}
+
+bool cmdline_print_options()
+{
+	// Cmdline_mod holds the mod names separated by NULs; a launcher passed them comma-separated
+	SCP_string mods;
+	for (const char* mod = Cmdline_mod; mod != nullptr && *mod != '\0'; mod += strlen(mod) + 1) {
+		if (!mods.empty()) {
+			mods += ",";
+		}
+		mods += mod;
+	}
+	json_t* root = json_object();
+	json_object_set_new(root, "version", json_integer(1));
+	json_object_set_new(root, "mod", options::json_text(mods));
+	json_object_set_new(root, "in_game_options", json_boolean(Using_in_game_options));
+	json_object_set_new(root, "settings_file", options::json_text(os_get_mod_settings_path()));
+	json_object_set_new(root, "settings_inherited", json_boolean(os_mod_settings_inherited()));
+	// sound and joysticks were never started and there is no video, so ask the system for devices as -get_flags does
+	openal_fill_device_lists();
+	// enumerate only: the full init would take the player's stick and open its force feedback
+	(void)io::joystick::init(true);
+	bool video = SDL_InitSubSystem(SDL_INIT_VIDEO);
+	auto* options_manager = options::OptionsManager::instance();
+#ifdef WITH_VULKAN
+	graphics::vulkan::HardwareQuery hardware;
+	// a crashing Vulkan driver layer would take the whole reply down, so a launcher can retry without the check
+	if (video && !get_options_no_gpu_arg.found() && graphics::vulkan::query_hardware_without_window(hardware)) {
+		gr_stub_set_queried_hardware(hardware.raytraced_shadows, hardware.max_anisotropy);
+		if (hardware.raytraced_shadows) {
+			shadows_mark_launcher_requirements(true);
+		}
+		const auto answer = [](bool supported) {
+			return supported ? options::RequirementSupport::Supported : options::RequirementSupport::Unsupported;
+		};
+		options_manager->setRequirementSupport("vulkan", answer(hardware.usable_device));
+		options_manager->setRequirementSupport("raytracing", answer(hardware.raytraced_shadows));
+	}
+#else
+	options_manager->setRequirementSupport("vulkan", options::RequirementSupport::Unsupported);
+	options_manager->setRequirementSupport("raytracing", options::RequirementSupport::Unsupported);
+	options_manager->setRequirementSupport("fsr", options::RequirementSupport::Unsupported);
+#endif
+	json_object_set_new(root, "options", options_manager->describeOptions());
+	if (video) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
+	io::joystick::shutdown();
+	// compact: the speech voice list alone runs to thousands of entries
+	constexpr size_t json_flags = JSON_COMPACT | JSON_PRESERVE_ORDER;
+#ifdef __ANDROID__
+	const bool written = send_json_to_android(root, json_flags);
+#else
+	const bool written = options::json_write_line(root, stdout, json_flags);
+#endif
+	json_decref(root);
+	return written;
 }
 
 bool SetCmdlineParams()
@@ -1650,6 +1748,23 @@ bool SetCmdlineParams()
 	if (joy_info.found()) {
 		io::joystick::printJoyJSON();
 		return false;
+	}
+
+	if (get_options_arg.found() && !Fred_running) {
+		if (get_options_arg.has_param() && strcmp(get_options_arg.str(), "json_v1") != 0) {
+			// the marker -get_flags prints, so a launcher can recognize an output type this build lacks
+#ifdef __ANDROID__
+			os_android_set_flags_string("OUTPUT TYPE NOT SUPPORTED!");
+#else
+			printf("OUTPUT TYPE NOT SUPPORTED!\n");
+#endif
+			return false;
+		}
+		// the HUD tables that lock some options load only after graphics start, so start as a standalone server would:
+		// no window, no sound, and errors end the process instead of waiting on a dialog nobody sees
+		Cmdline_get_options = true;
+		Is_standalone = 1;
+		Cmdline_noninteractive = true;
 	}
 
 	if (no_fpscap.found())
@@ -2423,7 +2538,8 @@ bool SetCmdlineParams()
 			std::unique_ptr<json_t>(json_real(static_cast<double>(Cmdline_aniso_level))), "-anisotropic_filter");
 	}
 
-	if (frame_profile_write_file.found())
+	// a settings query must not overwrite a profiling capture
+	if (frame_profile_write_file.found() && !Cmdline_get_options)
 	{
 		Cmdline_profile_write_file = true;
 	}
@@ -2453,7 +2569,7 @@ bool SetCmdlineParams()
 		Cmdline_noninteractive = true;
 	}
 
-	if (json_profiling.found())
+	if (json_profiling.found() && !Cmdline_get_options)
 	{
 		Cmdline_json_profiling = true;
 	}
@@ -2480,7 +2596,8 @@ bool SetCmdlineParams()
 		Cmdline_gr_sync_validation = true;
 	}
 
-	if (log_to_stdout_arg.found()) {
+	// -get_options writes its JSON to stdout, so the log must not go there too
+	if (log_to_stdout_arg.found() && !Cmdline_get_options) {
 		Cmdline_log_to_stdout = true;
 	}
 

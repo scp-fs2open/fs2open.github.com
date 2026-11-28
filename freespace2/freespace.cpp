@@ -1933,7 +1933,7 @@ static const char *get_cpu_type()
 /**
  * Game initialisation
  */
-void game_init()
+static int game_init()
 {
 	int s1 __UNUSED, e1 __UNUSED;
 	const char *ptr;
@@ -2021,6 +2021,8 @@ void game_init()
 
 	if (Using_in_game_options) {
 		options_manager->loadInitialValues();
+	} else if (Cmdline_get_options) {
+		options_manager->rememberOptionsForLauncher();
 	}
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
@@ -2028,7 +2030,8 @@ void game_init()
 	lcl_xstr_init();
 
 
-	if (Is_standalone) {
+	// this block forces options off for a server, and -get_options must print the player's values instead
+	if (Is_standalone && !Cmdline_get_options) {
 		// force off some cmdlines if they are on
 		Cmdline_spec = 0;
 		Cmdline_glow = 0;
@@ -2078,7 +2081,8 @@ void game_init()
 		snd_init();
 	}
 
-	if(!fsspeech_init()) {
+	// on desktop the voice list fills without it, and a settings query must not start the speech service
+	if (!Cmdline_get_options && !fsspeech_init()) {
 		mprintf(("Failed to init speech\n"));
 	}
 
@@ -2095,7 +2099,6 @@ void game_init()
 	if (!gr_init(std::move(sdlGraphicsOperations))) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
-		return;
 	}
 
 	hud_vr_init();
@@ -2109,7 +2112,8 @@ void game_init()
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
-	if(Cmdline_voice_recognition)
+	// with no game window it fails, and its failure message is a dialog nobody can click
+	if(Cmdline_voice_recognition && !Cmdline_get_options)
 	{
 		auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
 															 SDL_PROP_WINDOW_WIN32_HWND_POINTER,
@@ -2208,8 +2212,11 @@ void game_init()
 	multi_init();	
 
 	// start up the mission logfile
-	logfile_init(LOGFILE_EVENT_LOG);
-	log_string(LOGFILE_EVENT_LOG,"FS2_Open Mission Log - Opened \n\n", 1);
+	// -get_options only reads settings, and opening the log would empty a running game's copy
+	if (!Cmdline_get_options) {
+		logfile_init(LOGFILE_EVENT_LOG);
+		log_string(LOGFILE_EVENT_LOG, "FS2_Open Mission Log - Opened \n\n", 1);
+	}
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
@@ -2254,6 +2261,20 @@ void game_init()
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
 	hud_positions_init();		//Setup hud positions
+
+	// stops before the network starts (psnet_init opens the multiplayer port)
+	if (Cmdline_get_options) {
+		bool printed = cmdline_print_options();
+		// static teardown would free text textures after bmpman, and joinable worker threads abort
+		gr_close();
+		threading::shut_down_task_pool();
+#ifdef __ANDROID__
+		// exit() would end the process before the activity sends the reply it queued
+		return printed ? 0 : 1;
+#else
+		exit(printed ? 0 : 1);
+#endif
+	}
 	
 	// initialize psnet
 	psnet_init(Multi_options_g.port);						// initialize the networking code
@@ -2341,6 +2362,7 @@ void game_init()
 	io::mouse::CursorManager::get()->showCursor(true);
 
 	mouse_set_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
+	return 0;
 }
 
 char transfer_text[128];
@@ -7103,7 +7125,10 @@ int game_main(int argc, char *argv[])
 		get_exe_name(argv[0]);
 	}
 
-	game_init();
+	const int init_result = game_init();
+	if (Cmdline_get_options) {
+		return init_result;
+	}
 
 	// if networking is unavailable then standalone is useless, so just fail
 	if (Is_standalone && !psnet_is_active()) {
@@ -8300,7 +8325,8 @@ int main(int argc, char *argv[])
 
 	// Don't let more than one instance of FreeSpace run.
 	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), nullptr);
-	if (hwnd)	{
+	// a -get_options query opens no window, so it may run beside the game
+	if (hwnd && !cmdline_has_get_options(argc, argv)) {
 		SetForegroundWindow(hwnd);
 		return 0;
 	}

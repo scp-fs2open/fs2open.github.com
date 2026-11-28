@@ -3,6 +3,7 @@
 
 #include "OptionsManager.h"
 #include "Option.h"
+#include "cmdline/cmdline.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
 #include <optional>
@@ -56,6 +57,11 @@ std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const 
 		return std::unique_ptr<json_t>(changed_iter->second.get());
 	}
 
+	return getSavedValue(key);
+}
+
+std::optional<std::unique_ptr<json_t>> OptionsManager::getSavedValue(const SCP_string& key) const
+{
 	auto parts = parse_key(key);
 	if (parts.first.empty()) {
 		// Invalid key
@@ -317,9 +323,23 @@ SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks(
 //Discard changes and restore the option to initial value
 void OptionsManager::discardChanges() { _changed_values.clear(); }
 
+void OptionsManager::rememberOptionsForLauncher()
+{
+	_describedAtLoad = getOptions();
+	for (const auto& opt : _describedAtLoad) {
+		opt->rememberDefaultBeforeLoad();
+	}
+}
+
 //Get the initial values of the option as stored on disk
 void OptionsManager::loadInitialValues()
 {
+	// only -get_options describes options, so normal startup does no extra work here
+	_describedAtLoad.clear();
+	if (Cmdline_get_options) {
+		rememberOptionsForLauncher();
+	}
+
 	// Collect options to remove in a separate container
 	SCP_vector<std::shared_ptr<const OptionBase>> optionsToRemove;
 
@@ -335,6 +355,171 @@ void OptionsManager::loadInitialValues()
 	for (const auto& optToRemove : optionsToRemove) {
 		removeOption(optToRemove);
 	}
+}
+
+json_t* json_text(const SCP_string& text)
+{
+	json_t* value = json_string(text.c_str());
+	if (value != nullptr) {
+		return value;
+	}
+	// not UTF-8 (a legacy-encoded translation or folder name): read it as Latin-1 rather than drop the key
+	SCP_string utf8;
+	for (unsigned char c : text) {
+		if (c < 0x80) {
+			utf8 += static_cast<char>(c);
+		} else {
+			utf8 += static_cast<char>(0xC0 | (c >> 6));
+			utf8 += static_cast<char>(0x80 | (c & 0x3F));
+		}
+	}
+	return json_string(utf8.c_str());
+}
+
+bool json_write_line(const json_t* root, FILE* out, size_t flags)
+{
+	// a launcher may read the reply a line at a time
+	return json_dumpf(root, out, flags) == 0 && fputc('\n', out) != EOF && fflush(out) == 0;
+}
+
+void OptionsManager::describeValues(const OptionBase& option, json_t* default_value, json_t* entry) const
+{
+	if (!Using_in_game_options) {
+		// the game does not read the settings file then
+		json_object_set_new(entry, "saved", json_null());
+		json_object_set_new(entry, "effective", json_null());
+		return;
+	}
+	const auto& key = option.getConfigKey();
+	// read as saved, not through the option, which would turn a device this process didn't list into none
+	std::optional<std::unique_ptr<json_t>> saved;
+	try {
+		saved = getSavedValue(key);
+	} catch (const std::exception&) {
+		// a stored value that is not JSON: loading ignores it too
+	}
+	if (saved.has_value()) {
+		json_object_set(entry, "saved", saved->get());
+	} else {
+		json_object_set_new(entry, "saved", json_null());
+	}
+	auto override_iter = _config_overrides.find(key);
+	const bool overridden = override_iter != _config_overrides.end();
+	json_t* effective = default_value;
+	// in the order the game settles it: a mod's HUD tables lock the option after loading, an enforced option is
+	// never loaded and keeps the table's value, and loading takes a command-line override over the saved value
+	if (overridden && override_iter->second.source == OverrideSource::Mod) {
+		effective = override_iter->second.value.get();
+	} else if (!isOptionEnforced(key)) {
+		json_t* loaded = overridden ? override_iter->second.value.get() : nullptr;
+		if (loaded == nullptr && saved.has_value()) {
+			loaded = saved->get();
+		}
+		if (loaded != nullptr && option.acceptsStoredValue(loaded)) {
+			effective = loaded;
+		}
+	}
+	json_object_set(entry, "effective", effective);
+}
+
+json_t* OptionsManager::describeOptions()
+{
+	// a serialized value is itself JSON, so it goes in as a value, not as a string holding JSON
+	auto value_of = [](const SCP_string& serialized) {
+		json_error_t err;
+		json_t* value = json_loads(serialized.c_str(), JSON_DECODE_ANY, &err);
+		return (value != nullptr) ? value : json_text(serialized);
+	};
+	const auto& described = _describedAtLoad.empty() ? getOptions() : _describedAtLoad;
+	json_t* list = json_array();
+	for (const auto& option : described) {
+		const auto& key = option->getConfigKey();
+		json_t* default_value = value_of(option->getDescribedDefault());
+		json_t* entry = json_object();
+		json_object_set_new(entry, "key", json_text(key));
+		json_object_set_new(entry, "title", json_text(option->getTitle()));
+		json_object_set_new(entry, "description", json_text(option->getDescription()));
+		json_object_set_new(entry, "category", json_text(option->getCategory()));
+		if (option->getType() == OptionType::Range) {
+			json_object_set_new(entry, "type", json_string("range"));
+			auto range = option->getRangeValues();
+			json_t* bounds = json_object();
+			json_object_set_new(bounds, "min", json_real(range.first));
+			json_object_set_new(bounds, "max", json_real(range.second));
+			// an int option rejects a real number even when the menu flag for whole-number sliders is unset
+			bool integer = option->getFlags()[OptionFlags::RangeTypeInteger] || json_is_integer(default_value);
+			json_object_set_new(bounds, "integer", json_boolean(integer));
+			json_object_set_new(entry, "range", bounds);
+		} else {
+			json_object_set_new(entry, "type", json_string("selection"));
+			json_t* values = json_array();
+			for (const auto& desc : option->getValidValues()) {
+				json_t* value = json_object();
+				json_object_set_new(value, "value", value_of(desc.serialized));
+				json_object_set_new(value, "display", json_text(desc.display));
+				json_array_append_new(values, value);
+			}
+			json_object_set_new(entry, "values", values);
+		}
+		json_object_set_new(entry, "default", default_value);
+		describeValues(*option, default_value, entry);
+		auto source = getOverrideSource(key);
+		if (source.has_value()) {
+			json_object_set_new(entry,
+				"overridden_by",
+				json_string(*source == OverrideSource::CommandLine ? "cmdline" : "mod"));
+			json_object_set_new(entry, "override_reason", json_text(getOverrideReason(key).value_or("")));
+		} else {
+			json_object_set_new(entry, "overridden_by", json_null());
+			json_object_set_new(entry, "override_reason", json_null());
+		}
+		json_object_set_new(entry, "enforced", json_boolean(isOptionEnforced(key)));
+		json_object_set_new(entry, "restart_needed", json_boolean(!option->getIsLive()));
+		auto requirement = _requirements.find(key);
+		if (requirement != _requirements.end()) {
+			json_object_set_new(entry, "requires", json_text(requirement->second.first));
+			json_object_set_new(entry, "requires_text", json_text(requirement->second.second));
+			auto found = _requirementSupport.find(requirement->second.first);
+			const auto support = (found != _requirementSupport.end()) ? found->second : RequirementSupport::Unknown;
+			const char* support_name = "unknown";
+			if (support == RequirementSupport::Supported) {
+				support_name = "supported";
+			} else if (support == RequirementSupport::Unsupported) {
+				support_name = "unsupported";
+			}
+			json_object_set_new(entry, "requires_support", json_string(support_name));
+		} else {
+			json_object_set_new(entry, "requires", json_null());
+			json_object_set_new(entry, "requires_text", json_null());
+			json_object_set_new(entry, "requires_support", json_null());
+		}
+		json_array_append_new(list, entry);
+	}
+	return list;
+}
+
+void OptionsManager::setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation)
+{
+	_requirements[key] = std::make_pair(requirement, explanation);
+}
+
+void OptionsManager::setRequirementSupport(const SCP_string& requirement, RequirementSupport support)
+{
+	_requirementSupport[requirement] = support;
+}
+
+void OptionsManager::forgetLoadedOptions()
+{
+	for (const auto& item : _describedAtLoad) {
+		item->forgetDefaultBeforeLoad();
+		if (getOptionByKey(item->getConfigKey()) == nullptr) {
+			auto option = item;
+			addOption(std::move(option));
+		}
+	}
+	_describedAtLoad.clear();
+	_requirements.clear();
+	_requirementSupport.clear();
 }
 
 void OptionsManager::printValues()

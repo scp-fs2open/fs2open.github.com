@@ -1,6 +1,8 @@
 #include "options/OptionsManager.h"
 #include "options/Option.h"
+#include "options/default_settings_table.h"
 #include "graphics/2d.h"
+#include "graphics/grstub.h"
 #include "graphics/shadows.h"
 #include "cmdline/cmdline.h"
 #include "hud/hud.h"
@@ -14,6 +16,9 @@
 #include "util/FSTestFixture.h"
 
 #include <gtest/gtest.h>
+
+#include <fstream>
+#include <sstream>
 
 using namespace options;
 
@@ -769,4 +774,341 @@ TEST_F(OptionsManagerOverride, StringOverrideKeepsItsSource)
 	mgr->setOverride("Test.OverrideSource.String", "true", "an active mod", OverrideSource::Mod);
 
 	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.String"), OverrideSource::Mod);
+}
+
+namespace {
+const json_t* described(const json_t* list, const char* key)
+{
+	for (size_t i = 0; i < json_array_size(list); ++i) {
+		const json_t* entry = json_array_get(list, i);
+		const char* entry_key = json_string_value(json_object_get(entry, "key"));
+		if (entry_key != nullptr && SCP_string(entry_key) == key) {
+			return entry;
+		}
+	}
+	return nullptr;
+}
+
+// some value lists ask the renderer what it can do; -get_options runs on the stub renderer, so these tests do too
+class StubRenderer {
+  public:
+	StubRenderer() : _saved(gr_screen)
+	{
+		gr_stub_init_function_pointers();
+	}
+	~StubRenderer()
+	{
+		gr_stub_set_queried_hardware(false, 0.0f);
+		gr_screen = _saved;
+	}
+
+  private:
+	screen _saved;
+};
+
+// these tests all use the "options" mod and so one settings file; a test that saves to it puts it back afterwards
+class SharedSettingsFile {
+  public:
+	SharedSettingsFile() : _path(os_get_mod_settings_path())
+	{
+		std::ifstream in(_path, std::ios::binary);
+		if (in.good()) {
+			std::ostringstream contents;
+			contents << in.rdbuf();
+			_contents = contents.str();
+		}
+	}
+	~SharedSettingsFile()
+	{
+		if (_contents.has_value()) {
+			std::ofstream out(_path, std::ios::binary | std::ios::trunc);
+			out << *_contents;
+		} else {
+			std::remove(_path.c_str());
+		}
+	}
+
+  private:
+	SCP_string _path;
+	std::optional<SCP_string> _contents;
+};
+} // namespace
+
+// a launcher shows "needs restart" from this, and only options bound to apply at once may say no
+TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsSayWhichNeedARestart)
+{
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(OptionsManager::instance()->describeOptions());
+	const json_t* live = described(list.get(), "Input.JoystickDeadZone");
+	const json_t* custom = described(list.get(), "HUD.BallisticGauge");
+	const json_t* once = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(live, nullptr);
+	ASSERT_NE(custom, nullptr);
+	ASSERT_NE(once, nullptr);
+	ASSERT_TRUE(json_is_false(json_object_get(live, "restart_needed")));
+	// a listener of its own may or may not apply at once, so it is reported as needing a restart
+	ASSERT_TRUE(json_is_true(json_object_get(custom, "restart_needed")));
+	ASSERT_TRUE(json_is_true(json_object_get(once, "restart_needed")));
+	// bind_to_once, and bind_to followed by a listener of its own (3D shockwaves)
+	for (const char* key : {"HUD.DualScanLines", "Graphics.3DShockwaves"}) {
+		const json_t* entry = described(list.get(), key);
+		ASSERT_NE(entry, nullptr) << key;
+		ASSERT_TRUE(json_is_true(json_object_get(entry, "restart_needed"))) << key;
+	}
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(once, "title"))), "3D Radar");
+	const json_t* off = json_array_get(json_object_get(once, "values"), 0);
+	ASSERT_TRUE(json_is_false(json_object_get(off, "value")));
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(off, "display"))), "Off");
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(once, "type"))), "selection");
+	ASSERT_EQ(json_array_size(json_object_get(once, "values")), 2u);
+	ASSERT_TRUE(json_is_false(json_object_get(once, "default")));
+}
+
+// a launcher edits the saved value and shows the effective one, so a flag must not hide what the player saved
+TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAFlagOverride)
+{
+	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = true;
+	os_config_write_string("HUD", "OrbRadar", "false", true);
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_true()), "-orbradar");
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(mgr->describeOptions());
+	const json_t* entry = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_true(json_object_get(entry, "effective")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(entry, "overridden_by"))), "cmdline");
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(entry, "override_reason"))), "-orbradar");
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "enforced")));
+
+	const json_t* free_entry = described(list.get(), "HUD.BallisticGauge");
+	ASSERT_NE(free_entry, nullptr);
+	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "overridden_by")));
+}
+
+// without in-game options the game never reads the settings file, so neither value exists even when one is saved
+TEST_F(OptionsManagerOverrideLocalized, DescribedValuesAreNullWithoutInGameOptions)
+{
+	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = false;
+	os_config_write_string("HUD", "OrbRadar", "false", true);
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(OptionsManager::instance()->describeOptions());
+	const json_t* entry = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_null(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_null(json_object_get(entry, "effective")));
+}
+
+// the game never loads an enforced option, so the table's value is used even though the player saved another or a
+// launch flag asks for another
+TEST_F(OptionsManagerOverrideLocalized, DescribedEnforcedOptionsUseTheTableValue)
+{
+	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = true;
+	os_config_write_string("Graphics", "VSync", "true", true);
+	const bool vsync_before = Gr_enable_vsync;
+	auto* mgr = OptionsManager::instance();
+	default_settings_init();
+	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_true()), "-orbradar");
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(mgr->describeOptions());
+	const bool enforced = mgr->isOptionEnforced("Graphics.VSync") && mgr->isOptionEnforced("HUD.OrbRadar");
+	mgr->unenforceOption("Graphics.VSync");
+	mgr->unenforceOption("HUD.OrbRadar");
+	Gr_enable_vsync = vsync_before;
+
+	ASSERT_TRUE(enforced);
+	const json_t* entry = described(list.get(), "Graphics.VSync");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_true(json_object_get(entry, "enforced")));
+	ASSERT_TRUE(json_is_true(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "effective")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
+	ASSERT_TRUE(json_is_null(json_object_get(entry, "overridden_by")));
+	const json_t* flagged = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(flagged, nullptr);
+	ASSERT_TRUE(json_is_false(json_object_get(flagged, "effective")));
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(flagged, "overridden_by"))), "cmdline");
+}
+
+// loading falls back to the default when the option cannot read the saved value (a bool saved as a number)
+TEST_F(OptionsManagerOverrideLocalized, DescribedSavedValueOfTheWrongTypeGivesTheDefault)
+{
+	SharedSettingsFile settings;
+	auto restore = util::finally([before = Using_in_game_options]() { Using_in_game_options = before; });
+	Using_in_game_options = true;
+	os_config_write_string("HUD", "BallisticGauge", "1", true);
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(OptionsManager::instance()->describeOptions());
+	const json_t* entry = described(list.get(), "HUD.BallisticGauge");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_TRUE(json_is_integer(json_object_get(entry, "saved")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "effective")));
+	ASSERT_TRUE(json_is_false(json_object_get(entry, "default")));
+}
+
+TEST_F(OptionsManagerOverrideLocalized, DescribedRangeOptionsGiveTheirBounds)
+{
+	StubRenderer renderer;
+	std::unique_ptr<json_t> list(OptionsManager::instance()->describeOptions());
+	const json_t* entry = described(list.get(), "Input.JoystickDeadZone");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(entry, "type"))), "range");
+	const json_t* range = json_object_get(entry, "range");
+	ASSERT_EQ(json_number_value(json_object_get(range, "min")), 0.0);
+	ASSERT_EQ(json_number_value(json_object_get(range, "max")), 45.0);
+	// an int option, so a launcher must not write it a real number
+	ASSERT_TRUE(json_is_true(json_object_get(range, "integer")));
+	ASSERT_TRUE(json_is_number(json_object_get(entry, "default")));
+}
+
+// a listener that writes the global its default reads would make the default look like the saved value, and an
+// enforced option leaves the list during loading; both must still be described as they were before loading
+TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsKeepWhatTheyWereBeforeLoading)
+{
+	StubRenderer renderer;
+	auto* mgr = OptionsManager::instance();
+	auto* lighting = mgr->getOptionByKey("Graphics.Lighting");
+	ASSERT_NE(lighting, nullptr);
+	SCP_string saved_default = lighting->getDescribedDefault();
+	SCP_string other;
+	for (const auto& value : lighting->getValidValues()) {
+		if (value.serialized != saved_default) {
+			other = value.serialized;
+		}
+	}
+	ASSERT_FALSE(other.empty());
+	json_error_t err;
+	mgr->setConfigValue("Graphics.Lighting", std::unique_ptr<json_t>(json_loads(other.c_str(), JSON_DECODE_ANY, &err)));
+	mgr->enforceOption("HUD.BallisticGauge");
+
+	bool saved_flag = Cmdline_get_options;
+	Cmdline_get_options = true;
+	mgr->loadInitialValues();
+	Cmdline_get_options = saved_flag;
+	std::unique_ptr<json_t> list(mgr->describeOptions());
+	char* dumped = json_dumps(json_object_get(described(list.get(), "Graphics.Lighting"), "default"),
+		JSON_ENCODE_ANY | JSON_COMPACT);
+	SCP_string described_default = (dumped != nullptr) ? dumped : "";
+	free(dumped);
+	const json_t* enforced = described(list.get(), "HUD.BallisticGauge");
+	bool enforced_is_true = enforced != nullptr && json_is_true(json_object_get(enforced, "enforced"));
+
+	mgr->unenforceOption("HUD.BallisticGauge");
+	mgr->forgetLoadedOptions();
+	// the listener wrote the saved value into the global the default reads, so load the old default back the same way
+	mgr->discardChanges();
+	mgr->setConfigValue("Graphics.Lighting",
+		std::unique_ptr<json_t>(json_loads(saved_default.c_str(), JSON_DECODE_ANY, &err)));
+	lighting->loadInitial();
+	mgr->discardChanges();
+
+	ASSERT_EQ(described_default, saved_default);
+	ASSERT_TRUE(enforced_is_true);
+	ASSERT_NE(mgr->getOptionByKey("HUD.BallisticGauge"), nullptr);
+}
+
+TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsShowAModOverride)
+{
+	StubRenderer renderer;
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("HUD.OrbRadar", std::unique_ptr<json_t>(json_false()), "an active mod", OverrideSource::Mod);
+	std::unique_ptr<json_t> list(mgr->describeOptions());
+	const json_t* entry = described(list.get(), "HUD.OrbRadar");
+	ASSERT_NE(entry, nullptr);
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(entry, "overridden_by"))), "mod");
+}
+
+// a title from a legacy-encoded translation must arrive as text, not as a missing key
+TEST(OptionsJsonText, TextThatIsNotUtf8IsReadAsLatin1)
+{
+	std::unique_ptr<json_t> text(options::json_text("caf\xe9"));
+	ASSERT_NE(text, nullptr);
+	ASSERT_EQ(SCP_string(json_string_value(text.get())), "caf\xc3\xa9");
+}
+
+// a launcher greys these and shows the explanation as the reason
+TEST_F(OptionsManagerOverrideLocalized, DescribedOptionsCarryWhatTheyNeed)
+{
+	StubRenderer renderer;
+	auto* mgr = OptionsManager::instance();
+	mgr->setRequirement("Graphics.Gamma", "vulkan", "Needs the Vulkan renderer");
+	std::unique_ptr<json_t> list(mgr->describeOptions());
+	mgr->setRequirementSupport("vulkan", RequirementSupport::Unsupported);
+	std::unique_ptr<json_t> answered(mgr->describeOptions());
+	mgr->forgetLoadedOptions();
+	const json_t* needing = described(list.get(), "Graphics.Gamma");
+	const json_t* free_entry = described(list.get(), "Input.JoystickDeadZone");
+	ASSERT_NE(needing, nullptr);
+	ASSERT_NE(free_entry, nullptr);
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(needing, "requires"))), "vulkan");
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(needing, "requires_text"))), "Needs the Vulkan renderer");
+	// a skipped or failed hardware query must not read as hardware that lacks the feature
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(needing, "requires_support"))), "unknown");
+	const json_t* answered_entry = described(answered.get(), "Graphics.Gamma");
+	ASSERT_NE(answered_entry, nullptr);
+	ASSERT_EQ(SCP_string(json_string_value(json_object_get(answered_entry, "requires_support"))), "unsupported");
+	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "requires")));
+	ASSERT_TRUE(json_is_null(json_object_get(free_entry, "requires_support")));
+}
+
+// with no renderer running, these lists come only from the windowless hardware query
+TEST_F(OptionsManagerOverrideLocalized, DescribedHardwareListsFollowTheQuery)
+{
+	StubRenderer renderer;
+	auto* mgr = OptionsManager::instance();
+	std::unique_ptr<json_t> before(mgr->describeOptions());
+	// the ray-traced options may already be dropped from the shared registry by an earlier test, so ask what their
+	// value lists ask
+	ASSERT_FALSE(shadows_raytracing_supported());
+	gr_stub_set_queried_hardware(true, 8.0f);
+	std::unique_ptr<json_t> after(mgr->describeOptions());
+	ASSERT_TRUE(shadows_raytracing_supported());
+	// the query answers only these two questions; every other capability stays the stub's "no"
+	ASSERT_FALSE(gr_is_capable(gr_capability::CAPABILITY_SHADOWS));
+	const json_t* aniso_before = described(before.get(), "Graphics.Anisotropy");
+	const json_t* aniso_after = described(after.get(), "Graphics.Anisotropy");
+	ASSERT_NE(aniso_before, nullptr);
+	ASSERT_NE(aniso_after, nullptr);
+	ASSERT_EQ(json_array_size(json_object_get(aniso_before, "values")), 0u);
+	// 1x, 2x, 4x and 8x: the levels stop at the card's maximum
+	ASSERT_EQ(json_array_size(json_object_get(aniso_after, "values")), 4u);
+	ASSERT_FLOAT_EQ(static_cast<float>(json_number_value(json_object_get(aniso_before, "default"))), 1.0f);
+	ASSERT_FLOAT_EQ(static_cast<float>(json_number_value(json_object_get(aniso_after, "default"))), 8.0f);
+}
+
+// a launcher may read the reply a line at a time, and -get_options exits 1 when the reply could not be written
+TEST(OptionsJsonLine, ReplyIsOneLineAndAFailedWriteIsReported)
+{
+	const char* path = "json_write_line_test.txt";
+	std::unique_ptr<json_t> root(json_pack("{s:s}", "text", "two\nlines"));
+	FILE* out = fopen(path, "w");
+	ASSERT_NE(out, nullptr);
+	const bool written = options::json_write_line(root.get(), out, JSON_COMPACT);
+	fclose(out);
+	FILE* read_only = fopen(path, "r");
+	const bool failure_seen = read_only != nullptr && !options::json_write_line(root.get(), read_only, JSON_COMPACT);
+	if (read_only != nullptr) {
+		fclose(read_only);
+	}
+	std::ifstream in(path, std::ios::binary);
+	std::ostringstream contents;
+	contents << in.rdbuf();
+	in.close();
+	std::remove(path);
+
+	ASSERT_TRUE(written);
+	ASSERT_TRUE(failure_seen);
+	const SCP_string text = contents.str();
+	ASSERT_EQ(text.find('\n'), text.size() - 1);
+	json_error_t err;
+	std::unique_ptr<json_t> parsed(json_loads(text.c_str(), 0, &err));
+	ASSERT_NE(parsed, nullptr);
+	ASSERT_TRUE(json_equal(parsed.get(), root.get()));
 }
