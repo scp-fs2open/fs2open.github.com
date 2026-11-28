@@ -1,6 +1,13 @@
 #include "missioneditor/sexp_annotation_model.h"
 #include "missioneditor/sexp_tree_model.h"
 
+bool annotation_text_is_dark(int r, int g, int b)
+{
+	// The source of this contrast rule:
+	// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
+	return (r * 0.299 + g * 0.587 + b * 0.114) > 149;
+}
+
 SCP_vector<event_annotation> Event_annotations;
 
 // -----------------------------------------------------------------------

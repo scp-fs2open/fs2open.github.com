@@ -470,7 +470,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	gr_reset_clip();
 	g3_start_frame(0);
-	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
+	g3_set_view_matrix(&eye_pos, &eye_orient, EDITOR_DEFAULT_FOV);
 	
 	Fred_main_wnd -> init_tools();
 

@@ -14,6 +14,10 @@ struct event_annotation {
 };
 extern SCP_vector<event_annotation> Event_annotations;
 
+// Returns true if black text is readable on the annotation background color, and false if white text is better.
+// Both editors use this rule, so that an annotation has the same text color in FRED2 and in QtFRED.
+bool annotation_text_is_dark(int r, int g, int b);
+
 struct sexp_tree_item;
 
 class SexpAnnotationModel {

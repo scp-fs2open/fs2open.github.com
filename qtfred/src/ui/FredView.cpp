@@ -77,6 +77,7 @@
 #include "missioneditor/missionsave.h"
 
 #include "widgets/ObjectComboBox.h"
+#include "widgets/TransformToolBar.h"
 #include "widgets/data_list_menu.h"
 
 #include "util.h"
@@ -264,13 +265,11 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(_otherClassBox, &ObjectComboBox::classSelected, this, &FredView::onOtherKindSelected);
 
 	initializeContextToolbar();
-	initializeTransformBar();
+	_transformBar = new TransformToolBar(ui->transformToolBar, fred, _viewport, ui->centralWidget);
 
-	// Restore per-mode Local preferences and camera speeds from last session.
+	// Restore the camera speeds from the last session.
 	{
 		QSettings settings;
-		_tbLocalMove   = settings.value("FredView/transformLocalMove",   false).toBool();
-		_tbLocalRotate = settings.value("FredView/transformLocalRotate", false).toBool();
 		_viewport->camera.setPhysicsSpeed(settings.value("FredView/cameraSpeedMove", 1).toInt());
 		_viewport->camera.setPhysicsRot(settings.value("FredView/cameraSpeedRot",  25).toInt());
 		_lastSavedCameraSpeedMove = _viewport->camera.getPhysicsSpeed();
@@ -289,7 +288,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.set_fred_callsigns(Fred_callsigns);
 		save.save_autosave_file(savePath.toUtf8().constData());
 	});
-	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
+	connect(fred, &Editor::layerListChanged, _transformBar, &TransformToolBar::markLayersChanged);
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -307,7 +306,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateWingActionStatus);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateContextToolbar);
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateTransformBar);
+	connect(this, &FredView::viewIdle, _transformBar, &TransformToolBar::update);
 	connect(this,
 			&FredView::viewIdle,
 			this,
@@ -822,7 +821,8 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 
 	if (_viewport != nullptr) {
 		_viewport->reloadLayersFromMission();
-		_tbLayerComboDirty = true;
+		if (_transformBar != nullptr)
+			_transformBar->markLayersChanged();
 	}
 
 	QString filename = "Untitled";
@@ -1189,7 +1189,7 @@ void FredView::onUpdateContextToolbar() {
 			auto* selWingAct = new QAction(tr("Select Wing"), _contextToolBar);
 			int capturedWing = effectiveWingNum;
 			connect(selWingAct, &QAction::triggered, this, [this, capturedWing]() {
-				fred->mark_wing(capturedWing);
+				fred->mark_wing(capturedWing, Editor::LockedObjects::Skip);
 			});
 			_contextToolBar->addAction(selWingAct);
 		}
@@ -1226,406 +1226,6 @@ void FredView::quickRenameCurrentObject() {
 	// Wing rename goes through Edit Wing since wings have no standalone scene object
 }
 
-
-// ---------------------------------------------------------------------------
-// Transform bar  (bottom, above the status bar)
-// ---------------------------------------------------------------------------
-
-void FredView::initializeTransformBar() {
-	_transformToolBar = ui->transformToolBar;
-	_transformToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
-	_transformToolBar->setVisible(true);
-
-	// Helper: add a fixed-width spacer widget to the toolbar.
-	auto addFixedSpacer = [this](int w) {
-		auto* sp = new QWidget(_transformToolBar);
-		sp->setFixedWidth(w);
-		_transformToolBar->addWidget(sp);
-	};
-
-	// ---- Left section: camera move and rotation speed selectors ---------------
-	addFixedSpacer(8);
-
-	auto* moveSpeedLabel = new QLabel(tr("Camera Move:"), _transformToolBar);
-	moveSpeedLabel->setContentsMargins(0, 0, 4, 0);
-	_transformToolBar->addWidget(moveSpeedLabel);
-
-	_transformMoveSpeedCombo = new QComboBox(_transformToolBar);
-	_transformMoveSpeedCombo->setFixedWidth(72);
-	_transformMoveSpeedCombo->setToolTip(tr("Camera movement speed (mirrors the Speed > Movement menu)"));
-	for (int v : {1, 2, 3, 5, 8, 10, 50, 100})
-		_transformMoveSpeedCombo->addItem(tr("x%1").arg(v), v);
-	_transformToolBar->addWidget(_transformMoveSpeedCombo);
-	connect(_transformMoveSpeedCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
-		if (!_viewport) return;
-		_viewport->camera.setPhysicsSpeed(_transformMoveSpeedCombo->itemData(idx).toInt());
-	});
-
-	addFixedSpacer(8);
-
-	auto* rotSpeedLabel = new QLabel(tr("Camera Rot:"), _transformToolBar);
-	rotSpeedLabel->setContentsMargins(0, 0, 4, 0);
-	_transformToolBar->addWidget(rotSpeedLabel);
-
-	_transformRotSpeedCombo = new QComboBox(_transformToolBar);
-	_transformRotSpeedCombo->setFixedWidth(72);
-	_transformRotSpeedCombo->setToolTip(tr("Camera rotation speed (mirrors the Speed > Rotation menu)"));
-	// Labels match the existing menu (physics_rot / ~2 ≈ displayed multiplier)
-	for (auto [label, val] : std::initializer_list<std::pair<const char*, int>>{
-			{"x1", 2}, {"x5", 10}, {"x12", 25}, {"x25", 50}, {"x50", 100}})
-		_transformRotSpeedCombo->addItem(tr(label), val);
-	_transformToolBar->addWidget(_transformRotSpeedCombo);
-	connect(_transformRotSpeedCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
-		if (!_viewport) return;
-		_viewport->camera.setPhysicsRot(_transformRotSpeedCombo->itemData(idx).toInt());
-	});
-
-	addFixedSpacer(8);
-
-	// ---- Single expanding spacer pushes everything to the right side -------
-	auto* leftSpacer = new QWidget(_transformToolBar);
-	leftSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-	_transformToolBar->addWidget(leftSpacer);
-
-	// ---- IFF / Team selector -----------------------------------------------
-	// IFF items are populated lazily in onUpdateTransformBar() once Iff_info is loaded.
-	auto* iffLabel = new QLabel(tr("IFF:"), _transformToolBar);
-	iffLabel->setContentsMargins(0, 0, 4, 0);
-	_transformToolBar->addWidget(iffLabel);
-
-	_transformIffCombo = new QComboBox(_transformToolBar);
-	_transformIffCombo->setFixedWidth(130);
-	_transformIffCombo->setToolTip(tr("IFF of the selected ship(s). Changes apply to all marked ships."));
-	_transformToolBar->addWidget(_transformIffCombo);
-	connect(_transformIffCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
-		if (idx < 0 || !_viewport) return;
-		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			if (p->type == OBJ_SHIP || p->type == OBJ_START)
-				Ships[p->instance].team = idx;
-		}
-		fred->missionChanged();
-	});
-
-	addFixedSpacer(8);
-
-	// ---- Local-axes toggle ----
-	_transformLocalBtn = new QToolButton(_transformToolBar);
-	_transformLocalBtn->setCheckable(true);
-	_transformLocalBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
-	_transformLocalBtn->setFixedSize(28, 24);
-	_transformLocalBtn->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value. (X)"));
-	// FRED2 bound "Rotate Locally" to the X key; route it through the button so the per-mode local memory stays in sync.
-	_transformLocalBtn->setShortcut(QKeySequence(Qt::Key_X));
-	bindThemeIcon(_transformLocalBtn, QStringLiteral("rotlocal"));
-	_transformToolBar->addWidget(_transformLocalBtn);
-	connect(_transformLocalBtn, &QToolButton::toggled, this, [this](bool checked) {
-		if (!_viewport) return;
-		// Local ON  = each object rotates/moves individually -> Group_rotate = false
-		// Local OFF = formation (group orbits leader)        -> Group_rotate = true
-		_viewport->Group_rotate = !checked;
-		if (_viewport->Editing_mode == CursorMode::Moving)
-			_tbLocalMove = checked;
-		else if (_viewport->Editing_mode == CursorMode::Rotating)
-			_tbLocalRotate = checked;
-	});
-
-	addFixedSpacer(8);
-
-	// ---- Spin boxes (position or orientation) ------------------------------
-	_transformLabel = new QLabel(tr("Pos"), _transformToolBar);
-	_transformLabel->setContentsMargins(0, 0, 4, 0);
-	_transformLabel->setMinimumWidth(24);
-	_transformToolBar->addWidget(_transformLabel);
-
-	auto makeSpinBox = [this](QLabel*& lbl, const QString& axisName, QDoubleSpinBox*& sb) {
-		lbl = new QLabel(axisName, _transformToolBar);
-		lbl->setContentsMargins(4, 0, 2, 0);
-		_transformToolBar->addWidget(lbl);
-		sb = new QDoubleSpinBox(_transformToolBar);
-		sb->setDecimals(1);
-		sb->setRange(-99999.9, 99999.9);
-		sb->setFixedWidth(90);
-		sb->setKeyboardTracking(false);
-		_transformToolBar->addWidget(sb);
-		connect(sb, &QDoubleSpinBox::editingFinished, this, &FredView::onTransformEditingFinished);
-	};
-
-	makeSpinBox(_transformLabelA, tr("X"), _transformA);
-	makeSpinBox(_transformLabelB, tr("Y"), _transformB);
-	makeSpinBox(_transformLabelC, tr("Z"), _transformC);
-
-	// ---- Object radius (read-only) -----------------------------------------
-	addFixedSpacer(8);
-
-	auto* radiusStaticLabel = new QLabel(tr("Radius:"), _transformToolBar);
-	radiusStaticLabel->setContentsMargins(0, 0, 4, 0);
-	_transformToolBar->addWidget(radiusStaticLabel);
-
-	_transformRadiusLabel = new QLabel(tr("--"), _transformToolBar);
-	_transformRadiusLabel->setFixedWidth(64);
-	_transformRadiusLabel->setToolTip(tr("Bounding radius of the selected object"));
-	_transformToolBar->addWidget(_transformRadiusLabel);
-
-	addFixedSpacer(8);
-
-	// ---- Layer selector ----------------------------------------------------
-	auto* layerLabel = new QLabel(tr("Layer:"), _transformToolBar);
-	layerLabel->setContentsMargins(0, 0, 4, 0);
-	_transformToolBar->addWidget(layerLabel);
-
-	_transformLayerCombo = new QComboBox(_transformToolBar);
-	_transformLayerCombo->setFixedWidth(130);
-	_transformLayerCombo->setToolTip(tr("Layer of the selected object(s). Choosing a layer moves all marked objects to it."));
-	_transformToolBar->addWidget(_transformLayerCombo);
-	connect(_transformLayerCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
-		if (idx < 0 || !_viewport) return;
-		SCP_string layerName = _transformLayerCombo->itemText(idx).toUtf8().constData();
-		_viewport->moveMarkedObjectsToLayer(layerName, nullptr);
-		fred->missionChanged();
-	});
-
-	addFixedSpacer(12);
-
-	// addToolBar is intentionally NOT called here... added after restoreState() in setEditor().
-}
-
-void FredView::onUpdateTransformBar() {
-	const int  curObj     = fred->currentObject;
-	const int  numMarked  = fred->getNumMarked();
-	const bool valid      = query_valid_object(curObj);
-	const bool rotateMode = _viewport->Editing_mode == CursorMode::Rotating;
-	const bool selectMode = _viewport->Editing_mode == CursorMode::Selecting;
-	const int  rawType    = valid ? Objects[curObj].type : -1;
-	const bool isShip     = valid && (rawType == OBJ_SHIP || rawType == OBJ_START);
-
-	// ---- Spin box labels and ranges ----------------------------------------
-	if (rotateMode) {
-		_transformLabel->setText(tr("Ori"));
-		_transformLabelA->setText(tr("H"));
-		_transformLabelB->setText(tr("P"));
-		_transformLabelC->setText(tr("B"));
-		_transformA->setRange(-360.0, 360.0);
-		_transformB->setRange(-360.0, 360.0);
-		_transformC->setRange(-360.0, 360.0);
-	} else {
-		_transformLabel->setText(tr("Pos"));
-		_transformLabelA->setText(tr("X"));
-		_transformLabelB->setText(tr("Y"));
-		_transformLabelC->setText(tr("Z"));
-		_transformA->setRange(-99999.9, 99999.9);
-		_transformB->setRange(-99999.9, 99999.9);
-		_transformC->setRange(-99999.9, 99999.9);
-	}
-
-	const bool editable = valid && !selectMode;
-	_transformA->setEnabled(editable);
-	_transformB->setEnabled(editable);
-	_transformC->setEnabled(editable);
-
-	// ---- Local-axes toggle: per-mode preference + inverted Group_rotate mapping ----
-	// When the cursor mode changes, restore the last Local setting for that mode.
-	const int curModeInt = static_cast<int>(_viewport->Editing_mode);
-	if (curModeInt != _tbCachedCursorMode) {
-		_tbCachedCursorMode = curModeInt;
-		if (_viewport->Editing_mode == CursorMode::Moving)
-			_viewport->Group_rotate = !_tbLocalMove;
-		else if (_viewport->Editing_mode == CursorMode::Rotating)
-			_viewport->Group_rotate = !_tbLocalRotate;
-		// Select mode: leave Group_rotate unchanged
-	}
-	// Local ON = individual axes = Group_rotate false, so button reflects !Group_rotate
-	{
-		QSignalBlocker bl(_transformLocalBtn);
-		_transformLocalBtn->setChecked(!_viewport->Group_rotate);
-	}
-	_transformLocalBtn->setEnabled(editable);
-
-	// ---- IFF combo: populate lazily once Iff_info is loaded by the game tables --
-	if (!_tbIffPopulated && !Iff_info.empty()) {
-		_tbIffPopulated = true;
-		QSignalBlocker bl(_transformIffCombo);
-		for (const auto& iff : Iff_info)
-			_transformIffCombo->addItem(QString::fromUtf8(iff.iff_name));
-	}
-
-	// Find common IFF among marked ships; -1 means mixed or no ship selected.
-	int  iffIndex    = -1;
-	bool anyShip     = isShip;
-	if (numMarked > 1) {
-		anyShip = false;
-		int firstIff = -2;
-		bool allSame = true;
-		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			if (p->type != OBJ_SHIP && p->type != OBJ_START) continue;
-			anyShip = true;
-			int team = Ships[p->instance].team;
-			if (firstIff == -2) { firstIff = team; }
-			else if (team != firstIff) { allSame = false; }
-		}
-		if (anyShip && allSame && firstIff >= 0) iffIndex = firstIff;
-	} else if (isShip) {
-		iffIndex = Ships[Objects[curObj].instance].team;
-	}
-	_transformIffCombo->setEnabled(anyShip);
-	{
-		QSignalBlocker bl(_transformIffCombo);
-		_transformIffCombo->setCurrentIndex(iffIndex);  // -1 = blank for mixed
-	}
-
-	// ---- Radius display: object radius for single, selection bounding radius for multi --
-	if (valid && numMarked <= 1) {
-		_transformRadiusLabel->setText(QString::number(static_cast<double>(Objects[curObj].radius), 'f', 1));
-	} else if (numMarked > 1 && obj_used_list.next != nullptr) {
-		vec3d center;
-		float radius;
-		if (get_object_bounds(true, &center, &radius)) {
-			_transformRadiusLabel->setText(QString::number(static_cast<double>(radius), 'f', 1));
-		} else {
-			_transformRadiusLabel->setText(tr("--"));
-		}
-	} else {
-		_transformRadiusLabel->setText(tr("--"));
-	}
-
-	// ---- Layer combo -------------------------------------------------------
-	// Rebuild contents only when layer structure has changed.
-	if (_tbLayerComboDirty) {
-		const auto layerNames = _viewport->getLayerNames();
-		QSignalBlocker bl(_transformLayerCombo);
-		_transformLayerCombo->clear();
-		for (const auto& n : layerNames)
-			_transformLayerCombo->addItem(QString::fromUtf8(n.c_str()));
-		_tbLayerComboDirty = false;
-	}
-
-	const bool anySelected = valid || numMarked > 0;
-	_transformLayerCombo->setEnabled(anySelected);
-
-	// Find common layer index; -1 = blank for mixed layers.
-	int layerIdx = -1;
-	if (anySelected) {
-		if (numMarked <= 1 && valid) {
-			QString ln = QString::fromUtf8(_viewport->getObjectLayerName(curObj).c_str());
-			layerIdx = _transformLayerCombo->findText(ln);
-		} else if (numMarked > 1) {
-			int firstLyr = -2;
-			bool allSame = true;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				int objIdx = static_cast<int>(p - Objects);
-				int idx = _transformLayerCombo->findText(
-					QString::fromUtf8(_viewport->getObjectLayerName(objIdx).c_str()));
-				if (firstLyr == -2) { firstLyr = idx; }
-				else if (idx != firstLyr) { allSame = false; break; }
-			}
-			if (allSame && firstLyr >= 0) layerIdx = firstLyr;
-		}
-	}
-	{
-		QSignalBlocker bl(_transformLayerCombo);
-		_transformLayerCombo->setCurrentIndex(layerIdx);
-	}
-
-	// ---- Spin box values (single selection only) ---------------------------
-	if (!valid) return;
-
-	auto setIfUnfocused = [](QDoubleSpinBox* sb, double val) {
-		if (!sb->hasFocus()) sb->setValue(val);
-	};
-
-	if (rotateMode) {
-		angles ang{};
-		vm_extract_angles_matrix(&ang, &Objects[curObj].orient);
-		setIfUnfocused(_transformA, fl_degrees(ang.h));
-		setIfUnfocused(_transformB, fl_degrees(ang.p));
-		setIfUnfocused(_transformC, fl_degrees(ang.b));
-	} else {
-		const vec3d& pos = Objects[curObj].pos;
-		setIfUnfocused(_transformA, pos.xyz.x);
-		setIfUnfocused(_transformB, pos.xyz.y);
-		setIfUnfocused(_transformC, pos.xyz.z);
-	}
-}
-
-void FredView::onTransformEditingFinished() {
-	const int  curObj      = fred->currentObject;
-	if (!query_valid_object(curObj)) return;
-
-	const bool rotateMode  = _viewport->Editing_mode == CursorMode::Rotating;
-	const bool localMode   = !_viewport->Group_rotate;  // Local ON = individual = !Group_rotate
-	const int  numMarked   = fred->getNumMarked();
-	const bool isMulti     = numMarked > 1;
-
-	if (rotateMode) {
-		if (isMulti && localMode) {
-			// Local delta: compute angle delta from curObj, apply to every marked object.
-			angles oldAng{};
-			vm_extract_angles_matrix(&oldAng, &Objects[curObj].orient);
-			const float dh = fl_radians(static_cast<float>(_transformA->value())) - oldAng.h;
-			const float dp = fl_radians(static_cast<float>(_transformB->value())) - oldAng.p;
-			const float db = fl_radians(static_cast<float>(_transformC->value())) - oldAng.b;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				angles a{};
-				vm_extract_angles_matrix(&a, &p->orient);
-				a.h += dh; a.p += dp; a.b += db;
-				vm_angles_2_matrix(&p->orient, &a);
-			}
-		} else if (isMulti) {
-			// Global multi: align every marked object to the same absolute orientation.
-			angles ang{};
-			ang.h = fl_radians(static_cast<float>(_transformA->value()));
-			ang.p = fl_radians(static_cast<float>(_transformB->value()));
-			ang.b = fl_radians(static_cast<float>(_transformC->value()));
-			matrix m{};
-			vm_angles_2_matrix(&m, &ang);
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				p->orient = m;
-			}
-		} else {
-			// Single object.
-			angles ang{};
-			ang.h = fl_radians(static_cast<float>(_transformA->value()));
-			ang.p = fl_radians(static_cast<float>(_transformB->value()));
-			ang.b = fl_radians(static_cast<float>(_transformC->value()));
-			vm_angles_2_matrix(&Objects[curObj].orient, &ang);
-		}
-	} else {
-		if (isMulti && localMode) {
-			// Local delta: shift every marked object by the same offset relative to curObj.
-			const float dx = static_cast<float>(_transformA->value()) - Objects[curObj].pos.xyz.x;
-			const float dy = static_cast<float>(_transformB->value()) - Objects[curObj].pos.xyz.y;
-			const float dz = static_cast<float>(_transformC->value()) - Objects[curObj].pos.xyz.z;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				p->pos.xyz.x += dx;
-				p->pos.xyz.y += dy;
-				p->pos.xyz.z += dz;
-			}
-		} else if (isMulti) {
-			// Global multi: move every marked object to the same absolute position.
-			const auto nx = static_cast<float>(_transformA->value());
-			const auto ny = static_cast<float>(_transformB->value());
-			const auto nz = static_cast<float>(_transformC->value());
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				p->pos.xyz.x = nx;
-				p->pos.xyz.y = ny;
-				p->pos.xyz.z = nz;
-			}
-		} else {
-			// Single object.
-			Objects[curObj].pos.xyz.x = static_cast<float>(_transformA->value());
-			Objects[curObj].pos.xyz.y = static_cast<float>(_transformB->value());
-			Objects[curObj].pos.xyz.z = static_cast<float>(_transformC->value());
-		}
-	}
-
-	fred->missionChanged();
-}
 
 void FredView::updateUI() {
 	if (!_viewport) {
@@ -1671,6 +1271,12 @@ void FredView::ensureViewportFocus() {
 	if (focusedWidget != nullptr) {
 		auto* focusedWindow = focusedWidget->window();
 		if (focusedWindow != nullptr && focusedWindow != this) {
+			return;
+		}
+
+		// Do not take the focus from a transform bar box while the user types a value. The toolbar is not a
+		// dock widget. Enter, Escape, or a click in the viewport gives the focus back.
+		if (_transformBar != nullptr && _transformBar->isTransformBox(focusedWidget)) {
 			return;
 		}
 
@@ -2050,7 +1656,7 @@ void FredView::initializePopupMenus() {
 		if (query_valid_object(obj) && (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START)) {
 			int wing = Ships[Objects[obj].instance].wingnum;
 			if (wing >= 0) {
-				fred->mark_wing(wing);
+				fred->mark_wing(wing, Editor::LockedObjects::Skip);
 			}
 		}
 	});
@@ -2264,8 +1870,8 @@ void FredView::closeEvent(QCloseEvent* event) {
 	QSettings settings;
 	settings.setValue("FredView/mainWindowState",      saveState());
 	settings.setValue("FredView/geometry",             saveGeometry());
-	settings.setValue("FredView/transformLocalMove",   _tbLocalMove);
-	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
+	if (_transformBar != nullptr)
+		_transformBar->saveSettings();
 	// Camera speeds are persisted on change in onUpdateViewSpeeds(), so no need to save them here.
 
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
@@ -2311,26 +1917,6 @@ void FredView::onUpdateViewSpeeds() {
 	ui->actionRotx12->setChecked(_viewport->camera.getPhysicsRot() == 25);
 	ui->actionRotx25->setChecked(_viewport->camera.getPhysicsRot() == 50);
 	ui->actionRotx50->setChecked(_viewport->camera.getPhysicsRot() == 100);
-
-	// Keep the bottom-bar combos in sync (covers changes made via keyboard shortcuts or menu).
-	if (_transformMoveSpeedCombo) {
-		QSignalBlocker bl(_transformMoveSpeedCombo);
-		for (int i = 0; i < _transformMoveSpeedCombo->count(); ++i) {
-			if (_transformMoveSpeedCombo->itemData(i).toInt() == _viewport->camera.getPhysicsSpeed()) {
-				_transformMoveSpeedCombo->setCurrentIndex(i);
-				break;
-			}
-		}
-	}
-	if (_transformRotSpeedCombo) {
-		QSignalBlocker bl(_transformRotSpeedCombo);
-		for (int i = 0; i < _transformRotSpeedCombo->count(); ++i) {
-			if (_transformRotSpeedCombo->itemData(i).toInt() == _viewport->camera.getPhysicsRot()) {
-				_transformRotSpeedCombo->setCurrentIndex(i);
-				break;
-			}
-		}
-	}
 
 	// Persist immediately when a speed changes (via toolbar, menu, or keyboard) so the choice
 	// survives even an unclean exit. Only writes on an actual change to avoid per-idle churn.
@@ -2937,7 +2523,7 @@ void FredView::onGroupSelected(int group) {
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->type == OBJ_SHIP) {
-			if (Ships[objp->instance].group & group) {
+			if ((Ships[objp->instance].group & group) && !objp->flags[Object::Object_Flags::Locked_from_editing]) {
 				fred->markObject(OBJ_INDEX(objp));
 			}
 		}
@@ -2999,7 +2585,7 @@ void FredView::on_actionPrev_Object_triggered(bool) {
 }
 void FredView::on_actionMark_Wing_triggered(bool) {
 	if (fred->cur_wing != -1) {
-		fred->mark_wing(fred->cur_wing);
+		fred->mark_wing(fred->cur_wing, Editor::LockedObjects::Skip);
 	}
 }
 void FredView::on_actionError_Checker_triggered(bool) {

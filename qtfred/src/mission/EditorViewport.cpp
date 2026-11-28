@@ -485,14 +485,7 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 				objp = GET_NEXT(objp);
 			}
 
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->flags[Object::Object_Flags::Marked]) {
-					object_moved(objp);
-				}
-
-				objp = GET_NEXT(objp);
-			}
+			marked_objects_moved();
 
 			editor->missionChanged();
 		}
@@ -545,7 +538,7 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 }
 
 void EditorViewport::level_controlled() {
-	int cmode, count = 0;
+	int cmode;
 	object* objp;
 
 	cmode = camera.getControlMode();
@@ -577,18 +570,8 @@ void EditorViewport::level_controlled() {
 			objp = GET_NEXT(objp);
 		}
 
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				object_moved(objp);
-				count++;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
 		///! \todo Notify.
-		if (count) {
+		if (marked_objects_moved() > 0) {
 			editor->missionChanged();
 		}
 
@@ -599,7 +582,7 @@ void EditorViewport::level_controlled() {
 }
 
 void EditorViewport::verticalize_controlled() {
-	int cmode, count = 0;
+	int cmode;
 	object* objp;
 
 	cmode = camera.getControlMode();
@@ -631,18 +614,8 @@ void EditorViewport::verticalize_controlled() {
 			objp = GET_NEXT(objp);
 		}
 
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				object_moved(objp);
-				count++;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
 		///! \todo Notify.
-		if (count) {
+		if (marked_objects_moved() > 0) {
 			editor->missionChanged();
 		}
 
@@ -1612,13 +1585,7 @@ int EditorViewport::drag_objects(int x, int y)
 			objp = GET_NEXT(objp);
 		}
 
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked])
-				object_moved(objp);
-
-			objp = GET_NEXT(objp);
-		}
+		marked_objects_moved();
 	}
 
 	editor->missionChanged();
@@ -1725,13 +1692,7 @@ int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
 		objp = GET_NEXT(objp);
 	}
 
-	objp = GET_FIRST(&obj_used_list);
-	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags[Object::Object_Flags::Marked])
-			object_moved(objp);
-
-		objp = GET_NEXT(objp);
-	}
+	marked_objects_moved();
 
 	editor->missionChanged();
 	return rval;
@@ -1756,6 +1717,9 @@ void EditorViewport::cancel_drag() {
 		objp = GET_NEXT(objp);
 	}
 
+	// Put the docked partners back with the restored objects
+	marked_objects_moved();
+
 	button_down = false;
 	moved = false;
 	Dup_drag = 0;
@@ -1772,7 +1736,7 @@ void EditorViewport::view_universe(bool just_marked) {
 
 	dist = std::max(radius, fl_sqrt(20.0f)) + 1.0f;
 	vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
-	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
+	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, EDITOR_DEFAULT_FOV);
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -1785,7 +1749,7 @@ void EditorViewport::view_universe(bool just_marked) {
 			while (v.codes & CC_OFF) {
 				dist += 5.0f;
 				vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
-				g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
+				g3_set_view_matrix(&camera.view_pos, &camera.view_orient, EDITOR_DEFAULT_FOV);
 				g3_rotate_vertex(&v, &ptr->pos);
 				if (g3_project_vertex(&v) & PF_OVERFLOW)
 					Int3();
@@ -1797,7 +1761,7 @@ void EditorViewport::view_universe(bool just_marked) {
 
 	dist *= 1.1f;
 	vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
-	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
+	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, EDITOR_DEFAULT_FOV);
 
 	needsUpdate();
 }
