@@ -310,7 +310,7 @@ void HeadAnimationPickerDialog::setSelectedByName(const QString& name)
 {
 	for (int i = 0; i < _list->count(); ++i) {
 		auto* it = _list->item(i);
-		if (it->data(Qt::UserRole).toString() == name) {
+		if (it->data(Qt::UserRole).toString().compare(name, Qt::CaseInsensitive) == 0) {
 			{
 				const QSignalBlocker blocker(_list);
 				_list->setCurrentItem(it);
