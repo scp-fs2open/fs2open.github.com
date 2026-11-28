@@ -16,6 +16,14 @@ class CommandBriefingDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Working-state serialization for the in-dialog undo stack: the WIP
+	// briefings plus the current team/stage context.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	int getCurrentTeam() const;
 	void setCurrentTeam(int teamIn);
 	int getCurrentStage() const;
@@ -31,7 +39,15 @@ class CommandBriefingDialogModel: public AbstractDialogModel {
 	void setLowResolutionFilename(const SCP_string& lowResolutionFilename);
 	SCP_string getHighResolutionFilename();
 	void setHighResolutionFilename(const SCP_string& highResolutionFilename);
-	
+
+	// Index-addressed setters for undo commands: undo must target the stage
+	// that was edited even if the team/stage context has moved since.
+	void setBriefingTextAt(int team, int stage, const SCP_string& text);
+	void setAnimationFilenameAt(int team, int stage, const SCP_string& name);
+	void setSpeechFilenameAt(int team, int stage, const SCP_string& name);
+	void setLowResolutionFilenameAt(int team, const SCP_string& name);
+	void setHighResolutionFilenameAt(int team, const SCP_string& name);
+
 	void gotoPreviousStage();
 	void gotoNextStage();
 	void addStage();

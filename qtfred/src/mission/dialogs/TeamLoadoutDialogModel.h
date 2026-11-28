@@ -66,6 +66,14 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Working-state serialization for the in-dialog undo stack: every team's
+	// loadout plus the current team context.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	const SCP_vector<std::pair<SCP_string, int>>& getNumberVarList();
 	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
 

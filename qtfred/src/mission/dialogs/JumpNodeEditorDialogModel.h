@@ -15,6 +15,7 @@ public:
 	bool hasMultipleSelection() const;
 	static bool hasAnyNodesInMission();
 	int getSelectionCount() const;
+	const SCP_vector<int>& getSelectedObjNums() const { return _selectedJumpNodes; }
 
 	bool setName(const SCP_string& v);
 	const SCP_string& getName() const;

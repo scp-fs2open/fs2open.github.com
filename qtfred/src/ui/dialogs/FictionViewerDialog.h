@@ -42,6 +42,8 @@ private slots:
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::FictionViewerDialog> ui;
 	std::unique_ptr<FictionViewerDialogModel> _model;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 };
 
 } // namespace fso::fred::dialogs

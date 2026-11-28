@@ -1,5 +1,6 @@
 #pragma once
 #include <mission/dialogs/JumpNodeEditorDialogModel.h>
+#include <mission/commands/FredCommands.h>
 #include <ui/FredView.h>
 
 #include <QDialog>
@@ -16,6 +17,9 @@ public:
 	JumpNodeEditorDialog(FredView* parent, EditorViewport* viewport);
 	~JumpNodeEditorDialog() override;
 
+protected:
+	void changeEvent(QEvent* e) override;
+
 private slots:
 	void on_prevNodeButton_clicked();
 	void on_nextNodeButton_clicked();
@@ -30,6 +34,7 @@ private slots:
 	void on_layerCombo_currentIndexChanged(int index);
 
 private: // NOLINT(readability-redundant-access-specifiers)
+	FredView*       _fredView;
 	EditorViewport* _viewport;
 	std::unique_ptr<Ui::JumpNodeEditorDialog> ui;
 	std::unique_ptr<JumpNodeEditorDialogModel> _model;

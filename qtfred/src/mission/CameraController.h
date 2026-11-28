@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <globalincs/pstypes.h>
 #include <physics/physics.h>
 
@@ -42,6 +44,12 @@ public:
 
 	vec3d view_pos;
 	matrix view_orient = vmd_identity_matrix;
+
+	// Called whenever view_pos/view_orient actually move due to processControls().
+	// Set by whoever owns the camera (e.g. FredView for undo tracking).
+	// Fires from any input source: keyboard, SpaceMouse, future mouse camera controls.
+	// Receives the pose from before this move, so a gesture's undo starts where it began.
+	std::function<void(const vec3d& posBefore, const matrix& orientBefore)> onViewChanged;
 
 	void resetView();
 	void resetViewPhysics();

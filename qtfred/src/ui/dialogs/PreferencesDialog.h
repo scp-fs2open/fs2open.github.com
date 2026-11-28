@@ -27,6 +27,7 @@ private slots:
 	void on_autosaveIntervalSeconds_valueChanged(int value);
 	void on_sexpNumberEveryN_valueChanged(int value);
 	void on_createBakOnSave_toggled(bool checked);
+	void on_undoStackDepth_valueChanged(int value);
 	void on_moveShipsWhenUndocking_toggled(bool checked);
 	void on_alwaysSaveDisplayNames_toggled(bool checked);
 	void on_checkPotentialIssues_toggled(bool checked);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mission/dialogs/VariableDialogModel.h>
+#include <ui/FredView.h>
 
 #include <QColor>
 #include <QDialog>
@@ -16,7 +17,9 @@ class VariableDialog : public QDialog {
 
   public:
 	enum Tab { VariablesTab = 0, ContainersTab = 1 };
-	explicit VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab = VariablesTab);
+	// parent controls window stacking (the host dialog when opened from a sexp
+	// tree's context menu); fredView provides the undo group and main stack.
+	explicit VariableDialog(QWidget* parent, EditorViewport* viewport, FredView* fredView, Tab initialTab = VariablesTab);
 	~VariableDialog() override;
 
 	void accept() override;
@@ -88,7 +91,9 @@ class VariableDialog : public QDialog {
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	// Core UI and Model
-	EditorViewport* _viewport = nullptr;
+	EditorViewport* _viewport    = nullptr;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 	std::unique_ptr<Ui::VariableEditorDialog> ui;
 	std::unique_ptr<VariableDialogModel> _model;
 
@@ -99,6 +104,13 @@ class VariableDialog : public QDialog {
 
 	void initializeUi();
 	void updateUi();
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeContainerKeyType(bool keys_are_strings);
+	// The persistence/network/eternal bits interact, so their commands track
+	// the whole flags word; beforeFlags is read before the live setter runs.
+	void pushVariableFlagsCommand(int index, int fieldConst, const QString& label, int beforeFlags);
+	void pushContainerFlagsCommand(int index, int fieldConst, const QString& label, int beforeFlags);
 
 	// Returns a theme-aware background color: blue-ish for blue_type=true, orange-ish for blue_type=false
 	static QColor rowTypeColor(bool blue_type);

@@ -305,8 +305,8 @@ int VoiceActingManagerModel::generateFilenames()
 		const int digits = calcDigits(Num_messages - Num_builtin_messages);
 		for (int i = 0; i < Num_messages - Num_builtin_messages; ++i) {
 			auto* message = &Messages[i + Num_builtin_messages];
-			const char* filename = message->wave_info.name;
-			if (!_noReplace || !strlen(filename) || message_filename_is_generic(filename)) {
+			const char* filename = message->wave_info.name; // may be null (no wave assigned)
+			if (!_noReplace || !filename || !strlen(filename) || message_filename_is_generic(filename)) {
 				SCP_string s = generateFilename(ExportSelection::Messages, i + 1, digits, message);
 				if (message->wave_info.name == nullptr || strcmp(message->wave_info.name, s.c_str()) != 0) {
 					if (message->wave_info.name)
