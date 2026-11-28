@@ -38,7 +38,10 @@ if (optional_string("$My New Option:")) {
     stuff_float(&sip->my_new_option);   // or stuff_int / stuff_string / stuff_boolean / stuff_vec3d
 }
 ```
-   - Use `optional_string` for new fields (never `required_string` — it breaks old tables).
+   - Use `optional_string` for new fields. Do not use `required_string` for them, because
+     it breaks old tables. The exception: inside a block that is entered only after a new
+     `optional_string` matched (for example, the sub-fields of a new optional block),
+     `required_string` is fine, because the whole block is already optional.
    - For names that reference other tables, use the existing lookup helpers
      (e.g. `ship_info_lookup`, `weapon_info_lookup`).
 3. **Respect `.tbm` modularity.** Most parsers run once per table file and merge

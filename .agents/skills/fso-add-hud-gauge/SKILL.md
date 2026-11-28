@@ -9,7 +9,7 @@ description: >-
 # FSO: Add a HUD Gauge
 
 HUD gauges live in `code/hud/`. Each gauge is a subclass of `HudGauge`
-(`code/hud/hud.h`, ~line 214) with a `render()` method; gauges are instantiated
+(`code/hud/hud.h`) with a `render()` method; gauges are instantiated
 from `hud_gauges.tbl` via `code/hud/hudparse.cpp`. Decide first which path you need.
 
 ## Choose an approach
@@ -39,8 +39,8 @@ from `hud_gauges.tbl` via `code/hud/hudparse.cpp`. Decide first which path you n
 3. **Parse + load.** In `code/hud/hudparse.cpp`:
    - Add a `load_gauge_my_gauge(...)` that reads gauge settings (coords, font,
      color, frames) and constructs your gauge, registering it on the ship/HUD.
-   - Add a `case HUD_OBJECT_MY_GAUGE:` to the load dispatch (the switch around
-     line 1184) calling `load_gauge_my_gauge(settings)`.
+   - Add a `case HUD_OBJECT_MY_GAUGE:` to the load dispatch (the switch over the
+     `HUD_OBJECT_*` ids in `hudparse.cpp`) calling `load_gauge_my_gauge(settings)`.
    - Map the gauge's table name string to the new id where gauge names are parsed.
 
 4. **Render path.** Gauges added to the HUD list are rendered automatically each

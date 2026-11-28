@@ -65,9 +65,9 @@ Each stub at `.cursor/skills/<name>/SKILL.md` and `.claude/skills/<name>/SKILL.m
 carries the discovery frontmatter (`name` + `description`) and a body that points
 to the canonical playbook here. Edit the playbook here in `.agents/skills/`; if you
 change a skill's `name`/`description`, mirror that line into the matching stubs so
-triggering stays in sync. The Cursor stub for `thermo-nuclear-code-quality-review`
-also keeps `disable-model-invocation: true` (a Cursor-only field) to preserve its
-explicit-only behavior.
+triggering stays in sync. The Cursor and Claude Code stubs for
+`thermo-nuclear-code-quality-review` also keep `disable-model-invocation: true`
+(both tools honor it) to preserve its explicit-only behavior.
 
 ## Authoring more skills
 

@@ -17,12 +17,13 @@ existing similar operator name across both files to find every spot to edit.
 
 ```
 - [ ] 1. Declare OP_* identifier (sexp.h)
-- [ ] 2. Register in the Operators table (sexp.cpp ~line 146)
-- [ ] 3. Add argument type-checking in query_operator_argument_type() (sexp.cpp ~line 32177)
-- [ ] 4. Implement the handler + dispatch in eval_sexp() (sexp.cpp ~line 28221)
-- [ ] 5. Add help text to Sexp_help (sexp.cpp ~line 38067)
-- [ ] 6. Add the FRED submenu category in get_category()/get_subcategory() (sexp.cpp ~line 36718)
-- [ ] 7. (If multiplayer-relevant) handle packing in network/multi_sexp.cpp
+- [ ] 2. Register in the Operators table (sexp.cpp)
+- [ ] 3. Add argument type-checking in query_operator_argument_type() (sexp.cpp)
+- [ ] 4. Add the return type in query_operator_return_type() (sexp.cpp)
+- [ ] 5. Implement the handler + dispatch in eval_sexp() (sexp.cpp)
+- [ ] 6. Add help text to Sexp_help (sexp.cpp)
+- [ ] 7. Add the FRED submenu category in get_category()/get_subcategory() (sexp.cpp)
+- [ ] 8. (If multiplayer-relevant) handle packing in network/multi_sexp.cpp
 ```
 
 ## Steps
@@ -30,27 +31,32 @@ existing similar operator name across both files to find every spot to edit.
 1. **OP_ identifier** — add to the operator enum in `code/parse/sexp.h`
    (the block starting `OP_PLUS = FIRST_OP, ...`). Do not reuse a value.
 
-2. **Register the operator** in the `Operators` vector (`sexp.cpp`, ~line 146).
+2. **Register the operator** in the `Operators` vector (`sexp.cpp`).
    Entry format is `{ text, OP_id, min_args, max_args, type }`:
 
 ```cpp
 { "my-operator", OP_MY_OPERATOR, 1, 2, SEXP_ACTION_OPERATOR, },
 ```
-   The 5th field (`sexp_oper_type`, the `SEXP_*_OPERATOR` macros defined near
-   `sexp.cpp` ~line 126) classifies the operator's *kind*
+   The 5th field (`sexp_oper_type`, the `SEXP_*_OPERATOR` macros defined just
+   above the `Operators` vector) classifies the operator's *kind*
    (action/conditional/arithmetic/boolean/…) — it does **not** control the FRED
-   submenu; that's step 6.
+   submenu; that's step 7.
 
 3. **Argument typing** — add a `case OP_MY_OPERATOR:` to the big switch in
-   `query_operator_argument_type()` (`sexp.cpp`, ~line 32177), declaring what
+   `query_operator_argument_type()` (`sexp.cpp`), declaring what
    each argument slot expects using the `OPF_*` enums (`OPF_NUMBER`, `OPF_SHIP`, …).
 
-4. **Implement + dispatch** — write a handler function, then add a `case OP_MY_OPERATOR:`
-   in `eval_sexp()` (`sexp.cpp`, ~line 28221) that calls it and returns a SEXP
+4. **Return type** — add a `case OP_MY_OPERATOR:` to `query_operator_return_type()`
+   (`sexp.cpp`), next to operators of the same kind (for example `OPR_NULL` for an
+   action, `OPR_BOOL` for a condition, `OPR_NUMBER` for arithmetic). The `default`
+   branch is `UNREACHABLE` for built-in operators, so a missing case stops the game.
+
+5. **Implement + dispatch** — write a handler function, then add a `case OP_MY_OPERATOR:`
+   in `eval_sexp()` (`sexp.cpp`) that calls it and returns a SEXP
    result (`SEXP_TRUE`/`SEXP_FALSE`/`SEXP_KNOWN_*`, or a number for arithmetic ops).
    Read arguments via the `CDR`/`CADR` node walk like neighbouring cases.
 
-5. **Help text** — add an entry to the `Sexp_help` vector (`sexp.cpp`, ~line 38067):
+6. **Help text** — add an entry to the `Sexp_help` vector (`sexp.cpp`):
 
 ```cpp
 { OP_MY_OPERATOR, "my-operator\r\n"
@@ -60,12 +66,12 @@ existing similar operator name across both files to find every spot to edit.
     "\t2:\t(optional) Second argument." },
 ```
 
-6. **FRED submenu category** — add a `case OP_MY_OPERATOR:` to `get_category()`
-   (`sexp.cpp`, ~line 36718) so the operator appears under the right FRED
-   category; add it to `get_subcategory()` (~line 37443) too if the category
+7. **FRED submenu category** — add a `case OP_MY_OPERATOR:` to `get_category()`
+   (`sexp.cpp`) so the operator appears under the right FRED
+   category; add it to `get_subcategory()` too if the category
    has subcategories.
 
-7. **Multiplayer** — if the operator changes game state on the server, ensure it
+8. **Multiplayer** — if the operator changes game state on the server, ensure it
    packs/sends correctly via `code/network/multi_sexp.*`.
 
 ## Conventions

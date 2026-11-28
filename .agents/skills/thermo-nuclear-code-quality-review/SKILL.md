@@ -20,6 +20,14 @@ Start from this baseline:
 > Be ambitious, if there is a clear path to improving the implementation that involves restructuring some of the codebase, go for it.
 > Be extremely thorough and rigorous. Measure twice, cut once.
 
+## FSO Context
+
+FSO preserves the behavior of retail and mod content (see `AGENTS.md`). Apply these rules before the standards below:
+
+- **Compatibility gates are expected.** A table flag, a `mod_supports_version(...)` check, or a new sexp or Lua call that keeps the old behavior for existing content is required, not spaghetti. Do not flag such a gate as a one-off boolean or an ad-hoc branch, and do not suggest its removal.
+- **Restructuring goes into its own PR.** When existing code needs restructuring, suggest it as a separate follow-up PR. Do not ask a feature or fix PR to include it (one PR, one topic).
+- **Be ambitious about the code that the PR adds.** Apply the push for "code judo" to the new code, and to existing code only where the PR already changes it.
+
 ## Non-Negotiable Additional Standards
 
 Apply the baseline prompt above, plus these explicit review rules:
@@ -54,14 +62,14 @@ Apply the baseline prompt above, plus these explicit review rules:
    - Flag thin abstractions, identity wrappers, or pass-through helpers that add indirection without buying clarity.
 
 5. **Push hard on type and boundary cleanliness when they affect maintainability.**
-   - Question unnecessary optionality, `unknown`, `any`, or cast-heavy code when a clearer type boundary could exist.
+   - Question unnecessary optionality, `void*`, or cast-heavy code when a clearer type boundary could exist.
    - Prefer explicit typed models or shared contracts over loosely-shaped ad-hoc objects.
    - If a branch relies on silent fallback to paper over an unclear invariant, ask whether the boundary should be made explicit instead.
 
 6. **Keep logic in the canonical layer and reuse existing helpers.**
    - Call out feature logic leaking into shared paths or implementation details leaking through APIs.
    - Prefer existing canonical utilities/helpers over bespoke one-offs.
-   - Push code toward the right package, service, or module instead of normalizing architectural drift.
+   - Push code toward the right module or subsystem instead of normalizing architectural drift.
 
 7. **Treat unnecessary sequential orchestration and non-atomic updates as design smells when the cleaner structure is obvious.**
    - If independent work is serialized for no good reason, ask whether the flow should run in parallel instead.
@@ -94,18 +102,18 @@ Escalate findings when you see:
 - Refactors that move code around but fail to reduce the number of concepts a reader must hold in their head.
 - A file crossing 1000 lines due to the PR, especially if the new code could be split out.
 - New conditionals bolted onto unrelated code paths.
-- One-off booleans, nullable modes, or flags that complicate existing control flow.
+- One-off booleans, nullable modes, or flags that complicate existing control flow. (A compatibility gate is not in this group. See FSO Context.)
 - Feature-specific logic leaking into general-purpose modules.
 - Generic "magic" handling that hides simple structure and makes the code harder to reason about.
 - Thin wrappers or identity abstractions that add indirection without simplifying anything.
-- Unnecessary casts, `any`, `unknown`, or optional params that muddy the real contract.
+- Unnecessary casts, `void*`, or optional params that muddy the real contract.
 - Copy-pasted logic instead of extracted helpers.
 - Narrow edge-case handling implemented in the middle of an already busy function.
 - Refactors that technically pass tests but make the code less modular or less readable.
 - "Temporary" branching that is likely to become permanent debt.
 - Bespoke helpers where the codebase already has a canonical utility for the job.
-- Logic added in the wrong layer/package when it should live somewhere more central.
-- Sequential async flow where obviously independent work could stay simpler and clearer with parallel execution.
+- Logic added in the wrong layer or module when it should live somewhere more central.
+- Serialized work where obviously independent steps could stay simpler and clearer as separate, independent steps.
 - Partial-update logic that leaves state less atomic than necessary.
 
 ## Preferred Remedies
@@ -125,7 +133,7 @@ When you identify a code-quality problem, prefer suggestions like:
 - Delete wrappers that do not meaningfully clarify the API.
 - Reuse the existing canonical helper instead of introducing a near-duplicate.
 - Make type boundaries more explicit so the control flow gets simpler.
-- Move the logic to the package/module/layer that already owns the concept.
+- Move the logic to the module or layer that already owns the concept.
 - Parallelize independent work when that also simplifies the orchestration.
 - Restructure related updates into a more atomic flow when partial state would be harder to reason about.
 
