@@ -4457,7 +4457,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	
 	GET_DATA( type );
-	GET_INT( index );	// ship net signature or wingnum, or the SmallCraftFlavor for SQUAD_MSG_ALL
+	GET_INT( index );	// ship net signature, wingnum or reinforcement index, or the SmallCraftFlavor for SQUAD_MSG_ALL
 	GET_INT( command );
 	GET_USHORT( target_net_signature );
 	GET_SHORT( t_subsys );
