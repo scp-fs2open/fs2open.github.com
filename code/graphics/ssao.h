@@ -8,7 +8,7 @@
 //
 // The Vulkan and the OpenGL backends have it. The radius and the intensity are
 // content-scale-dependent and therefore mod-owned: see $SSAO Max Radius:, $SSAO Screen Radius:
-// and $SSAO Intensity: in lighting_profiles.h. See also documentation/plans/cortao-integration-plan.md.
+// and $SSAO Intensity: in lighting_profiles.h.
 
 // CORTAO samples per pixel. 0 (the default) disables SSAO. The shader has variants for 4, 8 and 16.
 // This is the "Screen-Space Ambient Occlusion" option.
@@ -40,6 +40,7 @@ extern ssao_settings Ssao_settings;
 bool ssao_supported();
 
 // Whether the deferred ambient pass applies SSAO this frame. Gate all SSAO work on this function.
+// It is false for an orthographic projection, and when the clip is only a part of the screen.
 bool ssao_enabled();
 
 // The sample count for the CORTAO main pass: 4, 8 or 16. Only valid when ssao_enabled().

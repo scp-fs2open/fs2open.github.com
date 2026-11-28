@@ -2,6 +2,8 @@
 
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
+#include "graphics/openxr.h"
 #include "options/Option.h"
 
 int Ssao_samples = 0;
@@ -36,9 +38,25 @@ bool ssao_supported()
 	return gr_is_capable(gr_capability::CAPABILITY_SCREEN_SPACE_AO);
 }
 
+// CORTAO rebuilds the view positions with a perspective projection over the whole scene target.
+static bool ssao_view_supported()
+{
+	// An orthographic projection, for example the lab camera, has a1d[15] == 1. A perspective projection has 0.
+	if (gr_projection_matrix.a1d[15] != 0.0f) {
+		return false;
+	}
+	// In a stereo frame, the engine sets the clip to the swap chain image of the eye.
+	if (openxr_in_stereo_frame()) {
+		return true;
+	}
+	// A script can draw the scene into a part of the screen (gr.setClip, then mn.renderFrame).
+	return gr_screen.offset_x == 0 && gr_screen.offset_y == 0 && gr_screen.clip_width >= gr_screen.max_w
+		&& gr_screen.clip_height >= gr_screen.max_h;
+}
+
 bool ssao_enabled()
 {
-	return Ssao_samples > 0 && ssao_supported();
+	return Ssao_samples > 0 && ssao_supported() && ssao_view_supported();
 }
 
 int ssao_sample_count()
