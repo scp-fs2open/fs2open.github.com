@@ -2701,7 +2701,8 @@ void multi_sg_init_gamenet()
 
 		// NETLOG
 		char server_addr[INET6_ADDRSTRLEN];
-		psnet_addr_to_string(&Netgame.server_addr, server_addr, INET6_ADDRSTRLEN);
+		// Netgame.init() above cleared Netgame.server_addr, so log the saved copy
+		psnet_addr_to_string(&save, server_addr, INET6_ADDRSTRLEN);
 
 		ml_printf(NOX("Starting netgame as Host on Standalone server : %s"),
 			(server_addr[0]) ? server_addr : NOX("Unknown"));
