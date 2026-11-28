@@ -2854,24 +2854,35 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					int invalid_verts = 0;
 					int first_bad_path = -1;
+					int unlinked_paths = 0;
 					for (i = 0; i < pm->n_paths; i++) {
+						int invalid_in_path = 0;
 						for (j = 0; j < pm->paths[i].nverts; j++) {
 							if (!is_valid_vec(&pm->paths[i].verts[j].pos) ||
 								!std::isfinite(pm->paths[i].verts[j].radius)) {
 								invalid_verts++;
+								invalid_in_path++;
 								if (first_bad_path < 0)
 									first_bad_path = i;
 								vm_vec_zero(&pm->paths[i].verts[j].pos);
 								pm->paths[i].verts[j].radius = 0.0f;
 							}
 						}
+						// a path with no valid vertex leads nowhere, so its subsystem is attacked directly
+						if (invalid_in_path > 0 && invalid_in_path == pm->paths[i].nverts) {
+							pm->paths[i].parent_name[0] = '\0';
+							pm->paths[i].parent_submodel = -1;
+							unlinked_paths++;
+						}
 					}
 					if (invalid_verts > 0)
 						Warning(LOCATION,
-							"Model '%s': zeroed %d path vertices with a NaN or infinite value (first in path '%s').",
+							"Model '%s': zeroed %d path vertices with a NaN or infinite value (first in path '%s'); %d "
+							"paths with no valid vertex were unlinked from their subsystems.",
 							filename,
 							invalid_verts,
-							pm->paths[first_bad_path].name);
+							pm->paths[first_bad_path].name,
+							unlinked_paths);
 				}
 				break;
 
