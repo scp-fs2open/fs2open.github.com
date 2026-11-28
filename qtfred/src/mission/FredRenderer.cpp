@@ -15,6 +15,7 @@
 #include <graphics/font.h>
 #include <graphics/matrix.h>
 #include <graphics/light.h>
+#include <graphics/shadows.h>
 #include <lighting/lighting.h>
 #include <starfield/starfield.h>
 #include <ship/ship.h>
@@ -27,6 +28,9 @@
 #include <graphics/light.h>
 #include <mod_table/mod_table.h>
 #include <cfile/cfile.h>
+
+#include <functional>
+#include <optional>
 
 #include "mission/object.h"
 #include "prop/prop.h"
@@ -52,6 +56,42 @@ void enable_htl() {
 }
 
 void disable_htl() {
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+}
+
+//! Scoped gr_scene_texture_begin()/end(), so the two can't drift apart as render_frame() grows.
+struct ScenePostProcessing {
+	ScenePostProcessing() { gr_scene_texture_begin(); }
+	~ScenePostProcessing() { gr_scene_texture_end(); }
+
+	ScenePostProcessing(const ScenePostProcessing&) = delete;
+	ScenePostProcessing& operator=(const ScenePostProcessing&) = delete;
+};
+
+/**
+ * @brief Render the shadow pass for the current camera.
+ *
+ * Call this on each frame, also when post-processing is off. The shadow map has its own
+ * framebuffer, and models receive shadows when Shadow_quality is not Disabled (see
+ * modelrender.cpp). If this pass does not run, models sample a stale shadow map. This is the same
+ * as game_render_frame(), which calls shadows_render_all() after stars_draw() on each frame.
+ *
+ * The filter gives the objects that cast shadows. Use the same filter as the model pass, so that
+ * hidden objects do not cast shadows.
+ *
+ * shadows_render_all() works on the HTL proj/view matrix stack -- the same one enable_htl() and
+ * disable_htl() push and pop for the starfield -- and expects it to be open: it ends whatever is
+ * active (gr_end_view_matrix() asserts on modelview_matrix_depth) and restores it when done. The
+ * starfield's disable_htl() just popped that stack, hence the push here, and the matching pop
+ * afterwards so the next frame's enable_htl() doesn't assert on a stack left open.
+ */
+void render_shadows(const std::function<bool(object*)>& filter) {
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, nullptr, nullptr, nullptr, filter);
+
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 }
@@ -618,6 +658,46 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme
 	g3_draw_htl_line(&gpos, &tpos);
 }
 
+bool FredRenderer::isModelShown(object* objp) {
+	// if this object isn't fully created yet, don't render it
+	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
+		return false;
+	if (objp->type == OBJ_PROP && (!Props[objp->instance].has_value() || Props[objp->instance].value().create_time == 0))
+		return false;
+
+	if (objp->type == OBJ_JUMP_NODE) {
+		return false; // jump nodes have their own render loop in render_frame
+	}
+
+	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
+		return false;
+	}
+
+	if ((objp->type == OBJ_START) && !view().Show_starts) {
+		return false;
+	}
+
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+		if (!view().Show_ships) {
+			return false;
+		}
+
+		if (!view().Show_iff[Ships[objp->instance].team]) {
+			return false;
+		}
+	}
+
+	if ((objp->type == OBJ_PROP) && !view().Show_props) {
+		return false;
+	}
+
+	if (objp->flags[Object::Object_Flags::Hidden]) {
+		return false;
+	}
+
+	return _viewport->isObjectVisibleInLayer(objp);
+}
+
 void FredRenderer::render_one_model_htl(object* objp,
 										int cur_object_index) {
 	int z;
@@ -629,39 +709,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 	// object list, so encountering one here means something has gone very wrong.
 	Assertion(objp->type != OBJ_POINT, "OBJ_POINT object (instance %d) appeared in the main editor's render loop; QtFRED does not support OBJ_POINT objects.", objp->instance);
 
-	// if this object isn't fully created yet, don't render it
-	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
-		return;
-	if (objp->type == OBJ_PROP && (!Props[objp->instance].has_value() || Props[objp->instance].value().create_time == 0))
-		return;
-
-	if (objp->type == OBJ_JUMP_NODE) {
-		return; // jump nodes have their own render loop in render_frame
-	}
-
-	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
-		return;
-	}
-
-	if ((objp->type == OBJ_START) && !view().Show_starts) {
-		return;
-	}
-
-	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		if (!view().Show_ships) {
-			return;
-		}
-
-		if (!view().Show_iff[Ships[objp->instance].team]) {
-			return;
-		}
-	}
-
-	if ((objp->type == OBJ_PROP) && !view().Show_props) {
-		return;
-	}
-
-	if (objp->flags[Object::Object_Flags::Hidden]) {
+	if (!isModelShown(objp)) {
 		return;
 	}
 
@@ -949,9 +997,6 @@ void FredRenderer::render_models(int cur_object_index) {
 	enable_htl();
 
 	auto render_function = [&](object* objp) {
-		if (!_viewport->isObjectVisibleInLayer(objp)) {
-			return;
-		}
 		this->render_one_model_htl(objp, cur_object_index);
 	};
 
@@ -995,6 +1040,15 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
+	// Optionally run the 3D world through the game's HDR post-processing pipeline (bloom,
+	// tonemapping) instead of drawing straight to the default framebuffer.
+	// Brackets only the 3D content, the same way game_render_frame() does; the 2D overlays further
+	// down (distances, ship info, tooltips) stay outside it.
+	std::optional<ScenePostProcessing> postProcessing;
+	if (view().Graphics.enablePostProcessing) {
+		postProcessing.emplace();
+	}
+
 	// Force max star detail so the editor always shows the full Num_stars count
 	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
 	int saved_detail_stars = Detail.num_stars;
@@ -1003,6 +1057,8 @@ void FredRenderer::render_frame(int cur_object_index,
 	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
 	Detail.num_stars = saved_detail_stars;
+
+	render_shadows([this](object* objp) { return isModelShown(objp); });
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
@@ -1019,6 +1075,8 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 0, 64);
 	render_models(cur_object_index);
 	render_volumetric_overlay();
+
+	postProcessing.reset();
 
 	if (view().Show_distances) {
 		display_distances();
