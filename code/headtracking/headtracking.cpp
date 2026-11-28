@@ -5,6 +5,8 @@
 #ifdef WIN32
 #include "headtracking/trackir.h"
 #include "headtracking/freetrack.h"
+#else
+#include "headtracking/udp.h"
 #endif
 
 #include <memory>
@@ -51,6 +53,13 @@ namespace headtracking
 			currentProvider = std::move(freetrack);
 			return true;
 		}
+#else
+		auto udpProvider = initProvider<udp::UDPProvider>();
+		if (udpProvider)
+		{
+			currentProvider = std::move(udpProvider);
+			return true;
+		}
 #endif
 
 		mprintf(("  No supported provider found, headtracking will be disabled...\n"));
@@ -59,7 +68,7 @@ namespace headtracking
 
 	bool isEnabled()
 	{
-		return currentProvider != nullptr;
+		return currentProvider != nullptr && currentProvider->isActive();
 	}
 
 	bool query()
