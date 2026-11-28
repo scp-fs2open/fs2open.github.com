@@ -211,6 +211,7 @@ extern void hud_squadmsg_send_to_all_fighters( int command, int player_num = -1,
 extern void hud_squadmsg_call_reinforcement(reinforcements &reinforcement, int player_num = -1);
 
 extern int hud_squadmsg_reinforcements_available(int team);
+extern bool hud_squadmsg_order_needs_target(int command);
 
 void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 

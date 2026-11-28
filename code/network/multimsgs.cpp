@@ -4467,7 +4467,13 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	if(player_num == -1){
 		nprintf(("Network","Received player order packet from unknown player\n"));		
 		return;
-	}	
+	}
+
+	// an observer, or a player who is still joining, has no ship
+	if ( Net_players[player_num].m_player->objnum < 0 ) {
+		nprintf(("Network", "Received player order packet from a player with no ship\n"));
+		return;
+	}
 
 	objp = &Objects[Net_players[player_num].m_player->objnum];
 	if ( objp->type != OBJ_SHIP ) {
@@ -4520,14 +4526,14 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	shipp = &Ships[objp->instance];
 	aip = &Ai_info[shipp->ai_index];
 
-	// get the target objnum and targeted subsystem.  Quick out if we don't have an object to act on.
+	// get the target objnum and targeted subsystem.  Quick out if the order acts on a target and we don't have one.
 	target_objp = multi_get_network_object( target_net_signature );
-	if ( target_objp == NULL ) {
+	if ( (target_objp == nullptr) && hud_squadmsg_order_needs_target(command) ) {
 		return;
 	}
 
 	targeted_subsys = NULL;
-	if ( (t_subsys != -1) && (target_objp->type == OBJ_SHIP) ) {
+	if ( (t_subsys != -1) && (target_objp != nullptr) && (target_objp->type == OBJ_SHIP) ) {
 		targeted_subsys = multi_get_indexed_subsys( &Ships[target_objp->instance], t_subsys);
 	}
 

@@ -868,6 +868,16 @@ bool hud_squadmsg_ship_order_valid( int shipnum, int order )
 	return true;
 }
 
+bool hud_squadmsg_order_needs_target(int command)
+{
+	if (Player_orders[command].lua_id != -1) {
+		const auto lua_mode = ai_lua_find_mode(Player_orders[command].lua_id);
+		return (lua_mode == nullptr) || lua_mode->needsTarget;
+	}
+
+	return target_messages.count(static_cast<size_t>(command)) > 0;
+}
+
 // returns true or false if the Players target is valid for the given order
 // find_order is true when we need to search the comm_orders array for the order entry.  We have
 // to do this action in some cases since all we know is the actual "value" of the order
