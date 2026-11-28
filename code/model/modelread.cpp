@@ -2549,7 +2549,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 				if (invalid_glow_points > 0)
 					Warning(LOCATION,
-						"Model '%s': removed %d glow points with a NaN or infinite value (first in bank %d).",
+						"Model '%s': removed %d glow point(s) with a NaN or infinite value (first in bank %d).",
 						filename,
 						invalid_glow_points,
 						first_bad_bank);
@@ -2628,7 +2628,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					}
 					if (invalid_thruster_points > 0)
 						Warning(LOCATION,
-							"Model '%s': removed %d thruster points with a NaN or infinite value (first in bank %d).",
+							"Model '%s': removed %d thruster point(s) with a NaN or infinite value (first in bank %d).",
 							filename,
 							invalid_thruster_points,
 							first_bad_bank);
@@ -2877,8 +2877,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					}
 					if (invalid_verts > 0)
 						Warning(LOCATION,
-							"Model '%s': zeroed %d path vertices with a NaN or infinite value (first in path '%s'); %d "
-							"paths with no valid vertex were unlinked from their subsystems.",
+							"Model '%s': zeroed %d path point(s) with a NaN or infinite value (first in path '%s'); "
+							"unlinked %d path(s) with no valid point from their subsystems.",
 							filename,
 							invalid_verts,
 							pm->paths[first_bad_path].name,
